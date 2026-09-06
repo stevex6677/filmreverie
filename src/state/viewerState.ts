@@ -1,4 +1,5 @@
 import { DEFAULT_LAYOUT, getFrameCenter, mapWorldPointToFrame } from "../utils/loupeMapping";
+import { DEFAULT_ROOM_POSE, RoomCameraPose, clampRoomPose } from "../utils/cameraBounds";
 
 export type FilmMode = "negative" | "positive";
 export type RoomMode = "inspect" | "room";
@@ -19,6 +20,7 @@ export interface ViewerState {
   loupe: LoupeState;
   activeFrameIndex: number;
   isTransitioning: boolean;
+  savedRoomPose: RoomCameraPose;
 }
 
 const defaultFrameCenter = getFrameCenter(0, DEFAULT_LAYOUT);
@@ -37,7 +39,16 @@ export const INITIAL_VIEWER_STATE: ViewerState = {
   },
   activeFrameIndex: 0,
   isTransitioning: false,
+  savedRoomPose: { ...DEFAULT_ROOM_POSE },
 };
+
+export function createInitialViewerState(initialRoomMode: RoomMode = "inspect"): ViewerState {
+  return {
+    ...INITIAL_VIEWER_STATE,
+    roomMode: initialRoomMode,
+    savedRoomPose: { ...DEFAULT_ROOM_POSE },
+  };
+}
 
 export type ViewerAction =
   | { type: "SET_FILM_MODE"; mode: FilmMode }
@@ -47,7 +58,10 @@ export type ViewerAction =
   | { type: "SELECT_FRAME"; frameIndex: number }
   | { type: "SET_LOUPE_POSITION"; x: number; y: number }
   | { type: "SET_ROOM_MODE"; mode: RoomMode }
+  | { type: "APPROACH_TABLE" }
+  | { type: "RETURN_TO_ROOM" }
   | { type: "SET_TRANSITIONING"; isTransitioning: boolean }
+  | { type: "UPDATE_ROOM_POSE"; pose: Partial<RoomCameraPose> }
   | { type: "RESET" };
 
 export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerState {
@@ -117,6 +131,32 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       };
     }
 
+    case "APPROACH_TABLE":
+      // Guard against competing transitions or already inspecting
+      if (state.roomMode === "inspect" || state.isTransitioning) {
+        return state;
+      }
+      return {
+        ...state,
+        roomMode: "inspect",
+        isTransitioning: true,
+      };
+
+    case "RETURN_TO_ROOM":
+      // Guard against competing transitions or already in room
+      if (state.roomMode === "room" || state.isTransitioning) {
+        return state;
+      }
+      return {
+        ...state,
+        roomMode: "room",
+        isTransitioning: true,
+        loupe: {
+          ...state.loupe,
+          isActive: false, // Rest loupe when returning to room
+        },
+      };
+
     case "SET_ROOM_MODE":
       return {
         ...state,
@@ -128,6 +168,20 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
         ...state,
         isTransitioning: action.isTransitioning,
       };
+
+    case "UPDATE_ROOM_POSE": {
+      if (state.roomMode !== "room") {
+        return state;
+      }
+      const updated = {
+        ...state.savedRoomPose,
+        ...action.pose,
+      };
+      return {
+        ...state,
+        savedRoomPose: clampRoomPose(updated),
+      };
+    }
 
     case "RESET":
       return INITIAL_VIEWER_STATE;

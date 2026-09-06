@@ -259,9 +259,50 @@ html, body, #root {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.view-badge.room {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.view-badge.inspect {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
 .frame-badge {
   background: rgba(255, 255, 255, 0.06);
   color: #d1d5db;
+}
+
+.btn-approach {
+  background: #ea580c;
+  color: #ffffff;
+  border-color: #f97316;
+  box-shadow: 0 0 14px rgba(234, 88, 12, 0.4);
+}
+
+.btn-approach:hover {
+  background: #f97316;
+}
+
+.btn-back {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f3f4f6;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-back:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.darkroom-app-container[data-room-mode="room"] canvas {
+  cursor: grab;
+}
+
+.darkroom-app-container[data-room-mode="room"] canvas:active {
+  cursor: grabbing;
 }
 
 /* Loading */
