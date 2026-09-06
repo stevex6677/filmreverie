@@ -4,8 +4,8 @@ import * as THREE from "three";
 interface LightTableProps {
   width?: number;
   height?: number;
-  onPointerMove?: (x: number, y: number) => void;
-  onClick?: (x: number, y: number) => void;
+  onPointerMove?: (point: THREE.Vector3) => void;
+  onClick?: (point: THREE.Vector3) => void;
 }
 
 export const LightTable: React.FC<LightTableProps> = ({
@@ -29,6 +29,12 @@ export const LightTable: React.FC<LightTableProps> = ({
         />
       </mesh>
 
+      {/* Anodized lower drafting lip/ledge holding negatives & tools */}
+      <mesh position={[0, -panelHeight / 2 - 0.045, 0.015]}>
+        <boxGeometry args={[panelWidth + 0.08, 0.03, 0.03]} />
+        <meshStandardMaterial color="#2c3038" roughness={0.35} metalness={0.8} />
+      </mesh>
+
       {/* Side power rocker switch / dial accent */}
       <mesh position={[width / 2 + 0.015, -height / 4, -0.09]}>
         <boxGeometry args={[0.03, 0.12, 0.06]} />
@@ -39,10 +45,10 @@ export const LightTable: React.FC<LightTableProps> = ({
       <mesh
         position={[0, 0, 0.001]}
         onPointerMove={(e) => {
-          onPointerMove?.(e.point.x, e.point.y);
+          onPointerMove?.(e.point);
         }}
         onClick={(e) => {
-          onClick?.(e.point.x, e.point.y);
+          onClick?.(e.point);
         }}
       >
         <planeGeometry args={[panelWidth, panelHeight]} />

@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useTexture } from "@react-three/drei";
 import { ROLL_FRAMES } from "../data/rollManifest";
 import { DEFAULT_LAYOUT } from "../utils/loupeMapping";
+import { TABLE_TILT_ANGLE } from "../utils/cameraBounds";
 import { ViewerAction, ViewerState } from "../state/viewerState";
 import { LightTable } from "./LightTable";
 import { FilmStrip } from "./FilmStrip";
@@ -21,6 +22,8 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   dispatch,
   isDeterministic = false,
 }) => {
+  const tableGroupRef = useRef<THREE.Group>(null);
+
   // Load textures for all five frames
   const imageSources = useMemo(() => ROLL_FRAMES.map((f) => f.src), []);
   const textures = useTexture(imageSources) as THREE.Texture[];
@@ -37,9 +40,12 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   const activeTexture = textures[state.loupe.frameIndex] || textures[0];
   const isPositive = state.filmMode === "positive";
 
-  const handlePointerMove = (x: number, y: number) => {
+  const handlePointerMove = (point: THREE.Vector3) => {
     if (state.roomMode === "inspect" && state.loupe.isActive) {
-      dispatch({ type: "SET_LOUPE_POSITION", x, y });
+      const local = tableGroupRef.current
+        ? tableGroupRef.current.worldToLocal(point.clone())
+        : point;
+      dispatch({ type: "SET_LOUPE_POSITION", x: local.x, y: local.y });
     }
   };
 
@@ -53,12 +59,15 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
     }
   };
 
-  const handleTableClick = (x: number, y: number) => {
+  const handleTableClick = (point: THREE.Vector3) => {
     if (state.isTransitioning) return;
     if (state.roomMode === "room") {
       dispatch({ type: "APPROACH_TABLE" });
     } else if (state.loupe.isActive) {
-      dispatch({ type: "SET_LOUPE_POSITION", x, y });
+      const local = tableGroupRef.current
+        ? tableGroupRef.current.worldToLocal(point.clone())
+        : point;
+      dispatch({ type: "SET_LOUPE_POSITION", x: local.x, y: local.y });
     }
   };
 
@@ -77,47 +86,50 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         isDeterministic={isDeterministic}
       />
 
-      {/* Surrounding 3D Darkroom Environment */}
+      {/* Surrounding 3D Darkroom Environment & Workbench */}
       <DarkroomRoom />
 
-      {/* Light Table Base & Diffuser */}
-      <LightTable
-        onPointerMove={handlePointerMove}
-        onClick={handleTableClick}
-      />
+      {/* Ergonomic Tilted Light Table Console (25 deg tilt) */}
+      <group
+        ref={tableGroupRef}
+        position={[0, 0, 0]}
+        rotation={[-TABLE_TILT_ANGLE, 0, 0]}
+      >
+        {/* Light Table Base & Diffuser */}
+        <LightTable
+          onPointerMove={handlePointerMove}
+          onClick={handleTableClick}
+        />
 
-      {/* Film Strip with 5 Frames */}
-      <FilmStrip
-        textures={textures}
-        isPositive={isPositive}
-        layout={DEFAULT_LAYOUT}
-        onSelectFrame={handleFrameSelect}
-        onPointerMove={(x, y) => {
-          if (state.roomMode === "inspect" && state.loupe.isActive) {
-            dispatch({ type: "SET_LOUPE_POSITION", x, y });
-          }
-        }}
-      />
+        {/* Film Strip with 5 Frames */}
+        <FilmStrip
+          textures={textures}
+          isPositive={isPositive}
+          layout={DEFAULT_LAYOUT}
+          onSelectFrame={handleFrameSelect}
+          onPointerMove={handlePointerMove}
+        />
 
-      {/* 2.5x Magnifying Loupe */}
-      <Loupe
-        isActive={state.roomMode === "inspect" && state.loupe.isActive}
-        targetX={state.loupe.worldX}
-        targetY={state.loupe.worldY}
-        frameIndex={state.loupe.frameIndex}
-        u={state.loupe.u}
-        v={state.loupe.v}
-        texture={activeTexture}
-        isPositive={isPositive}
-        isDeterministic={isDeterministic}
-        onClick={() => {
-          if (state.roomMode === "inspect") {
-            dispatch({ type: "TOGGLE_LOUPE" });
-          } else {
-            dispatch({ type: "APPROACH_TABLE" });
-          }
-        }}
-      />
+        {/* 2.5x Magnifying Loupe */}
+        <Loupe
+          isActive={state.roomMode === "inspect" && state.loupe.isActive}
+          targetX={state.loupe.worldX}
+          targetY={state.loupe.worldY}
+          frameIndex={state.loupe.frameIndex}
+          u={state.loupe.u}
+          v={state.loupe.v}
+          texture={activeTexture}
+          isPositive={isPositive}
+          isDeterministic={isDeterministic}
+          onClick={() => {
+            if (state.roomMode === "inspect") {
+              dispatch({ type: "TOGGLE_LOUPE" });
+            } else {
+              dispatch({ type: "APPROACH_TABLE" });
+            }
+          }}
+        />
+      </group>
     </>
   );
 };

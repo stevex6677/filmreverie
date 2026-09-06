@@ -4,6 +4,8 @@ import { useFrame, useThree } from "@react-three/fiber";
 import {
   INSPECT_CAMERA_POSITION,
   INSPECT_CAMERA_TARGET,
+  INSPECT_CAMERA_UP,
+  ROOM_CAMERA_UP,
   RoomCameraPose,
   sphericalToCartesian,
 } from "../utils/cameraBounds";
@@ -30,17 +32,20 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0, yaw: 0, pitch: 0 });
 
-  // Compute desired camera position based on mode
+  // Compute desired camera position and up vector based on mode
   const targetPos = useRef(new THREE.Vector3());
+  const targetUp = useRef(new THREE.Vector3(...ROOM_CAMERA_UP));
   const lookTarget = useRef(new THREE.Vector3(...INSPECT_CAMERA_TARGET));
 
   useEffect(() => {
     if (roomMode === "inspect") {
       targetPos.current.set(...INSPECT_CAMERA_POSITION);
+      targetUp.current.set(...INSPECT_CAMERA_UP);
       lookTarget.current.set(...INSPECT_CAMERA_TARGET);
     } else {
       const [rx, ry, rz] = sphericalToCartesian(savedRoomPose, INSPECT_CAMERA_TARGET);
       targetPos.current.set(rx, ry, rz);
+      targetUp.current.set(...ROOM_CAMERA_UP);
       lookTarget.current.set(...INSPECT_CAMERA_TARGET);
     }
   }, [roomMode, savedRoomPose]);
@@ -123,8 +128,12 @@ export const CameraRig: React.FC<CameraRigProps> = ({
         : sphericalToCartesian(savedRoomPose, INSPECT_CAMERA_TARGET);
     targetPos.current.set(rx, ry, rz);
 
+    const desiredUp = roomMode === "inspect" ? INSPECT_CAMERA_UP : ROOM_CAMERA_UP;
+    targetUp.current.set(...desiredUp);
+
     if (isDeterministic) {
       camera.position.copy(targetPos.current);
+      camera.up.copy(targetUp.current);
       camera.lookAt(lookTarget.current);
       if (isTransitioning) {
         onTransitionComplete();
@@ -135,12 +144,14 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     // Smooth camera transition
     const speed = isTransitioning ? 7.0 : 12.0;
     camera.position.lerp(targetPos.current, Math.min(1.0, delta * speed));
+    camera.up.lerp(targetUp.current, Math.min(1.0, delta * speed));
     camera.lookAt(lookTarget.current);
 
     if (isTransitioning) {
       const dist = camera.position.distanceTo(targetPos.current);
       if (dist < 0.015) {
         camera.position.copy(targetPos.current);
+        camera.up.copy(targetUp.current);
         onTransitionComplete();
       }
     }

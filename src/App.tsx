@@ -5,6 +5,14 @@ import {
   viewerReducer,
   RoomMode,
 } from "./state/viewerState";
+import {
+  DEFAULT_ROOM_POSE,
+  INSPECT_CAMERA_POSITION,
+  INSPECT_CAMERA_TARGET,
+  INSPECT_CAMERA_UP,
+  ROOM_CAMERA_UP,
+  sphericalToCartesian,
+} from "./utils/cameraBounds";
 import { ViewingTableScene } from "./components/ViewingTableScene";
 import { Controls } from "./components/Controls";
 
@@ -43,6 +51,21 @@ export function App() {
     undefined,
     () => createInitialViewerState(initialRoomMode)
   );
+
+  const initialCamera = useMemo(() => {
+    if (initialRoomMode === "inspect") {
+      return {
+        position: INSPECT_CAMERA_POSITION,
+        up: INSPECT_CAMERA_UP,
+        fov: 45,
+      };
+    }
+    return {
+      position: sphericalToCartesian(DEFAULT_ROOM_POSE, INSPECT_CAMERA_TARGET),
+      up: ROOM_CAMERA_UP,
+      fov: 45,
+    };
+  }, [initialRoomMode]);
 
   // Keyboard shortcut support
   useEffect(() => {
@@ -87,7 +110,7 @@ export function App() {
       <Suspense fallback={<LoadingFallback />}>
         <div className="canvas-wrapper">
           <Canvas
-            camera={{ position: [0, 0, 3.2], fov: 45 }}
+            camera={initialCamera}
             gl={{
               preserveDrawingBuffer: true,
               antialias: true,

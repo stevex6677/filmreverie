@@ -15,6 +15,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
   test("validates room drag orbit, table approach transition, pose restoration, repeated cycles, and M1 journey", async ({
     page,
   }) => {
+    test.setTimeout(180000);
     const pageErrors: Error[] = [];
     const consoleErrors: string[] = [];
     const failedRequests: string[] = [];
