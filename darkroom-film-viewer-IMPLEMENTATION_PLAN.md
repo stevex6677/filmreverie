@@ -59,7 +59,7 @@ Vitest is used for integration tests. Playwright is used for E2E tests in real d
 The current active milestone is **M1**. The agent may complete any coherent subset of its work, but must update this plan before stopping. Leave a milestone unchecked until both its automated gate and human review pass. Record partial progress or blockers under its Evidence line. Once accepted, preserve its tests as cumulative regressions. If implementation changes the plan, record the reason without erasing completed history. Multiple coherent commits are allowed.
 
 - [ ] **M1 — Working five-photo film viewer**
-  - **Status:** Planned.
+  - **Status:** Awaiting human review.
   - **Outcome:** A user can open a minimal desktop 3D viewing-table scene, clearly see all five photos in order, switch between negative and positive, and move a loupe across the strip to enlarge the correct image detail. No room decoration is required yet.
   - **Paths/components:** application scaffold if absent; `src/data/`, viewer state, light table, simple film strip/frames, mode control, loupe; source `photos/roll-01/`; derived local assets under `public/assets/photos/`; `tests/integration/m1-*`; `tests/e2e/m1-*`.
   - **Implementation requirements:**
@@ -80,7 +80,7 @@ The current active milestone is **M1**. The agent may complete any coherent subs
   - **Gate:** M1 must add `npm run validate:m1`, which builds the app and runs the M1 Vitest integration and Playwright E2E suites.
   - **Human review:** Confirm photo readability/order, credible negative-to-positive reveal, and genuine magnification. Reject blank, clipped, washed-out, tiny, or incorrectly sampled photos even if tests pass.
   - **Completion criteria:** Gate passes, evidence is delivered, and the user explicitly accepts M1.
-  - **Evidence:** Pending.
+  - **Evidence:** Automated gate `npm run validate:m1` passed against production build in real desktop Chrome/WebGL (commit `9fd9fa7` + plan update). Vitest passed 18/18 tests; Playwright passed 3/3 suites with zero console errors, zero page errors, and zero failed network requests. Candidate screenshots generated in `artifacts/`: `m1-negative-overview.png`, `m1-positive-overview.png`, `m1-loupe-frame1.png`, `m1-loupe-frame3.png`, `m1-loupe-frame5.png`.
   - **Human approval:** Pending.
 
 - [ ] **M2 — Room and camera journey**
