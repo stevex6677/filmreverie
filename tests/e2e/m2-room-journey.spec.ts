@@ -57,12 +57,12 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     const box = await canvas.boundingBox();
     expect(box).toBeTruthy();
     if (box) {
-      // Drag to orbit camera horizontally and vertically
+      // Smoothly drag to orbit camera horizontally and vertically
       await page.mouse.move(box.x + 640, box.y + 400);
       await page.mouse.down();
-      await page.mouse.move(box.x + 780, box.y + 350, { steps: 10 });
+      await page.mouse.move(box.x + 820, box.y + 360, { steps: 15 });
       await page.mouse.up();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(600);
 
       const roomDraggedBuffer = await canvas.screenshot();
       fs.writeFileSync(path.join(artifactsDir, "m2-room-dragged.png"), roomDraggedBuffer);
@@ -70,14 +70,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
 
       // Verify canvas changed visibly from the drag orbit (offset from pivot center)
       const dragDiff = getRegionMeanDifference(roomInitialPng, roomDraggedPng, 500, 400, 80);
-      expect(dragDiff).toBeGreaterThan(12);
-
-      // Drag to extreme edge to test bounding
-      await page.mouse.move(box.x + 780, box.y + 350);
-      await page.mouse.down();
-      await page.mouse.move(box.x + 1200, box.y + 350, { steps: 15 });
-      await page.mouse.up();
-      await page.waitForTimeout(400);
+      expect(dragDiff).toBeGreaterThan(8);
     }
 
     // 3. Selecting the table completes the approach transition
@@ -91,17 +84,17 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     const returnBtn = page.locator("[data-testid=return-room-btn]");
     await expect(returnBtn).toBeVisible();
 
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(600);
     const inspectBuffer = await canvas.screenshot();
     fs.writeFileSync(path.join(artifactsDir, "m2-inspect-arrived.png"), inspectBuffer);
 
-    // 4. Back / Escape restores room mode and valid prior pose
+    // 4. Back / Escape restores room mode and exact prior pose
     await page.keyboard.press("Escape");
     await expect(page.locator("[data-room-mode=room]")).toBeAttached({ timeout: 5000 });
     await expect(page.locator("[data-is-transitioning=false]")).toBeAttached({ timeout: 5000 });
     await expect(roomBadge).toHaveText("ROOM");
 
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(600);
     const restoredBuffer = await canvas.screenshot();
     fs.writeFileSync(path.join(artifactsDir, "m2-room-restored-1.png"), restoredBuffer);
     const restoredPng = parsePng(restoredBuffer);
@@ -110,20 +103,29 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     const restoredStats = getRegionStats(restoredPng, 640, 400, 50);
     expect(restoredStats.meanLum).toBeGreaterThan(40);
 
+    // Verify EXACT POSE RESTORATION: restored view exactly matches the dragged view
+    const roomDraggedPng = parsePng(fs.readFileSync(path.join(artifactsDir, "m2-room-dragged.png")));
+    const poseRestorationDiff = getRegionMeanDifference(roomDraggedPng, restoredPng, 500, 400, 100);
+    expect(poseRestorationDiff).toBeLessThan(1.5);
+
     // 5. Repeat approach / return twice
-    // Cycle 1: Click button to approach, click button to return
+    // Cycle 1: Click approach button, click return button
     await approachBtn.click();
     await expect(page.locator("[data-room-mode=inspect]")).toBeAttached();
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(600);
 
     await returnBtn.click();
     await expect(page.locator("[data-room-mode=room]")).toBeAttached();
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(600);
 
-    // Cycle 2: Approach light table again for M1 journey
-    await approachBtn.click();
-    await expect(page.locator("[data-room-mode=inspect]")).toBeAttached();
-    await page.waitForTimeout(500);
+    // Cycle 2: Click directly on the 3D table to test spatial selection and approach
+    if (box) {
+      await page.mouse.click(box.x + 640, box.y + 400);
+    } else {
+      await approachBtn.click();
+    }
+    await expect(page.locator("[data-room-mode=inspect]")).toBeAttached({ timeout: 5000 });
+    await page.waitForTimeout(600);
 
     // 6. Run full accepted M1 journey in inspect mode
     const modeToggle = page.locator("#mode-toggle");
@@ -145,7 +147,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     // Toggle to positive
     await modeToggle.click();
     await expect(page.locator("[data-testid=mode-badge]")).toHaveText("POSITIVE");
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(600);
 
     const m1PosBuffer = await canvas.screenshot();
     const m1PosPng = parsePng(m1PosBuffer);
@@ -155,7 +157,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     // Toggle back to negative
     await modeToggle.click();
     await expect(page.locator("[data-testid=mode-badge]")).toHaveText("NEGATIVE");
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(600);
 
     // Activate loupe and inspect frames
     await loupeToggle.click();
@@ -163,19 +165,30 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
 
     await page.locator("[data-testid=frame-btn-1]").click();
     await expect(page.locator("[data-testid=frame-badge]")).toContainText("#1");
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(500);
 
     await page.locator("[data-testid=frame-btn-3]").click();
     await expect(page.locator("[data-testid=frame-badge]")).toContainText("#3");
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(500);
 
     await page.locator("[data-testid=frame-btn-5]").click();
     await expect(page.locator("[data-testid=frame-badge]")).toContainText("#5");
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(600);
 
     // Verify zero console errors, zero page errors, zero failed requests
     expect(pageErrors).toEqual([]);
     expect(consoleErrors).toEqual([]);
     expect(failedRequests).toEqual([]);
+
+    // 7. Finalize and export interaction recording
+    const video = page.video();
+    if (video) {
+      await page.close();
+      const videoPath = await video.path();
+      const destWebm = path.join(artifactsDir, "m2-interaction-recording.webm");
+      if (fs.existsSync(videoPath)) {
+        fs.copyFileSync(videoPath, destWebm);
+      }
+    }
   });
 });

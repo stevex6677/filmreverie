@@ -15,29 +15,29 @@ describe("M2 Integration — Camera Bounds, State Transitions & Pose Restoration
     it("has sane camera bounds preventing wall and floor clipping", () => {
       expect(DEFAULT_CAMERA_BOUNDS.minYaw).toBeLessThan(0);
       expect(DEFAULT_CAMERA_BOUNDS.maxYaw).toBeGreaterThan(0);
-      expect(DEFAULT_CAMERA_BOUNDS.minPitch).toBeGreaterThan(0.2); // above floor
-      expect(DEFAULT_CAMERA_BOUNDS.maxPitch).toBeLessThan(Math.PI / 2); // below zenith
-      expect(DEFAULT_CAMERA_BOUNDS.minDistance).toBeGreaterThanOrEqual(2.0); // table clearance
+      expect(DEFAULT_CAMERA_BOUNDS.minPitch).toBeGreaterThan(0.04); // above workbench & floor
+      expect(DEFAULT_CAMERA_BOUNDS.maxPitch).toBeLessThan(Math.PI / 4); // below steep overhead
+      expect(DEFAULT_CAMERA_BOUNDS.minDistance).toBeGreaterThanOrEqual(2.5); // table clearance
       expect(DEFAULT_CAMERA_BOUNDS.maxDistance).toBeLessThanOrEqual(4.5); // room clearance
     });
 
     it("clamps camera pose safely within bounds", () => {
-      const clampedExtremeLeft = clampRoomPose({ yaw: -5.0, pitch: 0.5, distance: 3.0 });
+      const clampedExtremeLeft = clampRoomPose({ yaw: -5.0, pitch: 0.2, distance: 3.5 });
       expect(clampedExtremeLeft.yaw).toBe(DEFAULT_CAMERA_BOUNDS.minYaw);
 
-      const clampedExtremeRight = clampRoomPose({ yaw: 5.0, pitch: 0.5, distance: 3.0 });
+      const clampedExtremeRight = clampRoomPose({ yaw: 5.0, pitch: 0.2, distance: 3.5 });
       expect(clampedExtremeRight.yaw).toBe(DEFAULT_CAMERA_BOUNDS.maxYaw);
 
-      const clampedTooLow = clampRoomPose({ yaw: 0, pitch: -2.0, distance: 3.0 });
+      const clampedTooLow = clampRoomPose({ yaw: 0, pitch: -2.0, distance: 3.5 });
       expect(clampedTooLow.pitch).toBe(DEFAULT_CAMERA_BOUNDS.minPitch);
 
-      const clampedTooHigh = clampRoomPose({ yaw: 0, pitch: 3.0, distance: 3.0 });
+      const clampedTooHigh = clampRoomPose({ yaw: 0, pitch: 3.0, distance: 3.5 });
       expect(clampedTooHigh.pitch).toBe(DEFAULT_CAMERA_BOUNDS.maxPitch);
 
-      const clampedTooClose = clampRoomPose({ yaw: 0, pitch: 0.5, distance: 0.2 });
+      const clampedTooClose = clampRoomPose({ yaw: 0, pitch: 0.2, distance: 0.2 });
       expect(clampedTooClose.distance).toBe(DEFAULT_CAMERA_BOUNDS.minDistance);
 
-      const clampedTooFar = clampRoomPose({ yaw: 0, pitch: 0.5, distance: 100.0 });
+      const clampedTooFar = clampRoomPose({ yaw: 0, pitch: 0.2, distance: 100.0 });
       expect(clampedTooFar.distance).toBe(DEFAULT_CAMERA_BOUNDS.maxDistance);
     });
 
@@ -46,9 +46,9 @@ describe("M2 Integration — Camera Bounds, State Transitions & Pose Restoration
       expect(typeof x).toBe("number");
       expect(typeof y).toBe("number");
       expect(typeof z).toBe("number");
-      expect(x).toBeCloseTo(0, 4);
-      expect(y).toBeGreaterThan(1.2); // standing viewing height
-      expect(z).toBeGreaterThan(2.0); // comfortable distance from table
+      expect(x).toBeGreaterThan(0.4); // gentle 3/4 architectural perspective
+      expect(y).toBeGreaterThan(0.4); // eye-level viewing elevation
+      expect(z).toBeGreaterThan(3.0); // comfortable distance from table
     });
   });
 
@@ -119,11 +119,11 @@ describe("M2 Integration — Camera Bounds, State Transitions & Pose Restoration
       // User orbits camera in room mode
       state = viewerReducer(state, {
         type: "UPDATE_ROOM_POSE",
-        pose: { yaw: 0.42, pitch: 0.75, distance: 3.4 },
+        pose: { yaw: 0.30, pitch: 0.22, distance: 3.6 },
       });
-      expect(state.savedRoomPose.yaw).toBeCloseTo(0.42, 4);
-      expect(state.savedRoomPose.pitch).toBeCloseTo(0.75, 4);
-      expect(state.savedRoomPose.distance).toBeCloseTo(3.4, 4);
+      expect(state.savedRoomPose.yaw).toBeCloseTo(0.30, 4);
+      expect(state.savedRoomPose.pitch).toBeCloseTo(0.22, 4);
+      expect(state.savedRoomPose.distance).toBeCloseTo(3.6, 4);
 
       // Approach light table
       state = viewerReducer(state, { type: "APPROACH_TABLE" });
@@ -141,9 +141,9 @@ describe("M2 Integration — Camera Bounds, State Transitions & Pose Restoration
       expect(state.roomMode).toBe("room");
 
       // Prior room pose must be fully intact
-      expect(state.savedRoomPose.yaw).toBeCloseTo(0.42, 4);
-      expect(state.savedRoomPose.pitch).toBeCloseTo(0.75, 4);
-      expect(state.savedRoomPose.distance).toBeCloseTo(3.4, 4);
+      expect(state.savedRoomPose.yaw).toBeCloseTo(0.30, 4);
+      expect(state.savedRoomPose.pitch).toBeCloseTo(0.22, 4);
+      expect(state.savedRoomPose.distance).toBeCloseTo(3.6, 4);
 
       // Loupe must be resting in room view
       expect(state.loupe.isActive).toBe(false);
@@ -156,7 +156,9 @@ describe("M2 Integration — Camera Bounds, State Transitions & Pose Restoration
       state = viewerReducer(state, { type: "RETURN_TO_ROOM" });
       state = viewerReducer(state, { type: "SET_TRANSITIONING", isTransitioning: false });
       expect(state.roomMode).toBe("room");
-      expect(state.savedRoomPose.yaw).toBeCloseTo(0.42, 4);
+      expect(state.savedRoomPose.yaw).toBeCloseTo(0.30, 4);
+      expect(state.savedRoomPose.pitch).toBeCloseTo(0.22, 4);
+      expect(state.savedRoomPose.distance).toBeCloseTo(3.6, 4);
     });
   });
 });

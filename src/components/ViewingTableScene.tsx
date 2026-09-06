@@ -64,6 +64,9 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
 
   return (
     <>
+      {/* Darkroom Atmosphere Scene Background */}
+      <color attach="background" args={["#13151b"]} />
+
       {/* Dynamic Camera Rig with Orbit and Smooth Transitions */}
       <CameraRig
         roomMode={state.roomMode}

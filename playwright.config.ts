@@ -17,6 +17,7 @@ export default defineConfig({
     launchOptions: {
       args: ["--use-gl=angle", "--enable-webgl", "--ignore-gpu-blocklist"],
     },
+    video: "on",
   },
   webServer: {
     command: "npm run preview",

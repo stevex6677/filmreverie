@@ -14,21 +14,21 @@ export interface CameraBounds {
 }
 
 export const DEFAULT_CAMERA_BOUNDS: CameraBounds = {
-  minYaw: -0.65, // ~ -37 deg
-  maxYaw: 0.65,  // ~ +37 deg
-  minPitch: 0.35, // ~ 20 deg
-  maxPitch: 0.95, // ~ 54 deg
-  minDistance: 2.4,
-  maxDistance: 3.8,
+  minYaw: -0.42,  // ~ -24 deg (restrained room orbit)
+  maxYaw: 0.42,   // ~ +24 deg
+  minPitch: 0.06, // ~ 3.5 deg (comfortably above workbench/floor)
+  maxPitch: 0.34, // ~ 19.5 deg (restrained elevation)
+  minDistance: 3.2,
+  maxDistance: 4.2,
 };
 
 export const DEFAULT_ROOM_POSE: RoomCameraPose = {
-  yaw: 0.0,
-  pitch: 0.55,
-  distance: 3.1,
+  yaw: 0.20,     // ~11.5 deg gentle 3/4 architectural perspective
+  pitch: 0.16,   // ~9.2 deg eye-level elevation
+  distance: 3.75, // genuine room overview showing table, bench, legs, floor, and safelight
 };
 
-export const INSPECT_CAMERA_POSITION: [number, number, number] = [0, 0, 2.8];
+export const INSPECT_CAMERA_POSITION: [number, number, number] = [0, 0, 3.2];
 export const INSPECT_CAMERA_TARGET: [number, number, number] = [0, 0, 0];
 
 export function clamp(val: number, min: number, max: number): number {

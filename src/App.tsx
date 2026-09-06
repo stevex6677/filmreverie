@@ -52,21 +52,20 @@ export function App() {
         return;
       }
 
-      if (e.key === "m" || e.key === "M") {
-        dispatch({ type: "TOGGLE_FILM_MODE" });
-      } else if (e.key === "l" || e.key === "L") {
-        if (state.roomMode === "room") {
+      if (state.roomMode === "room") {
+        if ((e.key === "Enter" || e.key === " ") && !state.isTransitioning) {
           dispatch({ type: "APPROACH_TABLE" });
         }
-        dispatch({ type: "TOGGLE_LOUPE" });
-      } else if (e.key >= "1" && e.key <= "5") {
-        const frameIdx = parseInt(e.key, 10) - 1;
-        if (state.roomMode === "room") {
-          dispatch({ type: "APPROACH_TABLE" });
-        }
-        dispatch({ type: "SELECT_FRAME", frameIndex: frameIdx });
-      } else if (e.key === "Escape") {
-        if (state.roomMode === "inspect") {
+      } else {
+        // Inspect mode shortcuts
+        if (e.key === "m" || e.key === "M") {
+          dispatch({ type: "TOGGLE_FILM_MODE" });
+        } else if (e.key === "l" || e.key === "L") {
+          dispatch({ type: "TOGGLE_LOUPE" });
+        } else if (e.key >= "1" && e.key <= "5") {
+          const frameIdx = parseInt(e.key, 10) - 1;
+          dispatch({ type: "SELECT_FRAME", frameIndex: frameIdx });
+        } else if (e.key === "Escape") {
           dispatch({ type: "RETURN_TO_ROOM" });
         }
       }
@@ -88,7 +87,7 @@ export function App() {
       <Suspense fallback={<LoadingFallback />}>
         <div className="canvas-wrapper">
           <Canvas
-            camera={{ position: [0, 0, 2.8], fov: 45 }}
+            camera={{ position: [0, 0, 3.2], fov: 45 }}
             gl={{
               preserveDrawingBuffer: true,
               antialias: true,
