@@ -56,10 +56,10 @@ Vitest is used for integration tests. Playwright is used for E2E tests in real d
 
 ### Progress protocol
 
-The current active milestone is **M1**. The agent may complete any coherent subset of its work, but must update this plan before stopping. Leave a milestone unchecked until both its automated gate and human review pass. Record partial progress or blockers under its Evidence line. Once accepted, preserve its tests as cumulative regressions. If implementation changes the plan, record the reason without erasing completed history. Multiple coherent commits are allowed.
+The current active milestone is **M2**. The agent may complete any coherent subset of its work, but must update this plan before stopping. Leave a milestone unchecked until both its automated gate and human review pass. Record partial progress or blockers under its Evidence line. Once accepted, preserve its tests as cumulative regressions. If implementation changes the plan, record the reason without erasing completed history. Multiple coherent commits are allowed.
 
-- [ ] **M1 — Working five-photo film viewer**
-  - **Status:** Awaiting human review.
+- [x] **M1 — Working five-photo film viewer**
+  - **Status:** Accepted.
   - **Outcome:** A user can open a minimal desktop 3D viewing-table scene, clearly see all five photos in order, switch between negative and positive, and move a loupe across the strip to enlarge the correct image detail. No room decoration is required yet.
   - **Paths/components:** application scaffold if absent; `src/data/`, viewer state, light table, simple film strip/frames, mode control, loupe; source `photos/roll-01/`; derived local assets under `public/assets/photos/`; `tests/integration/m1-*`; `tests/e2e/m1-*`.
   - **Implementation requirements:**
@@ -81,10 +81,10 @@ The current active milestone is **M1**. The agent may complete any coherent subs
   - **Human review:** Confirm photo readability/order, credible negative-to-positive reveal, and genuine magnification. Reject blank, clipped, washed-out, tiny, or incorrectly sampled photos even if tests pass.
   - **Completion criteria:** Gate passes, evidence is delivered, and the user explicitly accepts M1.
   - **Evidence:** Automated gate `npm run validate:m1` passed against production build in real desktop Chrome/WebGL (commit `9fd9fa7` + plan update). Vitest passed 18/18 tests; Playwright passed 3/3 suites with zero console errors, zero page errors, and zero failed network requests. Candidate screenshots generated in `artifacts/`: `m1-negative-overview.png`, `m1-positive-overview.png`, `m1-loupe-frame1.png`, `m1-loupe-frame3.png`, `m1-loupe-frame5.png`.
-  - **Human approval:** Pending.
+  - **Human approval:** Accepted by user ("continue on m2").
 
 - [ ] **M2 — Room and camera journey**
-  - **Status:** Blocked by M1 acceptance.
+  - **Status:** Awaiting human review.
   - **Outcome:** Add a simple correctly scaled darkroom around the accepted viewer. The user can drag to inspect the room, select the table, transition into inspect mode, and return without breaking M1.
   - **Paths/components:** room shell/table, camera rig, lighting sufficient for navigation, interaction reducer; `tests/integration/m2-*`; `tests/e2e/m2-*`.
   - **Implementation requirements:** Use constrained orbit-style dragging; prevent wall/table clipping and competing transitions; retain the saved room pose. Do not add detailed props or heavy post-processing yet.
@@ -96,8 +96,8 @@ The current active milestone is **M1**. The agent may complete any coherent subs
   - **Gate:** `npm run validate:m2` builds once and runs all M1–M2 integration and E2E suites.
   - **Human review:** Confirm camera comfort, discoverability, composition, transition smoothness, and continued photo readability.
   - **Completion criteria:** Gate passes and the user explicitly accepts M2.
-  - **Evidence:** Pending.
-  - **Human approval:** Pending.
+  - **Evidence:** Automated gate `npm run validate:m2` passed against production build in real desktop Chrome/WebGL (commits `d09cc74` + plan update). Vitest passed 27/27 tests (4 test files: `m1-manifest`, `m1-state`, `m1-loupe`, `m2-camera-journey`); Playwright passed 4/4 suites (3m) with zero console errors, zero page errors, and zero failed network requests. Candidate screenshots generated in `artifacts/`: `m2-room-initial.png`, `m2-room-dragged.png`, `m2-inspect-arrived.png`, `m2-room-restored-1.png`.
+  - **Human approval:** Awaiting human review.
 
 - [ ] **M3 — Realistic viewing table, film, and loupe**
   - **Status:** Blocked by M2 acceptance.
