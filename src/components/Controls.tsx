@@ -23,7 +23,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
         </div>
 
         <div className="action-buttons">
-          {/* In Room Mode: Approach Table button */}
+          {/* In Room Mode: Only Approach Table is visible */}
           {isRoomMode ? (
             <button
               id="approach-btn"
@@ -31,78 +31,75 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
               className="btn btn-approach"
               disabled={state.isTransitioning}
               onClick={() => dispatch({ type: "APPROACH_TABLE" })}
-              title="Approach illuminated light table to inspect film"
+              title="Approach illuminated light table to inspect film (Click table or press Enter)"
             >
               Approach Table
             </button>
           ) : (
-            <button
-              id="return-btn"
-              data-testid="return-room-btn"
-              className="btn btn-back"
-              disabled={state.isTransitioning}
-              onClick={() => dispatch({ type: "RETURN_TO_ROOM" })}
-              title="Step back to darkroom view (Escape)"
-            >
-              ← Return to Room (Esc)
-            </button>
+            <>
+              <button
+                id="return-btn"
+                data-testid="return-room-btn"
+                className="btn btn-back"
+                disabled={state.isTransitioning}
+                onClick={() => dispatch({ type: "RETURN_TO_ROOM" })}
+                title="Step back to darkroom view (Escape)"
+              >
+                ← Return to Room (Esc)
+              </button>
+
+              {/* Film Mode Switch */}
+              <button
+                id="mode-toggle"
+                data-testid="mode-toggle"
+                className={`btn btn-mode ${isPositive ? "btn-mode-positive" : "btn-mode-negative"}`}
+                onClick={() => dispatch({ type: "TOGGLE_FILM_MODE" })}
+                title="Toggle between color negative and positive preview (M)"
+              >
+                {isPositive ? "Switch to Negative" : "Switch to Positive"}
+              </button>
+
+              {/* Loupe Toggle */}
+              <button
+                id="loupe-toggle"
+                data-testid="loupe-toggle"
+                className={`btn btn-loupe ${state.loupe.isActive ? "active" : ""}`}
+                onClick={() => dispatch({ type: "TOGGLE_LOUPE" })}
+                title="Toggle 2.5x optical inspection loupe (L)"
+              >
+                {state.loupe.isActive ? "Rest Loupe" : "Activate Loupe (2.5×)"}
+              </button>
+            </>
           )}
-
-          {/* Film Mode Switch */}
-          <button
-            id="mode-toggle"
-            data-testid="mode-toggle"
-            className={`btn btn-mode ${isPositive ? "btn-mode-positive" : "btn-mode-negative"}`}
-            onClick={() => dispatch({ type: "TOGGLE_FILM_MODE" })}
-            title="Toggle between color negative and positive preview"
-          >
-            {isPositive ? "Switch to Negative" : "Switch to Positive"}
-          </button>
-
-          {/* Loupe Toggle */}
-          <button
-            id="loupe-toggle"
-            data-testid="loupe-toggle"
-            className={`btn btn-loupe ${state.loupe.isActive ? "active" : ""}`}
-            onClick={() => {
-              if (isRoomMode) {
-                dispatch({ type: "APPROACH_TABLE" });
-              }
-              dispatch({ type: "TOGGLE_LOUPE" });
-            }}
-            title="Toggle 2.5x optical inspection loupe"
-          >
-            {state.loupe.isActive ? "Rest Loupe" : "Activate Loupe (2.5×)"}
-          </button>
         </div>
       </header>
 
       {/* Bottom Frame Strip Navigator Bar */}
       <footer className="controls-footer">
-        <div className="frames-nav" role="toolbar" aria-label="Photo Frames">
-          {ROLL_FRAMES.map((frame, index) => {
-            const isSelected = state.loupe.frameIndex === index;
-            return (
-              <button
-                key={frame.id}
-                data-testid={`frame-btn-${frame.order}`}
-                className={`frame-tab ${isSelected ? "selected" : ""}`}
-                onClick={() => {
-                  if (isRoomMode) {
-                    dispatch({ type: "APPROACH_TABLE" });
-                  }
-                  dispatch({ type: "SELECT_FRAME", frameIndex: index });
-                  if (!state.loupe.isActive) {
-                    dispatch({ type: "SET_LOUPE_ACTIVE", active: true });
-                  }
-                }}
-              >
-                <span className="frame-num">{String(frame.order).padStart(2, "0")}</span>
-                <span className="frame-title">{frame.title}</span>
-              </button>
-            );
-          })}
-        </div>
+        {/* Only show frame strip navigator in inspect mode */}
+        {!isRoomMode && (
+          <div className="frames-nav" role="toolbar" aria-label="Photo Frames">
+            {ROLL_FRAMES.map((frame, index) => {
+              const isSelected = state.loupe.frameIndex === index;
+              return (
+                <button
+                  key={frame.id}
+                  data-testid={`frame-btn-${frame.order}`}
+                  className={`frame-tab ${isSelected ? "selected" : ""}`}
+                  onClick={() => {
+                    dispatch({ type: "SELECT_FRAME", frameIndex: index });
+                    if (!state.loupe.isActive) {
+                      dispatch({ type: "SET_LOUPE_ACTIVE", active: true });
+                    }
+                  }}
+                >
+                  <span className="frame-num">{String(frame.order).padStart(2, "0")}</span>
+                  <span className="frame-title">{frame.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="status-indicators">
           <div className="status-item">
@@ -112,29 +109,39 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
             </span>
           </div>
 
-          <div className="status-item">
-            <span className="label">MODE:</span>
-            <span className={`badge mode-badge ${state.filmMode}`} data-testid="mode-badge">
-              {state.filmMode.toUpperCase()}
-            </span>
-          </div>
+          {isRoomMode ? (
+            <div className="status-item room-hint-wrapper">
+              <span className="room-nav-hint">
+                Drag to orbit room • Click light table or "Approach Table" to inspect
+              </span>
+            </div>
+          ) : (
+            <>
+              <div className="status-item">
+                <span className="label">MODE:</span>
+                <span className={`badge mode-badge ${state.filmMode}`} data-testid="mode-badge">
+                  {state.filmMode.toUpperCase()}
+                </span>
+              </div>
 
-          <div className="status-item">
-            <span className="label">LOUPE:</span>
-            <span
-              className={`badge loupe-badge ${state.loupe.isActive ? "active" : "resting"}`}
-              data-testid="loupe-badge"
-            >
-              {state.loupe.isActive ? "ACTIVE (2.5×)" : "RESTING"}
-            </span>
-          </div>
+              <div className="status-item">
+                <span className="label">LOUPE:</span>
+                <span
+                  className={`badge loupe-badge ${state.loupe.isActive ? "active" : "resting"}`}
+                  data-testid="loupe-badge"
+                >
+                  {state.loupe.isActive ? "ACTIVE (2.5×)" : "RESTING"}
+                </span>
+              </div>
 
-          <div className="status-item">
-            <span className="label">FRAME:</span>
-            <span className="badge frame-badge" data-testid="frame-badge">
-              #{currentFrame.order} — {currentFrame.title}
-            </span>
-          </div>
+              <div className="status-item">
+                <span className="label">FRAME:</span>
+                <span className="badge frame-badge" data-testid="frame-badge">
+                  #{currentFrame.order} — {currentFrame.title}
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </footer>
     </div>

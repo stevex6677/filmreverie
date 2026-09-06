@@ -19,14 +19,20 @@ export const LightTable: React.FC<LightTableProps> = ({
 
   return (
     <group position={[0, 0, 0]}>
-      {/* Outer dark bezel/housing */}
-      <mesh position={[0, 0, -0.05]}>
-        <boxGeometry args={[width, height, 0.1]} />
+      {/* Outer physical chassis/casing with tangible thickness (0.18m deep) */}
+      <mesh position={[0, 0, -0.09]}>
+        <boxGeometry args={[width, height, 0.18]} />
         <meshStandardMaterial
-          color="#121316"
-          roughness={0.8}
-          metalness={0.2}
+          color="#1b1d22"
+          roughness={0.4}
+          metalness={0.65}
         />
+      </mesh>
+
+      {/* Side power rocker switch / dial accent */}
+      <mesh position={[width / 2 + 0.015, -height / 4, -0.09]}>
+        <boxGeometry args={[0.03, 0.12, 0.06]} />
+        <meshStandardMaterial color="#ea580c" roughness={0.3} metalness={0.2} />
       </mesh>
 
       {/* Illuminated frosted acrylic / diffuser panel */}
@@ -41,11 +47,11 @@ export const LightTable: React.FC<LightTableProps> = ({
       >
         <planeGeometry args={[panelWidth, panelHeight]} />
         <meshStandardMaterial
-          color="#dde5ed"
-          emissive="#eff3f7"
-          emissiveIntensity={0.65}
-          roughness={0.4}
-          metalness={0.05}
+          color="#ffffff"
+          emissive="#ffffff"
+          emissiveIntensity={1.20}
+          roughness={0.3}
+          metalness={0.02}
         />
       </mesh>
 

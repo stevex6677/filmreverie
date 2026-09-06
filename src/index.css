@@ -276,6 +276,17 @@ html, body, #root {
   color: #d1d5db;
 }
 
+.room-hint-wrapper {
+  margin-left: 8px;
+}
+
+.room-nav-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  letter-spacing: 0.02em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 .btn-approach {
   background: #ea580c;
   color: #ffffff;

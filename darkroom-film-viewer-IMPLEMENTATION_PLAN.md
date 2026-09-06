@@ -96,7 +96,7 @@ The current active milestone is **M2**. The agent may complete any coherent subs
   - **Gate:** `npm run validate:m2` builds once and runs all M1–M2 integration and E2E suites.
   - **Human review:** Confirm camera comfort, discoverability, composition, transition smoothness, and continued photo readability.
   - **Completion criteria:** Gate passes and the user explicitly accepts M2.
-  - **Evidence:** Automated gate `npm run validate:m2` passed against production build in real desktop Chrome/WebGL (commits `d09cc74` + plan update). Vitest passed 27/27 tests (4 test files: `m1-manifest`, `m1-state`, `m1-loupe`, `m2-camera-journey`); Playwright passed 4/4 suites (3m) with zero console errors, zero page errors, and zero failed network requests. Candidate screenshots generated in `artifacts/`: `m2-room-initial.png`, `m2-room-dragged.png`, `m2-inspect-arrived.png`, `m2-room-restored-1.png`.
+  - **Evidence:** Automated gate `npm run validate:m2` passed cleanly against production build in real desktop Chrome/WebGL (all 8 review fixes implemented). Vitest passed 27/27 tests; Playwright passed 4/4 suites (3.1m) with zero console errors, zero page errors, and zero failed network requests. Exact pose restoration verified (restored vs. dragged difference < 1.5). Full interaction recording generated in `artifacts/m2-interaction-recording.mp4` and `artifacts/m2-interaction-recording.webm`. Candidate screenshots updated in `artifacts/`: `m2-room-initial.png`, `m2-room-dragged.png`, `m2-inspect-arrived.png`, `m2-room-restored-1.png`.
   - **Human approval:** Awaiting human review.
 
 - [ ] **M3 — Realistic viewing table, film, and loupe**
