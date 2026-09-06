@@ -10,7 +10,7 @@ interface FilmFrameProps {
   isPositive: boolean;
   layout: FilmStripLayout;
   onSelect?: (index: number) => void;
-  onPointerMove?: (x: number, y: number, index: number) => void;
+  onPointerMove?: (point: THREE.Vector3, index: number) => void;
 }
 
 export const FilmFrame: React.FC<FilmFrameProps> = ({
@@ -58,7 +58,7 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
         }}
         onPointerMove={(e) => {
           e.stopPropagation();
-          onPointerMove?.(e.point.x, e.point.y, index);
+          onPointerMove?.(e.point, index);
         }}
       >
         <planeGeometry args={[layout.frameWidth, layout.frameHeight]} />

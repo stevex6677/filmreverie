@@ -13,22 +13,35 @@ export interface CameraBounds {
   maxDistance: number;
 }
 
+export const TABLE_TILT_ANGLE = (25 * Math.PI) / 180; // ~0.4363 rad (25 deg ergonomic drafting light console tilt)
+
 export const DEFAULT_CAMERA_BOUNDS: CameraBounds = {
   minYaw: -0.42,  // ~ -24 deg (restrained room orbit)
   maxYaw: 0.42,   // ~ +24 deg
-  minPitch: 0.06, // ~ 3.5 deg (comfortably above workbench/floor)
-  maxPitch: 0.34, // ~ 19.5 deg (restrained elevation)
+  minPitch: 0.08, // ~ 4.5 deg (comfortably above workbench/floor)
+  maxPitch: 0.36, // ~ 20.6 deg (restrained elevation)
   minDistance: 3.2,
-  maxDistance: 4.2,
+  maxDistance: 4.5,
 };
 
 export const DEFAULT_ROOM_POSE: RoomCameraPose = {
-  yaw: 0.20,     // ~11.5 deg gentle 3/4 architectural perspective
-  pitch: 0.16,   // ~9.2 deg eye-level elevation
-  distance: 3.75, // genuine room overview showing table, bench, legs, floor, and safelight
+  yaw: 0.22,     // ~12.6 deg gentle 3/4 architectural perspective
+  pitch: 0.22,   // ~12.6 deg eye-level elevation looking at tilted table
+  distance: 4.35, // genuine room overview showing table, bench, legs, floor, and safelight
 };
 
-export const INSPECT_CAMERA_POSITION: [number, number, number] = [0, 0, 3.2];
+export const INSPECT_CAMERA_DISTANCE = 3.2;
+export const INSPECT_CAMERA_POSITION: [number, number, number] = [
+  0,
+  INSPECT_CAMERA_DISTANCE * Math.sin(TABLE_TILT_ANGLE),
+  INSPECT_CAMERA_DISTANCE * Math.cos(TABLE_TILT_ANGLE),
+];
+export const INSPECT_CAMERA_UP: [number, number, number] = [
+  0,
+  Math.cos(TABLE_TILT_ANGLE),
+  -Math.sin(TABLE_TILT_ANGLE),
+];
+export const ROOM_CAMERA_UP: [number, number, number] = [0, 1, 0];
 export const INSPECT_CAMERA_TARGET: [number, number, number] = [0, 0, 0];
 
 export function clamp(val: number, min: number, max: number): number {

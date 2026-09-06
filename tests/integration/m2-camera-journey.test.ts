@@ -2,6 +2,12 @@ import { describe, it, expect } from "vitest";
 import {
   DEFAULT_CAMERA_BOUNDS,
   DEFAULT_ROOM_POSE,
+  INSPECT_CAMERA_DISTANCE,
+  INSPECT_CAMERA_POSITION,
+  INSPECT_CAMERA_TARGET,
+  INSPECT_CAMERA_UP,
+  ROOM_CAMERA_UP,
+  TABLE_TILT_ANGLE,
   clampRoomPose,
   sphericalToCartesian,
 } from "../../src/utils/cameraBounds";
@@ -49,6 +55,45 @@ describe("M2 Integration — Camera Bounds, State Transitions & Pose Restoration
       expect(x).toBeGreaterThan(0.4); // gentle 3/4 architectural perspective
       expect(y).toBeGreaterThan(0.4); // eye-level viewing elevation
       expect(z).toBeGreaterThan(3.0); // comfortable distance from table
+    });
+
+    it("defines 25 deg console tilt with mathematically perpendicular inspect camera pose", () => {
+      expect(TABLE_TILT_ANGLE).toBeCloseTo((25 * Math.PI) / 180, 5);
+
+      // Inspect camera distance equals 3.2
+      const inspectDist = Math.hypot(
+        INSPECT_CAMERA_POSITION[0] - INSPECT_CAMERA_TARGET[0],
+        INSPECT_CAMERA_POSITION[1] - INSPECT_CAMERA_TARGET[1],
+        INSPECT_CAMERA_POSITION[2] - INSPECT_CAMERA_TARGET[2]
+      );
+      expect(inspectDist).toBeCloseTo(INSPECT_CAMERA_DISTANCE, 5);
+
+      // Inspect camera is angled along table normal (y > 0, z > 0)
+      expect(INSPECT_CAMERA_POSITION[0]).toBe(0);
+      expect(INSPECT_CAMERA_POSITION[1]).toBeGreaterThan(1.3);
+      expect(INSPECT_CAMERA_POSITION[2]).toBeGreaterThan(2.8);
+
+      // Camera Up vector is a normalized unit vector tilted to align with table plane local Y
+      const upLen = Math.hypot(...INSPECT_CAMERA_UP);
+      expect(upLen).toBeCloseTo(1.0, 5);
+      expect(INSPECT_CAMERA_UP[0]).toBe(0);
+      expect(INSPECT_CAMERA_UP[1]).toBeGreaterThan(0.9);
+      expect(INSPECT_CAMERA_UP[2]).toBeLessThan(-0.4);
+
+      // View direction vector (from camera to target) is perpendicular to Up vector
+      const viewDir = [
+        INSPECT_CAMERA_TARGET[0] - INSPECT_CAMERA_POSITION[0],
+        INSPECT_CAMERA_TARGET[1] - INSPECT_CAMERA_POSITION[1],
+        INSPECT_CAMERA_TARGET[2] - INSPECT_CAMERA_POSITION[2],
+      ];
+      const dot =
+        viewDir[0] * INSPECT_CAMERA_UP[0] +
+        viewDir[1] * INSPECT_CAMERA_UP[1] +
+        viewDir[2] * INSPECT_CAMERA_UP[2];
+      expect(Math.abs(dot)).toBeLessThan(1e-10);
+
+      // Room mode camera up is world standard +Y
+      expect(ROOM_CAMERA_UP).toEqual([0, 1, 0]);
     });
   });
 

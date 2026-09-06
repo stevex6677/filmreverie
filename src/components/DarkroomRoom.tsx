@@ -200,14 +200,75 @@ export const DarkroomRoom: React.FC = () => {
           <meshStandardMaterial color="#21242c" roughness={0.7} metalness={0.2} />
         </mesh>
 
-        {/* Table Support Chassis Brackets resting table on bench */}
-        <mesh position={[-1.7, -0.81, -0.05]}>
-          <boxGeometry args={[0.12, 0.04, 0.22]} />
-          <meshStandardMaterial color="#15171d" roughness={0.4} metalness={0.8} />
+        {/* --- DRAFTING CONSOLE STAND & RISER ARCHITECTURE --- */}
+        {/* Left Console Base Rail on Workbench */}
+        <mesh position={[-1.82, -0.78, 0]}>
+          <boxGeometry args={[0.06, 0.04, 0.76]} />
+          <meshStandardMaterial color="#1a1c23" roughness={0.4} metalness={0.7} />
         </mesh>
-        <mesh position={[1.7, -0.81, -0.05]}>
-          <boxGeometry args={[0.12, 0.04, 0.22]} />
-          <meshStandardMaterial color="#15171d" roughness={0.4} metalness={0.8} />
+        {/* Right Console Base Rail on Workbench */}
+        <mesh position={[1.82, -0.78, 0]}>
+          <boxGeometry args={[0.06, 0.04, 0.76]} />
+          <meshStandardMaterial color="#1a1c23" roughness={0.4} metalness={0.7} />
+        </mesh>
+
+        {/* Front Neoprene Cushion Feet */}
+        <mesh position={[-1.75, -0.78, 0.34]}>
+          <boxGeometry args={[0.10, 0.04, 0.08]} />
+          <meshStandardMaterial color="#111215" roughness={0.9} />
+        </mesh>
+        <mesh position={[1.75, -0.78, 0.34]}>
+          <boxGeometry args={[0.10, 0.04, 0.08]} />
+          <meshStandardMaterial color="#111215" roughness={0.9} />
+        </mesh>
+
+        {/* Left Heavy Angled Support Cheek */}
+        <mesh position={[-1.82, -0.15, -0.12]} rotation={[-0.436, 0, 0]}>
+          <boxGeometry args={[0.05, 1.25, 0.14]} />
+          <meshStandardMaterial color="#22252e" roughness={0.45} metalness={0.6} />
+        </mesh>
+        {/* Right Heavy Angled Support Cheek */}
+        <mesh position={[1.82, -0.15, -0.12]} rotation={[-0.436, 0, 0]}>
+          <boxGeometry args={[0.05, 1.25, 0.14]} />
+          <meshStandardMaterial color="#22252e" roughness={0.45} metalness={0.6} />
+        </mesh>
+
+        {/* Left Heavy Rear Riser Strut (Connecting Workbench to Back of Console) */}
+        <mesh position={[-1.25, -0.225, -0.515]} rotation={[0.23, 0, 0]}>
+          <cylinderGeometry args={[0.032, 0.035, 1.18, 16]} />
+          <meshStandardMaterial color="#1b1e25" roughness={0.35} metalness={0.8} />
+        </mesh>
+        {/* Left Strut Bench Mount Collar */}
+        <mesh position={[-1.25, -0.78, -0.65]}>
+          <cylinderGeometry args={[0.055, 0.055, 0.04, 16]} />
+          <meshStandardMaterial color="#14161b" roughness={0.6} metalness={0.7} />
+        </mesh>
+
+        {/* Right Heavy Rear Riser Strut (Connecting Workbench to Back of Console) */}
+        <mesh position={[1.25, -0.225, -0.515]} rotation={[0.23, 0, 0]}>
+          <cylinderGeometry args={[0.032, 0.035, 1.18, 16]} />
+          <meshStandardMaterial color="#1b1e25" roughness={0.35} metalness={0.8} />
+        </mesh>
+        {/* Right Strut Bench Mount Collar */}
+        <mesh position={[1.25, -0.78, -0.65]}>
+          <cylinderGeometry args={[0.055, 0.055, 0.04, 16]} />
+          <meshStandardMaterial color="#14161b" roughness={0.6} metalness={0.7} />
+        </mesh>
+
+        {/* Console Transverse Cross-Brace Bar */}
+        <mesh position={[0, -0.225, -0.515]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.022, 0.022, 2.52, 16]} />
+          <meshStandardMaterial color="#191b22" roughness={0.4} metalness={0.75} />
+        </mesh>
+
+        {/* Workbench Power Cable Grommet & Cable Drop */}
+        <mesh position={[1.65, -0.795, -0.55]}>
+          <cylinderGeometry args={[0.04, 0.04, 0.015, 16]} />
+          <meshStandardMaterial color="#111215" roughness={0.8} />
+        </mesh>
+        <mesh position={[1.65, -0.50, -0.45]} rotation={[0.3, 0, 0.15]}>
+          <cylinderGeometry args={[0.012, 0.012, 0.65, 12]} />
+          <meshStandardMaterial color="#18191c" roughness={0.7} />
         </mesh>
       </group>
     </group>
