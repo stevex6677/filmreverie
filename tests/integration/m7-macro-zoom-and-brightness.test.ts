@@ -69,26 +69,26 @@ describe("M7 Integration — Deep Macro Zoom (1000%) & Light Table Dimmer Calibr
       expect(roomState.tableBrightness).toBe(1.0);
     });
 
-    it("clamps brightness values strictly between MIN (0.2) and MAX (2.0)", () => {
+    it("clamps brightness values strictly between MIN (0.3) and MAX (1.0)", () => {
       expect(clampTableBrightness(0.0)).toBe(MIN_TABLE_BRIGHTNESS);
-      expect(clampTableBrightness(0.15)).toBe(0.2);
+      expect(clampTableBrightness(0.15)).toBe(0.3);
       expect(clampTableBrightness(0.5)).toBe(0.5);
+      expect(clampTableBrightness(0.75)).toBe(0.75);
       expect(clampTableBrightness(1.0)).toBe(1.0);
-      expect(clampTableBrightness(1.5)).toBe(1.5);
-      expect(clampTableBrightness(2.0)).toBe(2.0);
+      expect(clampTableBrightness(1.5)).toBe(MAX_TABLE_BRIGHTNESS);
       expect(clampTableBrightness(3.5)).toBe(MAX_TABLE_BRIGHTNESS);
     });
 
-    it("supports SET_TABLE_BRIGHTNESS for preset dimmer steps (50%, 100%, 150%)", () => {
+    it("supports SET_TABLE_BRIGHTNESS within calibrated bounds (30% to 100%)", () => {
       let state = INITIAL_VIEWER_STATE;
 
       // Dim to 50%
       state = viewerReducer(state, { type: "SET_TABLE_BRIGHTNESS", brightness: 0.5 });
       expect(state.tableBrightness).toBe(0.5);
 
-      // Boost to 150%
-      state = viewerReducer(state, { type: "SET_TABLE_BRIGHTNESS", brightness: 1.5 });
-      expect(state.tableBrightness).toBe(1.5);
+      // Adjust to 75%
+      state = viewerReducer(state, { type: "SET_TABLE_BRIGHTNESS", brightness: 0.75 });
+      expect(state.tableBrightness).toBe(0.75);
 
       // Reset to 100%
       state = viewerReducer(state, { type: "SET_TABLE_BRIGHTNESS", brightness: 1.0 });
@@ -101,8 +101,8 @@ describe("M7 Integration — Deep Macro Zoom (1000%) & Light Table Dimmer Calibr
       state = viewerReducer(state, { type: "ADJUST_TABLE_BRIGHTNESS", delta: -0.2 });
       expect(state.tableBrightness).toBeCloseTo(0.8, 4);
 
-      state = viewerReducer(state, { type: "ADJUST_TABLE_BRIGHTNESS", delta: 0.4 });
-      expect(state.tableBrightness).toBeCloseTo(1.2, 4);
+      state = viewerReducer(state, { type: "ADJUST_TABLE_BRIGHTNESS", delta: -0.1 });
+      expect(state.tableBrightness).toBeCloseTo(0.7, 4);
 
       // Extreme adjustments clamp properly
       state = viewerReducer(state, { type: "ADJUST_TABLE_BRIGHTNESS", delta: -10.0 });
@@ -118,16 +118,16 @@ describe("M7 Integration — Deep Macro Zoom (1000%) & Light Table Dimmer Calibr
       let state = INITIAL_VIEWER_STATE;
       state = viewerReducer(state, { type: "SET_TABLE_ZOOM", zoom: 0.32 }); // 1000%
       state = viewerReducer(state, { type: "SET_TABLE_PAN", x: 0.8, z: TABLE_CENTER_Z - 0.1 });
-      state = viewerReducer(state, { type: "SET_TABLE_BRIGHTNESS", brightness: 1.5 }); // 150%
+      state = viewerReducer(state, { type: "SET_TABLE_BRIGHTNESS", brightness: 0.75 }); // 75%
 
       expect(state.inspectZoom).toBe(0.32);
-      expect(state.tableBrightness).toBe(1.5);
+      expect(state.tableBrightness).toBe(0.75);
 
       state = viewerReducer(state, { type: "RESET_TABLE_VIEW" });
       expect(state.inspectZoom).toBe(DEFAULT_INSPECT_DISTANCE);
       expect(state.inspectPan).toEqual({ x: 0, z: TABLE_CENTER_Z });
-      // User's preferred dimmer brightness remains calibrated at 150%
-      expect(state.tableBrightness).toBe(1.5);
+      // User's preferred dimmer brightness remains calibrated at 75%
+      expect(state.tableBrightness).toBe(0.75);
     });
 
     it("preserves zoom, pan, and dimmer settings across mode transitions", () => {

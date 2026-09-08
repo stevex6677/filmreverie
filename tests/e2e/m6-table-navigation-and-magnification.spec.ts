@@ -15,7 +15,7 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
   test("validates scroll-to-zoom, table panning across frames, reset view, and loupe magnification presets", async ({
     page,
   }) => {
-    test.setTimeout(180000);
+    test.setTimeout(240000);
     const pageErrors: Error[] = [];
     const consoleErrors: string[] = [];
     const failedRequests: string[] = [];

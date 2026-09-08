@@ -17,6 +17,7 @@ export const LoupeFragmentShader = `
   uniform float uActive;
   uniform vec3 uOrangeMask;
   uniform float uExposure;
+  uniform float uUseSceneCapture;
   varying vec2 vUv;
 
   void main() {
@@ -37,11 +38,27 @@ export const LoupeFragmentShader = `
     vec2 refLight = normalize(vec2(-0.7, 0.7));
     float highlight = pow(max(0.0, dot(p, refLight)), 6.0) * 0.10 * smoothstep(0.4, 0.9, r);
 
-    // 1. Resting View: Clean illuminated light table surface transmitted through optical glass (no image)
+    // Branch 1: Real-time physical scene capture (magnifies whatever is underneath in 3D)
+    if (uUseSceneCapture > 0.5) {
+      vec2 lensUv = distP * 0.5 + 0.5;
+      vec2 chromOffset = distP * 0.0025 * r * r;
+
+      float rCh = texture2D(uTexture, clamp(lensUv + chromOffset, vec2(0.001), vec2(0.999))).r;
+      float gCh = texture2D(uTexture, clamp(lensUv, vec2(0.001), vec2(0.999))).g;
+      float bCh = texture2D(uTexture, clamp(lensUv - chromOffset, vec2(0.001), vec2(0.999))).b;
+      vec3 sceneColor = vec3(rCh, gCh, bCh);
+
+      vec3 finalColor = sceneColor * vignette + vec3(0.025) * (1.0 - vignette) + vec3(highlight);
+      gl_FragColor = vec4(finalColor, 1.0);
+      return;
+    }
+
+    // Branch 2: Synthetic fallback mode for isolated unit testing
+    // Resting View: Clean illuminated light table surface transmitted through optical glass
     vec3 tableSurface = vec3(0.96, 0.97, 0.98);
     vec3 restingRgb = tableSurface * vignette + vec3(0.04) * (1.0 - vignette) + vec3(highlight * 1.5);
 
-    // 2. Active View: Magnified photographic frame with authentic negative/positive response
+    // Active View: Magnified photographic frame with authentic negative/positive response
     vec2 baseUv = uCenterUv + (distP * 0.5) / uMagnification;
     vec2 chromOffset = (distP * 0.0025 * r * r);
     float rChannel = texture2D(uTexture, clamp(baseUv + chromOffset, vec2(0.001), vec2(0.999))).r;
@@ -88,6 +105,7 @@ export function createLoupeShaderMaterial(
       uActive: { value: isActive ? 1.0 : 0.0 },
       uOrangeMask: { value: FILM_ORANGE_MASK },
       uExposure: { value: FILM_EXPOSURE },
+      uUseSceneCapture: { value: 0.0 },
     },
   });
 }

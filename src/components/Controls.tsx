@@ -105,20 +105,36 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
                   ))}
                 </div>
               )}
-              {/* Light Table Brightness Dimmer */}
+              {/* Light Table Brightness Dimmer (Smooth continuous slider 30%–100%) */}
               <div className="dimmer-controls" data-testid="dimmer-controls">
-                <span className="dimmer-label">LIGHT:</span>
-                {[0.5, 1.0, 1.5].map((val) => (
-                  <button
-                    key={val}
-                    data-testid={`brightness-btn-${Math.round(val * 100)}`}
-                    className={`btn btn-dimmer ${Math.abs(state.tableBrightness - val) < 0.05 ? "active" : ""}`}
-                    onClick={() => dispatch({ type: "SET_TABLE_BRIGHTNESS", brightness: val })}
-                    title={`Set light table brightness to ${Math.round(val * 100)}% (B)`}
-                  >
-                    {Math.round(val * 100)}%
-                  </button>
-                ))}
+                <label htmlFor="brightness-slider" className="dimmer-label">LIGHT:</label>
+                <input
+                  id="brightness-slider"
+                  data-testid="brightness-slider"
+                  type="range"
+                  min="0.30"
+                  max="1.00"
+                  step="0.01"
+                  value={state.tableBrightness}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_TABLE_BRIGHTNESS",
+                      brightness: parseFloat(e.target.value),
+                    })
+                  }
+                  onInput={(e) =>
+                    dispatch({
+                      type: "SET_TABLE_BRIGHTNESS",
+                      brightness: parseFloat((e.target as HTMLInputElement).value),
+                    })
+                  }
+                  className="brightness-slider"
+                  aria-label="Light Table Brightness"
+                  title={`Adjust light table brightness: ${Math.round(state.tableBrightness * 100)}% (B)`}
+                />
+                <span className="dimmer-value" data-testid="brightness-value">
+                  {Math.round(state.tableBrightness * 100)}%
+                </span>
               </div>
             </>
           )}

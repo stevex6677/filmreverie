@@ -16,7 +16,8 @@
     "validate:m4": "npm run build && npm run test:integration && npm run test:e2e",
     "validate:m5": "npm run build && npm run test:integration && npm run test:e2e",
     "validate:m6": "npm run build && npm run test:integration && npm run test:e2e",
-    "validate:m7": "npm run build && npm run test:integration && npm run test:e2e"
+    "validate:m7": "npm run build && npm run test:integration && npm run test:e2e",
+    "validate:m8": "npm run build && npm run test:integration && npm run test:e2e"
   },
   "keywords": [],
   "author": "",

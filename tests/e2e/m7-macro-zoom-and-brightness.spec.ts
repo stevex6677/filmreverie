@@ -38,15 +38,8 @@ test.describe("M7 E2E — Deep Macro Zoom (1000%) & Light Table Dimmer Calibrati
     const dimmerControls = page.locator("[data-testid=dimmer-controls]");
     await expect(dimmerControls).toBeVisible();
 
-    const btn50 = page.locator("[data-testid=brightness-btn-50]");
-    const btn100 = page.locator("[data-testid=brightness-btn-100]");
-    const btn150 = page.locator("[data-testid=brightness-btn-150]");
-    await expect(btn50).toBeVisible();
-    await expect(btn100).toBeVisible();
-    await expect(btn150).toBeVisible();
-
-    // Default active button should be 100%
-    await expect(btn100).toHaveClass(/active/);
+    const slider = page.locator("[data-testid=brightness-slider]");
+    await expect(slider).toBeVisible();
 
     const artifactsDir = path.resolve(process.cwd(), "artifacts");
     if (!fs.existsSync(artifactsDir)) {
@@ -62,11 +55,13 @@ test.describe("M7 E2E — Deep Macro Zoom (1000%) & Light Table Dimmer Calibrati
     const stats100 = getRegionStats(bright100Png, 640, 310, 40);
 
     // 3. Test Dimmer: Dim to 50%
-    await btn50.click();
+    await slider.evaluate((el: HTMLInputElement) => {
+      el.value = "0.50";
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    });
     await page.waitForTimeout(400);
     await expect(brightnessBadge).toHaveText("50%");
-    await expect(btn50).toHaveClass(/active/);
-    await expect(btn100).not.toHaveClass(/active/);
 
     const bright50Buffer = await canvas.screenshot();
     fs.writeFileSync(path.join(artifactsDir, "m7-brightness-50.png"), bright50Buffer);
@@ -78,44 +73,32 @@ test.describe("M7 E2E — Deep Macro Zoom (1000%) & Light Table Dimmer Calibrati
     const diff50to100 = getRegionMeanDifference(bright50Png, bright100Png, 640, 310, 40);
     expect(diff50to100).toBeGreaterThan(10);
 
-    // 4. Test Dimmer: Boost to 150%
-    await btn150.click();
+    // 4. Test Dimmer: Adjust to 75%
+    await slider.evaluate((el: HTMLInputElement) => {
+      el.value = "0.75";
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    });
     await page.waitForTimeout(400);
-    await expect(brightnessBadge).toHaveText("150%");
-    await expect(btn150).toHaveClass(/active/);
-    await expect(btn50).not.toHaveClass(/active/);
+    await expect(brightnessBadge).toHaveText("75%");
 
-    const bright150Buffer = await canvas.screenshot();
-    fs.writeFileSync(path.join(artifactsDir, "m7-brightness-150.png"), bright150Buffer);
-    const bright150Png = parsePng(bright150Buffer);
-    const stats150 = getRegionStats(bright150Png, 640, 310, 40);
+    const bright75Buffer = await canvas.screenshot();
+    const bright75Png = parsePng(bright75Buffer);
+    const stats75 = getRegionStats(bright75Png, 640, 310, 40);
 
-    // 150% brightness must have measurably higher luminance than 100% and 50%
-    expect(stats150.meanLum).toBeGreaterThan(stats100.meanLum);
-    expect(stats150.meanLum).toBeGreaterThan(stats50.meanLum);
-    const diff100to150 = getRegionMeanDifference(bright100Png, bright150Png, 640, 310, 40);
-    expect(diff100to150).toBeGreaterThan(4);
-    const diff50to150 = getRegionMeanDifference(bright50Png, bright150Png, 640, 310, 40);
-    expect(diff50to150).toBeGreaterThan(12);
+    expect(stats75.meanLum).toBeGreaterThan(stats50.meanLum);
+    expect(stats75.meanLum).toBeLessThan(stats100.meanLum);
 
-    // 5. Test Hotkey 'B' Cycling: 150% -> 50% -> 100% -> 150%
+    // 5. Test Hotkey 'B' Cycling: from 75% -> 50% -> 30% -> 100%
     await page.keyboard.press("b");
     await page.waitForTimeout(300);
     await expect(brightnessBadge).toHaveText("50%");
-    await expect(btn50).toHaveClass(/active/);
 
     await page.keyboard.press("b");
     await page.waitForTimeout(300);
-    await expect(brightnessBadge).toHaveText("100%");
-    await expect(btn100).toHaveClass(/active/);
+    await expect(brightnessBadge).toHaveText("30%");
 
     await page.keyboard.press("b");
-    await page.waitForTimeout(300);
-    await expect(brightnessBadge).toHaveText("150%");
-    await expect(btn150).toHaveClass(/active/);
-
-    // Return brightness to 100% for zoom tests
-    await btn100.click();
     await page.waitForTimeout(300);
     await expect(brightnessBadge).toHaveText("100%");
 
