@@ -2,7 +2,7 @@ import React, { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { createFilmShaderMaterial } from "../shaders/filmShader";
-import { FilmStripLayout, getFrameCenter } from "../utils/loupeMapping";
+import { FilmStripLayout, getFilmCurlZ, getFrameCenter } from "../utils/loupeMapping";
 
 interface FilmFrameProps {
   index: number;
@@ -28,6 +28,20 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
     return createFilmShaderMaterial(texture, isPositive);
   }, [texture, isPositive]);
 
+  // Curved plane geometry with 16 Y-segments matching the substrate transverse curl
+  const frameGeometry = useMemo(() => {
+    const geo = new THREE.PlaneGeometry(layout.frameWidth, layout.frameHeight, 1, 16);
+    const pos = geo.attributes.position;
+    const stripHeight = layout.frameHeight + 2 * layout.marginY;
+    for (let i = 0; i < pos.count; i++) {
+      const localY = pos.getY(i);
+      pos.setZ(i, getFilmCurlZ(localY, stripHeight));
+    }
+    pos.needsUpdate = true;
+    geo.computeVertexNormals();
+    return geo;
+  }, [layout.frameWidth, layout.frameHeight, layout.marginY]);
+
   // Smoothly transition uniform if needed
   useFrame((_, delta) => {
     if (material.uniforms.uModeTransition) {
@@ -47,10 +61,11 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
   });
 
   return (
-    <group position={[center.x, center.y, 0.005]}>
-      {/* Photo frame mesh */}
+    <group position={[center.x, center.y, 0.002]}>
+      {/* Photo frame mesh with smooth transverse curl */}
       <mesh
         ref={meshRef}
+        geometry={frameGeometry}
         material={material}
         onClick={(e) => {
           e.stopPropagation();
@@ -60,18 +75,7 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
           e.stopPropagation();
           onPointerMove?.(e.point, index);
         }}
-      >
-        <planeGeometry args={[layout.frameWidth, layout.frameHeight]} />
-      </mesh>
-
-      {/* Frame outline border */}
-      <lineSegments position={[0, 0, 0.001]}>
-        <edgesGeometry
-          attach="geometry"
-          args={[new THREE.PlaneGeometry(layout.frameWidth, layout.frameHeight)]}
-        />
-        <lineBasicMaterial attach="material" color="#111115" linewidth={1} />
-      </lineSegments>
+      />
     </group>
   );
 };

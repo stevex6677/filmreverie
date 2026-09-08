@@ -56,7 +56,7 @@ Vitest is used for integration tests. Playwright is used for E2E tests in real d
 
 ### Progress protocol
 
-The current active milestone is **M3**. The agent may complete any coherent subset of its work, but must update this plan before stopping. Leave a milestone unchecked until both its automated gate and human review pass. Record partial progress or blockers under its Evidence line. Once accepted, preserve its tests as cumulative regressions. If implementation changes the plan, record the reason without erasing completed history. Multiple coherent commits are allowed.
+The current active milestone is **M5** (Awaiting human review). The agent may complete any coherent subset of its work, but must update this plan before stopping. Leave a milestone unchecked until both its automated gate and human review pass. Record partial progress or blockers under its Evidence line. Once accepted, preserve its tests as cumulative regressions. If implementation changes the plan, record the reason without erasing completed history. Multiple coherent commits are allowed.
 
 - [x] **M1 — Working five-photo film viewer**
   - **Status:** Accepted.
@@ -134,7 +134,7 @@ The current active milestone is **M3**. The agent may complete any coherent subs
   - **Human approval:** Accepted by user through review policy approval.
 
 - [ ] **M5 — Authentic 35mm film substrate, edge rebate markings, and physical tactility**
-  - **Status:** In progress (awaiting plan approval).
+  - **Status:** Awaiting human review.
   - **Outcome:** Elevate the 35mm film strip from a planar graphic into an authentic, tactile physical photographic object on the light table:
     1. **Translucent Acetate/Polyester Film Base**: Replace opaque black borders and dividers with translucent celluloid/acetate film substrate that transmits the light table glow with authentic daylight color-negative base tone (`#d97724` amber/orange mask in negative mode, smoky dark bronze in positive mode) and subtle density falloff at frame edges.
     2. **Authentic Edge Rebate Markings & DX Encoding**: Procedurally rendered authentic edge print running along both perforation margins:
@@ -142,13 +142,13 @@ The current active milestone is **M3**. The agent may complete any coherent subs
        - Bottom edge: Sequential frame numbering (e.g. `▶ 1`, `1A`, `▶ 2`, `2A`, `▶ 3`, `3A`, `▶ 4`, `4A`, `▶ 5`, `5A`), index dots, and directional film advance arrows.
        - Dynamic mode inversion: Markings appear as unexposed latent text (illuminated base) in negative mode, and developed silver imprint in positive mode.
     3. **Physical Film Curl & Transverse Curvature**:
-       - Natural transverse curl (gentle parabolic arch across the Y axis, lifting the outer perforation edges ~1.5mm off the glass table surface while the central spine stays supported).
+       - Natural transverse curl (gentle parabolic arch across the Y axis, lifting the outer perforation edges ~1.8mm off the glass table surface while the central spine stays supported).
        - Softened, slightly curved cut strip ends at the roll leads.
        - Dynamic contact drop shadow conforming to the arched film curvature onto the frosted acrylic diffuser.
     4. **Emulsion Sheen, Plastic Clear-Coat Gloss & Specular Response**:
        - Dual-sided PBR sheen: high-gloss acetate base side with subtle specular highlights catching room and table lighting, paired with smooth matte emulsion response.
        - Subtle surface micro-sheen without introducing noisy artifacts under 2.5× loupe magnification.
-  - **Paths/components:** `src/components/FilmStrip.tsx`, `src/shaders/filmShader.ts`, `src/shaders/filmRebateTexture.ts`, `src/utils/loupeMapping.ts`, `tests/integration/m5-*`, `tests/e2e/m5-*`.
+  - **Paths/components:** `src/components/FilmStrip.tsx`, `src/components/FilmFrame.tsx`, `src/utils/filmRebateCanvas.ts`, `src/utils/loupeMapping.ts`, `tests/integration/m5-film-rebate-and-curl.test.ts`, `tests/e2e/m5-film-rebate-and-curl.spec.ts`.
   - **Implementation requirements:**
     - Preserve 100% of existing frame coordinates and dimensions (3:2 aspect ratio, 8 perforations/frame, 40 per edge).
     - Ensure vertex displacement for curl remains within tight bounds (< 2.5mm) to prevent clipping through the light table or the loupe acrylic skirt.
@@ -167,8 +167,8 @@ The current active milestone is **M3**. The agent may complete any coherent subs
   - **Gate:** `npm run validate:m5` builds once and runs all M1–M5 integration and E2E suites.
   - **Human review:** Confirm film strip authenticity, rebate clarity, natural curl curvature, substrate translucency, and continued photo readability under loupe.
   - **Completion criteria:** Gate passes and the user explicitly accepts M5.
-  - **Evidence:** Pending.
-  - **Human approval:** Pending.
+  - **Evidence:** Automated gate `npm run validate:m5` passed cleanly against production build in real desktop Chrome/WebGL (7/7 Playwright suites, 57 Vitest integration tests across 7 files, 3.3m total run). Authentic 35mm film substrate and rebate markings implemented via procedural high-resolution canvas texture (`filmRebateCanvas.ts`), replacing solid black borders with translucent celluloid base (`rgba(217, 119, 36, 0.82)` amber/orange mask in negative mode; `rgba(35, 27, 20, 0.85)` smoky bronze in positive mode). Edge rebate imprint includes Kodak 400 and Safety Film stock branding, DX barcode timing indicators, frame numbers (`▶ 1`, `1A` through `▶ 5`, `5A`), index dots, and directional film advance arrows. Sprocket holes feature genuine light transmission with subtle contact shadow. Transverse curl implemented via quadratic parabolic displacement (`FILM_CURL_HEIGHT = 0.0018m` / 1.8mm at outer perforation edges), curved photo frame meshes (16 Y-segments), softened cut strip lead corners (`r = 0.006m`), and dynamic dual-sided contact drop shadows. Loupe clearance verified (> 3mm margin under acrylic skirt). Candidate review screenshots generated in `artifacts/`: `m5-film-negative-rebate.png`, `m5-film-positive-translucent.png`, `m5-film-loupe-detail.png`, `m5-film-curl-profile.png`. Zero console errors, zero page errors, zero failed requests.
+  - **Human approval:** Awaiting user review.
 
 ## Test configuration contract
 

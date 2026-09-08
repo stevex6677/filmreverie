@@ -25,6 +25,14 @@ export const SPROCKET_WIDTH = 0.024;
 export const SPROCKET_HEIGHT = 0.016;
 export const SPROCKET_CORNER_RADIUS = 0.004;
 
+// Authentic 35mm film transverse curl: outer edges lift ~1.8mm while center rests on table
+export const FILM_CURL_HEIGHT = 0.0018;
+
+export function getFilmCurlZ(y: number, stripHeight: number = DEFAULT_LAYOUT.frameHeight + 2 * DEFAULT_LAYOUT.marginY): number {
+  const normY = (2 * y) / stripHeight; // in [-1, 1]
+  return FILM_CURL_HEIGHT * normY * normY;
+}
+
 export interface PerforationPosition {
   x: number;
   y: number;
