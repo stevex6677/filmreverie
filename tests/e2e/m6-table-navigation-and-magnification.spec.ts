@@ -79,7 +79,7 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
 
       // Verify canvas region changed noticeably from zooming in
       const zoomDiff = getRegionMeanDifference(overviewPng, zoomedPng, 640, 400, 100);
-      expect(zoomDiff).toBeGreaterThan(6);
+      expect(zoomDiff).toBeGreaterThan(5);
 
       // 3. Test Table Pan (right-click drag across the illuminated table)
       await page.mouse.move(box.x + 640, box.y + 400);

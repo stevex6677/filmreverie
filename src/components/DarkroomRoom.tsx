@@ -1,6 +1,8 @@
-import React from "react";
+interface DarkroomRoomProps {
+  brightness?: number;
+}
 
-export const DarkroomRoom: React.FC = () => {
+export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ brightness = 1.0 }) => {
   const floorY = -1.70;
   const ceilingY = 2.4;
   const roomW = 7.6;
@@ -24,7 +26,7 @@ export const DarkroomRoom: React.FC = () => {
       <pointLight
         position={[0, -0.20, -0.10]}
         color="#edf2f7"
-        intensity={0.7}
+        intensity={0.7 * brightness}
         distance={3.5}
         decay={2}
       />

@@ -100,7 +100,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       />
 
       {/* Surrounding 3D Darkroom Environment & Workbench */}
-      <DarkroomRoom />
+      <DarkroomRoom brightness={state.tableBrightness} />
 
       {/* Flat Light Table on Workbench (placed horizontally on tabletop) */}
       <group
@@ -110,6 +110,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       >
         {/* Light Table Base & Diffuser */}
         <LightTable
+          brightness={state.tableBrightness}
           onPointerMove={handlePointerMove}
           onClick={handleTableClick}
         />
@@ -119,6 +120,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
           textures={textures}
           isPositive={isPositive}
           layout={DEFAULT_LAYOUT}
+          brightness={state.tableBrightness}
           onSelectFrame={handleFrameSelect}
           onPointerMove={handlePointerMove}
         />
@@ -134,6 +136,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
           texture={activeTexture}
           isPositive={isPositive}
           magnification={state.loupe.magnification}
+          brightness={state.tableBrightness}
           isDeterministic={isDeterministic}
           onClick={() => {
             if (state.roomMode === "inspect") {

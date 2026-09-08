@@ -14,6 +14,7 @@ interface LoupeProps {
   texture: THREE.Texture;
   isPositive: boolean;
   magnification?: number;
+  brightness?: number;
   isDeterministic?: boolean;
   onClick?: () => void;
 }
@@ -27,6 +28,7 @@ export const Loupe: React.FC<LoupeProps> = ({
   texture,
   isPositive,
   magnification = 2.5,
+  brightness = 1.0,
   isDeterministic = false,
   onClick,
 }) => {
@@ -112,6 +114,16 @@ export const Loupe: React.FC<LoupeProps> = ({
         );
       } else {
         lensMaterial.uniforms.uModeTransition.value = targetMode;
+      }
+
+      if (lensMaterial.uniforms.uExposure) {
+        const targetExp = 1.0 * Math.pow(brightness, 0.5);
+        lensMaterial.uniforms.uExposure.value = THREE.MathUtils.damp(
+          lensMaterial.uniforms.uExposure.value,
+          targetExp,
+          16,
+          delta
+        );
       }
     }
   });

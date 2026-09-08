@@ -84,15 +84,16 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       if (roomMode !== "inspect" || isTransitioning) return;
       e.preventDefault();
       if (onAdjustInspectZoom) {
-        // Normalize wheel delta across browsers and touchpads
-        const zoomDelta = Math.sign(e.deltaY) * Math.min(0.35, Math.max(0.12, Math.abs(e.deltaY) * 0.002));
+        // Proportional step scaling: micro-steps when zoomed in, large steps when zoomed out
+        const step = Math.min(0.35, Math.max(0.025, inspectZoom * 0.085));
+        const zoomDelta = Math.sign(e.deltaY) * step;
         onAdjustInspectZoom(zoomDelta);
       }
     };
 
     canvas.addEventListener("wheel", handleWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", handleWheel);
-  }, [gl, roomMode, isTransitioning, onAdjustInspectZoom]);
+  }, [gl, roomMode, isTransitioning, inspectZoom, onAdjustInspectZoom]);
 
   // Pointer drag for room orbit or table pan
   useEffect(() => {
