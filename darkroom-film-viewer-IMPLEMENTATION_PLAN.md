@@ -133,6 +133,43 @@ The current active milestone is **M3**. The agent may complete any coherent subs
   - **Evidence:** Automated gate `npm run validate:m4` passed cleanly against production build in real desktop Chrome/WebGL (6/6 Playwright suites, 49 Vitest integration tests across 6 files, 2.2m total run). Asset provenance cataloged in `public/assets/provenance.json` with all 5 frames, licenses (CC0), 35mm KS-1870 standards, and procedural darkroom models. Authentic darkroom props implemented with restrained PBR materials: Beseler-style vertical photographic enlarger with column, bellows, and red swing filter; GraLab 300 style interval timer with luminous face; chemical reagent amber bottles (Developer, Stop, Fixer); film drying line with clips and test negative strips; industrial steel workbench with grounded footpads and lower storage shelf. Chemistry error fallback banner and recovery button implemented and tested with injected failure (`?test_error=1`), verifying seamless recovery. Reduced motion preference supported via `?reduced_motion=true` and CSS media feature with instant transition arrival. Full keyboard accessibility (Enter/Space to approach, Esc to return, 1-5 and ArrowLeft/ArrowRight to select frames, M for mode, L for loupe). Renderer clamped to `Math.min(devicePixelRatio, 1.5)` with ACESFilmicToneMapping and subtle darkroom vignette overlay. Screenshots generated in `artifacts/`: `m4-darkroom-room-overview.png`, `m4-darkroom-error-recovery.png`, `m4-darkroom-inspect-final.png`. Zero console errors, zero page errors, zero failed requests.
   - **Human approval:** Accepted by user through review policy approval.
 
+- [ ] **M5 — Authentic 35mm film substrate, edge rebate markings, and physical tactility**
+  - **Status:** In progress (awaiting plan approval).
+  - **Outcome:** Elevate the 35mm film strip from a planar graphic into an authentic, tactile physical photographic object on the light table:
+    1. **Translucent Acetate/Polyester Film Base**: Replace opaque black borders and dividers with translucent celluloid/acetate film substrate that transmits the light table glow with authentic daylight color-negative base tone (`#d97724` amber/orange mask in negative mode, smoky dark bronze in positive mode) and subtle density falloff at frame edges.
+    2. **Authentic Edge Rebate Markings & DX Encoding**: Procedurally rendered authentic edge print running along both perforation margins:
+       - Top edge: Film brand/stock markings (e.g. `KODAK 400`, `SAFETY FILM`), batch indicators, and DX barcode timing bars.
+       - Bottom edge: Sequential frame numbering (e.g. `▶ 1`, `1A`, `▶ 2`, `2A`, `▶ 3`, `3A`, `▶ 4`, `4A`, `▶ 5`, `5A`), index dots, and directional film advance arrows.
+       - Dynamic mode inversion: Markings appear as unexposed latent text (illuminated base) in negative mode, and developed silver imprint in positive mode.
+    3. **Physical Film Curl & Transverse Curvature**:
+       - Natural transverse curl (gentle parabolic arch across the Y axis, lifting the outer perforation edges ~1.5mm off the glass table surface while the central spine stays supported).
+       - Softened, slightly curved cut strip ends at the roll leads.
+       - Dynamic contact drop shadow conforming to the arched film curvature onto the frosted acrylic diffuser.
+    4. **Emulsion Sheen, Plastic Clear-Coat Gloss & Specular Response**:
+       - Dual-sided PBR sheen: high-gloss acetate base side with subtle specular highlights catching room and table lighting, paired with smooth matte emulsion response.
+       - Subtle surface micro-sheen without introducing noisy artifacts under 2.5× loupe magnification.
+  - **Paths/components:** `src/components/FilmStrip.tsx`, `src/shaders/filmShader.ts`, `src/shaders/filmRebateTexture.ts`, `src/utils/loupeMapping.ts`, `tests/integration/m5-*`, `tests/e2e/m5-*`.
+  - **Implementation requirements:**
+    - Preserve 100% of existing frame coordinates and dimensions (3:2 aspect ratio, 8 perforations/frame, 40 per edge).
+    - Ensure vertex displacement for curl remains within tight bounds (< 2.5mm) to prevent clipping through the light table or the loupe acrylic skirt.
+    - Generate rebate markings via high-resolution canvas texture or procedural shader so text remains sharp under 2.5× loupe inspection.
+    - All existing M1–M4 journeys and tests must continue to pass without regression.
+  - **Vitest integration suite:**
+    - Edge rebate generation and frame number positioning alignment with 35mm perforations.
+    - Substrate translucency color math and negative/positive mask response.
+    - Mesh curl curvature equation and vertex height bounds.
+  - **Playwright E2E suite:**
+    - Run all M1–M4 journeys unchanged.
+    - Validate presence and contrast of edge rebate markings (top and bottom margins contain readable alphanumeric and frame numbers).
+    - Validate substrate translucency: margin area transmits light table emission (`lum > 30` rather than pitch black `#000000`).
+    - Validate transverse curl elevation and contact drop shadow variance.
+    - Capture candidate close-up screenshots in negative, positive, and magnified loupe states.
+  - **Gate:** `npm run validate:m5` builds once and runs all M1–M5 integration and E2E suites.
+  - **Human review:** Confirm film strip authenticity, rebate clarity, natural curl curvature, substrate translucency, and continued photo readability under loupe.
+  - **Completion criteria:** Gate passes and the user explicitly accepts M5.
+  - **Evidence:** Pending.
+  - **Human approval:** Pending.
+
 ## Test configuration contract
 
 - Playwright must serve the production build, use a fixed desktop viewport and deterministic scene mode, and collect page errors, console errors, and failed asset requests.
