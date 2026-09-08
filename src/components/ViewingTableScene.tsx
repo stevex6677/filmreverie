@@ -15,12 +15,14 @@ interface ViewingTableSceneProps {
   state: ViewerState;
   dispatch: React.Dispatch<ViewerAction>;
   isDeterministic?: boolean;
+  isReducedMotion?: boolean;
 }
 
 export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   state,
   dispatch,
   isDeterministic = false,
+  isReducedMotion = false,
 }) => {
   const tableGroupRef = useRef<THREE.Group>(null);
 
@@ -84,6 +86,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         onUpdateRoomPose={(pose) => dispatch({ type: "UPDATE_ROOM_POSE", pose })}
         onTransitionComplete={() => dispatch({ type: "SET_TRANSITIONING", isTransitioning: false })}
         isDeterministic={isDeterministic}
+        isReducedMotion={isReducedMotion}
       />
 
       {/* Surrounding 3D Darkroom Environment & Workbench */}

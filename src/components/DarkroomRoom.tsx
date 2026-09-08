@@ -99,6 +99,116 @@ export const DarkroomRoom: React.FC = () => {
         <meshStandardMaterial color="#191b22" roughness={0.7} metalness={0.3} />
       </mesh>
 
+      {/* --- EQUIPMENT ON WALL SHELF --- */}
+      {/* 1. Classic Darkroom Interval Timer (GraLab 300 style) */}
+      <group position={[-0.85, 1.51, -0.96]}>
+        {/* Timer main rectangular housing */}
+        <mesh position={[0, 0, 0]}>
+          <boxGeometry args={[0.22, 0.24, 0.12]} />
+          <meshStandardMaterial color="#2d3748" roughness={0.5} metalness={0.3} />
+        </mesh>
+        {/* Circular luminous dial face */}
+        <mesh position={[0, 0.02, 0.061]}>
+          <circleGeometry args={[0.08, 24]} />
+          <meshStandardMaterial
+            color="#e2e8f0"
+            emissive="#a7f3d0"
+            emissiveIntensity={0.25}
+            roughness={0.3}
+          />
+        </mesh>
+        {/* Dual rocker power/focus switches */}
+        <mesh position={[-0.05, -0.07, 0.065]}>
+          <boxGeometry args={[0.025, 0.035, 0.015]} />
+          <meshStandardMaterial color="#dc2626" roughness={0.4} />
+        </mesh>
+        <mesh position={[0.05, -0.07, 0.065]}>
+          <boxGeometry args={[0.025, 0.035, 0.015]} />
+          <meshStandardMaterial color="#ffffff" roughness={0.4} />
+        </mesh>
+      </group>
+
+      {/* 2. Chemical Reagent Amber Jugs (Developer, Stop Bath, Fixer) */}
+      <group position={[0.75, 1.49, -0.96]}>
+        {/* Developer Jug */}
+        <group position={[-0.28, 0, 0]}>
+          <mesh position={[0, 0, 0]}>
+            <cylinderGeometry args={[0.055, 0.055, 0.22, 16]} />
+            <meshStandardMaterial color="#78350f" roughness={0.25} metalness={0.1} />
+          </mesh>
+          <mesh position={[0, 0.13, 0]}>
+            <cylinderGeometry args={[0.022, 0.03, 0.04, 12]} />
+            <meshStandardMaterial color="#1f2937" roughness={0.5} />
+          </mesh>
+          {/* Label */}
+          <mesh position={[0, 0, 0.056]}>
+            <planeGeometry args={[0.07, 0.10]} />
+            <meshStandardMaterial color="#fef3c7" roughness={0.8} />
+          </mesh>
+        </group>
+        {/* Stop Bath Jug */}
+        <group position={[0, 0, 0]}>
+          <mesh position={[0, 0, 0]}>
+            <cylinderGeometry args={[0.055, 0.055, 0.22, 16]} />
+            <meshStandardMaterial color="#78350f" roughness={0.25} metalness={0.1} />
+          </mesh>
+          <mesh position={[0, 0.13, 0]}>
+            <cylinderGeometry args={[0.022, 0.03, 0.04, 12]} />
+            <meshStandardMaterial color="#f59e0b" roughness={0.5} />
+          </mesh>
+          {/* Label */}
+          <mesh position={[0, 0, 0.056]}>
+            <planeGeometry args={[0.07, 0.10]} />
+            <meshStandardMaterial color="#fef3c7" roughness={0.8} />
+          </mesh>
+        </group>
+        {/* Fixer Jug */}
+        <group position={[0.28, 0, 0]}>
+          <mesh position={[0, 0, 0]}>
+            <cylinderGeometry args={[0.055, 0.055, 0.22, 16]} />
+            <meshStandardMaterial color="#78350f" roughness={0.25} metalness={0.1} />
+          </mesh>
+          <mesh position={[0, 0.13, 0]}>
+            <cylinderGeometry args={[0.022, 0.03, 0.04, 12]} />
+            <meshStandardMaterial color="#2563eb" roughness={0.5} />
+          </mesh>
+          {/* Label */}
+          <mesh position={[0, 0, 0.056]}>
+            <planeGeometry args={[0.07, 0.10]} />
+            <meshStandardMaterial color="#fef3c7" roughness={0.8} />
+          </mesh>
+        </group>
+      </group>
+
+      {/* 3. Film Drying Wire with Hanging Clips (Upper Left Wall) */}
+      <group position={[-2.4, 1.85, -0.92]}>
+        <mesh position={[0, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.002, 0.002, 1.8, 8]} />
+          <meshStandardMaterial color="#94a3b8" metalness={0.8} roughness={0.3} />
+        </mesh>
+        {/* Film clips & hanging test negative strips */}
+        {[-0.6, -0.2, 0.2, 0.6].map((clipX, i) => (
+          <group key={i} position={[clipX, 0, 0]}>
+            {/* Wooden/metal clip */}
+            <mesh position={[0, -0.03, 0]}>
+              <boxGeometry args={[0.02, 0.06, 0.015]} />
+              <meshStandardMaterial color="#d97706" roughness={0.6} />
+            </mesh>
+            {/* Hanging film strip */}
+            <mesh position={[0, -0.22, 0]}>
+              <planeGeometry args={[0.06, 0.32]} />
+              <meshStandardMaterial
+                color="#0f172a"
+                roughness={0.2}
+                metalness={0.1}
+                transparent={true}
+                opacity={0.7}
+              />
+            </mesh>
+          </group>
+        ))}
+      </group>
+
       {/* Left Wall */}
       <mesh
         position={[-roomW / 2, (floorY + ceilingY) / 2, 1.2]}
@@ -248,6 +358,49 @@ export const DarkroomRoom: React.FC = () => {
           <cylinderGeometry args={[0.012, 0.012, 0.12, 12]} />
           <meshStandardMaterial color="#18191c" roughness={0.7} />
         </mesh>
+
+        {/* Enlarger Station (Classic Beseler-style Vertical Enlarger on Right Workbench Wing) */}
+        <group position={[2.02, -0.79, -0.15]}>
+          {/* Wooden baseboard */}
+          <mesh position={[0, 0, 0]}>
+            <boxGeometry args={[0.32, 0.02, 0.42]} />
+            <meshStandardMaterial color="#cbd5e1" roughness={0.65} metalness={0.15} />
+          </mesh>
+          {/* Vertical steel support column */}
+          <mesh position={[0.08, 0.46, -0.14]}>
+            <cylinderGeometry args={[0.016, 0.016, 0.92, 16]} />
+            <meshStandardMaterial color="#94a3b8" roughness={0.25} metalness={0.85} />
+          </mesh>
+          {/* Column carriage and arm */}
+          <mesh position={[0.04, 0.52, -0.06]}>
+            <boxGeometry args={[0.10, 0.08, 0.16]} />
+            <meshStandardMaterial color="#1e293b" roughness={0.4} metalness={0.7} />
+          </mesh>
+          {/* Enlarger lamphouse head */}
+          <mesh position={[-0.02, 0.62, 0]}>
+            <cylinderGeometry args={[0.07, 0.09, 0.18, 16]} />
+            <meshStandardMaterial color="#0f172a" roughness={0.35} metalness={0.6} />
+          </mesh>
+          {/* Lamphouse top cap */}
+          <mesh position={[-0.02, 0.73, 0]}>
+            <cylinderGeometry args={[0.04, 0.07, 0.04, 16]} />
+            <meshStandardMaterial color="#1e293b" roughness={0.4} metalness={0.5} />
+          </mesh>
+          {/* Bellows stage */}
+          <mesh position={[-0.02, 0.47, 0]}>
+            <boxGeometry args={[0.09, 0.08, 0.09]} />
+            <meshStandardMaterial color="#18181b" roughness={0.9} />
+          </mesh>
+          {/* Lens stage & red swing safety filter */}
+          <mesh position={[-0.02, 0.41, 0]}>
+            <cylinderGeometry args={[0.025, 0.025, 0.03, 16]} />
+            <meshStandardMaterial color="#e2e8f0" metalness={0.9} roughness={0.2} />
+          </mesh>
+          <mesh position={[-0.02, 0.38, 0.03]}>
+            <cylinderGeometry args={[0.02, 0.02, 0.005, 12]} />
+            <meshStandardMaterial color="#ef4444" roughness={0.1} transparent={true} opacity={0.75} />
+          </mesh>
+        </group>
       </group>
     </group>
   );

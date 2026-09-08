@@ -19,6 +19,7 @@ interface CameraRigProps {
   onUpdateRoomPose: (pose: Partial<RoomCameraPose>) => void;
   onTransitionComplete: () => void;
   isDeterministic?: boolean;
+  isReducedMotion?: boolean;
 }
 
 export const CameraRig: React.FC<CameraRigProps> = ({
@@ -28,6 +29,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   onUpdateRoomPose,
   onTransitionComplete,
   isDeterministic = false,
+  isReducedMotion = false,
 }) => {
   const { camera, gl } = useThree();
   const isDraggingRef = useRef(false);
@@ -135,7 +137,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     targetUp.current.set(...desiredUp);
     desiredLookTarget.current.set(...desiredTarget);
 
-    if (isDeterministic) {
+    if (isDeterministic || isReducedMotion) {
       camera.position.copy(targetPos.current);
       camera.up.copy(targetUp.current);
       lookTarget.current.copy(desiredLookTarget.current);

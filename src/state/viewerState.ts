@@ -21,6 +21,7 @@ export interface ViewerState {
   activeFrameIndex: number;
   isTransitioning: boolean;
   savedRoomPose: RoomCameraPose;
+  error: string | null;
 }
 
 const defaultFrameCenter = getFrameCenter(0, DEFAULT_LAYOUT);
@@ -40,6 +41,7 @@ export const INITIAL_VIEWER_STATE: ViewerState = {
   activeFrameIndex: 0,
   isTransitioning: false,
   savedRoomPose: { ...DEFAULT_ROOM_POSE },
+  error: null,
 };
 
 export function createInitialViewerState(initialRoomMode: RoomMode = "inspect"): ViewerState {
@@ -47,6 +49,7 @@ export function createInitialViewerState(initialRoomMode: RoomMode = "inspect"):
     ...INITIAL_VIEWER_STATE,
     roomMode: initialRoomMode,
     savedRoomPose: { ...DEFAULT_ROOM_POSE },
+    error: null,
   };
 }
 
@@ -62,6 +65,8 @@ export type ViewerAction =
   | { type: "RETURN_TO_ROOM" }
   | { type: "SET_TRANSITIONING"; isTransitioning: boolean }
   | { type: "UPDATE_ROOM_POSE"; pose: Partial<RoomCameraPose> }
+  | { type: "SET_ERROR"; error: string | null }
+  | { type: "RETRY" }
   | { type: "RESET" };
 
 export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerState {
@@ -182,6 +187,18 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
         savedRoomPose: clampRoomPose(updated),
       };
     }
+
+    case "SET_ERROR":
+      return {
+        ...state,
+        error: action.error,
+      };
+
+    case "RETRY":
+      return {
+        ...state,
+        error: null,
+      };
 
     case "RESET":
       return INITIAL_VIEWER_STATE;
