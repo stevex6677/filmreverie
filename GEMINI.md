@@ -9,7 +9,7 @@
 ## 2. Command Execution -> REMOTE SERVER
 - All build commands, tests, scripts, and runtime executions MUST run on the remote server via SSH:
   ```bash
-  ssh 209.151.144.140 "<command>"
+  ssh remote "<command>"
   ```
 - Do not run application runtimes or heavy build tools locally.
 - **Pre-execution Sync Flush**: Before running commands on the remote server that rely on recent local edits, always flush Mutagen synchronization to ensure the remote filesystem is up to date:
@@ -27,16 +27,16 @@ When executing commands on the remote server or resolving file paths, map betwee
 - **Main Workspace**:
   - Local: `/Users/zhangzimou/Projects/film_photo`
   - Remote: `/root/projects/film_photo`
-  - *Example*: `ssh 209.151.144.140 "cd /root/projects/film_photo && <command>"`
+  - *Example*: `ssh remote "cd /root/projects/film_photo && <command>"`
 
 - **Antigravity Worktrees**:
   - Local: `~/.gemini/antigravity/worktrees/film_photo/<task_name>` (`/Users/zhangzimou/.gemini/antigravity/worktrees/film_photo/<task_name>`)
   - Remote: `/root/worktrees_antigravity/film_photo/<task_name>` (or `worktrees_antigravity/film_photo/<task_name>`)
-  - *Example*: `ssh 209.151.144.140 "cd /root/worktrees_antigravity/film_photo/<task_name> && <command>"`
+  - *Example*: `ssh remote "cd /root/worktrees_antigravity/film_photo/<task_name> && <command>"`
 
 ## 4. Dependencies & Sync Exclusions
 - `.git`, `node_modules`, and OS caches are excluded from file synchronization.
-- Always install packages on the remote server (e.g. `ssh 209.151.144.140 "cd <remote_path> && npm install"`).
+- Always install packages on the remote server (e.g. `ssh remote "cd <remote_path> && npm install"`).
 
 ## 5. Blender Tasks & MCP
 - Use the Blender MCP (`blender`) for all Blender-related tasks.
