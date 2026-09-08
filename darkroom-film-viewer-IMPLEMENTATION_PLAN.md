@@ -84,20 +84,20 @@ The current active milestone is **M2**. The agent may complete any coherent subs
   - **Human approval:** Accepted by user ("continue on m2").
 
 - [ ] **M2 — Room and camera journey**
-  - **Status:** Awaiting human review.
-  - **Outcome:** Add a simple correctly scaled darkroom around the accepted viewer. The user can drag to inspect the room, select the table, transition into inspect mode, and return without breaking M1.
+  - **Status:** In progress (refining room camera pose to eye-level standing view with visible table legs).
+  - **Outcome:** Add a simple correctly scaled darkroom around the accepted viewer. In room mode, view the table as if standing in the room from a natural eye-level perspective with the table legs and grounded workbench clearly visible (avoiding an elevated top-down view). The user can drag to inspect the room, select the table, transition into inspect mode, and return without breaking M1.
   - **Paths/components:** room shell/table, camera rig, lighting sufficient for navigation, interaction reducer; `tests/integration/m2-*`; `tests/e2e/m2-*`.
-  - **Implementation requirements:** Use constrained orbit-style dragging; prevent wall/table clipping and competing transitions; retain the saved room pose. Do not add detailed props or heavy post-processing yet.
+  - **Implementation requirements:** Use constrained orbit-style dragging positioned at a natural standing eye-level height showing the full workbench and legs; prevent wall/table clipping and competing transitions; retain the saved room pose. Do not add detailed props or heavy post-processing yet.
   - **Vitest integration suite:** Camera bounds, legal state transitions, repeated approach protection, and room-pose restoration.
   - **Playwright E2E suite:**
     - Real pointer drag produces a bounded camera/canvas change.
     - Selecting the table completes the approach transition; Back/Escape restores room mode and a valid prior pose.
     - Repeat approach/return twice and run the full accepted M1 journey afterward.
   - **Gate:** `npm run validate:m2` builds once and runs all M1–M2 integration and E2E suites.
-  - **Human review:** Confirm camera comfort, discoverability, composition, transition smoothness, and continued photo readability.
+  - **Human review:** Confirm camera comfort (natural standing room view with visible table legs), discoverability, composition, transition smoothness, and continued photo readability.
   - **Completion criteria:** Gate passes and the user explicitly accepts M2.
   - **Evidence:** Automated gate `npm run validate:m2` passed cleanly against production build in real desktop Chrome/WebGL. Light table configured as an authentic ergonomic drafting console tilted back at 25° resting on a heavy-duty industrial workbench with steel legs, footpads, storage shelf, and rear support struts. Inspect mode dynamically aligns camera perpendicular to tilted plane via `INSPECT_CAMERA_UP`, preserving 100% of M1 flat layout, unclipped loupe, and coordinate accuracy. Vitest passed 28/28 tests across 4 suites; Playwright passed 4/4 suites (3.7m) with zero console errors, zero page errors, and zero failed network requests. Exact pose restoration verified (difference < 1.5). Full interaction recording updated in `artifacts/m2-interaction-recording.mp4` (H.264, 47s). Candidate screenshots updated in `artifacts/`: `m2-room-initial.png`, `m2-room-dragged.png`, `m2-inspect-arrived.png`, `m2-room-restored-1.png`. Preview server actively serving at `http://127.0.0.1:5178/?mode=room`.
-  - **Human approval:** Awaiting human review.
+  - **Human approval:** Pending revision of room camera pose.
 
 - [ ] **M3 — Realistic viewing table, film, and loupe**
   - **Status:** Blocked by M2 acceptance.
