@@ -7,6 +7,7 @@ import {
   getLoupeSampleWindow,
   clampLoupeCenterUV,
   getStripDimensions,
+  isPointOverStrip,
 } from "../../src/utils/loupeMapping";
 
 describe("M1 Integration — Loupe Coordinates & UV Clamping", () => {
@@ -93,5 +94,30 @@ describe("M1 Integration — Loupe Coordinates & UV Clamping", () => {
     const clampedCenter = clampLoupeCenterUV(0.05, 0.95, 2.5);
     expect(clampedCenter.u).toBeCloseTo(0.2, 4);
     expect(clampedCenter.v).toBeCloseTo(0.8, 4);
+  });
+
+  it("accurately detects whether loupe position is over the film strip", () => {
+    // Resting position of loupe is (1.3, -0.42) on the light table
+    const restingLoupePos = { x: 1.3, y: -0.42 };
+    expect(isPointOverStrip(restingLoupePos, DEFAULT_LAYOUT)).toBe(false);
+
+    // Light table background points off the film strip
+    expect(isPointOverStrip({ x: 0, y: 0.5 }, DEFAULT_LAYOUT)).toBe(false);
+    expect(isPointOverStrip({ x: 0, y: -0.5 }, DEFAULT_LAYOUT)).toBe(false);
+    expect(isPointOverStrip({ x: 2.0, y: 0 }, DEFAULT_LAYOUT)).toBe(false);
+    expect(isPointOverStrip({ x: -2.0, y: 0 }, DEFAULT_LAYOUT)).toBe(false);
+
+    // Frame centers must all be over the film strip
+    for (let i = 0; i < DEFAULT_LAYOUT.frameCount; i++) {
+      const center = getFrameCenter(i, DEFAULT_LAYOUT);
+      expect(isPointOverStrip(center, DEFAULT_LAYOUT)).toBe(true);
+    }
+
+    // Strip boundaries
+    const { width, height } = getStripDimensions(DEFAULT_LAYOUT);
+    expect(isPointOverStrip({ x: width / 2, y: height / 2 }, DEFAULT_LAYOUT)).toBe(true);
+    expect(isPointOverStrip({ x: -width / 2, y: -height / 2 }, DEFAULT_LAYOUT)).toBe(true);
+    expect(isPointOverStrip({ x: width / 2 + 0.01, y: 0 }, DEFAULT_LAYOUT)).toBe(false);
+    expect(isPointOverStrip({ x: 0, y: height / 2 + 0.01 }, DEFAULT_LAYOUT)).toBe(false);
   });
 });

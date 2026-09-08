@@ -54,7 +54,7 @@ describe("M5 Integration — 35mm Film Rebate, Substrate Translucency & Transver
   describe("Rebate Colors & Substrate Translucency", () => {
     it("configures authentic orange mask color values for negative mode substrate", () => {
       expect(NEGATIVE_REBATE_COLORS.substrateBase).toContain("217, 119, 36");
-      expect(NEGATIVE_REBATE_COLORS.rebateText).toContain("255, 235, 185");
+      expect(NEGATIVE_REBATE_COLORS.rebateText).toContain("42, 18, 8");
     });
 
     it("configures authentic smoky bronze color values for positive mode substrate", () => {

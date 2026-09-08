@@ -103,16 +103,24 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+export function isPointOverStrip(
+  point: { x: number; y: number },
+  layout: FilmStripLayout = DEFAULT_LAYOUT
+): boolean {
+  const { width, height } = getStripDimensions(layout);
+  return (
+    point.x >= -width / 2 &&
+    point.x <= width / 2 &&
+    point.y >= -height / 2 &&
+    point.y <= height / 2
+  );
+}
+
 export function mapWorldPointToFrame(
   point: { x: number; y: number },
   layout: FilmStripLayout = DEFAULT_LAYOUT
 ) {
-  const { width, height } = getStripDimensions(layout);
-  const isWithinStrip =
-    point.x >= -width / 2 &&
-    point.x <= width / 2 &&
-    point.y >= -height / 2 &&
-    point.y <= height / 2;
+  const isWithinStrip = isPointOverStrip(point, layout);
 
   // Find closest frame
   let bestIndex = 0;

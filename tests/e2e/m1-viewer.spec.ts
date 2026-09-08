@@ -242,4 +242,68 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
     expect(consoleErrors).toEqual([]);
     expect(failedRequests).toEqual([]);
   });
+
+  test("verifies loupe lens shows pure table surface when resting or off-strip, and shows image only on-strip", async ({
+    page,
+  }) => {
+    const pageErrors: Error[] = [];
+    const consoleErrors: string[] = [];
+
+    page.on("pageerror", (err) => pageErrors.push(err));
+    page.on("console", (msg) => {
+      if (msg.type() === "error") consoleErrors.push(msg.text());
+    });
+
+    await page.goto("/?deterministic=true");
+
+    const canvas = page.locator("canvas");
+    await expect(canvas).toBeVisible();
+
+    const loupeToggle = page.locator("#loupe-toggle");
+    await expect(loupeToggle).toBeVisible();
+
+    // 1. When resting (loupe is off-strip at resting position ~ x: 1150, y: 565 on screen):
+    // The loupe lens must transmit neutral light table illumination (R ≈ G ≈ B, zero orange mask, zero dye variance).
+    await page.waitForTimeout(500);
+    const restingBuffer = await canvas.screenshot();
+    const restingPng = parsePng(restingBuffer);
+    const restingLoupeStats = getRegionStats(restingPng, 1150, 565, 20);
+
+    // Illuminated table surface has high luminance and neutral color
+    expect(restingLoupeStats.meanLum).toBeGreaterThan(100);
+    expect(Math.abs(restingLoupeStats.meanR - restingLoupeStats.meanB)).toBeLessThan(10); // No orange mask / no photo dye
+
+    // 2. Hover / move loupe off the film strip onto the light table background (TABLE_BG_POINT: x: 640, y: 200)
+    await loupeToggle.click();
+    await expect(page.locator("[data-testid=loupe-badge]")).toContainText("ACTIVE");
+
+    const box = await canvas.boundingBox();
+    if (box) {
+      // Move to table background well above the film strip
+      await page.mouse.move(box.x + TABLE_BG_POINT.x, box.y + TABLE_BG_POINT.y);
+      await page.waitForTimeout(400);
+
+      const offStripBuffer = await canvas.screenshot();
+      const offStripPng = parsePng(offStripBuffer);
+      const offStripLensStats = getRegionStats(offStripPng, TABLE_BG_POINT.x, TABLE_BG_POINT.y, 20);
+
+      // Loupe lens over table background must transmit illuminated table surface, NOT photo texture
+      expect(offStripLensStats.meanLum).toBeGreaterThan(120);
+      expect(Math.abs(offStripLensStats.meanR - offStripLensStats.meanB)).toBeLessThan(10); // Neutral table glass
+
+      // 3. Move loupe onto film frame 3 (center frame: x: 640, y: 400)
+      await page.mouse.move(box.x + FRAME_SCREEN_CENTERS[2].x, box.y + FRAME_SCREEN_CENTERS[2].y);
+      await page.waitForTimeout(400);
+
+      const onStripBuffer = await canvas.screenshot();
+      const onStripPng = parsePng(onStripBuffer);
+      const onStripLensStats = getRegionStats(onStripPng, FRAME_SCREEN_CENTERS[2].x, FRAME_SCREEN_CENTERS[2].y, 20);
+
+      // Over the negative film strip, the loupe displays the photograph with strong orange mask and dye absorption
+      expect(onStripLensStats.meanR).toBeGreaterThan(onStripLensStats.meanB + 20); // Authentic film negative response
+    }
+
+    expect(pageErrors).toEqual([]);
+    expect(consoleErrors).toEqual([]);
+  });
 });

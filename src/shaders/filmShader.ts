@@ -22,10 +22,22 @@ export const FilmFragmentShader = `
     vec4 tex = texture2D(uTexture, vUv);
     vec3 positiveRgb = clamp(tex.rgb * uExposure, 0.0, 1.0);
 
-    // Inverted negative emulsion with authentic dye response and orange base mask
-    vec3 inv = clamp(vec3(1.0) - tex.rgb, 0.0, 1.0);
-    vec3 density = pow(inv, vec3(0.92));
-    vec3 negRgb = clamp(density * uOrangeMask * 1.08 + vec3(0.025, 0.012, 0.004), 0.0, 1.0);
+    // Authentic C-41 tri-pack dye absorption model:
+    // Red exposure forms cyan dye -> absorbs red
+    // Green exposure forms magenta dye -> absorbs green
+    // Blue exposure forms yellow dye -> absorbs blue
+    vec3 linearExposure = pow(positiveRgb, vec3(0.95));
+
+    // Dmax dye absorption subtracting light transmission through the orange mask
+    vec3 dyeAbsorption = vec3(
+      linearExposure.r * 0.88 + linearExposure.g * 0.08,
+      linearExposure.g * 0.75 + linearExposure.b * 0.10,
+      linearExposure.b * 0.55 + linearExposure.g * 0.15
+    );
+
+    // Deep shadow = zero dye formation = pure transmission through orange mask
+    // Highlight = dense dye development = dark warm charcoal Dmax
+    vec3 negRgb = clamp(uOrangeMask * (vec3(1.0) - dyeAbsorption * 0.94) + vec3(0.015, 0.008, 0.003), 0.0, 1.0);
 
     // Mode mix: 0 = negative, 1 = positive
     vec3 finalRgb = mix(negRgb, positiveRgb, clamp(uModeTransition, 0.0, 1.0));
