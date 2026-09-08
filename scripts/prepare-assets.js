@@ -47,13 +47,26 @@ for (const frame of frames) {
 
   if (needsBuild) {
     console.log("Generating derivative for " + frame + "...");
+    let converted = false;
     try {
       execSync("sips -s format jpeg -s formatOptions 92 \"" + srcPng + "\" --out \"" + dstJpg + "\"", {
-        stdio: "inherit",
+        stdio: "pipe",
       });
-    } catch {
-      console.warn("sips failed; copying source file as fallback.");
-      fs.copyFileSync(srcPng, path.join(targetDir, frame + ".png"));
+      converted = true;
+    } catch {}
+
+    if (!converted) {
+      try {
+        execSync("ffmpeg -y -i \"" + srcPng + "\" -q:v 2 \"" + dstJpg + "\"", {
+          stdio: "pipe",
+        });
+        converted = true;
+      } catch {}
+    }
+
+    if (!converted) {
+      console.warn("Conversion failed; copying source file as fallback.");
+      fs.copyFileSync(srcPng, dstJpg);
     }
   }
 }

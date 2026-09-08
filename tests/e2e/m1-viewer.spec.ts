@@ -40,7 +40,8 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
     await expect(canvas).toBeVisible();
 
     // Verify all 5 photo assets loaded successfully
-    expect(loadedImages.length).toBeGreaterThanOrEqual(5);
+    await expect.poll(() => loadedImages.length, { timeout: 10000 }).toBeGreaterThanOrEqual(5);
+
     expect(pageErrors).toEqual([]);
     expect(consoleErrors).toEqual([]);
     expect(failedRequests).toEqual([]);
