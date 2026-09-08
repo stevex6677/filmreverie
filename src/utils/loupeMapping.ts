@@ -18,6 +18,20 @@ export const DEFAULT_LAYOUT: FilmStripLayout = {
 
 export const LOUPE_MAGNIFICATION = 2.5;
 
+// Standard 35mm film perforation specifications (8 perforations per frame along each edge)
+export const PERFORATIONS_PER_FRAME = 8;
+export const TOTAL_PERFORATIONS_PER_EDGE = DEFAULT_LAYOUT.frameCount * PERFORATIONS_PER_FRAME; // 40
+export const SPROCKET_WIDTH = 0.024;
+export const SPROCKET_HEIGHT = 0.016;
+export const SPROCKET_CORNER_RADIUS = 0.004;
+
+export interface PerforationPosition {
+  x: number;
+  y: number;
+  frameIndex: number;
+  perforationIndex: number;
+}
+
 export function getStripDimensions(layout: FilmStripLayout = DEFAULT_LAYOUT) {
   const width =
     layout.frameCount * layout.frameWidth +
@@ -25,6 +39,33 @@ export function getStripDimensions(layout: FilmStripLayout = DEFAULT_LAYOUT) {
     2 * layout.marginX;
   const height = layout.frameHeight + 2 * layout.marginY;
   return { width, height };
+}
+
+export function getPerforationPositions(layout: FilmStripLayout = DEFAULT_LAYOUT): {
+  top: PerforationPosition[];
+  bottom: PerforationPosition[];
+} {
+  const { height } = getStripDimensions(layout);
+  const top: PerforationPosition[] = [];
+  const bottom: PerforationPosition[] = [];
+
+  const topY = height / 2 - layout.marginY / 2;
+  const bottomY = -height / 2 + layout.marginY / 2;
+  const frameSpan = layout.frameWidth + layout.gap;
+  const step = frameSpan / PERFORATIONS_PER_FRAME;
+
+  for (let f = 0; f < layout.frameCount; f++) {
+    const center = getFrameCenter(f, layout);
+    const frameLeft = center.x - layout.frameWidth / 2;
+
+    for (let k = 0; k < PERFORATIONS_PER_FRAME; k++) {
+      const x = frameLeft + (k + 0.5) * step;
+      top.push({ x, y: topY, frameIndex: f, perforationIndex: k });
+      bottom.push({ x, y: bottomY, frameIndex: f, perforationIndex: k });
+    }
+  }
+
+  return { top, bottom };
 }
 
 export function getFrameCenter(frameIndex: number, layout: FilmStripLayout = DEFAULT_LAYOUT) {

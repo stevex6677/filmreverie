@@ -76,7 +76,7 @@ export const Loupe: React.FC<LoupeProps> = ({
 
   const lensRadius = 0.14;
   const barrelRadius = 0.17;
-  const barrelHeight = 0.10;
+  const barrelHeight = 0.07;
 
   return (
     <group
@@ -87,56 +87,84 @@ export const Loupe: React.FC<LoupeProps> = ({
         onClick?.();
       }}
     >
-      {/* Contact shadow */}
-      <mesh position={[0, -0.01, -0.06]}>
-        <ringGeometry args={[0.08, barrelRadius + 0.04, 32]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.35} />
+      {/* Soft radial contact shadow */}
+      <mesh position={[0, -0.005, -0.06]}>
+        <ringGeometry args={[0.06, barrelRadius + 0.05, 36]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.38} />
       </mesh>
 
-      {/* Loupe body / outer barrel */}
-      <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
+      {/* Clear optical acrylic skirt at base letting table illumination in */}
+      <mesh position={[0, 0, -0.022]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry
-          args={[barrelRadius * 0.94, barrelRadius, barrelHeight, 36, 1, true]}
+          args={[barrelRadius * 0.96, barrelRadius * 1.02, 0.042, 36, 1, false]}
         />
         <meshStandardMaterial
-          color="#1e1f23"
-          roughness={0.4}
+          color="#f8fafc"
+          roughness={0.12}
+          metalness={0.08}
+          transparent={true}
+          opacity={0.36}
+        />
+      </mesh>
+
+      {/* Lower retaining collar between skirt and metal barrel */}
+      <mesh position={[0, 0, 0.002]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry
+          args={[barrelRadius * 0.97, barrelRadius * 0.97, 0.008, 36]}
+        />
+        <meshStandardMaterial
+          color="#18191d"
+          roughness={0.35}
+          metalness={0.85}
+        />
+      </mesh>
+
+      {/* Anodized matte black aluminum body / upper barrel */}
+      <mesh position={[0, 0, 0.038]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry
+          args={[barrelRadius * 0.93, barrelRadius * 0.97, barrelHeight, 36, 1, true]}
+        />
+        <meshStandardMaterial
+          color="#1c1d22"
+          roughness={0.38}
           metalness={0.8}
         />
       </mesh>
 
-      {/* Knurled grip ring */}
-      <mesh position={[0, 0, 0.02]} rotation={[Math.PI / 2, 0, 0]}>
+      {/* Knurled focusing grip ring with tactile ribbed profile */}
+      <mesh position={[0, 0, 0.038]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry
-          args={[barrelRadius * 1.03, barrelRadius * 1.03, 0.03, 36, 1, false]}
+          args={[barrelRadius * 1.03, barrelRadius * 1.03, 0.035, 48, 1, false]}
         />
         <meshStandardMaterial
-          color="#2e3036"
-          roughness={0.6}
+          color="#25272e"
+          roughness={0.65}
           metalness={0.7}
         />
       </mesh>
 
-      {/* Top brass chamfer and metal retaining bezel */}
-      <mesh position={[0, 0, 0.046]}>
-        <ringGeometry args={[lensRadius - 0.006, lensRadius, 48]} />
+      {/* Precision polished brass retaining bezel */}
+      <mesh position={[0, 0, 0.074]}>
+        <ringGeometry args={[lensRadius - 0.008, lensRadius, 48]} />
         <meshStandardMaterial
-          color="#c89b4b"
-          roughness={0.25}
-          metalness={0.9}
-        />
-      </mesh>
-      <mesh position={[0, 0, 0.045]}>
-        <ringGeometry args={[lensRadius, barrelRadius, 48]} />
-        <meshStandardMaterial
-          color="#1e1f23"
-          roughness={0.35}
-          metalness={0.8}
+          color="#d4af37"
+          roughness={0.22}
+          metalness={0.92}
         />
       </mesh>
 
-      {/* Optical Magnifying Lens Disc */}
-      <mesh position={[0, 0, 0.04]} material={lensMaterial}>
+      {/* Outer top barrel rim */}
+      <mesh position={[0, 0, 0.073]}>
+        <ringGeometry args={[lensRadius, barrelRadius * 0.95, 48]} />
+        <meshStandardMaterial
+          color="#16171a"
+          roughness={0.35}
+          metalness={0.85}
+        />
+      </mesh>
+
+      {/* Optical Magnifying Lens Disc with subtle curvature and AR reflection */}
+      <mesh position={[0, 0, 0.068]} material={lensMaterial}>
         <circleGeometry args={[lensRadius, 48]} />
       </mesh>
     </group>
