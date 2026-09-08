@@ -427,3 +427,62 @@ html, body, #root {
 .btn-retry:hover {
   background: #ef4444;
 }
+
+/* Magnification and Table Navigation Controls */
+.magnification-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mag-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+  margin-right: 0.2rem;
+}
+
+.btn-mag {
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-mag:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.btn-mag.active {
+  background: #d97706;
+  color: #ffffff;
+  border-color: #f59e0b;
+  box-shadow: 0 0 10px rgba(217, 119, 6, 0.4);
+}
+
+.btn-reset-view {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.btn-reset-view:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.zoom-badge {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}

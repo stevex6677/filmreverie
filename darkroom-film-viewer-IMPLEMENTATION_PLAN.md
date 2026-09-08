@@ -56,7 +56,7 @@ Vitest is used for integration tests. Playwright is used for E2E tests in real d
 
 ### Progress protocol
 
-All milestones (**M1 through M5**) are fully implemented, validated, and accepted by human review. Once accepted, all tests are preserved as cumulative regressions. Multiple coherent commits are allowed.
+All milestones (**M1 through M5**) are fully implemented, validated, and accepted by human review. **M6** adds table inspection zoom, pan, and configurable loupe magnification. Once accepted, all tests are preserved as cumulative regressions. Multiple coherent commits are allowed.
 
 - [x] **M1 — Working five-photo film viewer**
   - **Status:** Accepted.
@@ -169,6 +169,31 @@ All milestones (**M1 through M5**) are fully implemented, validated, and accepte
   - **Completion criteria:** Gate passes and the user explicitly accepts M5.
   - **Evidence:** Automated gate `npm run validate:m5` passed cleanly against production build in real desktop Chrome/WebGL (7/7 Playwright suites, 57 Vitest integration tests across 7 files, 3.3m total run). Authentic 35mm film substrate and rebate markings implemented via procedural high-resolution canvas texture (`filmRebateCanvas.ts`), replacing solid black borders with translucent celluloid base (`rgba(217, 119, 36, 0.82)` amber/orange mask in negative mode; `rgba(35, 27, 20, 0.85)` smoky bronze in positive mode). Edge rebate imprint includes Kodak 400 and Safety Film stock branding, DX barcode timing indicators, frame numbers (`▶ 1`, `1A` through `▶ 5`, `5A`), index dots, and directional film advance arrows. Sprocket holes feature genuine light transmission with subtle contact shadow. Transverse curl implemented via quadratic parabolic displacement (`FILM_CURL_HEIGHT = 0.0018m` / 1.8mm at outer perforation edges), curved photo frame meshes (16 Y-segments), softened cut strip lead corners (`r = 0.006m`), and dynamic dual-sided contact drop shadows. Loupe clearance verified (> 3mm margin under acrylic skirt). Candidate review screenshots generated in `artifacts/`: `m5-film-negative-rebate.png`, `m5-film-positive-translucent.png`, `m5-film-loupe-detail.png`, `m5-film-curl-profile.png`. Zero console errors, zero page errors, zero failed requests.
   - **Human approval:** Accepted by user through review policy approval.
+
+- [ ] **M6 — Table inspection zoom, pan, and loupe magnification**
+  - **Status:** Awaiting human review.
+  - **Outcome:** In table (inspect) mode, the user can smoothly zoom the camera in and out on the light table using the mouse scroll wheel / trackpad, pan across the illuminated table (via right-click drag, middle-click drag, space+drag, or background drag) to easily examine all five photo frames at close range, and dynamically configure the optical magnification of the inspection loupe (`2×`, `4×`, `8×`) via dedicated toolbar controls and keyboard shortcuts.
+  - **Paths/components:** `src/state/viewerState.ts`, `src/utils/cameraBounds.ts`, `src/components/CameraRig.tsx`, `src/components/Loupe.tsx`, `src/components/ViewingTableScene.tsx`, `src/components/Controls.tsx`, `src/App.tsx`, `tests/integration/m6-table-navigation-and-magnification.test.ts`, `tests/e2e/m6-table-navigation-and-magnification.spec.ts`.
+  - **Implementation requirements:**
+    - Table mode scroll zoom: Support smooth camera distance adjustments between minimum close-up bound (`0.8m`) and overview bound (`3.6m`), default at `3.2m`.
+    - Table mode panning: Support bounded horizontal (`x ∈ [-1.4, 1.4]`) and depth (`z ∈ [TABLE_CENTER_Z - 0.5, TABLE_CENTER_Z + 0.5]`) panning across the five photo frames without interfering with loupe hover positioning over the film strip.
+    - Configurable loupe magnification: Expose optical magnification controls (`2×`, `4×`, `8×` presets and step buttons) in the toolbar and shortcuts (`[` / `]` or `-` / `+`), dynamically updating `uMagnification` in the loupe shader.
+    - View reset: Provide a quick reset control (and shortcut `0`) to restore the default table overview framing.
+    - Preserve all prior M1–M5 journeys, room mode orbit, and smooth mode transitions.
+  - **Vitest integration suite:**
+    - Zoom bounds clamping and step adjustments in `viewerReducer`.
+    - Pan bounds clamping across all 5 photo frames.
+    - Loupe magnification state updates and limits.
+    - Transitioning between room mode and table mode resets or cleanly clamps inspect view state.
+  - **Playwright E2E suite:**
+    - Test wheel scroll in inspect mode, asserting camera distance change and canvas scale change.
+    - Test pan drag in inspect mode, asserting view displacement across photo frames.
+    - Test loupe magnification presets (`2×` -> `4×` -> `8×`), asserting increased visual detail under the loupe lens.
+    - Verify zero console errors, zero page errors, and zero failed network requests.
+  - **Gate:** `npm run validate:m6` builds once and runs all M1–M6 integration and E2E suites.
+  - **Human review:** Confirm intuitive scroll-to-zoom feel, comfortable pan limits across all 5 photos, clear optical loupe magnification scaling, and regression-free room transitions.
+  - **Completion criteria:** Gate passes and human reviewer accepts M6.
+  - **Evidence:** Automated gate `npm run validate:m6` passed cleanly against production build in real desktop Chrome/WebGL (9/9 Playwright suites, 75 Vitest integration tests across 8 files, 4.5m total run). In table inspection mode, wheel scrolling smoothly adjusts camera height between 0.8m and 3.6m with live percentage zoom badge and Reset View button. Right-click, middle-click, space+drag, and non-loupe surface drag smoothly pan across all five frames with natural 1:1 camera tracking. Loupe magnification presets (`2×`, `4×`, `8×`) and step shortcuts (`+`/`-`) dynamically reconfigure the optical shader with authentic grain resolution and optical aberration. Resetting view or returning to room mode restores pristine table framing. Candidate review screenshots generated in `artifacts/`: `m6-table-overview.png`, `m6-table-zoomed-in.png`, `m6-table-panned.png`, `m6-loupe-2.5x.png`, `m6-loupe-4x.png`, and `m6-loupe-8x.png`. Zero console errors, zero page errors, zero failed requests.
 
 ## Test configuration contract
 

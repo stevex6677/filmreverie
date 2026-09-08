@@ -13,6 +13,7 @@ interface LoupeProps {
   v: number;
   texture: THREE.Texture;
   isPositive: boolean;
+  magnification?: number;
   isDeterministic?: boolean;
   onClick?: () => void;
 }
@@ -25,6 +26,7 @@ export const Loupe: React.FC<LoupeProps> = ({
   v,
   texture,
   isPositive,
+  magnification = 2.5,
   isDeterministic = false,
   onClick,
 }) => {
@@ -36,9 +38,9 @@ export const Loupe: React.FC<LoupeProps> = ({
 
   const targetPos = isActive ? activePos : restingPos;
 
-  // Shader material for the 2.5x magnified optical lens
+  // Shader material for the magnified optical lens
   const lensMaterial = useMemo(() => {
-    return createLoupeShaderMaterial(texture, isPositive, [u, v], false);
+    return createLoupeShaderMaterial(texture, isPositive, [u, v], false, magnification);
   }, [texture]);
 
   useEffect(() => {
@@ -65,6 +67,19 @@ export const Loupe: React.FC<LoupeProps> = ({
       }
 
       lensMaterial.uniforms.uCenterUv.value.set(u, v);
+
+      if (lensMaterial.uniforms.uMagnification) {
+        if (isDeterministic) {
+          lensMaterial.uniforms.uMagnification.value = magnification;
+        } else {
+          lensMaterial.uniforms.uMagnification.value = THREE.MathUtils.damp(
+            lensMaterial.uniforms.uMagnification.value,
+            magnification,
+            16,
+            delta
+          );
+        }
+      }
 
       // The loupe should ONLY show a film image when it is active AND physically on top of the film strip
       const currentPos = groupRef.current.position;

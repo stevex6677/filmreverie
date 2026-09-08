@@ -74,7 +74,8 @@ export function createLoupeShaderMaterial(
   texture: THREE.Texture,
   isPositive: boolean,
   centerUv: [number, number],
-  isActive: boolean = false
+  isActive: boolean = false,
+  magnification: number = 2.5
 ) {
   return new THREE.ShaderMaterial({
     vertexShader: LoupeVertexShader,
@@ -82,7 +83,7 @@ export function createLoupeShaderMaterial(
     uniforms: {
       uTexture: { value: texture },
       uCenterUv: { value: new THREE.Vector2(centerUv[0], centerUv[1]) },
-      uMagnification: { value: 2.5 },
+      uMagnification: { value: magnification },
       uModeTransition: { value: isPositive ? 1.0 : 0.0 },
       uActive: { value: isActive ? 1.0 : 0.0 },
       uOrangeMask: { value: FILM_ORANGE_MASK },

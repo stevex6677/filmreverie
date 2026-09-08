@@ -122,6 +122,12 @@ export function App() {
             type: "SELECT_FRAME",
             frameIndex: Math.min(4, state.activeFrameIndex + 1),
           });
+        } else if (e.key === "0") {
+          dispatch({ type: "RESET_TABLE_VIEW" });
+        } else if (e.key === "+" || e.key === "=" || e.key === "]") {
+          dispatch({ type: "ADJUST_LOUPE_MAGNIFICATION", delta: 1.0 });
+        } else if (e.key === "-" || e.key === "_" || e.key === "[") {
+          dispatch({ type: "ADJUST_LOUPE_MAGNIFICATION", delta: -1.0 });
         } else if (e.key === "Escape") {
           dispatch({ type: "RETURN_TO_ROOM" });
         }
