@@ -37,3 +37,8 @@ When executing commands on the remote server or resolving file paths, map betwee
 ## 4. Dependencies & Sync Exclusions
 - `.git`, `node_modules`, and OS caches are excluded from file synchronization.
 - Always install packages on the remote server (e.g. `ssh 209.151.144.140 "cd <remote_path> && npm install"`).
+
+## 5. Blender Tasks & MCP
+- Use the Blender MCP (`blender`) for all Blender-related tasks.
+- Files should be saved to the `blender` folder in the current directory (`./blender`).
+- Files under the `blender` folder should be excluded by git.
