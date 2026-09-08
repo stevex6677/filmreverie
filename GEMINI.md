@@ -12,6 +12,13 @@
   ssh 209.151.144.140 "<command>"
   ```
 - Do not run application runtimes or heavy build tools locally.
+- **Pre-execution Sync Flush**: Before running commands on the remote server that rely on recent local edits, always flush Mutagen synchronization to ensure the remote filesystem is up to date:
+  ```bash
+  mutagen sync flush film-photo             # For main workspace
+  mutagen sync flush antigravity-worktrees  # For worktrees
+  # Or flush all: mutagen sync flush -a
+  ```
+  Run `mutagen sync list` if you need to check sync health or verify zero conflicts (`Status: Watching for changes`).
 - **Git is LOCAL ONLY**: `.git` does NOT exist on the remote server. NEVER run `git` commands on the remote server. All git operations (`git status`, `git commit`, etc.) must be executed locally on the Mac.
 
 ## 3. Path Mapping & Worktrees
