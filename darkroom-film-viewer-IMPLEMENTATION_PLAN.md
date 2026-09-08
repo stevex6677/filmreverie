@@ -100,7 +100,7 @@ The current active milestone is **M3**. The agent may complete any coherent subs
   - **Human approval:** Accepted by user ("Looks good, please commit then proceed to m3.").
 
 - [ ] **M3 — Realistic viewing table, film, and loupe**
-  - **Status:** In progress.
+  - **Status:** Awaiting human review.
   - **Outcome:** Turn the accepted functional viewer into the realistic focal point: frosted glowing table, continuous 35mm-style substrate, frame gaps/perforations, subtle curl and gloss, improved negative response, and a physical loupe.
   - **Paths/components:** hero geometry, film/loupe materials and shaders, lighting response; `tests/integration/m3-*`; `tests/e2e/m3-*`.
   - **Implementation requirements:** Use plausible proportions and PBR response; show eight perforations per frame along each edge; let perforations reveal the table; avoid clipped whites, crushed frames, z-fighting, and exaggerated bloom. Keep film transforms centralized and tunable.
@@ -113,8 +113,8 @@ The current active milestone is **M3**. The agent may complete any coherent subs
   - **Gate:** `npm run validate:m3` builds once and runs all M1–M3 integration and E2E suites.
   - **Human review:** Judge film authenticity, table exposure, material scale, perforations, loupe optics, and whether visual realism improves rather than hides the photos.
   - **Completion criteria:** Gate passes and the user explicitly accepts M3.
-  - **Evidence:** Pending.
-  - **Human approval:** Pending.
+  - **Evidence:** Automated gate `npm run validate:m3` passed cleanly against production build in real desktop Chrome/WebGL (5/5 suites, 40 integration tests, 5 E2E tests, 1.9m total run). 35mm film geometry conforms to standard 3:2 frame aspect ratio on a continuous acetate substrate mesh with 8 physical rounded-rectangular perforations punched per frame along each edge (40 top, 40 bottom) using `THREE.ShapeGeometry`, allowing the illuminated light table diffuser to shine directly through (measured lum ~ 226 through sprockets vs lum ~ 14 on substrate borders). Shader density response updated with calibrated logarithmic exposure curve and authentic Kodacolor orange base mask (`#d97724`, R dominant over B by >15) avoiding black crush or white clipping in both negative and positive modes (positive frame variance stdDev between 14.4 and 47.2). Physical loupe upgraded with knurled anodized aluminum barrel, optical-grade clear acrylic skirt, polished brass retaining bezel, subtle radial contact drop shadow, anti-reflective coating highlight, and peripheral chromatic aberration, synchronized with film strip mode transition. Candidate screenshots generated in `artifacts/`: `m3-negative-closeup.png`, `m3-film-edge-perforations.png`, `m3-positive-closeup.png`, and `m3-loupe-center.png`. Zero console errors, zero page errors, zero failed requests.
+  - **Human approval:** Pending human review.
 
 - [ ] **M4 — Darkroom realism and production hardening**
   - **Status:** Blocked by M3 acceptance.
