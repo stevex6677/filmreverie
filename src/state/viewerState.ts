@@ -4,9 +4,11 @@ import {
   RoomCameraPose,
   clampRoomPose,
   DEFAULT_INSPECT_DISTANCE,
+  DEFAULT_TABLE_BRIGHTNESS,
   TABLE_CENTER_Z,
   clampInspectZoom,
   clampInspectPan,
+  clampTableBrightness,
 } from "../utils/cameraBounds";
 
 export type FilmMode = "negative" | "positive";
@@ -32,6 +34,7 @@ export interface ViewerState {
   savedRoomPose: RoomCameraPose;
   inspectZoom: number;
   inspectPan: { x: number; z: number };
+  tableBrightness: number;
   error: string | null;
 }
 
@@ -55,6 +58,7 @@ export const INITIAL_VIEWER_STATE: ViewerState = {
   savedRoomPose: { ...DEFAULT_ROOM_POSE },
   inspectZoom: DEFAULT_INSPECT_DISTANCE,
   inspectPan: { x: 0, z: TABLE_CENTER_Z },
+  tableBrightness: DEFAULT_TABLE_BRIGHTNESS,
   error: null,
 };
 
@@ -65,6 +69,7 @@ export function createInitialViewerState(initialRoomMode: RoomMode = "inspect"):
     savedRoomPose: { ...DEFAULT_ROOM_POSE },
     inspectZoom: DEFAULT_INSPECT_DISTANCE,
     inspectPan: { x: 0, z: TABLE_CENTER_Z },
+    tableBrightness: DEFAULT_TABLE_BRIGHTNESS,
     error: null,
   };
 }
@@ -88,6 +93,8 @@ export type ViewerAction =
   | { type: "RESET_TABLE_VIEW" }
   | { type: "SET_LOUPE_MAGNIFICATION"; magnification: number }
   | { type: "ADJUST_LOUPE_MAGNIFICATION"; delta: number }
+  | { type: "SET_TABLE_BRIGHTNESS"; brightness: number }
+  | { type: "ADJUST_TABLE_BRIGHTNESS"; delta: number }
   | { type: "SET_ERROR"; error: string | null }
   | { type: "RETRY" }
   | { type: "RESET" };
@@ -266,6 +273,18 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
             Math.min(10.0, state.loupe.magnification + action.delta)
           ),
         },
+      };
+
+    case "SET_TABLE_BRIGHTNESS":
+      return {
+        ...state,
+        tableBrightness: clampTableBrightness(action.brightness),
+      };
+
+    case "ADJUST_TABLE_BRIGHTNESS":
+      return {
+        ...state,
+        tableBrightness: clampTableBrightness(state.tableBrightness + action.delta),
       };
 
     case "SET_ERROR":

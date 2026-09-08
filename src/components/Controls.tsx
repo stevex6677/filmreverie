@@ -105,6 +105,21 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
                   ))}
                 </div>
               )}
+              {/* Light Table Brightness Dimmer */}
+              <div className="dimmer-controls" data-testid="dimmer-controls">
+                <span className="dimmer-label">LIGHT:</span>
+                {[0.5, 1.0, 1.5].map((val) => (
+                  <button
+                    key={val}
+                    data-testid={`brightness-btn-${Math.round(val * 100)}`}
+                    className={`btn btn-dimmer ${Math.abs(state.tableBrightness - val) < 0.05 ? "active" : ""}`}
+                    onClick={() => dispatch({ type: "SET_TABLE_BRIGHTNESS", brightness: val })}
+                    title={`Set light table brightness to ${Math.round(val * 100)}% (B)`}
+                  >
+                    {Math.round(val * 100)}%
+                  </button>
+                ))}
+              </div>
             </>
           )}
         </div>
@@ -164,6 +179,13 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
                 <span className="label">ZOOM:</span>
                 <span className="badge zoom-badge" data-testid="zoom-badge">
                   {Math.round((DEFAULT_INSPECT_DISTANCE / state.inspectZoom) * 100)}%
+                </span>
+              </div>
+
+              <div className="status-item">
+                <span className="label">LIGHT:</span>
+                <span className="badge brightness-badge" data-testid="brightness-badge">
+                  {Math.round(state.tableBrightness * 100)}%
                 </span>
               </div>
 
