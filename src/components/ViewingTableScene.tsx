@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { useTexture } from "@react-three/drei";
 import { ROLL_FRAMES } from "../data/rollManifest";
 import { DEFAULT_LAYOUT } from "../utils/loupeMapping";
-import { TABLE_TILT_ANGLE } from "../utils/cameraBounds";
+import { TABLE_SURFACE_Y, TABLE_CENTER_Z } from "../utils/cameraBounds";
 import { ViewerAction, ViewerState } from "../state/viewerState";
 import { LightTable } from "./LightTable";
 import { FilmStrip } from "./FilmStrip";
@@ -89,11 +89,11 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       {/* Surrounding 3D Darkroom Environment & Workbench */}
       <DarkroomRoom />
 
-      {/* Ergonomic Tilted Light Table Console (25 deg tilt) */}
+      {/* Flat Light Table on Workbench (placed horizontally on tabletop) */}
       <group
         ref={tableGroupRef}
-        position={[0, 0, 0]}
-        rotation={[-TABLE_TILT_ANGLE, 0, 0]}
+        position={[0, TABLE_SURFACE_Y, TABLE_CENTER_Z]}
+        rotation={[-Math.PI / 2, 0, 0]}
       >
         {/* Light Table Base & Diffuser */}
         <LightTable

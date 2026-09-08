@@ -8,7 +8,8 @@ import {
   INSPECT_CAMERA_UP,
   ROOM_CAMERA_TARGET,
   ROOM_CAMERA_UP,
-  TABLE_TILT_ANGLE,
+  TABLE_SURFACE_Y,
+  TABLE_CENTER_Z,
   clampRoomPose,
   sphericalToCartesian,
 } from "../../src/utils/cameraBounds";
@@ -60,16 +61,18 @@ describe("M2 Integration — Camera Bounds, State Transitions & Pose Restoration
 
     it("defines ROOM_CAMERA_TARGET for natural eye-level room overview framing", () => {
       expect(ROOM_CAMERA_TARGET[0]).toBe(0);
-      expect(ROOM_CAMERA_TARGET[1]).toBeLessThan(0); // slightly below table center to frame workbench & legs
-      expect(ROOM_CAMERA_TARGET[2]).toBe(0);
+      expect(ROOM_CAMERA_TARGET[1]).toBeLessThan(0); // workbench level to frame flat table & legs
+      expect(ROOM_CAMERA_TARGET[2]).toBe(TABLE_CENTER_Z);
       const [rx, ry, rz] = sphericalToCartesian(DEFAULT_ROOM_POSE, ROOM_CAMERA_TARGET);
       expect(rx).toBeGreaterThan(0.4);
       expect(ry).toBeGreaterThan(0.0); // eye-level viewing elevation
-      expect(rz).toBeGreaterThan(3.5);
+      expect(rz).toBeGreaterThan(3.0);
     });
 
-    it("defines 25 deg console tilt with mathematically perpendicular inspect camera pose", () => {
-      expect(TABLE_TILT_ANGLE).toBeCloseTo((25 * Math.PI) / 180, 5);
+    it("defines flat horizontal table placement with mathematically perpendicular inspect camera pose", () => {
+      // Light table surface resting flat on workbench
+      expect(TABLE_SURFACE_Y).toBeCloseTo(-0.72, 2);
+      expect(TABLE_CENTER_Z).toBeCloseTo(-0.10, 2);
 
       // Inspect camera distance equals 3.2
       const inspectDist = Math.hypot(
@@ -79,19 +82,15 @@ describe("M2 Integration — Camera Bounds, State Transitions & Pose Restoration
       );
       expect(inspectDist).toBeCloseTo(INSPECT_CAMERA_DISTANCE, 5);
 
-      // Inspect camera is angled along table normal (y > 0, z > 0)
+      // Inspect camera is positioned directly above the flat table (top-down perpendicular view)
       expect(INSPECT_CAMERA_POSITION[0]).toBe(0);
-      expect(INSPECT_CAMERA_POSITION[1]).toBeGreaterThan(1.3);
-      expect(INSPECT_CAMERA_POSITION[2]).toBeGreaterThan(2.8);
+      expect(INSPECT_CAMERA_POSITION[1]).toBeCloseTo(TABLE_SURFACE_Y + INSPECT_CAMERA_DISTANCE, 5);
+      expect(INSPECT_CAMERA_POSITION[2]).toBeCloseTo(TABLE_CENTER_Z, 5);
 
-      // Camera Up vector is a normalized unit vector tilted to align with table plane local Y
-      const upLen = Math.hypot(...INSPECT_CAMERA_UP);
-      expect(upLen).toBeCloseTo(1.0, 5);
-      expect(INSPECT_CAMERA_UP[0]).toBe(0);
-      expect(INSPECT_CAMERA_UP[1]).toBeGreaterThan(0.9);
-      expect(INSPECT_CAMERA_UP[2]).toBeLessThan(-0.4);
+      // Camera Up vector points towards -Z (top edge of the flat table)
+      expect(INSPECT_CAMERA_UP).toEqual([0, 0, -1]);
 
-      // View direction vector (from camera to target) is perpendicular to Up vector
+      // View direction vector (from camera to target: [0, -1, 0]) is perpendicular to Up vector ([0, 0, -1])
       const viewDir = [
         INSPECT_CAMERA_TARGET[0] - INSPECT_CAMERA_POSITION[0],
         INSPECT_CAMERA_TARGET[1] - INSPECT_CAMERA_POSITION[1],
