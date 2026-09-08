@@ -3,6 +3,7 @@
 ## 1. File I/O (Read / Write / Edit) -> LOCAL MAC
 - All file reads, inspections, and code modifications MUST be performed on the local Mac filesystem.
 - Do NOT edit files over SSH directly.
+- **Path Resolution & Mapping**: When provided with a path, first check if it is a remote server path or local path. Remote paths often look like `/root/worktrees_antigravity/film_photo/...` or `worktrees_antigravity/film_photo/...` (or `/root/projects/...`). If it is a remote server path, always map it to the corresponding local path before reading. Never read remote server files directly unless explicitly asked for or for special reasons.
 - Mutagen automatically synchronizes changes bi-directionally between local and remote in real time.
 
 ## 2. Command Execution -> REMOTE SERVER
@@ -14,7 +15,7 @@
 - **Git is LOCAL ONLY**: `.git` does NOT exist on the remote server. NEVER run `git` commands on the remote server. All git operations (`git status`, `git commit`, etc.) must be executed locally on the Mac.
 
 ## 3. Path Mapping & Worktrees
-When executing commands on the remote server, map the current working directory to its remote equivalent:
+When executing commands on the remote server or resolving file paths, map between local and remote equivalents:
 
 - **Main Workspace**:
   - Local: `/Users/zhangzimou/Projects/film_photo`
@@ -22,8 +23,8 @@ When executing commands on the remote server, map the current working directory 
   - *Example*: `ssh 209.151.144.140 "cd /root/projects/film_photo && <command>"`
 
 - **Antigravity Worktrees**:
-  - Local: `~/.gemini/antigravity/worktrees/film_photo/<task_name>`
-  - Remote: `/root/worktrees_antigravity/film_photo/<task_name>`
+  - Local: `~/.gemini/antigravity/worktrees/film_photo/<task_name>` (`/Users/zhangzimou/.gemini/antigravity/worktrees/film_photo/<task_name>`)
+  - Remote: `/root/worktrees_antigravity/film_photo/<task_name>` (or `worktrees_antigravity/film_photo/<task_name>`)
   - *Example*: `ssh 209.151.144.140 "cd /root/worktrees_antigravity/film_photo/<task_name> && <command>"`
 
 ## 4. Dependencies & Sync Exclusions
