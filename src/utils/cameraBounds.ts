@@ -33,6 +33,15 @@ export const DEFAULT_ROOM_POSE: RoomCameraPose = {
 };
 
 export const INSPECT_CAMERA_DISTANCE = 3.2;
+export const MIN_INSPECT_DISTANCE = 0.8;
+export const MAX_INSPECT_DISTANCE = 3.6;
+export const DEFAULT_INSPECT_DISTANCE = 3.2;
+
+export const MIN_TABLE_PAN_X = -1.4;
+export const MAX_TABLE_PAN_X = 1.4;
+export const MIN_TABLE_PAN_Z = TABLE_CENTER_Z - 0.5;
+export const MAX_TABLE_PAN_Z = TABLE_CENTER_Z + 0.5;
+
 export const INSPECT_CAMERA_POSITION: [number, number, number] = [
   0,
   TABLE_SURFACE_Y + INSPECT_CAMERA_DISTANCE,
@@ -67,4 +76,15 @@ export function sphericalToCartesian(
   const y = target[1] + safePose.distance * Math.sin(safePose.pitch);
   const z = target[2] + safePose.distance * Math.cos(safePose.pitch) * Math.cos(safePose.yaw);
   return [x, y, z];
+}
+
+export function clampInspectZoom(distance: number): number {
+  return clamp(distance, MIN_INSPECT_DISTANCE, MAX_INSPECT_DISTANCE);
+}
+
+export function clampInspectPan(x: number, z: number): { x: number; z: number } {
+  return {
+    x: clamp(x, MIN_TABLE_PAN_X, MAX_TABLE_PAN_X),
+    z: clamp(z, MIN_TABLE_PAN_Z, MAX_TABLE_PAN_Z),
+  };
 }

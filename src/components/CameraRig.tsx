@@ -2,11 +2,12 @@ import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import {
-  INSPECT_CAMERA_POSITION,
-  INSPECT_CAMERA_TARGET,
+  DEFAULT_INSPECT_DISTANCE,
   INSPECT_CAMERA_UP,
   ROOM_CAMERA_TARGET,
   ROOM_CAMERA_UP,
+  TABLE_CENTER_Z,
+  TABLE_SURFACE_Y,
   RoomCameraPose,
   sphericalToCartesian,
 } from "../utils/cameraBounds";
@@ -16,7 +17,12 @@ interface CameraRigProps {
   roomMode: RoomMode;
   isTransitioning: boolean;
   savedRoomPose: RoomCameraPose;
+  inspectZoom?: number;
+  inspectPan?: { x: number; z: number };
+  isLoupeActive?: boolean;
   onUpdateRoomPose: (pose: Partial<RoomCameraPose>) => void;
+  onAdjustInspectZoom?: (delta: number) => void;
+  onAdjustInspectPan?: (dx: number, dz: number) => void;
   onTransitionComplete: () => void;
   isDeterministic?: boolean;
   isReducedMotion?: boolean;
@@ -26,14 +32,22 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   roomMode,
   isTransitioning,
   savedRoomPose,
+  inspectZoom = DEFAULT_INSPECT_DISTANCE,
+  inspectPan = { x: 0, z: TABLE_CENTER_Z },
+  isLoupeActive = false,
   onUpdateRoomPose,
+  onAdjustInspectZoom,
+  onAdjustInspectPan,
   onTransitionComplete,
   isDeterministic = false,
   isReducedMotion = false,
 }) => {
   const { camera, gl } = useThree();
-  const isDraggingRef = useRef(false);
+  const isDraggingRoomRef = useRef(false);
+  const isPanningTableRef = useRef(false);
+  const isSpacePressedRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0, yaw: 0, pitch: 0 });
+  const panStartRef = useRef({ x: 0, y: 0 });
 
   // Compute desired camera position, up vector, and look target based on mode
   const targetPos = useRef(new THREE.Vector3());
@@ -41,60 +55,133 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   const lookTarget = useRef(new THREE.Vector3(...ROOM_CAMERA_TARGET));
   const desiredLookTarget = useRef(new THREE.Vector3(...ROOM_CAMERA_TARGET));
 
-  useEffect(() => {
-    if (roomMode === "inspect") {
-      targetPos.current.set(...INSPECT_CAMERA_POSITION);
-      targetUp.current.set(...INSPECT_CAMERA_UP);
-      desiredLookTarget.current.set(...INSPECT_CAMERA_TARGET);
-    } else {
-      const [rx, ry, rz] = sphericalToCartesian(savedRoomPose, ROOM_CAMERA_TARGET);
-      targetPos.current.set(rx, ry, rz);
-      targetUp.current.set(...ROOM_CAMERA_UP);
-      desiredLookTarget.current.set(...ROOM_CAMERA_TARGET);
-    }
-  }, [roomMode, savedRoomPose]);
-
   const maxDragDistRef = useRef(0);
 
-  // Pointer drag for orbit in room mode
+  // Spacebar tracking for table pan
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space" && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+        isSpacePressedRef.current = true;
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        isSpacePressedRef.current = false;
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
+
+  // Wheel zoom in inspect mode
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const handleWheel = (e: WheelEvent) => {
+      if (roomMode !== "inspect" || isTransitioning) return;
+      e.preventDefault();
+      if (onAdjustInspectZoom) {
+        // Normalize wheel delta across browsers and touchpads
+        const zoomDelta = Math.sign(e.deltaY) * Math.min(0.35, Math.max(0.12, Math.abs(e.deltaY) * 0.002));
+        onAdjustInspectZoom(zoomDelta);
+      }
+    };
+
+    canvas.addEventListener("wheel", handleWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", handleWheel);
+  }, [gl, roomMode, isTransitioning, onAdjustInspectZoom]);
+
+  // Pointer drag for room orbit or table pan
   useEffect(() => {
     const canvas = gl.domElement;
 
+    const handleContextMenu = (e: MouseEvent) => {
+      if (roomMode === "inspect") {
+        e.preventDefault();
+      }
+    };
+
     const handlePointerDown = (e: PointerEvent) => {
-      // Only drag with primary mouse button in room mode when not transitioning
-      if (e.button !== 0 || roomMode !== "room" || isTransitioning) return;
-      isDraggingRef.current = true;
-      maxDragDistRef.current = 0;
-      dragStartRef.current = {
-        x: e.clientX,
-        y: e.clientY,
-        yaw: savedRoomPose.yaw,
-        pitch: savedRoomPose.pitch,
-      };
-      try {
-        canvas.setPointerCapture(e.pointerId);
-      } catch {}
+      if (isTransitioning) return;
+
+      if (roomMode === "room") {
+        // Orbit room with primary button
+        if (e.button !== 0) return;
+        isDraggingRoomRef.current = true;
+        maxDragDistRef.current = 0;
+        dragStartRef.current = {
+          x: e.clientX,
+          y: e.clientY,
+          yaw: savedRoomPose.yaw,
+          pitch: savedRoomPose.pitch,
+        };
+        try {
+          canvas.setPointerCapture(e.pointerId);
+        } catch {}
+      } else if (roomMode === "inspect") {
+        // Pan table on right-click (button 2), middle-click (button 1), Space+left-click, or left-click when loupe is not active
+        const isPanButton =
+          e.button === 2 ||
+          e.button === 1 ||
+          (e.button === 0 && (isSpacePressedRef.current || !isLoupeActive));
+
+        if (isPanButton) {
+          isPanningTableRef.current = true;
+          panStartRef.current = { x: e.clientX, y: e.clientY };
+          try {
+            canvas.setPointerCapture(e.pointerId);
+          } catch {}
+        }
+      }
     };
 
     const handlePointerMove = (e: PointerEvent) => {
-      if (!isDraggingRef.current || roomMode !== "room" || isTransitioning) return;
-      const dx = e.clientX - dragStartRef.current.x;
-      const dy = e.clientY - dragStartRef.current.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist > maxDragDistRef.current) {
-        maxDragDistRef.current = dist;
+      if (isTransitioning) return;
+
+      if (roomMode === "room" && isDraggingRoomRef.current) {
+        const dx = e.clientX - dragStartRef.current.x;
+        const dy = e.clientY - dragStartRef.current.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > maxDragDistRef.current) {
+          maxDragDistRef.current = dist;
+        }
+
+        const sensitivity = 0.0035;
+        const newYaw = dragStartRef.current.yaw - dx * sensitivity;
+        const newPitch = dragStartRef.current.pitch + dy * sensitivity;
+
+        onUpdateRoomPose({ yaw: newYaw, pitch: newPitch });
+      } else if (roomMode === "inspect" && isPanningTableRef.current) {
+        const dx = e.clientX - panStartRef.current.x;
+        const dy = e.clientY - panStartRef.current.y;
+        panStartRef.current = { x: e.clientX, y: e.clientY };
+
+        if (onAdjustInspectPan) {
+          // World units per pixel based on camera distance and vertical FOV (45 deg)
+          const fovRad = (45 * Math.PI) / 180;
+          const heightWorld = 2 * inspectZoom * Math.tan(fovRad / 2);
+          const worldPerPixel = heightWorld / Math.max(1, canvas.clientHeight);
+
+          // Moving mouse right/down pushes camera left/up (natural grab-and-drag feel)
+          const dWorldX = -dx * worldPerPixel;
+          const dWorldZ = -dy * worldPerPixel;
+          onAdjustInspectPan(dWorldX, dWorldZ);
+        }
       }
-
-      const sensitivity = 0.0035;
-      const newYaw = dragStartRef.current.yaw - dx * sensitivity;
-      const newPitch = dragStartRef.current.pitch + dy * sensitivity;
-
-      onUpdateRoomPose({ yaw: newYaw, pitch: newPitch });
     };
 
     const handlePointerUp = (e: PointerEvent) => {
-      if (isDraggingRef.current) {
-        isDraggingRef.current = false;
+      if (isDraggingRoomRef.current) {
+        isDraggingRoomRef.current = false;
+        try {
+          canvas.releasePointerCapture(e.pointerId);
+        } catch {}
+      }
+      if (isPanningTableRef.current) {
+        isPanningTableRef.current = false;
         try {
           canvas.releasePointerCapture(e.pointerId);
         } catch {}
@@ -102,7 +189,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     };
 
     const handleClickCapture = (e: MouseEvent) => {
-      // If user was dragging to orbit (> 6px movement), suppress mesh click
+      // If user was dragging (> 6px movement), suppress mesh click
       if (maxDragDistRef.current > 6) {
         e.stopPropagation();
         e.stopImmediatePropagation();
@@ -111,25 +198,39 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       }
     };
 
+    canvas.addEventListener("contextmenu", handleContextMenu);
     canvas.addEventListener("pointerdown", handlePointerDown);
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
     canvas.addEventListener("click", handleClickCapture, true);
 
     return () => {
+      canvas.removeEventListener("contextmenu", handleContextMenu);
       canvas.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
       canvas.removeEventListener("click", handleClickCapture, true);
     };
-  }, [gl, roomMode, isTransitioning, savedRoomPose, onUpdateRoomPose]);
+  }, [
+    gl,
+    roomMode,
+    isTransitioning,
+    savedRoomPose,
+    inspectZoom,
+    isLoupeActive,
+    onUpdateRoomPose,
+    onAdjustInspectPan,
+  ]);
 
   // Animate camera position and orientation
   useFrame((_, delta) => {
-    const desiredTarget = roomMode === "inspect" ? INSPECT_CAMERA_TARGET : ROOM_CAMERA_TARGET;
+    const desiredTarget: [number, number, number] =
+      roomMode === "inspect"
+        ? [inspectPan.x, TABLE_SURFACE_Y, inspectPan.z]
+        : ROOM_CAMERA_TARGET;
     const [rx, ry, rz] =
       roomMode === "inspect"
-        ? INSPECT_CAMERA_POSITION
+        ? [inspectPan.x, TABLE_SURFACE_Y + inspectZoom, inspectPan.z]
         : sphericalToCartesian(savedRoomPose, ROOM_CAMERA_TARGET);
     targetPos.current.set(rx, ry, rz);
 
