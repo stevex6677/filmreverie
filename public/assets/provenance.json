@@ -1,0 +1,109 @@
+{
+  "collection": "Darkroom Film Viewer — Roll 01",
+  "version": "1.0.0",
+  "format": "35mm Color Negative Film Strip (5 Frames)",
+  "filmStock": "35mm Daylight Balanced Color Negative (ISO 400)",
+  "aspectRatio": "3:2 (standard 36mm x 24mm active frame area)",
+  "perforations": {
+    "standard": "KS-1870 / Kodak Standard 35mm",
+    "perforationsPerFrame": 8,
+    "totalPerEdge": 40,
+    "dimensionsMm": "2.8mm x 1.98mm with rounded corners",
+    "pitchMm": "4.75mm"
+  },
+  "photos": [
+    {
+      "order": 1,
+      "id": "frame-01-harbor",
+      "title": "Harbor at Night",
+      "sourcePath": "photos/roll-01/frame-01-harbor.png",
+      "derivativePath": "public/assets/photos/frame-01-harbor.jpg",
+      "runtimeUrl": "/assets/photos/frame-01-harbor.jpg",
+      "aspect": 1.5,
+      "license": "CC0 / Public Domain / Local Project Asset",
+      "description": "Moody harbor waters with distant hillside lights under night sky"
+    },
+    {
+      "order": 2,
+      "id": "frame-02-diner",
+      "title": "Roadside Diner",
+      "sourcePath": "photos/roll-01/frame-02-diner.png",
+      "derivativePath": "public/assets/photos/frame-02-diner.jpg",
+      "runtimeUrl": "/assets/photos/frame-02-diner.jpg",
+      "aspect": 1.5,
+      "license": "CC0 / Public Domain / Local Project Asset",
+      "description": "Warmly illuminated roadside diner reflected on wet pavement"
+    },
+    {
+      "order": 3,
+      "id": "frame-03-bicycle",
+      "title": "Bicycle in Alley",
+      "sourcePath": "photos/roll-01/frame-03-bicycle.png",
+      "derivativePath": "public/assets/photos/frame-03-bicycle.jpg",
+      "runtimeUrl": "/assets/photos/frame-03-bicycle.jpg",
+      "aspect": 1.5,
+      "license": "CC0 / Public Domain / Local Project Asset",
+      "description": "Vintage bicycle parked outside weathered wooden wall in rain"
+    },
+    {
+      "order": 4,
+      "id": "frame-04-laundromat",
+      "title": "Laundromat Window",
+      "sourcePath": "photos/roll-01/frame-04-laundromat.png",
+      "derivativePath": "public/assets/photos/frame-04-laundromat.jpg",
+      "runtimeUrl": "/assets/photos/frame-04-laundromat.jpg",
+      "aspect": 1.5,
+      "license": "CC0 / Public Domain / Local Project Asset",
+      "description": "Interior perspective looking out through glass storefront at night"
+    },
+    {
+      "order": 5,
+      "id": "frame-05-road",
+      "title": "Coastal Highway Sunset",
+      "sourcePath": "photos/roll-01/frame-05-road.png",
+      "derivativePath": "public/assets/photos/frame-05-road.jpg",
+      "runtimeUrl": "/assets/photos/frame-05-road.jpg",
+      "aspect": 1.5,
+      "license": "CC0 / Public Domain / Local Project Asset",
+      "description": "Twilight coastal highway stretch along the ocean cliffside"
+    }
+  ],
+  "environmentAssets": [
+    {
+      "name": "Horizontal Light Table",
+      "type": "Procedural PBR Mesh (Three.js / React Three Fiber)",
+      "chassis": "0.08m slim anodized aluminum profile with beveled acrylic diffuser",
+      "provenance": "Custom in-repo procedural implementation"
+    },
+    {
+      "name": "Heavy Industrial Darkroom Workbench",
+      "type": "Procedural PBR Mesh",
+      "components": "Solid benchtop, steel apron, 4 grounded steel box legs with leveling footpads and stretcher rails",
+      "provenance": "Custom in-repo procedural implementation"
+    },
+    {
+      "name": "Photographic Enlarger Station",
+      "type": "Procedural PBR Mesh",
+      "components": "Baseboard, vertical steel support column, condenser lamphouse, bellows assembly, lens mount, and red swing safety filter",
+      "provenance": "Custom in-repo procedural implementation (inspired by classic Beseler 23C)"
+    },
+    {
+      "name": "Darkroom Interval Timer",
+      "type": "Procedural PBR Mesh",
+      "components": "Luminous dial face, housing, dual toggle switches",
+      "provenance": "Custom in-repo procedural implementation (inspired by GraLab 300)"
+    },
+    {
+      "name": "Chemical Reagent Jugs & Developing Trays",
+      "type": "Procedural PBR Mesh",
+      "components": "Amber chemical bottles (Developer, Stop, Fixer) and graduated resin development trays",
+      "provenance": "Custom in-repo procedural implementation"
+    },
+    {
+      "name": "Physical 2.5x Inspection Loupe",
+      "type": "Procedural PBR Mesh & Custom GLSL Shader",
+      "components": "Optical clear acrylic skirt, knurled black anodized barrel, polished brass retaining ring",
+      "provenance": "Custom in-repo procedural implementation"
+    }
+  ]
+}
