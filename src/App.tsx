@@ -8,8 +8,8 @@ import {
 import {
   DEFAULT_ROOM_POSE,
   INSPECT_CAMERA_POSITION,
-  INSPECT_CAMERA_TARGET,
   INSPECT_CAMERA_UP,
+  ROOM_CAMERA_TARGET,
   ROOM_CAMERA_UP,
   sphericalToCartesian,
 } from "./utils/cameraBounds";
@@ -61,7 +61,7 @@ export function App() {
       };
     }
     return {
-      position: sphericalToCartesian(DEFAULT_ROOM_POSE, INSPECT_CAMERA_TARGET),
+      position: sphericalToCartesian(DEFAULT_ROOM_POSE, ROOM_CAMERA_TARGET),
       up: ROOM_CAMERA_UP,
       fov: 45,
     };

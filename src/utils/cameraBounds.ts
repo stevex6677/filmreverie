@@ -18,16 +18,16 @@ export const TABLE_TILT_ANGLE = (25 * Math.PI) / 180; // ~0.4363 rad (25 deg erg
 export const DEFAULT_CAMERA_BOUNDS: CameraBounds = {
   minYaw: -0.42,  // ~ -24 deg (restrained room orbit)
   maxYaw: 0.42,   // ~ +24 deg
-  minPitch: 0.08, // ~ 4.5 deg (comfortably above workbench/floor)
-  maxPitch: 0.36, // ~ 20.6 deg (restrained elevation)
+  minPitch: 0.05, // ~ 2.9 deg (comfortably above workbench/floor)
+  maxPitch: 0.35, // ~ 20 deg (restrained elevation)
   minDistance: 3.2,
   maxDistance: 4.5,
 };
 
 export const DEFAULT_ROOM_POSE: RoomCameraPose = {
-  yaw: 0.22,     // ~12.6 deg gentle 3/4 architectural perspective
-  pitch: 0.22,   // ~12.6 deg eye-level elevation looking at tilted table
-  distance: 4.35, // genuine room overview showing table, bench, legs, floor, and safelight
+  yaw: 0.20,     // ~11.5 deg gentle 3/4 architectural perspective
+  pitch: 0.11,   // ~6.3 deg natural standing eye-level gaze toward table & workbench
+  distance: 4.4, // room overview showing table, bench, steel legs, shelf, floor, and safelight
 };
 
 export const INSPECT_CAMERA_DISTANCE = 3.2;
@@ -43,6 +43,7 @@ export const INSPECT_CAMERA_UP: [number, number, number] = [
 ];
 export const ROOM_CAMERA_UP: [number, number, number] = [0, 1, 0];
 export const INSPECT_CAMERA_TARGET: [number, number, number] = [0, 0, 0];
+export const ROOM_CAMERA_TARGET: [number, number, number] = [0, -0.28, 0];
 
 export function clamp(val: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, val));

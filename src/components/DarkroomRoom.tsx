@@ -1,7 +1,7 @@
 import React from "react";
 
 export const DarkroomRoom: React.FC = () => {
-  const floorY = -1.15;
+  const floorY = -1.70;
   const ceilingY = 2.4;
   const roomW = 7.6;
   const roomD = 6.2;
@@ -11,21 +11,46 @@ export const DarkroomRoom: React.FC = () => {
     <group position={[0, 0, 0]}>
       {/* --- LIGHTING --- */}
       {/* Visible, warm-toned darkroom ambient so walls, floor, and bench are clearly defined */}
-      <ambientLight color="#323846" intensity={0.75} />
+      <ambientLight color="#3b4252" intensity={0.88} />
 
-      {/* Front directional light matching M1 viewing illumination */}
+      {/* Front directional light matching viewing illumination */}
       <directionalLight
         position={[0, 2, 4]}
         color="#e2e8f0"
-        intensity={0.8}
+        intensity={0.85}
       />
 
       {/* Light table forward glow on workbench surface */}
       <pointLight
-        position={[0, -0.2, 0.4]}
+        position={[0, -0.35, 0.6]}
         color="#edf2f7"
         intensity={0.65}
-        distance={3.2}
+        distance={3.5}
+        decay={2}
+      />
+
+      {/* Dual under-bench fill lights to illuminate left and right steel leg assemblies and footpads */}
+      <pointLight
+        position={[-1.7, floorY + 0.65, 0.8]}
+        color="#c8d6e5"
+        intensity={0.7}
+        distance={3.5}
+        decay={2}
+      />
+      <pointLight
+        position={[1.7, floorY + 0.65, 0.8]}
+        color="#c8d6e5"
+        intensity={0.7}
+        distance={3.5}
+        decay={2}
+      />
+
+      {/* Subtle floor kicker light for grounded floor contrast */}
+      <pointLight
+        position={[0, floorY + 0.15, 0.9]}
+        color="#64748b"
+        intensity={0.5}
+        distance={3.5}
         decay={2}
       />
 
@@ -101,7 +126,7 @@ export const DarkroomRoom: React.FC = () => {
       {/* Darkroom Floor */}
       <mesh position={[0, floorY, 1.2]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[roomW, roomD]} />
-        <meshStandardMaterial color="#1e2129" roughness={0.75} metalness={0.15} />
+        <meshStandardMaterial color="#222630" roughness={0.65} metalness={0.25} />
       </mesh>
 
       {/* Subtle floor seams/runner for depth */}
@@ -132,72 +157,87 @@ export const DarkroomRoom: React.FC = () => {
         {/* Workbench Edge Trim / Apron */}
         <mesh position={[0, -0.87, 0.49]}>
           <boxGeometry args={[4.42, 0.04, 0.04]} />
-          <meshStandardMaterial color="#1f222a" roughness={0.5} metalness={0.5} />
+          <meshStandardMaterial color="#222630" roughness={0.45} metalness={0.55} />
         </mesh>
 
         {/* 4 Heavy Steel Legs from benchtop down to floor */}
         {/* Front-Left Leg */}
-        <mesh position={[-2.05, (floorY - 0.86) / 2, 0.4]}>
+        <mesh position={[-1.88, (floorY - 0.86) / 2, 0.4]}>
           <boxGeometry args={[0.09, -0.86 - floorY, 0.09]} />
-          <meshStandardMaterial color="#1b1d24" roughness={0.45} metalness={0.65} />
+          <meshStandardMaterial color="#4a5568" roughness={0.25} metalness={0.8} />
         </mesh>
         {/* Front-Left Foot Pad */}
-        <mesh position={[-2.05, floorY + 0.015, 0.4]}>
+        <mesh position={[-1.88, floorY + 0.015, 0.4]}>
           <cylinderGeometry args={[0.07, 0.07, 0.03, 16]} />
-          <meshStandardMaterial color="#14151a" roughness={0.7} metalness={0.8} />
+          <meshStandardMaterial color="#2d3748" roughness={0.3} metalness={0.85} />
         </mesh>
 
         {/* Front-Right Leg */}
-        <mesh position={[2.05, (floorY - 0.86) / 2, 0.4]}>
+        <mesh position={[1.88, (floorY - 0.86) / 2, 0.4]}>
           <boxGeometry args={[0.09, -0.86 - floorY, 0.09]} />
-          <meshStandardMaterial color="#1b1d24" roughness={0.45} metalness={0.65} />
+          <meshStandardMaterial color="#4a5568" roughness={0.25} metalness={0.8} />
         </mesh>
         {/* Front-Right Foot Pad */}
-        <mesh position={[2.05, floorY + 0.015, 0.4]}>
+        <mesh position={[1.88, floorY + 0.015, 0.4]}>
           <cylinderGeometry args={[0.07, 0.07, 0.03, 16]} />
-          <meshStandardMaterial color="#14151a" roughness={0.7} metalness={0.8} />
+          <meshStandardMaterial color="#2d3748" roughness={0.3} metalness={0.85} />
         </mesh>
 
         {/* Back-Left Leg */}
-        <mesh position={[-2.05, (floorY - 0.86) / 2, -0.8]}>
+        <mesh position={[-1.88, (floorY - 0.86) / 2, -0.8]}>
           <boxGeometry args={[0.09, -0.86 - floorY, 0.09]} />
-          <meshStandardMaterial color="#1b1d24" roughness={0.45} metalness={0.65} />
+          <meshStandardMaterial color="#4a5568" roughness={0.25} metalness={0.8} />
         </mesh>
         {/* Back-Left Foot Pad */}
-        <mesh position={[-2.05, floorY + 0.015, -0.8]}>
+        <mesh position={[-1.88, floorY + 0.015, -0.8]}>
           <cylinderGeometry args={[0.07, 0.07, 0.03, 16]} />
-          <meshStandardMaterial color="#14151a" roughness={0.7} metalness={0.8} />
+          <meshStandardMaterial color="#2d3748" roughness={0.3} metalness={0.85} />
         </mesh>
 
         {/* Back-Right Leg */}
-        <mesh position={[2.05, (floorY - 0.86) / 2, -0.8]}>
+        <mesh position={[1.88, (floorY - 0.86) / 2, -0.8]}>
           <boxGeometry args={[0.09, -0.86 - floorY, 0.09]} />
-          <meshStandardMaterial color="#1b1d24" roughness={0.45} metalness={0.65} />
+          <meshStandardMaterial color="#4a5568" roughness={0.25} metalness={0.8} />
         </mesh>
         {/* Back-Right Foot Pad */}
-        <mesh position={[2.05, floorY + 0.015, -0.8]}>
+        <mesh position={[1.88, floorY + 0.015, -0.8]}>
           <cylinderGeometry args={[0.07, 0.07, 0.03, 16]} />
-          <meshStandardMaterial color="#14151a" roughness={0.7} metalness={0.8} />
+          <meshStandardMaterial color="#2d3748" roughness={0.3} metalness={0.85} />
         </mesh>
 
         {/* Horizontal Stretcher Rails connecting legs */}
-        <mesh position={[0, -0.96, -0.8]}>
-          <boxGeometry args={[4.1, 0.04, 0.04]} />
-          <meshStandardMaterial color="#1a1c22" roughness={0.5} metalness={0.6} />
+        <mesh position={[0, -1.28, -0.8]}>
+          <boxGeometry args={[3.76, 0.04, 0.04]} />
+          <meshStandardMaterial color="#2c313d" roughness={0.4} metalness={0.7} />
         </mesh>
-        <mesh position={[-2.05, -0.96, -0.2]}>
+        <mesh position={[-1.88, -1.28, -0.2]}>
           <boxGeometry args={[0.04, 0.04, 1.2]} />
-          <meshStandardMaterial color="#1a1c22" roughness={0.5} metalness={0.6} />
+          <meshStandardMaterial color="#2c313d" roughness={0.4} metalness={0.7} />
         </mesh>
-        <mesh position={[2.05, -0.96, -0.2]}>
+        <mesh position={[1.88, -1.28, -0.2]}>
           <boxGeometry args={[0.04, 0.04, 1.2]} />
-          <meshStandardMaterial color="#1a1c22" roughness={0.5} metalness={0.6} />
+          <meshStandardMaterial color="#2c313d" roughness={0.4} metalness={0.7} />
         </mesh>
 
         {/* Lower Storage Shelf (grounded relationship to floor) */}
-        <mesh position={[0, floorY + 0.12, -0.2]}>
-          <boxGeometry args={[4.1, 0.03, 1.2]} />
-          <meshStandardMaterial color="#21242c" roughness={0.7} metalness={0.2} />
+        <mesh position={[0, floorY + 0.18, -0.2]}>
+          <boxGeometry args={[3.76, 0.03, 1.2]} />
+          <meshStandardMaterial color="#252831" roughness={0.7} metalness={0.3} />
+        </mesh>
+
+        {/* Shelf Props: Darkroom Developer Trays on Lower Shelf */}
+        <mesh position={[-0.85, floorY + 0.22, -0.2]}>
+          <boxGeometry args={[0.48, 0.05, 0.58]} />
+          <meshStandardMaterial color="#dbeafe" roughness={0.4} metalness={0.1} />
+        </mesh>
+        <mesh position={[-0.30, floorY + 0.22, -0.2]}>
+          <boxGeometry args={[0.48, 0.05, 0.58]} />
+          <meshStandardMaterial color="#94a3b8" roughness={0.4} metalness={0.1} />
+        </mesh>
+        {/* Shelf Props: Photo Paper Boxes Stack */}
+        <mesh position={[0.75, floorY + 0.23, -0.2]}>
+          <boxGeometry args={[0.38, 0.07, 0.48]} />
+          <meshStandardMaterial color="#1e293b" roughness={0.6} metalness={0.15} />
         </mesh>
 
         {/* --- DRAFTING CONSOLE STAND & RISER ARCHITECTURE --- */}

@@ -6,6 +6,7 @@ import {
   INSPECT_CAMERA_POSITION,
   INSPECT_CAMERA_TARGET,
   INSPECT_CAMERA_UP,
+  ROOM_CAMERA_TARGET,
   ROOM_CAMERA_UP,
   TABLE_TILT_ANGLE,
   clampRoomPose,
@@ -55,6 +56,16 @@ describe("M2 Integration — Camera Bounds, State Transitions & Pose Restoration
       expect(x).toBeGreaterThan(0.4); // gentle 3/4 architectural perspective
       expect(y).toBeGreaterThan(0.4); // eye-level viewing elevation
       expect(z).toBeGreaterThan(3.0); // comfortable distance from table
+    });
+
+    it("defines ROOM_CAMERA_TARGET for natural eye-level room overview framing", () => {
+      expect(ROOM_CAMERA_TARGET[0]).toBe(0);
+      expect(ROOM_CAMERA_TARGET[1]).toBeLessThan(0); // slightly below table center to frame workbench & legs
+      expect(ROOM_CAMERA_TARGET[2]).toBe(0);
+      const [rx, ry, rz] = sphericalToCartesian(DEFAULT_ROOM_POSE, ROOM_CAMERA_TARGET);
+      expect(rx).toBeGreaterThan(0.4);
+      expect(ry).toBeGreaterThan(0.0); // eye-level viewing elevation
+      expect(rz).toBeGreaterThan(3.5);
     });
 
     it("defines 25 deg console tilt with mathematically perpendicular inspect camera pose", () => {
