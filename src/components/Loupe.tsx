@@ -1,7 +1,8 @@
-import React, { useMemo, useRef } from "react";
+import React, { useMemo, useRef, useEffect } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { createLoupeShaderMaterial } from "../shaders/loupeShader";
+import { DEFAULT_LAYOUT, isPointOverStrip } from "../utils/loupeMapping";
 
 interface LoupeProps {
   isActive: boolean;
@@ -37,8 +38,14 @@ export const Loupe: React.FC<LoupeProps> = ({
 
   // Shader material for the 2.5x magnified optical lens
   const lensMaterial = useMemo(() => {
-    return createLoupeShaderMaterial(texture, isPositive, [u, v]);
-  }, [texture, isPositive, u, v]);
+    return createLoupeShaderMaterial(texture, isPositive, [u, v], false);
+  }, [texture]);
+
+  useEffect(() => {
+    return () => {
+      lensMaterial.dispose();
+    };
+  }, [lensMaterial]);
 
   // Update uniforms and smooth positioning
   useFrame((_, delta) => {
@@ -58,6 +65,26 @@ export const Loupe: React.FC<LoupeProps> = ({
       }
 
       lensMaterial.uniforms.uCenterUv.value.set(u, v);
+
+      // The loupe should ONLY show a film image when it is active AND physically on top of the film strip
+      const currentPos = groupRef.current.position;
+      const isOverStrip = isPointOverStrip(currentPos, DEFAULT_LAYOUT);
+
+      const shouldShowImage = isActive && isOverStrip;
+      const targetActive = shouldShowImage ? 1.0 : 0.0;
+      const currentActive = lensMaterial.uniforms.uActive.value;
+      if (isDeterministic) {
+        lensMaterial.uniforms.uActive.value = targetActive;
+      } else if (Math.abs(targetActive - currentActive) > 0.001) {
+        lensMaterial.uniforms.uActive.value = THREE.MathUtils.damp(
+          currentActive,
+          targetActive,
+          16,
+          delta
+        );
+      } else {
+        lensMaterial.uniforms.uActive.value = targetActive;
+      }
 
       const targetMode = isPositive ? 1.0 : 0.0;
       const currentMode = lensMaterial.uniforms.uModeTransition.value;

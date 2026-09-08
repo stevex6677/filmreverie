@@ -58,7 +58,7 @@ export const FilmStrip: React.FC<FilmStripProps> = ({
     const shape = new THREE.Shape();
     const hw = width / 2;
     const hh = height / 2;
-    const r = 0.006; // Softened cut lead corners
+    const r = 0.0008; // Authentic lab guillotine sheared ends with slight micro-bevel
 
     shape.moveTo(-hw + r, -hh);
     shape.lineTo(hw - r, -hh);

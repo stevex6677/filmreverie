@@ -133,5 +133,13 @@ describe("M3 Integration — Film Realism, Perforation Geometry & Shader Synchro
       expect(FILM_ORANGE_MASK.r).toBeGreaterThan(FILM_ORANGE_MASK.b + 0.5);
       expect(FILM_ORANGE_MASK.r).toBeGreaterThan(FILM_ORANGE_MASK.g);
     });
+
+    it("initializes uActive to 0.0 when resting and 1.0 when active", () => {
+      const restingMat = createLoupeShaderMaterial(dummyTexture, false, [0.5, 0.5], false);
+      expect(restingMat.uniforms.uActive.value).toBe(0.0);
+
+      const activeMat = createLoupeShaderMaterial(dummyTexture, false, [0.5, 0.5], true);
+      expect(activeMat.uniforms.uActive.value).toBe(1.0);
+    });
   });
 });
