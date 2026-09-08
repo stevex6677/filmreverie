@@ -10,18 +10,18 @@ interface LightTableProps {
 
 export const LightTable: React.FC<LightTableProps> = ({
   width = 3.6,
-  height = 1.6,
+  height = 1.8,
   onPointerMove,
   onClick,
 }) => {
-  const panelWidth = width - 0.25;
-  const panelHeight = height - 0.25;
+  const panelWidth = width - 0.20;
+  const panelHeight = height - 0.20;
 
   return (
     <group position={[0, 0, 0]}>
-      {/* Outer physical chassis/casing with tangible thickness (0.18m deep) */}
-      <mesh position={[0, 0, -0.09]}>
-        <boxGeometry args={[width, height, 0.18]} />
+      {/* Outer physical chassis/casing with slim tabletop lightbox profile (0.08m deep) */}
+      <mesh position={[0, 0, -0.04]}>
+        <boxGeometry args={[width, height, 0.08]} />
         <meshStandardMaterial
           color="#1b1d22"
           roughness={0.4}
@@ -29,15 +29,15 @@ export const LightTable: React.FC<LightTableProps> = ({
         />
       </mesh>
 
-      {/* Anodized lower drafting lip/ledge holding negatives & tools */}
-      <mesh position={[0, -panelHeight / 2 - 0.045, 0.015]}>
-        <boxGeometry args={[panelWidth + 0.08, 0.03, 0.03]} />
+      {/* Anodized lower aluminum lip/trim */}
+      <mesh position={[0, -panelHeight / 2 - 0.045, 0.008]}>
+        <boxGeometry args={[panelWidth + 0.08, 0.02, 0.016]} />
         <meshStandardMaterial color="#2c3038" roughness={0.35} metalness={0.8} />
       </mesh>
 
       {/* Side power rocker switch / dial accent */}
-      <mesh position={[width / 2 + 0.015, -height / 4, -0.09]}>
-        <boxGeometry args={[0.03, 0.12, 0.06]} />
+      <mesh position={[width / 2 + 0.015, -height / 4, -0.04]}>
+        <boxGeometry args={[0.03, 0.12, 0.04]} />
         <meshStandardMaterial color="#ea580c" roughness={0.3} metalness={0.2} />
       </mesh>
 

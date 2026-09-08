@@ -13,37 +13,35 @@ export interface CameraBounds {
   maxDistance: number;
 }
 
-export const TABLE_TILT_ANGLE = (25 * Math.PI) / 180; // ~0.4363 rad (25 deg ergonomic drafting light console tilt)
+// Flat light table coordinates on workbench
+export const TABLE_SURFACE_Y = -0.72; // Illuminated table surface resting flat on workbench
+export const TABLE_CENTER_Z = -0.10;  // Centered front-to-back on workbench top
 
 export const DEFAULT_CAMERA_BOUNDS: CameraBounds = {
   minYaw: -0.42,  // ~ -24 deg (restrained room orbit)
   maxYaw: 0.42,   // ~ +24 deg
-  minPitch: 0.05, // ~ 2.9 deg (comfortably above workbench/floor)
-  maxPitch: 0.35, // ~ 20 deg (restrained elevation)
-  minDistance: 3.2,
-  maxDistance: 4.5,
+  minPitch: 0.10, // ~ 5.7 deg (comfortably above workbench/floor)
+  maxPitch: 0.45, // ~ 25.8 deg (restrained elevation)
+  minDistance: 3.0,
+  maxDistance: 4.2,
 };
 
 export const DEFAULT_ROOM_POSE: RoomCameraPose = {
-  yaw: 0.20,     // ~11.5 deg gentle 3/4 architectural perspective
-  pitch: 0.11,   // ~6.3 deg natural standing eye-level gaze toward table & workbench
-  distance: 4.4, // room overview showing table, bench, steel legs, shelf, floor, and safelight
+  yaw: 0.18,     // ~10.3 deg gentle 3/4 architectural perspective
+  pitch: 0.28,   // ~16 deg natural standing eye-level downward gaze toward flat table & workbench
+  distance: 3.5, // room overview showing flat table, bench, steel legs, shelf, floor, and safelight
 };
 
 export const INSPECT_CAMERA_DISTANCE = 3.2;
 export const INSPECT_CAMERA_POSITION: [number, number, number] = [
   0,
-  INSPECT_CAMERA_DISTANCE * Math.sin(TABLE_TILT_ANGLE),
-  INSPECT_CAMERA_DISTANCE * Math.cos(TABLE_TILT_ANGLE),
+  TABLE_SURFACE_Y + INSPECT_CAMERA_DISTANCE,
+  TABLE_CENTER_Z,
 ];
-export const INSPECT_CAMERA_UP: [number, number, number] = [
-  0,
-  Math.cos(TABLE_TILT_ANGLE),
-  -Math.sin(TABLE_TILT_ANGLE),
-];
+export const INSPECT_CAMERA_UP: [number, number, number] = [0, 0, -1];
 export const ROOM_CAMERA_UP: [number, number, number] = [0, 1, 0];
-export const INSPECT_CAMERA_TARGET: [number, number, number] = [0, 0, 0];
-export const ROOM_CAMERA_TARGET: [number, number, number] = [0, -0.28, 0];
+export const INSPECT_CAMERA_TARGET: [number, number, number] = [0, TABLE_SURFACE_Y, TABLE_CENTER_Z];
+export const ROOM_CAMERA_TARGET: [number, number, number] = [0, -0.78, TABLE_CENTER_Z];
 
 export function clamp(val: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, val));

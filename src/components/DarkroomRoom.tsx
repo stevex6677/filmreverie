@@ -20,25 +20,25 @@ export const DarkroomRoom: React.FC = () => {
         intensity={0.85}
       />
 
-      {/* Light table forward glow on workbench surface */}
+      {/* Light table glow on surrounding workbench and room */}
       <pointLight
-        position={[0, -0.35, 0.6]}
+        position={[0, -0.20, -0.10]}
         color="#edf2f7"
-        intensity={0.65}
+        intensity={0.7}
         distance={3.5}
         decay={2}
       />
 
       {/* Dual under-bench fill lights to illuminate left and right steel leg assemblies and footpads */}
       <pointLight
-        position={[-1.7, floorY + 0.65, 0.8]}
+        position={[-1.7, floorY + 0.65, 0.4]}
         color="#c8d6e5"
         intensity={0.7}
         distance={3.5}
         decay={2}
       />
       <pointLight
-        position={[1.7, floorY + 0.65, 0.8]}
+        position={[1.7, floorY + 0.65, 0.4]}
         color="#c8d6e5"
         intensity={0.7}
         distance={3.5}
@@ -47,7 +47,7 @@ export const DarkroomRoom: React.FC = () => {
 
       {/* Subtle floor kicker light for grounded floor contrast */}
       <pointLight
-        position={[0, floorY + 0.15, 0.9]}
+        position={[0, floorY + 0.15, 0.6]}
         color="#64748b"
         intensity={0.5}
         distance={3.5}
@@ -55,7 +55,7 @@ export const DarkroomRoom: React.FC = () => {
       />
 
       {/* --- RED SAFELIGHT FIXTURE (Back Wall) --- */}
-      <group position={[-1.6, 0.95, -1.05]}>
+      <group position={[-1.6, 0.80, -1.05]}>
         {/* Wall bracket & fixture housing */}
         <mesh position={[0, 0, 0]}>
           <boxGeometry args={[0.34, 0.24, 0.14]} />
@@ -141,12 +141,11 @@ export const DarkroomRoom: React.FC = () => {
         />
       </mesh>
 
-      {/* --- PHYSICAL WORKBENCH SUPPORTING THE VIEWING TABLE --- */}
+      {/* --- PHYSICAL WORKBENCH SUPPORTING THE FLAT VIEWING TABLE --- */}
       <group position={[0, 0, 0]}>
-        {/* Solid Workbench Top (extends beneath and in front of the table) */}
-        {/* Table is width 3.6, height 1.6 from Y = -0.80 to +0.80 */}
-        <mesh position={[0, -0.83, -0.2]}>
-          <boxGeometry args={[4.4, 0.06, 1.4]} />
+        {/* Solid Workbench Top (extends beneath and around the flat light table) */}
+        <mesh position={[0, -0.83, -0.10]}>
+          <boxGeometry args={[4.4, 0.06, 2.0]} />
           <meshStandardMaterial
             color="#272b35"
             roughness={0.55}
@@ -155,159 +154,98 @@ export const DarkroomRoom: React.FC = () => {
         </mesh>
 
         {/* Workbench Edge Trim / Apron */}
-        <mesh position={[0, -0.87, 0.49]}>
+        <mesh position={[0, -0.87, 0.89]}>
           <boxGeometry args={[4.42, 0.04, 0.04]} />
           <meshStandardMaterial color="#222630" roughness={0.45} metalness={0.55} />
         </mesh>
 
         {/* 4 Heavy Steel Legs from benchtop down to floor */}
         {/* Front-Left Leg */}
-        <mesh position={[-1.88, (floorY - 0.86) / 2, 0.4]}>
+        <mesh position={[-1.88, (floorY - 0.86) / 2, 0.75]}>
           <boxGeometry args={[0.09, -0.86 - floorY, 0.09]} />
           <meshStandardMaterial color="#4a5568" roughness={0.25} metalness={0.8} />
         </mesh>
         {/* Front-Left Foot Pad */}
-        <mesh position={[-1.88, floorY + 0.015, 0.4]}>
+        <mesh position={[-1.88, floorY + 0.015, 0.75]}>
           <cylinderGeometry args={[0.07, 0.07, 0.03, 16]} />
           <meshStandardMaterial color="#2d3748" roughness={0.3} metalness={0.85} />
         </mesh>
 
         {/* Front-Right Leg */}
-        <mesh position={[1.88, (floorY - 0.86) / 2, 0.4]}>
+        <mesh position={[1.88, (floorY - 0.86) / 2, 0.75]}>
           <boxGeometry args={[0.09, -0.86 - floorY, 0.09]} />
           <meshStandardMaterial color="#4a5568" roughness={0.25} metalness={0.8} />
         </mesh>
         {/* Front-Right Foot Pad */}
-        <mesh position={[1.88, floorY + 0.015, 0.4]}>
+        <mesh position={[1.88, floorY + 0.015, 0.75]}>
           <cylinderGeometry args={[0.07, 0.07, 0.03, 16]} />
           <meshStandardMaterial color="#2d3748" roughness={0.3} metalness={0.85} />
         </mesh>
 
         {/* Back-Left Leg */}
-        <mesh position={[-1.88, (floorY - 0.86) / 2, -0.8]}>
+        <mesh position={[-1.88, (floorY - 0.86) / 2, -0.95]}>
           <boxGeometry args={[0.09, -0.86 - floorY, 0.09]} />
           <meshStandardMaterial color="#4a5568" roughness={0.25} metalness={0.8} />
         </mesh>
         {/* Back-Left Foot Pad */}
-        <mesh position={[-1.88, floorY + 0.015, -0.8]}>
+        <mesh position={[-1.88, floorY + 0.015, -0.95]}>
           <cylinderGeometry args={[0.07, 0.07, 0.03, 16]} />
           <meshStandardMaterial color="#2d3748" roughness={0.3} metalness={0.85} />
         </mesh>
 
         {/* Back-Right Leg */}
-        <mesh position={[1.88, (floorY - 0.86) / 2, -0.8]}>
+        <mesh position={[1.88, (floorY - 0.86) / 2, -0.95]}>
           <boxGeometry args={[0.09, -0.86 - floorY, 0.09]} />
           <meshStandardMaterial color="#4a5568" roughness={0.25} metalness={0.8} />
         </mesh>
         {/* Back-Right Foot Pad */}
-        <mesh position={[1.88, floorY + 0.015, -0.8]}>
+        <mesh position={[1.88, floorY + 0.015, -0.95]}>
           <cylinderGeometry args={[0.07, 0.07, 0.03, 16]} />
           <meshStandardMaterial color="#2d3748" roughness={0.3} metalness={0.85} />
         </mesh>
 
         {/* Horizontal Stretcher Rails connecting legs */}
-        <mesh position={[0, -1.28, -0.8]}>
+        <mesh position={[0, -1.28, -0.95]}>
           <boxGeometry args={[3.76, 0.04, 0.04]} />
           <meshStandardMaterial color="#2c313d" roughness={0.4} metalness={0.7} />
         </mesh>
-        <mesh position={[-1.88, -1.28, -0.2]}>
-          <boxGeometry args={[0.04, 0.04, 1.2]} />
+        <mesh position={[-1.88, -1.28, -0.10]}>
+          <boxGeometry args={[0.04, 0.04, 1.7]} />
           <meshStandardMaterial color="#2c313d" roughness={0.4} metalness={0.7} />
         </mesh>
-        <mesh position={[1.88, -1.28, -0.2]}>
-          <boxGeometry args={[0.04, 0.04, 1.2]} />
+        <mesh position={[1.88, -1.28, -0.10]}>
+          <boxGeometry args={[0.04, 0.04, 1.7]} />
           <meshStandardMaterial color="#2c313d" roughness={0.4} metalness={0.7} />
         </mesh>
 
         {/* Lower Storage Shelf (grounded relationship to floor) */}
-        <mesh position={[0, floorY + 0.18, -0.2]}>
-          <boxGeometry args={[3.76, 0.03, 1.2]} />
+        <mesh position={[0, floorY + 0.18, -0.10]}>
+          <boxGeometry args={[3.76, 0.03, 1.7]} />
           <meshStandardMaterial color="#252831" roughness={0.7} metalness={0.3} />
         </mesh>
 
         {/* Shelf Props: Darkroom Developer Trays on Lower Shelf */}
-        <mesh position={[-0.85, floorY + 0.22, -0.2]}>
+        <mesh position={[-0.85, floorY + 0.22, -0.10]}>
           <boxGeometry args={[0.48, 0.05, 0.58]} />
           <meshStandardMaterial color="#dbeafe" roughness={0.4} metalness={0.1} />
         </mesh>
-        <mesh position={[-0.30, floorY + 0.22, -0.2]}>
+        <mesh position={[-0.30, floorY + 0.22, -0.10]}>
           <boxGeometry args={[0.48, 0.05, 0.58]} />
           <meshStandardMaterial color="#94a3b8" roughness={0.4} metalness={0.1} />
         </mesh>
         {/* Shelf Props: Photo Paper Boxes Stack */}
-        <mesh position={[0.75, floorY + 0.23, -0.2]}>
+        <mesh position={[0.75, floorY + 0.23, -0.10]}>
           <boxGeometry args={[0.38, 0.07, 0.48]} />
           <meshStandardMaterial color="#1e293b" roughness={0.6} metalness={0.15} />
         </mesh>
 
-        {/* --- DRAFTING CONSOLE STAND & RISER ARCHITECTURE --- */}
-        {/* Left Console Base Rail on Workbench */}
-        <mesh position={[-1.82, -0.78, 0]}>
-          <boxGeometry args={[0.06, 0.04, 0.76]} />
-          <meshStandardMaterial color="#1a1c23" roughness={0.4} metalness={0.7} />
-        </mesh>
-        {/* Right Console Base Rail on Workbench */}
-        <mesh position={[1.82, -0.78, 0]}>
-          <boxGeometry args={[0.06, 0.04, 0.76]} />
-          <meshStandardMaterial color="#1a1c23" roughness={0.4} metalness={0.7} />
-        </mesh>
-
-        {/* Front Neoprene Cushion Feet */}
-        <mesh position={[-1.75, -0.78, 0.34]}>
-          <boxGeometry args={[0.10, 0.04, 0.08]} />
-          <meshStandardMaterial color="#111215" roughness={0.9} />
-        </mesh>
-        <mesh position={[1.75, -0.78, 0.34]}>
-          <boxGeometry args={[0.10, 0.04, 0.08]} />
-          <meshStandardMaterial color="#111215" roughness={0.9} />
-        </mesh>
-
-        {/* Left Heavy Angled Support Cheek */}
-        <mesh position={[-1.82, -0.15, -0.12]} rotation={[-0.436, 0, 0]}>
-          <boxGeometry args={[0.05, 1.25, 0.14]} />
-          <meshStandardMaterial color="#22252e" roughness={0.45} metalness={0.6} />
-        </mesh>
-        {/* Right Heavy Angled Support Cheek */}
-        <mesh position={[1.82, -0.15, -0.12]} rotation={[-0.436, 0, 0]}>
-          <boxGeometry args={[0.05, 1.25, 0.14]} />
-          <meshStandardMaterial color="#22252e" roughness={0.45} metalness={0.6} />
-        </mesh>
-
-        {/* Left Heavy Rear Riser Strut (Connecting Workbench to Back of Console) */}
-        <mesh position={[-1.25, -0.225, -0.515]} rotation={[0.23, 0, 0]}>
-          <cylinderGeometry args={[0.032, 0.035, 1.18, 16]} />
-          <meshStandardMaterial color="#1b1e25" roughness={0.35} metalness={0.8} />
-        </mesh>
-        {/* Left Strut Bench Mount Collar */}
-        <mesh position={[-1.25, -0.78, -0.65]}>
-          <cylinderGeometry args={[0.055, 0.055, 0.04, 16]} />
-          <meshStandardMaterial color="#14161b" roughness={0.6} metalness={0.7} />
-        </mesh>
-
-        {/* Right Heavy Rear Riser Strut (Connecting Workbench to Back of Console) */}
-        <mesh position={[1.25, -0.225, -0.515]} rotation={[0.23, 0, 0]}>
-          <cylinderGeometry args={[0.032, 0.035, 1.18, 16]} />
-          <meshStandardMaterial color="#1b1e25" roughness={0.35} metalness={0.8} />
-        </mesh>
-        {/* Right Strut Bench Mount Collar */}
-        <mesh position={[1.25, -0.78, -0.65]}>
-          <cylinderGeometry args={[0.055, 0.055, 0.04, 16]} />
-          <meshStandardMaterial color="#14161b" roughness={0.6} metalness={0.7} />
-        </mesh>
-
-        {/* Console Transverse Cross-Brace Bar */}
-        <mesh position={[0, -0.225, -0.515]} rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.022, 0.022, 2.52, 16]} />
-          <meshStandardMaterial color="#191b22" roughness={0.4} metalness={0.75} />
-        </mesh>
-
         {/* Workbench Power Cable Grommet & Cable Drop */}
-        <mesh position={[1.65, -0.795, -0.55]}>
+        <mesh position={[1.85, -0.795, -0.65]}>
           <cylinderGeometry args={[0.04, 0.04, 0.015, 16]} />
           <meshStandardMaterial color="#111215" roughness={0.8} />
         </mesh>
-        <mesh position={[1.65, -0.50, -0.45]} rotation={[0.3, 0, 0.15]}>
-          <cylinderGeometry args={[0.012, 0.012, 0.65, 12]} />
+        <mesh position={[1.85, -0.85, -0.65]}>
+          <cylinderGeometry args={[0.012, 0.012, 0.12, 12]} />
           <meshStandardMaterial color="#18191c" roughness={0.7} />
         </mesh>
       </group>

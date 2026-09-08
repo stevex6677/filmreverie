@@ -149,7 +149,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     // Smooth camera transition
     const speed = isTransitioning ? 7.0 : 12.0;
     camera.position.lerp(targetPos.current, Math.min(1.0, delta * speed));
-    camera.up.lerp(targetUp.current, Math.min(1.0, delta * speed));
+    camera.up.lerp(targetUp.current, Math.min(1.0, delta * speed)).normalize();
     lookTarget.current.lerp(desiredLookTarget.current, Math.min(1.0, delta * speed));
     camera.lookAt(lookTarget.current);
 
