@@ -133,7 +133,8 @@ export function App() {
         } else if (e.key === "-" || e.key === "_" || e.key === "[") {
           dispatch({ type: "ADJUST_LOUPE_MAGNIFICATION", delta: -1.0 });
         } else if (e.key === "b" || e.key === "B") {
-          const nextBrightness = state.tableBrightness >= 1.4 ? 0.5 : state.tableBrightness >= 0.9 ? 1.5 : 1.0;
+          const cur = state.tableBrightness;
+          const nextBrightness = cur <= 0.35 ? 1.0 : cur <= 0.55 ? 0.30 : cur <= 0.80 ? 0.50 : 0.75;
           dispatch({ type: "SET_TABLE_BRIGHTNESS", brightness: nextBrightness });
         } else if (e.key === "Escape") {
           dispatch({ type: "RETURN_TO_ROOM" });

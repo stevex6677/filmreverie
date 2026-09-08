@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useEffect } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { createLoupeShaderMaterial } from "../shaders/loupeShader";
-import { DEFAULT_LAYOUT, isPointOverStrip } from "../utils/loupeMapping";
+import { TABLE_SURFACE_Y } from "../utils/cameraBounds";
 
 interface LoupeProps {
   isActive: boolean;
@@ -33,12 +33,28 @@ export const Loupe: React.FC<LoupeProps> = ({
   onClick,
 }) => {
   const groupRef = useRef<THREE.Group>(null);
+  const worldPos = useRef(new THREE.Vector3());
 
   // Resting position (bottom-right on the light table off the film strip)
   const restingPos = useMemo(() => new THREE.Vector3(1.3, -0.42, 0.08), []);
   const activePos = useMemo(() => new THREE.Vector3(targetX, targetY, 0.08), [targetX, targetY]);
 
   const targetPos = isActive ? activePos : restingPos;
+
+  // Offscreen render target and virtual orthographic camera for full-scene optical magnification
+  const renderTarget = useMemo(() => {
+    const target = new THREE.WebGLRenderTarget(1024, 1024, {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat,
+    });
+    target.texture.colorSpace = THREE.SRGBColorSpace;
+    return target;
+  }, []);
+
+  const virtualCamera = useMemo(() => {
+    return new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 1.0);
+  }, []);
 
   // Shader material for the magnified optical lens
   const lensMaterial = useMemo(() => {
@@ -47,12 +63,13 @@ export const Loupe: React.FC<LoupeProps> = ({
 
   useEffect(() => {
     return () => {
+      renderTarget.dispose();
       lensMaterial.dispose();
     };
-  }, [lensMaterial]);
+  }, [renderTarget, lensMaterial]);
 
-  // Update uniforms and smooth positioning
-  useFrame((_, delta) => {
+  // Update uniforms, smooth positioning, and full-scene capture
+  useFrame(({ gl, scene }, delta) => {
     if (!groupRef.current) return;
 
     // Position interpolation
@@ -62,12 +79,43 @@ export const Loupe: React.FC<LoupeProps> = ({
       groupRef.current.position.lerp(targetPos, Math.min(1.0, delta * 14));
     }
 
-    // Update shader uniforms
-    if (lensMaterial.uniforms) {
-      if (lensMaterial.uniforms.uTexture.value !== texture) {
-        lensMaterial.uniforms.uTexture.value = texture;
-      }
+    // Physical Scene Capture: Capture the exact 3D scene underneath the loupe
+    // 1. Temporarily hide loupe group so it doesn't render its own barrel/shadow into the lens
+    groupRef.current.visible = false;
 
+    // 2. Position virtual camera in world space directly above the current loupe lens position
+    groupRef.current.getWorldPosition(worldPos.current);
+
+    const safeMag = Math.max(1.0, magnification);
+    const halfSize = 0.14 / safeMag;
+    virtualCamera.left = -halfSize;
+    virtualCamera.right = halfSize;
+    virtualCamera.top = halfSize;
+    virtualCamera.bottom = -halfSize;
+    virtualCamera.near = 0.01;
+    virtualCamera.far = 0.60;
+
+    // Table surface normal is world +Y; table vertical axis (film top) is world -Z
+    virtualCamera.position.set(worldPos.current.x, TABLE_SURFACE_Y + 0.25, worldPos.current.z);
+    virtualCamera.up.set(0, 0, -1);
+    virtualCamera.lookAt(worldPos.current.x, TABLE_SURFACE_Y, worldPos.current.z);
+    virtualCamera.updateProjectionMatrix();
+
+    // 3. Render offscreen into render target
+    const prevRenderTarget = gl.getRenderTarget();
+    gl.setRenderTarget(renderTarget);
+    gl.render(scene, virtualCamera);
+    gl.setRenderTarget(prevRenderTarget);
+
+    // 4. Restore loupe visibility for the main scene render pass
+    groupRef.current.visible = true;
+
+    // 5. Update shader uniforms
+    if (lensMaterial.uniforms) {
+      lensMaterial.uniforms.uTexture.value = renderTarget.texture;
+      if (lensMaterial.uniforms.uUseSceneCapture) {
+        lensMaterial.uniforms.uUseSceneCapture.value = 1.0;
+      }
       lensMaterial.uniforms.uCenterUv.value.set(u, v);
 
       if (lensMaterial.uniforms.uMagnification) {
@@ -83,47 +131,14 @@ export const Loupe: React.FC<LoupeProps> = ({
         }
       }
 
-      // The loupe should ONLY show a film image when it is active AND physically on top of the film strip
-      const currentPos = groupRef.current.position;
-      const isOverStrip = isPointOverStrip(currentPos, DEFAULT_LAYOUT);
-
-      const shouldShowImage = isActive && isOverStrip;
-      const targetActive = shouldShowImage ? 1.0 : 0.0;
-      const currentActive = lensMaterial.uniforms.uActive.value;
-      if (isDeterministic) {
-        lensMaterial.uniforms.uActive.value = targetActive;
-      } else if (Math.abs(targetActive - currentActive) > 0.001) {
-        lensMaterial.uniforms.uActive.value = THREE.MathUtils.damp(
-          currentActive,
-          targetActive,
-          16,
-          delta
-        );
-      } else {
-        lensMaterial.uniforms.uActive.value = targetActive;
-      }
+      lensMaterial.uniforms.uActive.value = isActive ? 1.0 : 0.0;
 
       const targetMode = isPositive ? 1.0 : 0.0;
-      const currentMode = lensMaterial.uniforms.uModeTransition.value;
-      if (Math.abs(targetMode - currentMode) > 0.001) {
-        lensMaterial.uniforms.uModeTransition.value = THREE.MathUtils.damp(
-          currentMode,
-          targetMode,
-          16,
-          delta
-        );
-      } else {
-        lensMaterial.uniforms.uModeTransition.value = targetMode;
-      }
+      lensMaterial.uniforms.uModeTransition.value = targetMode;
 
       if (lensMaterial.uniforms.uExposure) {
         const targetExp = 1.0 * Math.pow(brightness, 0.5);
-        lensMaterial.uniforms.uExposure.value = THREE.MathUtils.damp(
-          lensMaterial.uniforms.uExposure.value,
-          targetExp,
-          16,
-          delta
-        );
+        lensMaterial.uniforms.uExposure.value = targetExp;
       }
     }
   });

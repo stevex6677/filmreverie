@@ -229,6 +229,39 @@ All milestones (**M1 through M6**) are fully implemented, validated, and accepte
   - **Human review:** Confirm breathtaking close-up macro sharpness at 1000% zoom without clipping, smooth dimmer response on the light table, and stable room mode transitions.
   - **Completion criteria:** Gate passes cleanly. Awaiting human review.
 
+- [x] **M8 — Continuous Light Table Dimmer (30%–100%) & Physical Optical Loupe (Full-Scene Magnification)**
+  - **Status:** Accepted (awaiting final human sign-off).
+  - **Outcome:** Replace discrete multi-selection dimmer buttons with a continuous slider control smoothly adjusting light table brightness between `30%` and `100%`, and upgrade the optical inspection loupe to act as a true physical magnifying glass that seamlessly magnifies whatever is physically beneath the lens—including photo frames, film rebate markings, barcodes, frame numbers, sprocket hole perforations, and the glowing acrylic table surface.
+  - **Paths/components:** `src/utils/cameraBounds.ts`, `src/state/viewerState.ts`, `src/shaders/loupeShader.ts`, `src/components/Loupe.tsx`, `src/components/Controls.tsx`, `src/App.tsx`, `src/index.css`, `package.json`, `tests/integration/m8-continuous-dimmer-and-physical-loupe.test.ts`, `tests/e2e/m8-continuous-dimmer-and-physical-loupe.spec.ts`.
+  - **Implementation requirements:**
+    - Continuous Dimmer: Set `MIN_TABLE_BRIGHTNESS = 0.30`, `MAX_TABLE_BRIGHTNESS = 1.00`, `DEFAULT_TABLE_BRIGHTNESS = 1.00`. In `Controls.tsx`, replace discrete buttons with `<input type="range" min="0.30" max="1.00" step="0.01" />` alongside live percentage badge. Updated hotkey `B` to cycle smoothly across `100% -> 75% -> 50% -> 30% -> 100%`.
+    - Physical Optical Loupe: Introduce an offscreen `WebGLRenderTarget` (1024x1024) and top-down `OrthographicCamera` in `Loupe.tsx`. In `useFrame`, temporarily hide the loupe body, render the 3D table scene from directly above the lens with `up = [0, 0, -1]`, restore visibility, and sample this capture through the optical lens shader with barrel distortion, chromatic dispersion, and AR glass reflections (`uUseSceneCapture = 1.0`).
+    - Preserve all prior M1–M7 capabilities and test baselines.
+  - **Vitest integration suite:**
+    - `tests/integration/m8-continuous-dimmer-and-physical-loupe.test.ts` (8/8 passing):
+      - Brightness bounds clamping between 0.30 and 1.00.
+      - Continuous brightness setting via `SET_TABLE_BRIGHTNESS`.
+      - Loupe material configuration and scene capture texture assignment.
+      - Hotkey cycling `1.0 -> 0.75 -> 0.50 -> 0.30 -> 1.0`.
+  - **Playwright E2E suite:**
+    - `tests/e2e/m8-continuous-dimmer-and-physical-loupe.spec.ts` (passing in 2.0m):
+      - Continuous brightness slider interaction from 100% to 40% with measurable luminance reduction on acrylic table.
+      - Physical optical loupe magnification over photo frames with high variance.
+      - Loupe magnification over sprocket hole perforations showing backlit table glow.
+      - Loupe magnification over film rebate markings ("KODAK PORTRA 400" and barcodes).
+      - Loupe magnification over resting table surface without clipping or black fill.
+      - Zero console errors, zero page errors, zero failed requests.
+  - **Gate:** `npm run validate:m8` passed with exit code 0 (11/11 Playwright E2E suites passing in 9.3m + 10/10 Vitest test files with 93 unit/integration tests).
+  - **Artifacts:**
+    - `artifacts/m8-brightness-100.png`
+    - `artifacts/m8-brightness-40.png`
+    - `artifacts/m8-loupe-photo.png`
+    - `artifacts/m8-loupe-sprocket.png`
+    - `artifacts/m8-loupe-rebate.png`
+    - `artifacts/m8-loupe-table.png`
+  - **Human review:** Confirm smooth slider dimming from 30% to 100% and authentic optical magnification of sprockets, rebates, and table details under the loupe.
+  - **Completion criteria:** Gate passes and human reviewer approves M8.
+
 ## Test configuration contract
 
 - Playwright must serve the production build, use a fixed desktop viewport and deterministic scene mode, and collect page errors, console errors, and failed asset requests.
