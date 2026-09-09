@@ -40,7 +40,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
 
     await page.waitForTimeout(600);
 
-    const artifactsDir = path.resolve(process.cwd(), "artifacts");
+    const artifactsDir = path.resolve(process.cwd(), process.env.REVIEW_ARTIFACTS_DIR || "artifacts");
     if (!fs.existsSync(artifactsDir)) {
       fs.mkdirSync(artifactsDir, { recursive: true });
     }

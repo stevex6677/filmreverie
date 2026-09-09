@@ -18,7 +18,7 @@ test.describe("M4 E2E — Darkroom Realism & Production Hardening", () => {
     });
     page.on("requestfailed", (req) => failedRequests.push(req.url()));
 
-    const artifactsDir = path.resolve(process.cwd(), "artifacts");
+    const artifactsDir = path.resolve(process.cwd(), process.env.REVIEW_ARTIFACTS_DIR || "artifacts");
     if (!fs.existsSync(artifactsDir)) {
       fs.mkdirSync(artifactsDir, { recursive: true });
     }

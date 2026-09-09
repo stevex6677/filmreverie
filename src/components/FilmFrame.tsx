@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
+import { updateTableIllumination } from "../shaders/tableIllumination";
 import { createFilmShaderMaterial } from "../shaders/filmShader";
 import { FilmStripLayout, getFilmCurlZ, getFrameCenter } from "../utils/loupeMapping";
 
@@ -28,13 +29,13 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
   const meshRef = useRef<THREE.Mesh>(null);
   const center = useMemo(() => getFrameCenter(index, layout), [index, layout]);
 
-  const material = useMemo(() => {
-    const next = createFilmShaderMaterial(texture, isPositive, negativeMask);
-    // A stock/view change must not briefly reset a dimmed photo to full exposure.
-    next.uniforms.uExposure.value = Math.pow(brightness, 0.5);
-    return next;
-  }, [texture, isPositive, negativeMask]);
+  const material = useMemo(() => createFilmShaderMaterial(
+    texture, isPositive, brightness,
+    negativeMask ? new THREE.Color(negativeMask[0], negativeMask[1], negativeMask[2]) : undefined,
+  ), [texture, isPositive, negativeMask]);
   useEffect(() => () => material.dispose(), [material]);
+
+  updateTableIllumination(material, brightness);
 
   // Curved plane geometry with 16 Y-segments matching the substrate transverse curl
   const frameGeometry = useMemo(() => {
@@ -66,22 +67,7 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
         material.uniforms.uModeTransition.value = target;
       }
     }
-
-    if (material.uniforms.uExposure) {
-      const targetExp = 1.0 * Math.pow(brightness, 0.5);
-      const currentExp = material.uniforms.uExposure.value;
-      if (Math.abs(targetExp - currentExp) > 0.001) {
-        material.uniforms.uExposure.value = THREE.MathUtils.damp(
-          currentExp,
-          targetExp,
-          16,
-          delta
-        );
-      } else {
-        material.uniforms.uExposure.value = targetExp;
-      }
-    }
-  });
+  }, -2); // Settle optical mode before the loupe capture.
 
   return (
     <group position={[center.x, center.y, 0.002]}>

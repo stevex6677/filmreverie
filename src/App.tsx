@@ -1,5 +1,6 @@
 import { useReducer, useEffect, useMemo, useState, Suspense } from "react";
 import * as THREE from "three";
+import { DISPLAY_EXPOSURE } from "./shaders/tableIllumination";
 import { Canvas } from "@react-three/fiber";
 import {
   createInitialViewerState,
@@ -186,7 +187,8 @@ export function App() {
                 antialias: true,
                 powerPreference: "high-performance",
                 toneMapping: THREE.ACESFilmicToneMapping,
-                toneMappingExposure: 1.0,
+                toneMappingExposure: DISPLAY_EXPOSURE,
+                outputColorSpace: THREE.SRGBColorSpace,
               }}
             >
               <ViewingTableScene

@@ -26,7 +26,7 @@ test.describe("M3 E2E — Realistic Viewing Table, 35mm Film & Loupe Optics", ()
     });
     page.on("requestfailed", (req) => failedRequests.push(req.url()));
 
-    const artifactsDir = path.resolve(process.cwd(), "artifacts");
+    const artifactsDir = path.resolve(process.cwd(), process.env.REVIEW_ARTIFACTS_DIR || "artifacts");
     if (!fs.existsSync(artifactsDir)) {
       fs.mkdirSync(artifactsDir, { recursive: true });
     }

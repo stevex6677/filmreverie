@@ -4,7 +4,7 @@ import path from "node:path";
 import { FILM_STOCKS } from "../../src/data/filmStocks";
 import { parsePng, getRegionStats, getRegionMeanDifference } from "./helpers/pixelAnalysis";
 
-const candidates = path.resolve("artifacts/m9-candidates");
+const candidates = path.resolve(process.env.M9_CANDIDATE_DIR || "artifacts/m9-m10-candidates/stocks");
 function observeErrors(page: Page) {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));

@@ -18,7 +18,7 @@ test.describe("M5 E2E — Authentic 35mm Film Substrate, Rebate Print & Transver
     });
     page.on("requestfailed", (req) => failedRequests.push(req.url()));
 
-    const artifactsDir = path.resolve(process.cwd(), "artifacts");
+    const artifactsDir = path.resolve(process.cwd(), process.env.REVIEW_ARTIFACTS_DIR || "artifacts");
     if (!fs.existsSync(artifactsDir)) {
       fs.mkdirSync(artifactsDir, { recursive: true });
     }
