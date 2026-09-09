@@ -46,14 +46,14 @@ export const FilmFragmentShader = `
   }
 `;
 
-export function createFilmShaderMaterial(texture: THREE.Texture, isPositive: boolean) {
+export function createFilmShaderMaterial(texture: THREE.Texture, isPositive: boolean, negativeMask?: readonly number[]) {
   return new THREE.ShaderMaterial({
     vertexShader: FilmVertexShader,
     fragmentShader: FilmFragmentShader,
     uniforms: {
       uTexture: { value: texture },
       uModeTransition: { value: isPositive ? 1.0 : 0.0 },
-      uOrangeMask: { value: FILM_ORANGE_MASK },
+      uOrangeMask: { value: negativeMask ? new THREE.Color(negativeMask[0], negativeMask[1], negativeMask[2]) : FILM_ORANGE_MASK.clone() },
       uExposure: { value: FILM_EXPOSURE },
     },
   });

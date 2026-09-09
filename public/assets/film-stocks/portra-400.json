@@ -1,0 +1,38 @@
+{
+  "id": "portra-400",
+  "displayName": "Kodak Portra 400",
+  "type": "negative",
+  "process": "C-41",
+  "allowedViews": [
+    "negative",
+    "positive"
+  ],
+  "base": {
+    "substrateBase": "rgba(217, 119, 36, 0.88)",
+    "rebateText": "#2a1208",
+    "rebateSecondary": "#2a1208",
+    "frameShadow": "rgba(35, 15, 8, 0.4)",
+    "negativeMask": [
+      0.88,
+      0.46,
+      0.18
+    ]
+  },
+  "rebate": {
+    "label": "KODAK PORTRA 400",
+    "font": "Arial, Helvetica, sans-serif",
+    "fontWeight": "bold",
+    "orientation": "same-direction",
+    "halfFrameNumbers": true,
+    "codePattern": null
+  },
+  "reference": {
+    "edition": "2010 unified Portra 400, 135 still film (not NC/VC)",
+    "title": "Take It Easy Lab, four-frame developed Portra 400 strip, frames 10\u201313",
+    "url": "https://takeiteasylab.com/collections/colour-film-developing",
+    "imageUrl": "https://takeiteasylab.com/cdn/shop/collections/089428460004.jpg?v=1748883214",
+    "accessed": "2026-09-09",
+    "license": "Linked for study only; reference photograph not redistributed. Runtime lettering and geometry are original project artwork (ISC).",
+    "limitations": "Lettering and numbered outer rails reconstructed from developed 135 still-film references. Placement normalized to this five-frame strip; font is an approximation. Exact optical edge-code bits, batch IDs, and production tolerances are not verified and are omitted. Base color is an artistic approximation under the existing viewer lighting, not a calibrated stock measurement."
+  }
+}
