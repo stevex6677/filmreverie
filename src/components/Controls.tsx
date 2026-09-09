@@ -1,3 +1,4 @@
+import { FILM_STOCKS, getFilmStock, isFilmStockId } from "../data/filmStocks";
 import React from "react";
 import { ROLL_FRAMES } from "../data/rollManifest";
 import { ViewerAction, ViewerState } from "../state/viewerState";
@@ -9,6 +10,7 @@ interface ControlsProps {
 }
 
 export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
+  const stock = getFilmStock(state.filmStockId);
   const currentFrame = ROLL_FRAMES[state.loupe.frameIndex] || ROLL_FRAMES[0];
   const isPositive = state.filmMode === "positive";
   const isRoomMode = state.roomMode === "room";
@@ -24,7 +26,16 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
         </div>
 
         <div className="action-buttons">
-          {/* In Room Mode: Only Approach Table is visible */}
+          <div className="stock-control">
+            <label htmlFor="film-stock">Film stock</label>
+            <select id="film-stock" data-testid="film-stock-selector" value={stock.id}
+              onChange={(event) => {
+                if (isFilmStockId(event.target.value)) dispatch({ type: "SET_FILM_STOCK", stockId: event.target.value });
+              }}>
+              {FILM_STOCKS.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
+            </select>
+          </div>
+          {/* Room navigation */}
           {isRoomMode ? (
             <button
               id="approach-btn"
@@ -49,16 +60,18 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
                 ← Return to Room (Esc)
               </button>
 
-              {/* Film Mode Switch */}
-              <button
-                id="mode-toggle"
-                data-testid="mode-toggle"
-                className={`btn btn-mode ${isPositive ? "btn-mode-positive" : "btn-mode-negative"}`}
-                onClick={() => dispatch({ type: "TOGGLE_FILM_MODE" })}
-                title="Toggle between color negative and positive preview (M)"
-              >
-                {isPositive ? "Switch to Negative" : "Switch to Positive"}
-              </button>
+              {/* Only negative stocks have a preview conversion. */}
+              {stock.type === "negative" && (
+                <button
+                  id="mode-toggle"
+                  data-testid="mode-toggle"
+                  className={`btn btn-mode ${isPositive ? "btn-mode-positive" : "btn-mode-negative"}`}
+                  onClick={() => dispatch({ type: "TOGGLE_FILM_MODE" })}
+                  title="Toggle between color negative and positive preview (M)"
+                >
+                  {isPositive ? "Switch to Negative" : "Switch to Positive"}
+                </button>
+              )}
 
               {/* Reset Table View Button */}
               {(Math.abs(state.inspectZoom - DEFAULT_INSPECT_DISTANCE) > 0.05 ||
@@ -187,7 +200,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
               <div className="status-item">
                 <span className="label">MODE:</span>
                 <span className={`badge mode-badge ${state.filmMode}`} data-testid="mode-badge">
-                  {state.filmMode.toUpperCase()}
+                  {stock.type === "reversal" ? "POSITIVE · E-6" : state.filmMode.toUpperCase()}
                 </span>
               </div>
 

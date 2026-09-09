@@ -1,3 +1,4 @@
+import { getFilmStock } from "../data/filmStocks";
 import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useTexture } from "@react-three/drei";
@@ -117,6 +118,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
 
         {/* Film Strip with 5 Frames */}
         <FilmStrip
+          stock={getFilmStock(state.filmStockId)}
           textures={textures}
           isPositive={isPositive}
           layout={DEFAULT_LAYOUT}
