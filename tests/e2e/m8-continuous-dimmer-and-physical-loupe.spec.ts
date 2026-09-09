@@ -37,7 +37,7 @@ test.describe("M8 E2E — Continuous Light Table Dimmer & Physical Optical Loupe
     const slider = page.locator("[data-testid=brightness-slider]");
     await expect(slider).toBeVisible();
 
-    const artifactsDir = path.resolve(process.cwd(), "artifacts");
+    const artifactsDir = path.resolve(process.cwd(), process.env.REVIEW_ARTIFACTS_DIR || "artifacts");
     if (!fs.existsSync(artifactsDir)) {
       fs.mkdirSync(artifactsDir, { recursive: true });
     }

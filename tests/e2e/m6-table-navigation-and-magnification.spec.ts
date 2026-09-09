@@ -42,7 +42,7 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
     const loupeBadge = page.locator("[data-testid=loupe-badge]");
     await expect(loupeBadge).toHaveText("RESTING");
 
-    const artifactsDir = path.resolve(process.cwd(), "artifacts");
+    const artifactsDir = path.resolve(process.cwd(), process.env.REVIEW_ARTIFACTS_DIR || "artifacts");
     if (!fs.existsSync(artifactsDir)) {
       fs.mkdirSync(artifactsDir, { recursive: true });
     }

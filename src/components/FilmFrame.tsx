@@ -1,6 +1,7 @@
-import React, { useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
+import { updateTableIllumination } from "../shaders/tableIllumination";
 import { createFilmShaderMaterial } from "../shaders/filmShader";
 import { FilmStripLayout, getFilmCurlZ, getFrameCenter } from "../utils/loupeMapping";
 
@@ -29,6 +30,9 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
   const material = useMemo(() => {
     return createFilmShaderMaterial(texture, isPositive);
   }, [texture, isPositive]);
+
+  useEffect(() => () => material.dispose(), [material]);
+  updateTableIllumination(material, brightness);
 
   // Curved plane geometry with 16 Y-segments matching the substrate transverse curl
   const frameGeometry = useMemo(() => {
@@ -60,22 +64,7 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
         material.uniforms.uModeTransition.value = target;
       }
     }
-
-    if (material.uniforms.uExposure) {
-      const targetExp = 1.0 * Math.pow(brightness, 0.5);
-      const currentExp = material.uniforms.uExposure.value;
-      if (Math.abs(targetExp - currentExp) > 0.001) {
-        material.uniforms.uExposure.value = THREE.MathUtils.damp(
-          currentExp,
-          targetExp,
-          16,
-          delta
-        );
-      } else {
-        material.uniforms.uExposure.value = targetExp;
-      }
-    }
-  });
+  }, -2); // Settle optical mode before the loupe capture.
 
   return (
     <group position={[center.x, center.y, 0.002]}>
