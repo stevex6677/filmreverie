@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { DISPLAY_FRAGMENT, FILM_TRANSMISSION_GLSL, illuminationUniforms } from "./tableIllumination";
 import { FILM_EXPOSURE, FILM_ORANGE_MASK } from "./filmShader";
 
 export const LoupeVertexShader = `
@@ -18,7 +19,10 @@ export const LoupeFragmentShader = `
   uniform vec3 uOrangeMask;
   uniform float uExposure;
   uniform float uUseSceneCapture;
+  uniform float uTableOutput;
+  uniform float uSurfaceReflection;
   varying vec2 vUv;
+  ${FILM_TRANSMISSION_GLSL}
 
   void main() {
     vec2 p = vUv * 2.0 - 1.0;
@@ -50,12 +54,13 @@ export const LoupeFragmentShader = `
 
       vec3 finalColor = sceneColor * vignette + vec3(0.025) * (1.0 - vignette) + vec3(highlight);
       gl_FragColor = vec4(finalColor, 1.0);
+      ${DISPLAY_FRAGMENT}
       return;
     }
 
     // Branch 2: Synthetic fallback mode for isolated unit testing
     // Resting View: Clean illuminated light table surface transmitted through optical glass
-    vec3 tableSurface = vec3(0.96, 0.97, 0.98);
+    vec3 tableSurface = vec3(0.98, 0.99, 1.0) * uTableOutput;
     vec3 restingRgb = tableSurface * vignette + vec3(0.04) * (1.0 - vignette) + vec3(highlight * 1.5);
 
     // Active View: Magnified photographic frame with authentic negative/positive response
@@ -66,24 +71,15 @@ export const LoupeFragmentShader = `
     float bChannel = texture2D(uTexture, clamp(baseUv - chromOffset, vec2(0.001), vec2(0.999))).b;
     vec3 sampledColor = vec3(rChannel, gChannel, bChannel);
 
-    vec3 positiveRgb = clamp(sampledColor * uExposure, 0.0, 1.0);
-
-    // Authentic C-41 tri-pack dye absorption matching film strip
-    vec3 linearExposure = pow(positiveRgb, vec3(0.95));
-    vec3 dyeAbsorption = vec3(
-      linearExposure.r * 0.88 + linearExposure.g * 0.08,
-      linearExposure.g * 0.75 + linearExposure.b * 0.10,
-      linearExposure.b * 0.55 + linearExposure.g * 0.15
-    );
-    vec3 negRgb = clamp(uOrangeMask * (vec3(1.0) - dyeAbsorption * 0.96) + vec3(0.015, 0.008, 0.003), 0.0, 1.0);
-
-    vec3 imgColor = mix(negRgb, positiveRgb, clamp(uModeTransition, 0.0, 1.0));
+    vec3 transmission = filmTransmittance(sampledColor * uExposure, uModeTransition, uOrangeMask);
+    vec3 imgColor = transmitTableLight(transmission, uTableOutput, uSurfaceReflection);
     vec3 activeRgb = imgColor * vignette + vec3(0.025) * (1.0 - vignette) + vec3(highlight);
 
     // Smooth optical transition between resting table and active inspection
     vec3 finalRgb = mix(restingRgb, activeRgb, clamp(uActive, 0.0, 1.0));
 
     gl_FragColor = vec4(finalRgb, 1.0);
+    ${DISPLAY_FRAGMENT}
   }
 `;
 
@@ -92,7 +88,8 @@ export function createLoupeShaderMaterial(
   isPositive: boolean,
   centerUv: [number, number],
   isActive: boolean = false,
-  magnification: number = 2.5
+  magnification: number = 2.5,
+  brightness: number = 1
 ) {
   return new THREE.ShaderMaterial({
     vertexShader: LoupeVertexShader,
@@ -105,6 +102,7 @@ export function createLoupeShaderMaterial(
       uActive: { value: isActive ? 1.0 : 0.0 },
       uOrangeMask: { value: FILM_ORANGE_MASK },
       uExposure: { value: FILM_EXPOSURE },
+      ...illuminationUniforms(brightness),
       uUseSceneCapture: { value: 0.0 },
     },
   });

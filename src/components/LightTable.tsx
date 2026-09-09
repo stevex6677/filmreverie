@@ -1,5 +1,8 @@
-import React from "react";
+import React, { useEffect, useMemo } from "react";
 import * as THREE from "three";
+
+import { createPanelEdgeMaterial, createPanelMaterial } from "../shaders/filmShader";
+import { updateTableIllumination } from "../shaders/tableIllumination";
 
 interface LightTableProps {
   width?: number;
@@ -16,8 +19,14 @@ export const LightTable: React.FC<LightTableProps> = ({
   onPointerMove,
   onClick,
 }) => {
+  const panelMaterial = useMemo(() => createPanelMaterial(1, width - 0.20, height - 0.20), [width, height]);
+  updateTableIllumination(panelMaterial, brightness);
+  useEffect(() => () => panelMaterial.dispose(), [panelMaterial]);
   const panelWidth = width - 0.20;
   const panelHeight = height - 0.20;
+  const edgeMaterial = useMemo(() => createPanelEdgeMaterial(panelWidth, panelHeight), [panelWidth, panelHeight]);
+  updateTableIllumination(edgeMaterial, brightness);
+  useEffect(() => () => edgeMaterial.dispose(), [edgeMaterial]);
 
   return (
     <group position={[0, 0, 0]}>
@@ -43,6 +52,11 @@ export const LightTable: React.FC<LightTableProps> = ({
         <meshStandardMaterial color="#ea580c" roughness={0.3} metalness={0.2} />
       </mesh>
 
+      {/* Restrained scattering stays within 7cm of the bright diffuser edge. */}
+      <mesh position={[0, 0, 0.0005]} material={edgeMaterial}>
+        <planeGeometry args={[panelWidth + 0.14, panelHeight + 0.14]} />
+      </mesh>
+
       {/* Illuminated frosted acrylic / diffuser panel */}
       <mesh
         position={[0, 0, 0.001]}
@@ -54,13 +68,7 @@ export const LightTable: React.FC<LightTableProps> = ({
         }}
       >
         <planeGeometry args={[panelWidth, panelHeight]} />
-        <meshStandardMaterial
-          color="#ffffff"
-          emissive="#ffffff"
-          emissiveIntensity={1.20 * brightness}
-          roughness={0.3}
-          metalness={0.02}
-        />
+        <primitive object={panelMaterial} attach="material" />
       </mesh>
 
       {/* Subtle illuminated edge highlight */}

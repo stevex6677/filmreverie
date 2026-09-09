@@ -74,7 +74,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
     await page.waitForTimeout(600);
 
     // 1. Capture initial negative state
-    const artifactsDir = path.resolve(process.cwd(), "artifacts");
+    const artifactsDir = path.resolve(process.cwd(), process.env.REVIEW_ARTIFACTS_DIR || "artifacts");
     if (!fs.existsSync(artifactsDir)) {
       fs.mkdirSync(artifactsDir, { recursive: true });
     }

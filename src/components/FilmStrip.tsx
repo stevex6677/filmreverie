@@ -11,6 +11,8 @@ import {
   SPROCKET_CORNER_RADIUS,
 } from "../utils/loupeMapping";
 import { createFilmRebateTexture } from "../utils/filmRebateCanvas";
+import { createRebateMaterial } from "../shaders/filmShader";
+import { updateTableIllumination } from "../shaders/tableIllumination";
 import { FilmFrame } from "./FilmFrame";
 
 interface FilmStripProps {
@@ -51,13 +53,16 @@ export const FilmStrip: React.FC<FilmStripProps> = ({
   const { width, height } = useMemo(() => getStripDimensions(layout), [layout]);
 
   const { top, bottom } = useMemo(() => getPerforationPositions(layout), [layout]);
-  const allPerforations = useMemo(() => [...top, ...bottom], [top, bottom]);
+
 
   // High-resolution authentic 35mm rebate print texture (stock lettering and frame numbers)
   const rebateTexture = useMemo(() => {
     return createFilmRebateTexture(stock, layout);
   }, [stock, layout]);
-  useEffect(() => () => rebateTexture.dispose(), [rebateTexture]);
+
+  const rebateMaterial = useMemo(() => createRebateMaterial(rebateTexture), [rebateTexture]);
+  updateTableIllumination(rebateMaterial, brightness);
+  useEffect(() => () => { rebateMaterial.dispose(); rebateTexture.dispose(); }, [rebateMaterial, rebateTexture]);
 
   // Continuous substrate geometry with physical perforations, softened corner cut leads, and transverse curl
   const substrateGeometry = useMemo(() => {
@@ -107,29 +112,6 @@ export const FilmStrip: React.FC<FilmStripProps> = ({
 
   return (
     <group position={[0, 0, 0.004]}>
-      {/* Tight central contact shadow where film rests against table */}
-      <mesh position={[0, 0, -0.002]}>
-        <planeGeometry args={[width + 0.01, height * 0.75]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.16} />
-      </mesh>
-
-      {/* Soft diffused shadow conforming to the arched film edges */}
-      <mesh position={[0, -0.002, -0.003]}>
-        <planeGeometry args={[width + 0.035, height + 0.024]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.10} />
-      </mesh>
-
-      {/* Glowing sprocket apertures revealing illuminated light table underneath */}
-      {allPerforations.map((pos, idx) => (
-        <mesh
-          key={idx}
-          position={[pos.x, pos.y, getFilmCurlZ(pos.y, height) - 0.0006]}
-        >
-          <planeGeometry args={[SPROCKET_WIDTH + 0.001, SPROCKET_HEIGHT + 0.001]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
-      ))}
-
       {/* Continuous glossy 35mm film acetate substrate with authentic rebate print and physical curl */}
       <mesh
         geometry={substrateGeometry}
@@ -139,14 +121,7 @@ export const FilmStrip: React.FC<FilmStripProps> = ({
           onPointerMove?.(e.point);
         }}
       >
-        <meshStandardMaterial
-          map={rebateTexture}
-          roughness={0.45}
-          metalness={0.04}
-          transparent={true}
-          opacity={0.96}
-          depthWrite={false}
-        />
+        <primitive object={rebateMaterial} attach="material" />
       </mesh>
 
       {/* 5 Film Frames with matching transverse curvature */}

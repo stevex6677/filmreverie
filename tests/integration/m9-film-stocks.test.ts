@@ -117,8 +117,8 @@ describe("M9 — whole-strip stock profiles, state, material and real rebate ras
     const texture = new THREE.Texture();
     for (const stock of FILM_STOCKS) {
       const state = viewerReducer(createInitialViewerState(), {type: "SET_FILM_STOCK", stockId: stock.id});
-      const negative = createFilmShaderMaterial(texture, state.filmMode === "positive", stock.base.negativeMask);
-      const positive = createFilmShaderMaterial(texture, true, stock.base.negativeMask);
+      const negative = createFilmShaderMaterial(texture, state.filmMode === "positive", 1, new THREE.Color(...stock.base.negativeMask as [number, number, number]));
+      const positive = createFilmShaderMaterial(texture, true, 1, new THREE.Color(...stock.base.negativeMask as [number, number, number]));
       expect(negative.uniforms.uOrangeMask.value.toArray()).toEqual(stock.base.negativeMask);
       expect(positive.uniforms.uTexture.value).toBe(texture);
       expect(positive.uniforms.uModeTransition.value).toBe(1);
@@ -129,4 +129,26 @@ describe("M9 — whole-strip stock profiles, state, material and real rebate ras
     }
     texture.dispose();
   });
+});
+
+it("combines every stock/view with fixed density and retained state at 30%, 60%, and 100%", () => {
+  for (const stock of FILM_STOCKS) for (const mode of stock.allowedViews) {
+    const mask = new THREE.Color(...stock.base.negativeMask as [number, number, number]);
+    const texture = new THREE.Texture();
+    let previous = 0;
+    for (const brightness of [0.3, 0.6, 1]) {
+      let state = viewerReducer(createInitialViewerState("inspect"), {type: "SET_TABLE_BRIGHTNESS", brightness});
+      state = viewerReducer(state, {type: "SET_FILM_STOCK", stockId: stock.id});
+      state = viewerReducer(state, {type: "SET_FILM_MODE", mode});
+      const material = createFilmShaderMaterial(texture, state.filmMode === "positive", state.tableBrightness, mask);
+      expect(state.tableBrightness).toBe(brightness);
+      expect(state.filmStockId).toBe(stock.id);
+      expect(material.uniforms.uExposure.value).toBe(1);
+      expect(material.uniforms.uOrangeMask.value).toEqual(mask);
+      expect(material.uniforms.uTableOutput.value).toBeGreaterThan(previous);
+      previous = material.uniforms.uTableOutput.value;
+      material.dispose();
+    }
+    texture.dispose();
+  }
 });
