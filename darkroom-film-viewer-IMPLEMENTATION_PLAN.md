@@ -10,21 +10,23 @@ The photographs and core interaction take priority over environmental detail. A 
 
 - Stack: React, TypeScript, Vite, Three.js, React Three Fiber, and Drei.
 - Desktop only; Playwright runs against real desktop Chrome/WebGL.
-- Exactly five existing photos, initially shown as color negatives on one film strip.
+- Exactly five existing photos on one film strip. The default negative stock starts in negative view; M9 adds stock selection and positive-only reversal film.
 - The loupe must visibly enlarge the detail underneath it.
-- A control switches all frames between negative and positive.
+- For negative stocks, a control switches all frames between negative and positive preview. Reversal stocks are positive-only.
 - The final room should use plausible scale, PBR materials, local/CC0 assets, and restrained lighting effects.
 - Runtime assets must be local. Do not deploy or publish.
 
 ## Current state
 
-On `master`, the project contains this plan and five 1536 × 1024 positive PNG masters under `photos/roll-01/`; it has no application scaffold or test commands. Previous implementation attempts exist on separate branches/worktrees but did not pass human review and are not merged. They may be mined for useful code, but their completed checkboxes and visual baselines are not evidence that this plan has passed.
+The main local checkout contains the React/Three.js application, five 1536 × 1024 positive PNG masters under `photos/roll-01/`, derived runtime assets, and M1–M8 test suites and validation commands. M1–M6 are recorded as accepted. M7 and M8 contain conflicting historical acceptance/sign-off text; preserve that evidence without claiming new human approval. Their existing behavior is the regression starting point for the additions below.
+
+M9 and M10 are pending additions requested as independently executable milestones. Stock markings currently come from hard-coded generic labels and decorative barcode patterns in `src/utils/filmRebateCanvas.ts`. Brightness currently changes the panel emission, a room point light, and photo exposure through separate paths; white patches under the perforations ignore the dimmer. No M9/M10 implementation or validation has been performed as part of this planning update.
 
 Before editing, re-check the active checkout. If application code is already present, repair and simplify it to satisfy the current milestone instead of scaffolding a duplicate app. Never overwrite the source PNGs.
 
 ## Scope
 
-In scope: the five-photo viewer, negative/positive transition, loupe, constrained room camera, realistic hero objects and room, loading/error states, desktop Chrome validation, and local asset optimization.
+In scope: the five-photo viewer, stock-dependent negative/positive viewing, five selectable film stocks, accurate physical strip identity, realistic light-table dimming, loupe, constrained room camera, realistic hero objects and room, loading/error states, desktop Chrome validation, and local asset optimization.
 
 Out of scope: mobile/touch, free walking, audio, CMS/uploads, accounts, backend, other rolls, scientifically calibrated film-stock emulation, and deployment.
 
@@ -38,25 +40,27 @@ room --select table--> inspect --Back/Escape--> room
 
 Keep this state explicit in a reducer or small state machine. Prevent overlapping camera transitions and ensure returning to the room restores a valid camera pose.
 
+M9 adds a whole-strip stock selector. The negative/positive branch above applies only to negative stocks; E100 always stays positive.
+
 ## Mandatory milestone gate
 
 For every milestone:
 
 1. Implement only that milestone and preserve all previously accepted behavior.
 2. Run its named `npm run validate:mN` command against a production build.
-3. The gate must include the current and all prior milestone integration and E2E suites.
+3. The gate must include the current milestone and all existing regression integration and E2E suites. M9 and M10 have no dependency on each other: an absent sibling suite is not a skipped test, and no placeholder suite is required. Once both are present, either gate must run both suites.
 4. Required tests must have zero failures and zero skips. Do not weaken assertions, mock WebGL in E2E, hide console errors, or update screenshots merely to make the gate pass.
 5. Prepare the review evidence: exact command/result, local preview instructions, candidate screenshots and a short interaction recording, browser/viewport, and known limitations.
-6. Set the milestone status to **Awaiting human review** and stop. Do not start the next milestone unless the user explicitly approves or previously requested autonomous continuation.
+6. Set the milestone status to **Awaiting human review** and stop. Do not start another milestone in the same assignment unless the user explicitly approves or previously requested autonomous continuation. Exception to numeric ordering: the user may assign M9 or M10 independently, including concurrently; neither requires the other's implementation or approval.
 7. Only after approval: mark the milestone checkbox complete, record approval and commit evidence, and promote accepted candidate screenshots to regression baselines.
 
 Vitest is used for integration tests. Playwright is used for E2E tests in real desktop Chrome with real WebGL, actual local assets, and normal pointer/keyboard input. Integration tests prove modules cooperate; E2E tests prove the user-visible production app works. State attributes may aid diagnosis, but they cannot replace canvas or interaction assertions.
 
+## Progress protocol
+
+M1 through M6 are recorded as accepted; M7 and M8 retain their historical evidence and unresolved sign-off wording. M9 and M10 start as **Pending**, may be implemented in either order from the current application, and each has its own human-review gate. Work on the assigned milestone, update its subtasks and evidence before stopping, and preserve unfinished checkboxes. Multiple coherent commits are allowed. Do not infer human acceptance from automatic tool approval or from this planning request.
+
 ## Progress TODO
-
-### Progress protocol
-
-All milestones (**M1 through M6**) are fully implemented, validated, and accepted by human review. **M7** expands macro zoom up to 1000% and adds light table dimmer calibration. Once accepted, all tests are preserved as cumulative regressions. Multiple coherent commits are allowed.
 
 - [x] **M1 — Working five-photo film viewer**
   - **Status:** Accepted.
@@ -262,6 +266,48 @@ All milestones (**M1 through M6**) are fully implemented, validated, and accepte
   - **Human review:** Confirm smooth slider dimming from 30% to 100% and authentic optical magnification of sprockets, rebates, and table details under the loupe.
   - **Completion criteria:** Gate passes and human reviewer approves M8.
 
+- [ ] **M9 — Five film stocks and authentic strip identity**
+  - **Status:** Pending.
+  - **Outcome:** A user selects one stock for the entire five-frame strip. Its edge markings and physical film appearance match that stock, and reversal film supports only positive viewing.
+  - **Dependencies:** Existing M8 application only; M10 is not required. Keep the current brightness implementation functional when M10 is absent.
+  - **Scope:** Kodak Ektachrome E100, Ektar 100, Portra 160, Portra 400, and Portra 800. Keep the existing five photographs and their positive image colors; stock-specific photographic color grading, contrast curves, and image-grain emulation are deferred. Stock differences in this milestone concern the physical strip, markings, base appearance, and allowed views.
+  - **Paths/components:** New `src/data/filmStocks.ts` and stock reference assets under `public/assets/film-stocks/`; `src/utils/filmRebateCanvas.ts`, `src/components/FilmStrip.tsx`, `src/state/viewerState.ts`, `src/components/Controls.tsx`, `src/App.tsx`, and `src/components/ViewingTableScene.tsx`. Make only necessary stock-parameter changes in `src/components/FilmFrame.tsx`, `src/shaders/filmShader.ts`, and `src/shaders/loupeShader.ts`; preserve the existing loupe capture path. Record reference provenance in `public/assets/provenance.json`.
+  - [ ] **Reference and profile data:** Define a stable stock ID, display name, process/type, allowed views, base appearance, and rebate artwork/parameters. Default to Portra 400 in negative view. Match each profile to an identified developed 35mm still-film reference: lettering, placement, orientation, frame/half-frame numbers, and visible code patterns. Do not substitute cartridge DX markings, motion-picture KEYKODE, or fabricated generic barcodes. Document reference edition and provenance; report unavailable reference details rather than claiming exact reproduction. Runtime artwork must be local and usable under the reference's license; do not bundle unlicensed reference photographs.
+  - [ ] **Stock-aware strip:** Apply the selected profile across the entire strip, including frame gaps and visible film edges. Negative stocks have orange-masked borders; E100 has developed reversal-film borders based on its reference, without an orange negative mask. Preserve perforations, curl, layout, frame order, and loupe mapping. Keep markings sharp at supported macro views and readable through the loupe. Positive preview of a negative stock converts only the photo regions; its physical orange border and identity remain unchanged.
+  - [ ] **Selector and state transitions:** Add one labeled, keyboard-accessible stock selector. E100 immediately forces positive view, removes the negative/positive toggle and negative status text, and rejects negative-mode actions in the reducer as well as through the keyboard. Other stocks expose Negative / Positive preview. Switching between negative stocks preserves the current view; switching from E100 to a negative stock starts in negative view. Stock changes preserve selected frame, camera pose, pan, zoom, loupe magnification, and brightness. Rapid changes must settle on the last stock without stale labels or lens content.
+  - **Vitest integration suite (new):** `tests/integration/m9-film-stocks.test.ts` must cover five unique profiles and local asset/provenance resolution; selector/state/profile-to-material and rebate flow; view restrictions and all stock-type transitions; unchanged navigation/brightness state; and loupe/strip stock consistency. Use actual profile and material/rebate generation modules, with browser canvas support where needed; string presence alone does not prove visual identity.
+  - **Playwright E2E suite (new):** `tests/e2e/m9-film-stocks.spec.ts` must select all five stocks through the visible control; capture stock-specific edge close-ups; assert meaningful rendered rebate/base differences and readable photo regions; verify E100 stays positive after the mode shortcut; return to each negative stock and exercise both views; inspect stock markings through the loupe at macro zoom; and repeat rapid stock changes and room/inspect transitions with zero unexpected errors or failed asset requests.
+  - [ ] **Validation and review:** Add the proposed `npm run validate:m9` command to `package.json` during implementation, using the existing build + full Vitest + full Playwright convention. It does not exist yet. Run in the mapped remote checkout after verifying and flushing its Mutagen session. Include every existing suite, plus M10 if present. Preserve regression coverage while explicitly adapting assertions for the newly authorized stock UI and orange-border positive preview; do not silently replace approved screenshots.
+  - **Completion criteria:** The standalone M9 gate passes; human review accepts all five reference comparisons, E100 restrictions, negative-stock positive preview, and loupe fidelity. Set status to **Awaiting human review** after validation and leave the top-level checkbox unchecked until accepted.
+  - **Evidence:** Pending. Attach exact command/result, checkout/commit identifiers when available, browser/viewport, preview instructions, per-stock comparison captures, a stock-switching recording, and reference limitations.
+  - **Human approval:** Pending.
+
+- [ ] **M10 — Realistic light-table brightness and film transmission**
+  - **Status:** Pending.
+  - **Outcome:** The continuous dimmer changes the illumination of a physical light table and the light transmitted through film. At 100% the table looks intensely bright, with bright perforations and believable nearby light spill, while dense film areas remain darker and photographs retain useful detail.
+  - **Dependencies:** Existing M8 application only; M9 is not required. Validate against the existing generic strip when stock profiles are absent. This milestone must not introduce stock selection or require M9 data/types.
+  - **Scope:** Retain the 30%–100% slider, default 100%, existing brightness keyboard cycle, and persistence/reset behavior. Rework optical response, panel appearance, nearby lighting, and loupe color consistency. Keep camera exposure fixed while dimming. Do not add stock-specific image grading, new room props, HDR-display requirements, or a new renderer platform.
+  - **Paths/components:** `src/components/LightTable.tsx`, `src/components/DarkroomRoom.tsx`, `src/components/FilmFrame.tsx`, `src/components/FilmStrip.tsx`, `src/shaders/filmShader.ts`, `src/components/Loupe.tsx`, `src/shaders/loupeShader.ts`, and renderer configuration in `src/App.tsx`. Add a small shared illumination helper/shader module if needed. Preserve public brightness state and control semantics in `src/state/viewerState.ts` and `src/components/Controls.tsx`.
+  - [ ] **Separate film density from lighting:** Derive the film's color/transmission independently of table brightness, then apply the shared table-light output in linear light. Conceptually, transmitted light equals table output multiplied by film transmittance, with a separate restrained surface-reflection contribution. Stop applying brightness to the source photo before negative conversion. The same film region must not become darker when the table gets brighter. Make the existing generic base/mask the default input; accept stock-provided properties through the independence contract below if M9 is present.
+  - [ ] **Unify panel, borders, and holes:** Use a continuous, monotonic response curve with useful adjustment across the slider. Apply the same illumination source to photo regions and film borders/gaps. Remove the always-white perforation backing patches so holes reveal the actual dimmable panel. Preserve curl and believable contact shading. Coordinate emitted panel light with a soft, spatially plausible approximation of illumination on the loupe, chassis, and adjacent workbench; do not brighten the whole room uniformly.
+  - [ ] **Calibrate appearance:** At 30%, show subdued panel light, dark dense film, and little surrounding glow. At 60%, show comfortable inspection brightness and clear detail. At 100%, show an intense near-white panel and perforations, stronger local spill, and restrained glare around high-luminance boundaries. Keep dense film darker and avoid broad clipping of photograph regions. Use subtle diffuser texture/variation and bounded bloom only where they help; bloom must not obscure edge text or film detail. Percentage represents the light-table control, not a claim of calibrated monitor luminance.
+  - [ ] **Keep the loupe optically consistent:** Audit working/output color spaces and tone mapping across scene capture and lens rendering. Capture the same transmitted illumination seen outside the loupe, retaining only intentional lens shading/reflection. Apply final display conversion and any bloom once; do not compound light gain or bake and reapply glare. Verify photo, rebate, perforation, and bare-table views at minimum/maximum dimmer settings and supported magnifications.
+  - **Vitest integration suite (new):** `tests/integration/m10-light-transmission.test.ts` must exercise brightness-to-panel/film/light parameter propagation, bounded monotonic light output, fixed film density across brightness changes, lower transmission through denser regions, the existing brightness limits/reset semantics, and shared capture/lens color handling. Use actual material/helper modules; include generic negative and positive inputs without requiring M9.
+  - **Playwright E2E suite (new):** `tests/e2e/m10-light-transmission.spec.ts` must use the visible slider at 30%, 60%, and 100% and verify ordered luminance changes in stable panel, perforation, negative-photo, positive-photo, and rebate regions. Check nearby light spill, retained photo variance/limited clipping, and loupe/source color agreement away from intentional lens-edge effects. Exercise macro zoom, pan, and room return at both brightness extremes. Define meaningful region-based thresholds from the intended response before review; screenshot size or a changed percentage label is insufficient.
+  - [ ] **Validation and review:** Add the proposed `npm run validate:m10` command to `package.json` during implementation, using the existing build + full Vitest + full Playwright convention. It does not exist yet. Run in the mapped remote checkout after verifying and flushing its Mutagen session. Include every existing suite, plus M9 if present. Record intentional replacements of old brightness-model assertions while preserving their user-visible regression purpose; new visual baselines require human approval.
+  - **Completion criteria:** The standalone M10 gate passes; human review accepts that 100% feels very bright, 30%–100% responds smoothly, film density remains coherent, and the loupe matches the table. Record representative frame times with the loupe active to expose any added rendering cost. Set status to **Awaiting human review** after validation and leave the top-level checkbox unchecked until accepted.
+  - **Evidence:** Pending. Attach exact command/result, checkout/commit identifiers when available, browser/viewport, preview instructions, fixed-view captures at 30%/60%/100%, loupe comparisons, a dimmer recording, rendering-cost observations, and known limitations.
+  - **Human approval:** Pending.
+
+## M9/M10 independence and integration contract
+
+- **Either order:** Both milestones start from the existing M8 application. No preparatory milestone, sibling import, or placeholder implementation is required. Each must deliver its complete user-visible outcome and pass its gate on its own.
+- **Separate responsibilities:** M9 owns stock identity, rebate artwork, physical base properties, and allowed views. M10 owns the response to table brightness, transmitted illumination, surrounding light, and display/capture consistency. Stock data must not embed brightness multipliers or renderer exposure; illumination code must not hard-code stock IDs or change viewing-mode policy.
+- **Shared rendering boundary:** Film rendering consumes a stock-independent photo/view input and base/transmission properties with defaults matching the existing generic strip. M9 may supply these properties; M10 consumes them without depending on the stock catalog. When M9 is absent, the defaults and existing `isPositive` flow remain sufficient. Preserve the `brightness` prop and `tableBrightness` range/meaning.
+- **Shared files:** Both changes may touch `FilmStrip.tsx`, `FilmFrame.tsx`, `filmShader.ts`, `App.tsx`, and `package.json`. Keep stock selection/profile plumbing separate from illumination calculations and renderer setup; avoid unrelated refactors. Independent execution does not imply conflict-free merges. Preserve both additions when resolving local Git conflicts and validate the merged result in its own mapped remote checkout.
+- **Combined acceptance:** Whichever change is integrated second must add coverage for all five stocks at 30%, 60%, and 100%, both allowed views of negative stocks, and E100 positive-only behavior. Confirm stock changes retain brightness and camera/loupe state, the dimmer changes neither stock identity nor film density, and stock-specific borders/markings dim correctly inside and outside the loupe. Run the full combined suite; do not create required skipped tests when the sibling is absent.
+- **Historical evidence:** Existing M1–M8 evidence remains historical. M9 authorizes changes to stock identity/view restrictions and negative-stock preview borders; M10 authorizes replacement of the old illumination model. Document affected assertions and candidate captures explicitly. Neither addition authorizes silent baseline promotion or retroactive approval of M7/M8.
+
 ## Test configuration contract
 
 - Playwright must serve the production build, use a fixed desktop viewport and deterministic scene mode, and collect page errors, console errors, and failed asset requests.
@@ -288,7 +334,7 @@ No blocking questions remain for M1.
 ## Handoff checklist
 
 - Read this plan and inspect the active checkout before editing.
-- Work only on the first unaccepted milestone.
+- For M9/M10, work only on the assigned independent milestone; neither requires the other's completion. Otherwise work on the first unaccepted milestone. Do not treat historical M7/M8 sign-off wording as authorization to approve them or as a prerequisite to this explicitly requested independent work.
 - Preserve the five source PNGs and all previously accepted milestone behavior.
 - Run the milestone's cumulative validation command and attach evidence.
 - Stop at **Awaiting human review** unless the user explicitly authorized autonomous continuation.
