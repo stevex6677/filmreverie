@@ -1,5 +1,15 @@
 import { DEFAULT_LAYOUT, getFrameCenter, mapWorldPointToFrame } from "../utils/loupeMapping";
-import { DEFAULT_ROOM_POSE, RoomCameraPose, clampRoomPose } from "../utils/cameraBounds";
+import {
+  DEFAULT_ROOM_POSE,
+  RoomCameraPose,
+  clampRoomPose,
+  DEFAULT_INSPECT_DISTANCE,
+  DEFAULT_TABLE_BRIGHTNESS,
+  TABLE_CENTER_Z,
+  clampInspectZoom,
+  clampInspectPan,
+  clampTableBrightness,
+} from "../utils/cameraBounds";
 
 export type FilmMode = "negative" | "positive";
 export type RoomMode = "inspect" | "room";
@@ -12,6 +22,7 @@ export interface LoupeState {
   u: number;
   v: number;
   isOverFrame: boolean;
+  magnification: number;
 }
 
 export interface ViewerState {
@@ -21,6 +32,9 @@ export interface ViewerState {
   activeFrameIndex: number;
   isTransitioning: boolean;
   savedRoomPose: RoomCameraPose;
+  inspectZoom: number;
+  inspectPan: { x: number; z: number };
+  tableBrightness: number;
   error: string | null;
 }
 
@@ -37,10 +51,14 @@ export const INITIAL_VIEWER_STATE: ViewerState = {
     u: 0.5,
     v: 0.5,
     isOverFrame: true,
+    magnification: 2.5,
   },
   activeFrameIndex: 0,
   isTransitioning: false,
   savedRoomPose: { ...DEFAULT_ROOM_POSE },
+  inspectZoom: DEFAULT_INSPECT_DISTANCE,
+  inspectPan: { x: 0, z: TABLE_CENTER_Z },
+  tableBrightness: DEFAULT_TABLE_BRIGHTNESS,
   error: null,
 };
 
@@ -49,6 +67,9 @@ export function createInitialViewerState(initialRoomMode: RoomMode = "inspect"):
     ...INITIAL_VIEWER_STATE,
     roomMode: initialRoomMode,
     savedRoomPose: { ...DEFAULT_ROOM_POSE },
+    inspectZoom: DEFAULT_INSPECT_DISTANCE,
+    inspectPan: { x: 0, z: TABLE_CENTER_Z },
+    tableBrightness: DEFAULT_TABLE_BRIGHTNESS,
     error: null,
   };
 }
@@ -65,6 +86,15 @@ export type ViewerAction =
   | { type: "RETURN_TO_ROOM" }
   | { type: "SET_TRANSITIONING"; isTransitioning: boolean }
   | { type: "UPDATE_ROOM_POSE"; pose: Partial<RoomCameraPose> }
+  | { type: "SET_TABLE_ZOOM"; zoom: number }
+  | { type: "ADJUST_TABLE_ZOOM"; delta: number }
+  | { type: "SET_TABLE_PAN"; x: number; z: number }
+  | { type: "ADJUST_TABLE_PAN"; dx: number; dz: number }
+  | { type: "RESET_TABLE_VIEW" }
+  | { type: "SET_LOUPE_MAGNIFICATION"; magnification: number }
+  | { type: "ADJUST_LOUPE_MAGNIFICATION"; delta: number }
+  | { type: "SET_TABLE_BRIGHTNESS"; brightness: number }
+  | { type: "ADJUST_TABLE_BRIGHTNESS"; delta: number }
   | { type: "SET_ERROR"; error: string | null }
   | { type: "RETRY" }
   | { type: "RESET" };
@@ -156,6 +186,8 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
         ...state,
         roomMode: "room",
         isTransitioning: true,
+        inspectZoom: DEFAULT_INSPECT_DISTANCE,
+        inspectPan: { x: 0, z: TABLE_CENTER_Z },
         loupe: {
           ...state.loupe,
           isActive: false, // Rest loupe when returning to room
@@ -188,6 +220,73 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       };
     }
 
+    case "SET_TABLE_ZOOM":
+      return {
+        ...state,
+        inspectZoom: clampInspectZoom(action.zoom),
+      };
+
+    case "ADJUST_TABLE_ZOOM":
+      return {
+        ...state,
+        inspectZoom: clampInspectZoom(state.inspectZoom + action.delta),
+      };
+
+    case "SET_TABLE_PAN":
+      return {
+        ...state,
+        inspectPan: clampInspectPan(action.x, action.z),
+      };
+
+    case "ADJUST_TABLE_PAN":
+      return {
+        ...state,
+        inspectPan: clampInspectPan(
+          state.inspectPan.x + action.dx,
+          state.inspectPan.z + action.dz
+        ),
+      };
+
+    case "RESET_TABLE_VIEW":
+      return {
+        ...state,
+        inspectZoom: DEFAULT_INSPECT_DISTANCE,
+        inspectPan: { x: 0, z: TABLE_CENTER_Z },
+      };
+
+    case "SET_LOUPE_MAGNIFICATION":
+      return {
+        ...state,
+        loupe: {
+          ...state.loupe,
+          magnification: Math.max(1.5, Math.min(10.0, action.magnification)),
+        },
+      };
+
+    case "ADJUST_LOUPE_MAGNIFICATION":
+      return {
+        ...state,
+        loupe: {
+          ...state.loupe,
+          magnification: Math.max(
+            1.5,
+            Math.min(10.0, state.loupe.magnification + action.delta)
+          ),
+        },
+      };
+
+    case "SET_TABLE_BRIGHTNESS":
+      return {
+        ...state,
+        tableBrightness: clampTableBrightness(action.brightness),
+      };
+
+    case "ADJUST_TABLE_BRIGHTNESS":
+      return {
+        ...state,
+        tableBrightness: clampTableBrightness(state.tableBrightness + action.delta),
+      };
+
     case "SET_ERROR":
       return {
         ...state,
@@ -201,7 +300,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       };
 
     case "RESET":
-      return INITIAL_VIEWER_STATE;
+      return createInitialViewerState(state.roomMode);
 
     default:
       return state;

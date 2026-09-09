@@ -1,6 +1,7 @@
 import React from "react";
 import { ROLL_FRAMES } from "../data/rollManifest";
 import { ViewerAction, ViewerState } from "../state/viewerState";
+import { DEFAULT_INSPECT_DISTANCE, TABLE_CENTER_Z } from "../utils/cameraBounds";
 
 interface ControlsProps {
   state: ViewerState;
@@ -59,16 +60,82 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
                 {isPositive ? "Switch to Negative" : "Switch to Positive"}
               </button>
 
+              {/* Reset Table View Button */}
+              {(Math.abs(state.inspectZoom - DEFAULT_INSPECT_DISTANCE) > 0.05 ||
+                Math.abs(state.inspectPan.x) > 0.05 ||
+                Math.abs(state.inspectPan.z - TABLE_CENTER_Z) > 0.05) && (
+                <button
+                  id="reset-view-btn"
+                  data-testid="reset-view-btn"
+                  className="btn btn-reset-view"
+                  onClick={() => dispatch({ type: "RESET_TABLE_VIEW" })}
+                  title="Reset table zoom and pan to default overview (0)"
+                >
+                  Reset View
+                </button>
+              )}
+
               {/* Loupe Toggle */}
               <button
                 id="loupe-toggle"
                 data-testid="loupe-toggle"
                 className={`btn btn-loupe ${state.loupe.isActive ? "active" : ""}`}
                 onClick={() => dispatch({ type: "TOGGLE_LOUPE" })}
-                title="Toggle 2.5x optical inspection loupe (L)"
+                title={`Toggle optical inspection loupe (${state.loupe.magnification}×) (L)`}
               >
-                {state.loupe.isActive ? "Rest Loupe" : "Activate Loupe (2.5×)"}
+                {state.loupe.isActive
+                  ? "Rest Loupe"
+                  : `Activate Loupe (${state.loupe.magnification}×)`}
               </button>
+
+              {/* Loupe Magnification Selector */}
+              {state.loupe.isActive && (
+                <div className="magnification-controls" data-testid="magnification-controls">
+                  <span className="mag-label">MAG:</span>
+                  {[2, 4, 8].map((mag) => (
+                    <button
+                      key={mag}
+                      data-testid={`mag-btn-${mag}x`}
+                      className={`btn btn-mag ${state.loupe.magnification === mag ? "active" : ""}`}
+                      onClick={() => dispatch({ type: "SET_LOUPE_MAGNIFICATION", magnification: mag })}
+                      title={`Set loupe magnification to ${mag}×`}
+                    >
+                      {mag}×
+                    </button>
+                  ))}
+                </div>
+              )}
+              {/* Light Table Brightness Dimmer (Smooth continuous slider 30%–100%) */}
+              <div className="dimmer-controls" data-testid="dimmer-controls">
+                <label htmlFor="brightness-slider" className="dimmer-label">LIGHT:</label>
+                <input
+                  id="brightness-slider"
+                  data-testid="brightness-slider"
+                  type="range"
+                  min="0.30"
+                  max="1.00"
+                  step="0.01"
+                  value={state.tableBrightness}
+                  onChange={(e) =>
+                    dispatch({
+                      type: "SET_TABLE_BRIGHTNESS",
+                      brightness: parseFloat(e.target.value),
+                    })
+                  }
+                  onInput={(e) =>
+                    dispatch({
+                      type: "SET_TABLE_BRIGHTNESS",
+                      brightness: parseFloat((e.target as HTMLInputElement).value),
+                    })
+                  }
+                  className="brightness-slider"
+                  aria-label="Light Table Brightness"
+                  title={`Adjust light table brightness: ${Math.round(state.tableBrightness * 100)}% (B)`}
+                />
+                <span className="dimmer-value" data-testid="brightness-value">
+                  {Math.round(state.tableBrightness * 100)}%
+                </span>
+              </div>
             </>
           )}
         </div>
@@ -125,12 +192,26 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
               </div>
 
               <div className="status-item">
+                <span className="label">ZOOM:</span>
+                <span className="badge zoom-badge" data-testid="zoom-badge">
+                  {Math.round((DEFAULT_INSPECT_DISTANCE / state.inspectZoom) * 100)}%
+                </span>
+              </div>
+
+              <div className="status-item">
+                <span className="label">LIGHT:</span>
+                <span className="badge brightness-badge" data-testid="brightness-badge">
+                  {Math.round(state.tableBrightness * 100)}%
+                </span>
+              </div>
+
+              <div className="status-item">
                 <span className="label">LOUPE:</span>
                 <span
                   className={`badge loupe-badge ${state.loupe.isActive ? "active" : "resting"}`}
                   data-testid="loupe-badge"
                 >
-                  {state.loupe.isActive ? "ACTIVE (2.5×)" : "RESTING"}
+                  {state.loupe.isActive ? `ACTIVE (${state.loupe.magnification}×)` : "RESTING"}
                 </span>
               </div>
 

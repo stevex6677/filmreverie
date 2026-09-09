@@ -4,6 +4,7 @@ import * as THREE from "three";
 interface LightTableProps {
   width?: number;
   height?: number;
+  brightness?: number;
   onPointerMove?: (point: THREE.Vector3) => void;
   onClick?: (point: THREE.Vector3) => void;
 }
@@ -11,6 +12,7 @@ interface LightTableProps {
 export const LightTable: React.FC<LightTableProps> = ({
   width = 3.6,
   height = 1.8,
+  brightness = 1.0,
   onPointerMove,
   onClick,
 }) => {
@@ -55,7 +57,7 @@ export const LightTable: React.FC<LightTableProps> = ({
         <meshStandardMaterial
           color="#ffffff"
           emissive="#ffffff"
-          emissiveIntensity={1.20}
+          emissiveIntensity={1.20 * brightness}
           roughness={0.3}
           metalness={0.02}
         />

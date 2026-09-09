@@ -9,6 +9,7 @@ interface FilmFrameProps {
   texture: THREE.Texture;
   isPositive: boolean;
   layout: FilmStripLayout;
+  brightness?: number;
   onSelect?: (index: number) => void;
   onPointerMove?: (point: THREE.Vector3, index: number) => void;
 }
@@ -18,6 +19,7 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
   texture,
   isPositive,
   layout,
+  brightness = 1.0,
   onSelect,
   onPointerMove,
 }) => {
@@ -56,6 +58,21 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
         );
       } else {
         material.uniforms.uModeTransition.value = target;
+      }
+    }
+
+    if (material.uniforms.uExposure) {
+      const targetExp = 1.0 * Math.pow(brightness, 0.5);
+      const currentExp = material.uniforms.uExposure.value;
+      if (Math.abs(targetExp - currentExp) > 0.001) {
+        material.uniforms.uExposure.value = THREE.MathUtils.damp(
+          currentExp,
+          targetExp,
+          16,
+          delta
+        );
+      } else {
+        material.uniforms.uExposure.value = targetExp;
       }
     }
   });

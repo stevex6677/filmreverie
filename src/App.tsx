@@ -82,12 +82,16 @@ export function App() {
         position: INSPECT_CAMERA_POSITION,
         up: INSPECT_CAMERA_UP,
         fov: 45,
+        near: 0.04,
+        far: 50,
       };
     }
     return {
       position: sphericalToCartesian(DEFAULT_ROOM_POSE, ROOM_CAMERA_TARGET),
       up: ROOM_CAMERA_UP,
       fov: 45,
+      near: 0.04,
+      far: 50,
     };
   }, [initialRoomMode]);
 
@@ -122,6 +126,16 @@ export function App() {
             type: "SELECT_FRAME",
             frameIndex: Math.min(4, state.activeFrameIndex + 1),
           });
+        } else if (e.key === "0") {
+          dispatch({ type: "RESET_TABLE_VIEW" });
+        } else if (e.key === "+" || e.key === "=" || e.key === "]") {
+          dispatch({ type: "ADJUST_LOUPE_MAGNIFICATION", delta: 1.0 });
+        } else if (e.key === "-" || e.key === "_" || e.key === "[") {
+          dispatch({ type: "ADJUST_LOUPE_MAGNIFICATION", delta: -1.0 });
+        } else if (e.key === "b" || e.key === "B") {
+          const cur = state.tableBrightness;
+          const nextBrightness = cur <= 0.35 ? 1.0 : cur <= 0.55 ? 0.30 : cur <= 0.80 ? 0.50 : 0.75;
+          dispatch({ type: "SET_TABLE_BRIGHTNESS", brightness: nextBrightness });
         } else if (e.key === "Escape") {
           dispatch({ type: "RETURN_TO_ROOM" });
         }
@@ -130,7 +144,7 @@ export function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.roomMode, state.activeFrameIndex, state.isTransitioning]);
+  }, [state.roomMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness]);
 
   return (
     <main
