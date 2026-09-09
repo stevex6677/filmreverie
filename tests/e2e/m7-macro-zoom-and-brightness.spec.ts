@@ -41,7 +41,7 @@ test.describe("M7 E2E — Deep Macro Zoom (1000%) & Light Table Dimmer Calibrati
     const slider = page.locator("[data-testid=brightness-slider]");
     await expect(slider).toBeVisible();
 
-    const artifactsDir = path.resolve(process.cwd(), "artifacts");
+    const artifactsDir = path.resolve(process.cwd(), process.env.REVIEW_ARTIFACTS_DIR || "artifacts");
     if (!fs.existsSync(artifactsDir)) {
       fs.mkdirSync(artifactsDir, { recursive: true });
     }

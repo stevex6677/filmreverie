@@ -1,3 +1,5 @@
+import { getTableIllumination } from "../shaders/tableIllumination";
+
 interface DarkroomRoomProps {
   brightness?: number;
 }
@@ -22,14 +24,11 @@ export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ brightness = 1.0 }) 
         intensity={0.85}
       />
 
-      {/* Light table glow on surrounding workbench and room */}
-      <pointLight
-        position={[0, -0.20, -0.10]}
-        color="#edf2f7"
-        intensity={0.7 * brightness}
-        distance={3.5}
-        decay={2}
-      />
+      {/* Short-range distributed bounce from the diffuser onto nearby objects. */}
+      {[-1.45, 0, 1.45].map(x => (
+        <pointLight key={x} position={[x, -0.27, -0.10]} color="#edf2f7"
+          intensity={getTableIllumination(brightness).spillIntensity} distance={1.2} decay={2} />
+      ))}
 
       {/* Dual under-bench fill lights to illuminate left and right steel leg assemblies and footpads */}
       <pointLight

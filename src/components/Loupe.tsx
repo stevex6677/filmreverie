@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useEffect } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { createLoupeShaderMaterial } from "../shaders/loupeShader";
+import { captureLoupeScene, createLoupeRenderTarget, updateTableIllumination } from "../shaders/tableIllumination";
 import { TABLE_SURFACE_Y } from "../utils/cameraBounds";
 
 interface LoupeProps {
@@ -42,15 +43,7 @@ export const Loupe: React.FC<LoupeProps> = ({
   const targetPos = isActive ? activePos : restingPos;
 
   // Offscreen render target and virtual orthographic camera for full-scene optical magnification
-  const renderTarget = useMemo(() => {
-    const target = new THREE.WebGLRenderTarget(1024, 1024, {
-      minFilter: THREE.LinearFilter,
-      magFilter: THREE.LinearFilter,
-      format: THREE.RGBAFormat,
-    });
-    target.texture.colorSpace = THREE.SRGBColorSpace;
-    return target;
-  }, []);
+  const renderTarget = useMemo(createLoupeRenderTarget, []);
 
   const virtualCamera = useMemo(() => {
     return new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 1.0);
@@ -61,12 +54,8 @@ export const Loupe: React.FC<LoupeProps> = ({
     return createLoupeShaderMaterial(texture, isPositive, [u, v], false, magnification);
   }, [texture]);
 
-  useEffect(() => {
-    return () => {
-      renderTarget.dispose();
-      lensMaterial.dispose();
-    };
-  }, [renderTarget, lensMaterial]);
+  useEffect(() => () => renderTarget.dispose(), [renderTarget]);
+  useEffect(() => () => lensMaterial.dispose(), [lensMaterial]);
 
   // Update uniforms, smooth positioning, and full-scene capture
   useFrame(({ gl, scene }, delta) => {
@@ -80,9 +69,6 @@ export const Loupe: React.FC<LoupeProps> = ({
     }
 
     // Physical Scene Capture: Capture the exact 3D scene underneath the loupe
-    // 1. Temporarily hide loupe group so it doesn't render its own barrel/shadow into the lens
-    groupRef.current.visible = false;
-
     // 2. Position virtual camera in world space directly above the current loupe lens position
     groupRef.current.getWorldPosition(worldPos.current);
 
@@ -102,15 +88,9 @@ export const Loupe: React.FC<LoupeProps> = ({
     virtualCamera.updateProjectionMatrix();
 
     // 3. Render offscreen into render target
-    const prevRenderTarget = gl.getRenderTarget();
-    gl.setRenderTarget(renderTarget);
-    gl.render(scene, virtualCamera);
-    gl.setRenderTarget(prevRenderTarget);
+    captureLoupeScene(gl, scene, virtualCamera, renderTarget, groupRef.current);
 
-    // 4. Restore loupe visibility for the main scene render pass
-    groupRef.current.visible = true;
-
-    // 5. Update shader uniforms
+    // 4. Update shader uniforms for the main scene render pass
     if (lensMaterial.uniforms) {
       lensMaterial.uniforms.uTexture.value = renderTarget.texture;
       if (lensMaterial.uniforms.uUseSceneCapture) {
@@ -136,12 +116,9 @@ export const Loupe: React.FC<LoupeProps> = ({
       const targetMode = isPositive ? 1.0 : 0.0;
       lensMaterial.uniforms.uModeTransition.value = targetMode;
 
-      if (lensMaterial.uniforms.uExposure) {
-        const targetExp = 1.0 * Math.pow(brightness, 0.5);
-        lensMaterial.uniforms.uExposure.value = targetExp;
-      }
+      updateTableIllumination(lensMaterial, brightness);
     }
-  });
+  }, -1); // Before the automatic main render; film light uniforms update during React render.
 
   const lensRadius = 0.14;
   const barrelRadius = 0.17;
