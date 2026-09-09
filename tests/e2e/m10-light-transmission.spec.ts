@@ -5,7 +5,7 @@ import { parsePng, getRegionStats, getRegionMeanDifference } from "./helpers/pix
 
 test.use({ actionTimeout: 30000 });
 
-const output = path.resolve(process.env.M10_CANDIDATE_DIR || "artifacts/m10-candidates");
+const output = path.resolve(process.env.M10_CANDIDATE_DIR || "artifacts/m9-m10-candidates/lighting");
 const regions = {
   panel: [640, 220, 24], hole: [634, 337, 2], rebate: [645, 337, 2],
   photo: [640, 400, 28], spill: [1220, 560, 12], unlitSurround: [40, 680, 20],

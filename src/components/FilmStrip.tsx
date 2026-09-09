@@ -1,3 +1,4 @@
+import { DEFAULT_FILM_STOCK_ID, FilmStockProfile, getFilmStock } from "../data/filmStocks";
 import React, { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import {
@@ -16,6 +17,7 @@ import { FilmFrame } from "./FilmFrame";
 
 interface FilmStripProps {
   textures: THREE.Texture[];
+  stock?: FilmStockProfile;
   isPositive: boolean;
   layout: FilmStripLayout;
   brightness?: number;
@@ -41,6 +43,7 @@ function createRoundedRectPath(x: number, y: number, w: number, h: number, r: nu
 
 export const FilmStrip: React.FC<FilmStripProps> = ({
   textures,
+  stock = getFilmStock(DEFAULT_FILM_STOCK_ID),
   isPositive,
   layout,
   brightness = 1.0,
@@ -52,10 +55,10 @@ export const FilmStrip: React.FC<FilmStripProps> = ({
   const { top, bottom } = useMemo(() => getPerforationPositions(layout), [layout]);
 
 
-  // High-resolution authentic 35mm rebate print texture (brand markings, barcodes, frame numbers)
+  // High-resolution authentic 35mm rebate print texture (stock lettering and frame numbers)
   const rebateTexture = useMemo(() => {
-    return createFilmRebateTexture(isPositive, layout);
-  }, [isPositive, layout]);
+    return createFilmRebateTexture(stock, layout);
+  }, [stock, layout]);
 
   const rebateMaterial = useMemo(() => createRebateMaterial(rebateTexture), [rebateTexture]);
   updateTableIllumination(rebateMaterial, brightness);
@@ -130,6 +133,7 @@ export const FilmStrip: React.FC<FilmStripProps> = ({
           isPositive={isPositive}
           layout={layout}
           brightness={brightness}
+          negativeMask={stock.base.negativeMask}
           onSelect={onSelectFrame}
           onPointerMove={(pt) => onPointerMove?.(pt)}
         />

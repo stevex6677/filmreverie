@@ -1,7 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
 // Keep M10 review candidates separate from historical accepted captures.
-process.env.REVIEW_ARTIFACTS_DIR ??= "artifacts/m10-candidates/regressions";
+process.env.REVIEW_ARTIFACTS_DIR ??= "artifacts/m9-m10-candidates/regressions";
 
 const port = Number(process.env.PLAYWRIGHT_PORT || 5178);
 const baseURL = `http://127.0.0.1:${port}`;
