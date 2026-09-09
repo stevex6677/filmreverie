@@ -99,7 +99,7 @@ export function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore when typing in input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
         return;
       }
 
@@ -152,6 +152,7 @@ export function App() {
       data-room-mode={state.roomMode}
       data-is-transitioning={state.isTransitioning ? "true" : "false"}
       data-film-mode={state.filmMode}
+      data-film-stock={state.filmStockId}
       data-loupe-active={state.loupe.isActive ? "true" : "false"}
       data-active-frame={state.loupe.frameIndex + 1}
       data-reduced-motion={isReducedMotion ? "true" : "false"}

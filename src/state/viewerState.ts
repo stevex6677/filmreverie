@@ -1,3 +1,4 @@
+import { DEFAULT_FILM_STOCK_ID, FilmStockId, getFilmStock, isFilmStockId } from "../data/filmStocks";
 import { DEFAULT_LAYOUT, getFrameCenter, mapWorldPointToFrame } from "../utils/loupeMapping";
 import {
   DEFAULT_ROOM_POSE,
@@ -28,6 +29,7 @@ export interface LoupeState {
 export interface ViewerState {
   roomMode: RoomMode;
   filmMode: FilmMode;
+  filmStockId: FilmStockId;
   loupe: LoupeState;
   activeFrameIndex: number;
   isTransitioning: boolean;
@@ -43,6 +45,7 @@ const defaultFrameCenter = getFrameCenter(0, DEFAULT_LAYOUT);
 export const INITIAL_VIEWER_STATE: ViewerState = {
   roomMode: "inspect",
   filmMode: "negative",
+  filmStockId: DEFAULT_FILM_STOCK_ID,
   loupe: {
     isActive: false,
     worldX: defaultFrameCenter.x,
@@ -75,6 +78,7 @@ export function createInitialViewerState(initialRoomMode: RoomMode = "inspect"):
 }
 
 export type ViewerAction =
+  | { type: "SET_FILM_STOCK"; stockId: FilmStockId }
   | { type: "SET_FILM_MODE"; mode: FilmMode }
   | { type: "TOGGLE_FILM_MODE" }
   | { type: "SET_LOUPE_ACTIVE"; active: boolean }
@@ -101,13 +105,25 @@ export type ViewerAction =
 
 export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerState {
   switch (action.type) {
+    case "SET_FILM_STOCK": {
+      if (!isFilmStockId(action.stockId) || action.stockId === state.filmStockId) return state;
+      const next = getFilmStock(action.stockId);
+      return {
+        ...state,
+        filmStockId: next.id,
+        filmMode: next.type === "reversal" ? "positive"
+          : getFilmStock(state.filmStockId).type === "reversal" ? "negative" : state.filmMode,
+      };
+    }
     case "SET_FILM_MODE":
+      if (!getFilmStock(state.filmStockId).allowedViews.includes(action.mode)) return state;
       return {
         ...state,
         filmMode: action.mode,
       };
 
     case "TOGGLE_FILM_MODE":
+      if (getFilmStock(state.filmStockId).type === "reversal") return state;
       return {
         ...state,
         filmMode: state.filmMode === "negative" ? "positive" : "negative",
