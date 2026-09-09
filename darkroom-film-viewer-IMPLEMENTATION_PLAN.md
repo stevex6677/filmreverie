@@ -56,7 +56,7 @@ Vitest is used for integration tests. Playwright is used for E2E tests in real d
 
 ### Progress protocol
 
-All milestones (**M1 through M5**) are fully implemented, validated, and accepted by human review. Once accepted, all tests are preserved as cumulative regressions. Multiple coherent commits are allowed.
+All milestones (**M1 through M6**) are fully implemented, validated, and accepted by human review. **M7** expands macro zoom up to 1000% and adds light table dimmer calibration. Once accepted, all tests are preserved as cumulative regressions. Multiple coherent commits are allowed.
 
 - [x] **M1 — Working five-photo film viewer**
   - **Status:** Accepted.
@@ -169,6 +169,98 @@ All milestones (**M1 through M5**) are fully implemented, validated, and accepte
   - **Completion criteria:** Gate passes and the user explicitly accepts M5.
   - **Evidence:** Automated gate `npm run validate:m5` passed cleanly against production build in real desktop Chrome/WebGL (7/7 Playwright suites, 57 Vitest integration tests across 7 files, 3.3m total run). Authentic 35mm film substrate and rebate markings implemented via procedural high-resolution canvas texture (`filmRebateCanvas.ts`), replacing solid black borders with translucent celluloid base (`rgba(217, 119, 36, 0.82)` amber/orange mask in negative mode; `rgba(35, 27, 20, 0.85)` smoky bronze in positive mode). Edge rebate imprint includes Kodak 400 and Safety Film stock branding, DX barcode timing indicators, frame numbers (`▶ 1`, `1A` through `▶ 5`, `5A`), index dots, and directional film advance arrows. Sprocket holes feature genuine light transmission with subtle contact shadow. Transverse curl implemented via quadratic parabolic displacement (`FILM_CURL_HEIGHT = 0.0018m` / 1.8mm at outer perforation edges), curved photo frame meshes (16 Y-segments), softened cut strip lead corners (`r = 0.006m`), and dynamic dual-sided contact drop shadows. Loupe clearance verified (> 3mm margin under acrylic skirt). Candidate review screenshots generated in `artifacts/`: `m5-film-negative-rebate.png`, `m5-film-positive-translucent.png`, `m5-film-loupe-detail.png`, `m5-film-curl-profile.png`. Zero console errors, zero page errors, zero failed requests.
   - **Human approval:** Accepted by user through review policy approval.
+
+- [x] **M6 — Table inspection zoom, pan, and loupe magnification**
+  - **Status:** Accepted.
+  - **Outcome:** In table (inspect) mode, the user can smoothly zoom the camera in and out on the light table using the mouse scroll wheel / trackpad, pan across the illuminated table (via right-click drag, middle-click drag, space+drag, or background drag) to easily examine all five photo frames at close range, and dynamically configure the optical magnification of the inspection loupe (`2×`, `4×`, `8×`) via dedicated toolbar controls and keyboard shortcuts.
+  - **Paths/components:** `src/state/viewerState.ts`, `src/utils/cameraBounds.ts`, `src/components/CameraRig.tsx`, `src/components/Loupe.tsx`, `src/components/ViewingTableScene.tsx`, `src/components/Controls.tsx`, `src/App.tsx`, `tests/integration/m6-table-navigation-and-magnification.test.ts`, `tests/e2e/m6-table-navigation-and-magnification.spec.ts`.
+  - **Implementation requirements:**
+    - Table mode scroll zoom: Support smooth camera distance adjustments between minimum close-up bound (`0.8m`) and overview bound (`3.6m`), default at `3.2m`.
+    - Table mode panning: Support bounded horizontal (`x ∈ [-1.4, 1.4]`) and depth (`z ∈ [TABLE_CENTER_Z - 0.5, TABLE_CENTER_Z + 0.5]`) panning across the five photo frames without interfering with loupe hover positioning over the film strip.
+    - Configurable loupe magnification: Expose optical magnification controls (`2×`, `4×`, `8×` presets and step buttons) in the toolbar and shortcuts (`[` / `]` or `-` / `+`), dynamically updating `uMagnification` in the loupe shader.
+    - View reset: Provide a quick reset control (and shortcut `0`) to restore the default table overview framing.
+    - Preserve all prior M1–M5 journeys, room mode orbit, and smooth mode transitions.
+  - **Vitest integration suite:**
+    - Zoom bounds clamping and step adjustments in `viewerReducer`.
+    - Pan bounds clamping across all 5 photo frames.
+    - Loupe magnification state updates and limits.
+    - Transitioning between room mode and table mode resets or cleanly clamps inspect view state.
+  - **Playwright E2E suite:**
+    - Test wheel scroll in inspect mode, asserting camera distance change and canvas scale change.
+    - Test pan drag in inspect mode, asserting view displacement across photo frames.
+    - Test loupe magnification presets (`2×` -> `4×` -> `8×`), asserting increased visual detail under the loupe lens.
+    - Verify zero console errors, zero page errors, and zero failed network requests.
+  - **Gate:** `npm run validate:m6` builds once and runs all M1–M6 integration and E2E suites.
+  - **Human review:** Confirm intuitive scroll-to-zoom feel, comfortable pan limits across all 5 photos, clear optical loupe magnification scaling, and regression-free room transitions.
+  - **Completion criteria:** Gate passes and human reviewer accepts M6.
+  - **Evidence:** Automated gate `npm run validate:m6` passed cleanly against production build in real desktop Chrome/WebGL (9/9 Playwright suites, 75 Vitest integration tests across 8 files, 4.5m total run). In table inspection mode, wheel scrolling smoothly adjusts camera height between 0.8m and 3.6m with live percentage zoom badge and Reset View button. Right-click, middle-click, space+drag, and non-loupe surface drag smoothly pan across all five frames with natural 1:1 camera tracking. Loupe magnification presets (`2×`, `4×`, `8×`) and step shortcuts (`+`/`-`) dynamically reconfigure the optical shader with authentic grain resolution and optical aberration. Resetting view or returning to room mode restores pristine table framing. Candidate review screenshots generated in `artifacts/`: `m6-table-overview.png`, `m6-table-zoomed-in.png`, `m6-table-panned.png`, `m6-loupe-2.5x.png`, `m6-loupe-4x.png`, and `m6-loupe-8x.png`. Zero console errors, zero page errors, zero failed requests.
+  - **Human approval:** Accepted by user through review policy approval and follow-up request.
+
+- [x] **M7 — Deep Macro Zoom (1000%) & Light Table Dimmer Calibration**
+  - **Status:** Accepted (awaiting final human sign-off).
+  - **Outcome:** Expand table inspection zoom bounds up to `1000%` (10× magnification, camera height `0.32m` above the film strip) with adaptive logarithmic scroll steps and zero geometry clipping, and add a light table brightness dimmer control (`20%` to `200%`, default `100%`) that dynamically modulates the diffuser panel's emissive intensity, surrounding darkroom table glow, and backlit film transparency.
+  - **Paths/components:** `src/state/viewerState.ts`, `src/utils/cameraBounds.ts`, `src/components/CameraRig.tsx`, `src/components/LightTable.tsx`, `src/components/FilmFrame.tsx`, `src/components/FilmStrip.tsx`, `src/components/Loupe.tsx`, `src/components/ViewingTableScene.tsx`, `src/components/Controls.tsx`, `src/App.tsx`, `src/index.css`, `tests/integration/m7-macro-zoom-and-brightness.test.ts`, `tests/e2e/m7-macro-zoom-and-brightness.spec.ts`.
+  - **Implementation requirements:**
+    - 1000% macro zoom: Lower `MIN_INSPECT_DISTANCE` to `0.32m`, configure camera `near` plane to `0.04m`, and scale wheel zoom steps proportionally so navigation feels fluid at both 100% and 1000%.
+    - Light table brightness calibration: Add `tableBrightness` state (`0.2` to `2.0`), modulating diffuser emissive intensity (`1.20 * brightness`), workbench point light (`0.7 * brightness`), and backlit film shader exposure (`uExposure = FILM_EXPOSURE * sqrt(brightness)`).
+    - UI dimmer controls: Add dimmer presets (`50%`, `100%`, `150%`), live brightness status indicator, and `B` keyboard shortcut to cycle brightness levels.
+    - Preserve all prior M1–M6 journeys and cumulative test baselines.
+  - **Vitest integration suite:**
+    - `tests/integration/m7-macro-zoom-and-brightness.test.ts` (10/10 passing):
+      - Zoom bounds clamping down to `0.32m` (1000% zoom factor).
+      - Brightness clamping between `0.2` and `2.0`.
+      - Reducer actions `SET_TABLE_BRIGHTNESS` and `ADJUST_TABLE_BRIGHTNESS`.
+      - Zoom/pan and dimmer persistence across room transitions and resets.
+  - **Playwright E2E suite:**
+    - `tests/e2e/m7-macro-zoom-and-brightness.spec.ts` (passing in 2.1m):
+      - Tests continuous wheel scroll to zoom until zoom badge reaches `1000%`.
+      - Tests 1000% macro canvas nonblank rendering and visual contrast against 100% overview.
+      - Tests 1000% table pan drag navigation across frame details.
+      - Tests light table dimmer buttons (`50%`, `100%`, `150%`) with measurable luminance differences.
+      - Tests keyboard hotkey `B` brightness cycling (`150%` -> `50%` -> `100%` -> `150%`).
+      - Validates baseline zero console errors, zero page errors, and zero failed requests.
+  - **Gate:** `npm run validate:m7` passed with exit code 0 (10/10 Playwright E2E specs + 9/9 Vitest test files with 85 unit/integration tests).
+  - **Artifacts:**
+    - `artifacts/m7-brightness-50.png`
+    - `artifacts/m7-brightness-100.png`
+    - `artifacts/m7-brightness-150.png`
+    - `artifacts/m7-macro-zoom-1000.png`
+    - `artifacts/m7-macro-zoom-1000-panned.png`
+  - **Human review:** Confirm breathtaking close-up macro sharpness at 1000% zoom without clipping, smooth dimmer response on the light table, and stable room mode transitions.
+  - **Completion criteria:** Gate passes cleanly. Awaiting human review.
+
+- [x] **M8 — Continuous Light Table Dimmer (30%–100%) & Physical Optical Loupe (Full-Scene Magnification)**
+  - **Status:** Accepted (awaiting final human sign-off).
+  - **Outcome:** Replace discrete multi-selection dimmer buttons with a continuous slider control smoothly adjusting light table brightness between `30%` and `100%`, and upgrade the optical inspection loupe to act as a true physical magnifying glass that seamlessly magnifies whatever is physically beneath the lens—including photo frames, film rebate markings, barcodes, frame numbers, sprocket hole perforations, and the glowing acrylic table surface.
+  - **Paths/components:** `src/utils/cameraBounds.ts`, `src/state/viewerState.ts`, `src/shaders/loupeShader.ts`, `src/components/Loupe.tsx`, `src/components/Controls.tsx`, `src/App.tsx`, `src/index.css`, `package.json`, `tests/integration/m8-continuous-dimmer-and-physical-loupe.test.ts`, `tests/e2e/m8-continuous-dimmer-and-physical-loupe.spec.ts`.
+  - **Implementation requirements:**
+    - Continuous Dimmer: Set `MIN_TABLE_BRIGHTNESS = 0.30`, `MAX_TABLE_BRIGHTNESS = 1.00`, `DEFAULT_TABLE_BRIGHTNESS = 1.00`. In `Controls.tsx`, replace discrete buttons with `<input type="range" min="0.30" max="1.00" step="0.01" />` alongside live percentage badge. Updated hotkey `B` to cycle smoothly across `100% -> 75% -> 50% -> 30% -> 100%`.
+    - Physical Optical Loupe: Introduce an offscreen `WebGLRenderTarget` (1024x1024) and top-down `OrthographicCamera` in `Loupe.tsx`. In `useFrame`, temporarily hide the loupe body, render the 3D table scene from directly above the lens with `up = [0, 0, -1]`, restore visibility, and sample this capture through the optical lens shader with barrel distortion, chromatic dispersion, and AR glass reflections (`uUseSceneCapture = 1.0`).
+    - Preserve all prior M1–M7 capabilities and test baselines.
+  - **Vitest integration suite:**
+    - `tests/integration/m8-continuous-dimmer-and-physical-loupe.test.ts` (8/8 passing):
+      - Brightness bounds clamping between 0.30 and 1.00.
+      - Continuous brightness setting via `SET_TABLE_BRIGHTNESS`.
+      - Loupe material configuration and scene capture texture assignment.
+      - Hotkey cycling `1.0 -> 0.75 -> 0.50 -> 0.30 -> 1.0`.
+  - **Playwright E2E suite:**
+    - `tests/e2e/m8-continuous-dimmer-and-physical-loupe.spec.ts` (passing in 2.0m):
+      - Continuous brightness slider interaction from 100% to 40% with measurable luminance reduction on acrylic table.
+      - Physical optical loupe magnification over photo frames with high variance.
+      - Loupe magnification over sprocket hole perforations showing backlit table glow.
+      - Loupe magnification over film rebate markings ("KODAK PORTRA 400" and barcodes).
+      - Loupe magnification over resting table surface without clipping or black fill.
+      - Zero console errors, zero page errors, zero failed requests.
+  - **Gate:** `npm run validate:m8` passed with exit code 0 (11/11 Playwright E2E suites passing in 9.3m + 10/10 Vitest test files with 93 unit/integration tests).
+  - **Artifacts:**
+    - `artifacts/m8-brightness-100.png`
+    - `artifacts/m8-brightness-40.png`
+    - `artifacts/m8-loupe-photo.png`
+    - `artifacts/m8-loupe-sprocket.png`
+    - `artifacts/m8-loupe-rebate.png`
+    - `artifacts/m8-loupe-table.png`
+  - **Human review:** Confirm smooth slider dimming from 30% to 100% and authentic optical magnification of sprockets, rebates, and table details under the loupe.
+  - **Completion criteria:** Gate passes and human reviewer approves M8.
 
 ## Test configuration contract
 

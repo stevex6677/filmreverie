@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useTexture } from "@react-three/drei";
 import { ROLL_FRAMES } from "../data/rollManifest";
-import { DEFAULT_LAYOUT } from "../utils/loupeMapping";
+import { DEFAULT_LAYOUT, getFrameCenter } from "../utils/loupeMapping";
 import { TABLE_SURFACE_Y, TABLE_CENTER_Z } from "../utils/cameraBounds";
 import { ViewerAction, ViewerState } from "../state/viewerState";
 import { LightTable } from "./LightTable";
@@ -58,6 +58,11 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       dispatch({ type: "SELECT_FRAME", frameIndex: index });
     } else {
       dispatch({ type: "SELECT_FRAME", frameIndex: index });
+      // When zoomed in, also center the table view on the selected photo frame
+      if (state.inspectZoom < 2.8) {
+        const frameCenter = getFrameCenter(index, DEFAULT_LAYOUT);
+        dispatch({ type: "SET_TABLE_PAN", x: frameCenter.x, z: TABLE_CENTER_Z });
+      }
     }
   };
 
@@ -83,14 +88,19 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         roomMode={state.roomMode}
         isTransitioning={state.isTransitioning}
         savedRoomPose={state.savedRoomPose}
+        inspectZoom={state.inspectZoom}
+        inspectPan={state.inspectPan}
+        isLoupeActive={state.loupe.isActive}
         onUpdateRoomPose={(pose) => dispatch({ type: "UPDATE_ROOM_POSE", pose })}
+        onAdjustInspectZoom={(delta) => dispatch({ type: "ADJUST_TABLE_ZOOM", delta })}
+        onAdjustInspectPan={(dx, dz) => dispatch({ type: "ADJUST_TABLE_PAN", dx, dz })}
         onTransitionComplete={() => dispatch({ type: "SET_TRANSITIONING", isTransitioning: false })}
         isDeterministic={isDeterministic}
         isReducedMotion={isReducedMotion}
       />
 
       {/* Surrounding 3D Darkroom Environment & Workbench */}
-      <DarkroomRoom />
+      <DarkroomRoom brightness={state.tableBrightness} />
 
       {/* Flat Light Table on Workbench (placed horizontally on tabletop) */}
       <group
@@ -100,6 +110,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       >
         {/* Light Table Base & Diffuser */}
         <LightTable
+          brightness={state.tableBrightness}
           onPointerMove={handlePointerMove}
           onClick={handleTableClick}
         />
@@ -109,11 +120,12 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
           textures={textures}
           isPositive={isPositive}
           layout={DEFAULT_LAYOUT}
+          brightness={state.tableBrightness}
           onSelectFrame={handleFrameSelect}
           onPointerMove={handlePointerMove}
         />
 
-        {/* 2.5x Magnifying Loupe */}
+        {/* Magnifying Loupe */}
         <Loupe
           isActive={state.roomMode === "inspect" && state.loupe.isActive}
           targetX={state.loupe.worldX}
@@ -123,6 +135,8 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
           v={state.loupe.v}
           texture={activeTexture}
           isPositive={isPositive}
+          magnification={state.loupe.magnification}
+          brightness={state.tableBrightness}
           isDeterministic={isDeterministic}
           onClick={() => {
             if (state.roomMode === "inspect") {

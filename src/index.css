@@ -427,3 +427,139 @@ html, body, #root {
 .btn-retry:hover {
   background: #ef4444;
 }
+
+/* Magnification and Table Navigation Controls */
+.magnification-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mag-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+  margin-right: 0.2rem;
+}
+
+.btn-mag {
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-mag:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.btn-mag.active {
+  background: #d97706;
+  color: #ffffff;
+  border-color: #f59e0b;
+  box-shadow: 0 0 10px rgba(217, 119, 6, 0.4);
+}
+
+.btn-reset-view {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.btn-reset-view:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.zoom-badge {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* Dimmer Controls (Continuous Slider) */
+.dimmer-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.dimmer-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+}
+
+.brightness-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 90px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.22);
+  outline: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  accent-color: #38bdf8;
+}
+
+.brightness-slider:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.brightness-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #38bdf8;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+  transition: transform 0.1s ease;
+}
+
+.brightness-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.brightness-slider::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #38bdf8;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+}
+
+.dimmer-value {
+  font-size: 0.74rem;
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+  color: #7dd3fc;
+  min-width: 32px;
+  text-align: right;
+}
+
+.brightness-badge {
+  background: rgba(14, 165, 233, 0.15);
+  color: #7dd3fc;
+  border: 1px solid rgba(14, 165, 233, 0.3);
+}
