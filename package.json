@@ -17,7 +17,8 @@
     "validate:m5": "npm run build && npm run test:integration && npm run test:e2e",
     "validate:m6": "npm run build && npm run test:integration && npm run test:e2e",
     "validate:m7": "npm run build && npm run test:integration && npm run test:e2e",
-    "validate:m8": "npm run build && npm run test:integration && npm run test:e2e"
+    "validate:m8": "npm run build && npm run test:integration && npm run test:e2e",
+    "validate:m9": "npm run build && npm run test:integration && npm run test:e2e"
   },
   "keywords": [],
   "author": "",
@@ -31,6 +32,7 @@
     "three": "^0.169.0"
   },
   "devDependencies": {
+    "@napi-rs/canvas": "^1.0.8",
     "@playwright/test": "^1.63.0",
     "@types/pngjs": "^6.0.5",
     "@types/react": "^18.3.31",

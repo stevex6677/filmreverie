@@ -1,5 +1,8 @@
 import { defineConfig } from "@playwright/test";
 
+// Isolated worktrees can validate concurrently without reusing another build.
+const port = Number(process.env.PLAYWRIGHT_PORT || 5178);
+
 export default defineConfig({
   testDir: "./tests/e2e",
   timeout: 240000,
@@ -10,7 +13,7 @@ export default defineConfig({
   workers: 2,
   reporter: [["list"]],
   use: {
-    baseURL: "http://127.0.0.1:5178",
+    baseURL: `http://127.0.0.1:${port}`,
     channel: "chrome",
     viewport: { width: 1280, height: 800 },
     headless: true,
@@ -20,8 +23,8 @@ export default defineConfig({
     video: "on",
   },
   webServer: {
-    command: "npm run preview",
-    url: "http://127.0.0.1:5178",
+    command: `npm run preview -- --host 127.0.0.1 --port ${port}`,
+    url: `http://127.0.0.1:${port}`,
     reuseExistingServer: false,
     timeout: 30000,
   },

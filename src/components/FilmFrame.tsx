@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { createFilmShaderMaterial } from "../shaders/filmShader";
@@ -10,6 +10,7 @@ interface FilmFrameProps {
   isPositive: boolean;
   layout: FilmStripLayout;
   brightness?: number;
+  negativeMask?: readonly number[];
   onSelect?: (index: number) => void;
   onPointerMove?: (point: THREE.Vector3, index: number) => void;
 }
@@ -20,6 +21,7 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
   isPositive,
   layout,
   brightness = 1.0,
+  negativeMask,
   onSelect,
   onPointerMove,
 }) => {
@@ -27,8 +29,12 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
   const center = useMemo(() => getFrameCenter(index, layout), [index, layout]);
 
   const material = useMemo(() => {
-    return createFilmShaderMaterial(texture, isPositive);
-  }, [texture, isPositive]);
+    const next = createFilmShaderMaterial(texture, isPositive, negativeMask);
+    // A stock/view change must not briefly reset a dimmed photo to full exposure.
+    next.uniforms.uExposure.value = Math.pow(brightness, 0.5);
+    return next;
+  }, [texture, isPositive, negativeMask]);
+  useEffect(() => () => material.dispose(), [material]);
 
   // Curved plane geometry with 16 Y-segments matching the substrate transverse curl
   const frameGeometry = useMemo(() => {

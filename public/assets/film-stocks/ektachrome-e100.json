@@ -1,0 +1,37 @@
+{
+  "id": "ektachrome-e100",
+  "displayName": "Kodak Ektachrome E100",
+  "type": "reversal",
+  "process": "E-6",
+  "allowedViews": [
+    "positive"
+  ],
+  "base": {
+    "substrateBase": "rgba(24, 22, 27, 0.99)",
+    "rebateText": "#d7ccb0",
+    "rebateSecondary": "#d7ccb0",
+    "frameShadow": "rgba(35, 15, 8, 0.4)",
+    "negativeMask": [
+      1,
+      1,
+      1
+    ]
+  },
+  "rebate": {
+    "label": "KODAK E100",
+    "font": "Arial, Helvetica, sans-serif",
+    "fontWeight": "bold",
+    "orientation": "same-direction",
+    "halfFrameNumbers": true,
+    "codePattern": null
+  },
+  "reference": {
+    "edition": "2018 reintroduced E100, 135 still film",
+    "title": "Cl\u00e9ment Blin, developed E100 35mm strips on a light table, June 2021",
+    "url": "https://www.clementblin.net/blog-de-photographie-nature-conseil-et-technique/2021/6/21/dvelopper-des-diapositives-en-e6-soi-meme-",
+    "imageUrl": "https://images.squarespace-cdn.com/content/v1/59a0512d6b8f5bda92053148/1624367147382-99GLHOEI4OBUUVH4IU3L/diapositive-table-lumineuse.JPG",
+    "accessed": "2026-09-09",
+    "license": "Linked for study only; reference photograph not redistributed. Runtime lettering and geometry are original project artwork (ISC).",
+    "limitations": "Lettering, frame and half-frame numbers reconstructed from the developed 135 reference. No optical code track is discernible in this reference and one is omitted. Placement normalized to five frames; font and base color are approximations, not a calibrated measurement."
+  }
+}

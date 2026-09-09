@@ -1,8 +1,8 @@
 {
-  "collection": "Darkroom Film Viewer — Roll 01",
+  "collection": "Darkroom Film Viewer \u2014 Roll 01",
   "version": "1.0.0",
   "format": "35mm Color Negative Film Strip (5 Frames)",
-  "filmStock": "35mm Daylight Balanced Color Negative (ISO 400)",
+  "filmStock": "User-selectable developed 135 still-film stock; default Kodak Portra 400",
   "aspectRatio": "3:2 (standard 36mm x 24mm active frame area)",
   "perforations": {
     "standard": "KS-1870 / Kodak Standard 35mm",
@@ -104,6 +104,38 @@
       "type": "Procedural PBR Mesh & Custom GLSL Shader",
       "components": "Optical clear acrylic skirt, knurled black anodized barrel, polished brass retaining ring",
       "provenance": "Custom in-repo procedural implementation"
+    }
+  ],
+  "filmStocks": [
+    {
+      "id": "ektachrome-e100",
+      "runtimeUrl": "/assets/film-stocks/ektachrome-e100.json",
+      "license": "ISC \u2014 original procedural artwork; external reference photographs linked only",
+      "referenceEdition": "2018 reintroduced E100, 135 still film"
+    },
+    {
+      "id": "ektar-100",
+      "runtimeUrl": "/assets/film-stocks/ektar-100.json",
+      "license": "ISC \u2014 original procedural artwork; external reference photographs linked only",
+      "referenceEdition": "2008 Ektar 100, 135 still film; photographed 2018-09-23"
+    },
+    {
+      "id": "portra-160",
+      "runtimeUrl": "/assets/film-stocks/portra-160.json",
+      "license": "ISC \u2014 original procedural artwork; external reference photographs linked only",
+      "referenceEdition": "2011 unified Portra 160, 135 still film (not NC/VC)"
+    },
+    {
+      "id": "portra-400",
+      "runtimeUrl": "/assets/film-stocks/portra-400.json",
+      "license": "ISC \u2014 original procedural artwork; external reference photographs linked only",
+      "referenceEdition": "2010 unified Portra 400, 135 still film (not NC/VC)"
+    },
+    {
+      "id": "portra-800",
+      "runtimeUrl": "/assets/film-stocks/portra-800.json",
+      "license": "ISC \u2014 original procedural artwork; external reference photographs linked only",
+      "referenceEdition": "Portra 800, 135 still film, 2024 comparison"
     }
   ]
 }

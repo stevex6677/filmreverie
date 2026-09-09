@@ -1,0 +1,38 @@
+{
+  "id": "portra-160",
+  "displayName": "Kodak Portra 160",
+  "type": "negative",
+  "process": "C-41",
+  "allowedViews": [
+    "negative",
+    "positive"
+  ],
+  "base": {
+    "substrateBase": "rgba(220, 139, 82, 0.88)",
+    "rebateText": "#361d10",
+    "rebateSecondary": "#361d10",
+    "frameShadow": "rgba(35, 15, 8, 0.4)",
+    "negativeMask": [
+      0.89,
+      0.51,
+      0.23
+    ]
+  },
+  "rebate": {
+    "label": "KODAK PORTRA 160",
+    "font": "Arial, Helvetica, sans-serif",
+    "fontWeight": "bold",
+    "orientation": "same-direction",
+    "halfFrameNumbers": true,
+    "codePattern": null
+  },
+  "reference": {
+    "edition": "2011 unified Portra 160, 135 still film (not NC/VC)",
+    "title": "Eric-Ren\u00e9 Penoy, perforated Portra 160 still-negative strip illustrated on film services page",
+    "url": "https://www.ericrenepenoy.com/best-wedding-16mm-videographer-thailand",
+    "imageUrl": "https://images.squarespace-cdn.com/content/v1/6772f49adddde64696e19a02/a4a6f792-6dd3-4106-a147-0772600023e2/super%2Bultra%2B16mm%2Bfilm%2Bcoverage%2Bvideographer%2Bbolex%2Bframing%2Beric%2Brene%2Bpenoy.jpg",
+    "accessed": "2026-09-09",
+    "license": "Linked for study only; reference photograph not redistributed. Runtime lettering and geometry are original project artwork (ISC).",
+    "limitations": "Lettering and numbered outer rails reconstructed from developed 135 still-film references. Placement normalized to this five-frame strip; font is an approximation. Exact optical edge-code bits, batch IDs, and production tolerances are not verified and are omitted. Base color is an artistic approximation under the existing viewer lighting, not a calibrated stock measurement."
+  }
+}
