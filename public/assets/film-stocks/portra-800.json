@@ -1,0 +1,38 @@
+{
+  "id": "portra-800",
+  "displayName": "Kodak Portra 800",
+  "type": "negative",
+  "process": "C-41",
+  "allowedViews": [
+    "negative",
+    "positive"
+  ],
+  "base": {
+    "substrateBase": "rgba(202, 111, 65, 0.88)",
+    "rebateText": "#30170e",
+    "rebateSecondary": "#30170e",
+    "frameShadow": "rgba(35, 15, 8, 0.4)",
+    "negativeMask": [
+      0.85,
+      0.44,
+      0.2
+    ]
+  },
+  "rebate": {
+    "label": "KODAK PORTRA 800",
+    "font": "Arial, Helvetica, sans-serif",
+    "fontWeight": "bold",
+    "orientation": "same-direction",
+    "halfFrameNumbers": true,
+    "codePattern": null
+  },
+  "reference": {
+    "edition": "Portra 800, 135 still film, 2024 comparison",
+    "title": "Dmitri / Daren / Yvonne, Analog.Cafe ISO 800 comparison, Portra column with full rebate",
+    "url": "https://www.analog.cafe/r/all-the-iso-800-colour-films-compared-b5eu",
+    "imageUrl": "https://res.cloudinary.com/analog-cafe/image/upload/c_fill,fl_progressive,w_1600/image-froth_652635_lrjtfqcke.jpg",
+    "accessed": "2026-09-09",
+    "license": "Linked for study only; reference photograph not redistributed. Runtime lettering and geometry are original project artwork (ISC).",
+    "limitations": "Lettering and numbered outer rails reconstructed from developed 135 still-film references. Placement normalized to this five-frame strip; font is an approximation. Exact optical edge-code bits, batch IDs, and production tolerances are not verified and are omitted. Base color is an artistic approximation under the existing viewer lighting, not a calibrated stock measurement."
+  }
+}

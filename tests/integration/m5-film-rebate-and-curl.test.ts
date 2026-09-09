@@ -1,3 +1,4 @@
+import { getFilmStock } from "../../src/data/filmStocks";
 import { describe, it, expect } from "vitest";
 import {
   DEFAULT_LAYOUT,
@@ -8,7 +9,7 @@ import {
 } from "../../src/utils/loupeMapping";
 import {
   NEGATIVE_REBATE_COLORS,
-  POSITIVE_REBATE_COLORS,
+  getRebateColors,
 } from "../../src/utils/filmRebateCanvas";
 
 describe("M5 Integration — 35mm Film Rebate, Substrate Translucency & Transverse Curl", () => {
@@ -54,12 +55,12 @@ describe("M5 Integration — 35mm Film Rebate, Substrate Translucency & Transver
   describe("Rebate Colors & Substrate Translucency", () => {
     it("configures authentic orange mask color values for negative mode substrate", () => {
       expect(NEGATIVE_REBATE_COLORS.substrateBase).toContain("217, 119, 36");
-      expect(NEGATIVE_REBATE_COLORS.rebateText).toContain("42, 18, 8");
+      expect(NEGATIVE_REBATE_COLORS.rebateText).toBe("#2a1208");
     });
 
-    it("configures authentic smoky bronze color values for positive mode substrate", () => {
-      expect(POSITIVE_REBATE_COLORS.substrateBase).toContain("35, 27, 20");
-      expect(POSITIVE_REBATE_COLORS.rebateText).toContain("16, 14, 12");
+    it("keeps negative-stock preview borders orange; reversal has a dark developed border (M9)", () => {
+      expect(getRebateColors(getFilmStock("portra-400"))).toBe(NEGATIVE_REBATE_COLORS);
+      expect(getRebateColors(getFilmStock("ektachrome-e100")).substrateBase).toContain("24, 22, 27");
     });
   });
 

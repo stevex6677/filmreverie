@@ -11,6 +11,7 @@ interface FilmFrameProps {
   isPositive: boolean;
   layout: FilmStripLayout;
   brightness?: number;
+  negativeMask?: readonly number[];
   onSelect?: (index: number) => void;
   onPointerMove?: (point: THREE.Vector3, index: number) => void;
 }
@@ -21,17 +22,19 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
   isPositive,
   layout,
   brightness = 1.0,
+  negativeMask,
   onSelect,
   onPointerMove,
 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const center = useMemo(() => getFrameCenter(index, layout), [index, layout]);
 
-  const material = useMemo(() => {
-    return createFilmShaderMaterial(texture, isPositive);
-  }, [texture, isPositive]);
-
+  const material = useMemo(() => createFilmShaderMaterial(
+    texture, isPositive, brightness,
+    negativeMask ? new THREE.Color(negativeMask[0], negativeMask[1], negativeMask[2]) : undefined,
+  ), [texture, isPositive, negativeMask]);
   useEffect(() => () => material.dispose(), [material]);
+
   updateTableIllumination(material, brightness);
 
   // Curved plane geometry with 16 Y-segments matching the substrate transverse curl

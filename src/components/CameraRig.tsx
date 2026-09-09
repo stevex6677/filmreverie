@@ -60,7 +60,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   // Spacebar tracking for table pan
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space" && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+      if (e.code === "Space" && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement)) {
         isSpacePressedRef.current = true;
       }
     };
