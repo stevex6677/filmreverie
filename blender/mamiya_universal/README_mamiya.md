@@ -1,6 +1,7 @@
 # Mamiya Universal camera model
 
-Open `mamiya_universal.blend` and select the **Mamiya Universal | Studio** scene.
+Open **`mamiya_universal_refined.blend`** for the latest model and select the
+**Mamiya Universal | Studio** scene. `mamiya_universal.blend` is the preserved previous master.
 The original startup scene is preserved separately.
 
 The model was constructed through Blender MCP from fourteen local reference
@@ -51,3 +52,53 @@ remote server's memory. Switch to Material Preview to inspect the shaders
 interactively when sufficient memory is available.
 All files for this model are grouped under `blender/mamiya_universal/` and
 tracked in Git, including the original photos, previews, and Blender backup.
+
+
+## Closeup refinement — 2026-09-09
+
+The latest pass uses 31 additional photographs, IMG_1978–2009 (IMG_2000 is
+absent). Their JPEG files are in the main checkout under
+`blender/mamiya_universal/mamiya_universal_photos_details/`.
+
+`08 Closeup refinements` contains the new editable components:
+
+- Continuous rounded roll-film shell and leatherette wrap, perimeter beads,
+  stamped latch and folded bail, lower spool pins and adapter locking cams.
+- Black ASA dial on the latch-side chamber, 120 / S indicator windows,
+  repositioned rear badges, curved film-advance lever and frame counter.
+- Hollow side accessory socket with central slotted bolt, locating pins and
+  external threads; opposite accessory plate; upper and lower strap fittings.
+- Non-destructive body light-path and 6×9 gate openings, film rails and dark-slide grip.
+- Layered finder prism, lilac coincidence patch, circular rangefinder aperture,
+  nested window rims, refined nameplate and cold-shoe springs / screws.
+- Lens PC-sync terminal, bent cocking lever and knurled grip, subsidiary
+  engravings, grouped focus grooves, and more restrained glass reflections.
+
+Replaced geometry and the removable strap remain in the file, hidden. The five
+new views omit the strap to match the new assembled-camera reference photos.
+The original collections, five earlier cameras, and previous master remain
+available. Dimensions are still photo estimates; internals are visual approximations.
+
+Run the new pass once on the previous master (Blender 5.2.1 was used):
+
+```sh
+blender --background mamiya_universal.blend --python refine_photo_details.py
+blender --background mamiya_universal_refined.blend --python render_refined.py
+```
+
+The scripts resolve outputs relative to their own directory. For an individual
+render, append `-- INDEX RESOLUTION SAMPLES`, for example `-- 3 1600 64`.
+Resolutions below 1600 go to `previews_refined/` for inspection.
+
+Final outputs in `renders_refined/` are five 1600×1600 PNG images, rendered in
+Cycles with 64 samples, denoising, and matching studio lighting:
+
+1. `01_front_three_quarter.png` — front and accessory-socket side.
+2. `02_opposite_front.png` — front and accessory-plate side.
+3. `03_rear_three_quarter.png` — memo clip, latch, eyecup and rear branding.
+4. `04_side_profile.png` — lens projection, side fittings and roll-back depth.
+5. `05_elevated_rear.png` — cold shoe, ASA dial, film advance and back cover.
+
+`renders_refined/contact_sheet.jpg` presents all five views together.
+The memo image remains packed in the blend file, so no external texture is
+required to open or render the model.
