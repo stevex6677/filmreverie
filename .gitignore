@@ -4,3 +4,10 @@ test-results
 .DS_Store
 GEMINI.md
 AGENTS.md
+
+# Binary and 3D media formats
+*.blend
+*.blend[0-9]
+*.glb
+*.jpg
+*.jpeg

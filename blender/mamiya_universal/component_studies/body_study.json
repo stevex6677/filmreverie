@@ -1,0 +1,15 @@
+{
+  "component": "body",
+  "source_photos": "IMG_1989\u20131999, IMG_2001: bare body front, rear, both sides, top, bottom.",
+  "working_envelope_mm": "140 wide \u00d7 184 high \u00d7 55 shell depth; mount outside diameter 112; opening diameter 84.",
+  "scene": "01 Camera body \u2014 independent study",
+  "model_objects": 183,
+  "cameras": [
+    "front_oblique",
+    "front_elevation",
+    "rear_oblique",
+    "side_profile"
+  ],
+  "assembled": false,
+  "materials": "Neutral grayscale; finish textures and fine painted scales intentionally deferred."
+}

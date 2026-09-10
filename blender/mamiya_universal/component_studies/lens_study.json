@@ -1,0 +1,14 @@
+{
+  "component": "lens",
+  "source_photos": "IMG_1978\u20131983: detached lens from six directions.",
+  "working_envelope_mm": "96 maximum hood diameter \u00d7 113 axial length; 90 mounting-ring diameter; 88 focus grip diameter.",
+  "scene": "02 Sekor lens \u2014 independent study",
+  "model_objects": 77,
+  "cameras": [
+    "oblique",
+    "side_profile",
+    "optical_face"
+  ],
+  "assembled": false,
+  "materials": "Neutral grayscale; finish textures and fine painted scales intentionally deferred."
+}

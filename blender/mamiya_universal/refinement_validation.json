@@ -1,0 +1,41 @@
+{
+  "scene": "Mamiya Universal | Studio",
+  "refinement_objects": 225,
+  "framing": {
+    "CAM \u2022 Refined 01 Front three-quarter": {
+      "left": 0.102,
+      "right": 0.898,
+      "bottom": 0.143,
+      "top": 0.857
+    },
+    "CAM \u2022 Refined 02 Opposite front": {
+      "left": 0.1,
+      "right": 0.9,
+      "bottom": 0.155,
+      "top": 0.845
+    },
+    "CAM \u2022 Refined 03 Rear three-quarter": {
+      "left": 0.1,
+      "right": 0.9,
+      "bottom": 0.144,
+      "top": 0.856
+    },
+    "CAM \u2022 Refined 04 Side profile": {
+      "left": 0.144,
+      "right": 0.856,
+      "bottom": 0.158,
+      "top": 0.842
+    },
+    "CAM \u2022 Refined 05 Elevated rear": {
+      "left": 0.134,
+      "right": 0.866,
+      "bottom": 0.122,
+      "top": 0.878
+    }
+  },
+  "missing_images": [],
+  "packed_images": [
+    "IMG_1976.jpg"
+  ],
+  "framing_method": "Evaluated visible model vertices including bevels, text and curves"
+}

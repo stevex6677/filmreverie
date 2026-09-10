@@ -1,0 +1,15 @@
+{
+  "component": "film_back",
+  "source_photos": "IMG_1984\u20131988 and IMG_2005: asymmetric spool ends, recessed center cover and winder.",
+  "working_envelope_mm": "236 wide \u00d7 103 shell height \u00d7 54 maximum shell depth. The two spool ends have different profiles.",
+  "scene": "03 Film back \u2014 independent study",
+  "model_objects": 155,
+  "cameras": [
+    "rear_oblique",
+    "rear_elevation",
+    "top_controls",
+    "attachment_face"
+  ],
+  "assembled": false,
+  "materials": "Neutral grayscale; finish textures and fine painted scales intentionally deferred."
+}

@@ -1,0 +1,110 @@
+[
+  {
+    "part": "body",
+    "single_component_scene": true,
+    "objects": 183,
+    "bounds_mm": [
+      156.5,
+      95.55,
+      191.0
+    ],
+    "framing": {
+      "CAM 01 front_oblique": {
+        "left": 0.2221,
+        "right": 0.7779,
+        "bottom": 0.11,
+        "top": 0.89
+      },
+      "CAM 02 front_elevation": {
+        "left": 0.1804,
+        "right": 0.8196,
+        "bottom": 0.11,
+        "top": 0.89
+      },
+      "CAM 03 rear_oblique": {
+        "left": 0.2209,
+        "right": 0.7791,
+        "bottom": 0.11,
+        "top": 0.89
+      },
+      "CAM 04 side_profile": {
+        "left": 0.3054,
+        "right": 0.6946,
+        "bottom": 0.11,
+        "top": 0.89
+      }
+    },
+    "missing_assets": [],
+    "body_center_light_path_clear": true
+  },
+  {
+    "part": "lens",
+    "single_component_scene": true,
+    "objects": 77,
+    "bounds_mm": [
+      96.0,
+      96.0,
+      113.23
+    ],
+    "framing": {
+      "CAM 01 oblique": {
+        "left": 0.2289,
+        "right": 0.7711,
+        "bottom": 0.11,
+        "top": 0.89
+      },
+      "CAM 02 side_profile": {
+        "left": 0.1697,
+        "right": 0.8303,
+        "bottom": 0.11,
+        "top": 0.89
+      },
+      "CAM 03 optical_face": {
+        "left": 0.1402,
+        "right": 0.8598,
+        "bottom": 0.11,
+        "top": 0.89
+      }
+    },
+    "missing_assets": [],
+    "body_center_light_path_clear": null
+  },
+  {
+    "part": "film_back",
+    "single_component_scene": true,
+    "objects": 155,
+    "bounds_mm": [
+      238.05,
+      62.41,
+      114.31
+    ],
+    "framing": {
+      "CAM 01 rear_oblique": {
+        "left": 0.11,
+        "right": 0.89,
+        "bottom": 0.2196,
+        "top": 0.7804
+      },
+      "CAM 02 rear_elevation": {
+        "left": 0.11,
+        "right": 0.89,
+        "bottom": 0.3127,
+        "top": 0.6873
+      },
+      "CAM 03 top_controls": {
+        "left": 0.11,
+        "right": 0.89,
+        "bottom": 0.1184,
+        "top": 0.8816
+      },
+      "CAM 04 attachment_face": {
+        "left": 0.11,
+        "right": 0.89,
+        "bottom": 0.2475,
+        "top": 0.7525
+      }
+    },
+    "missing_assets": [],
+    "body_center_light_path_clear": null
+  }
+]
