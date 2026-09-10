@@ -1,3 +1,4 @@
+import photoSources from "./photoSources.json" with { type: "json" };
 export interface RollFrame {
   id: string;
   order: number;
@@ -5,50 +6,11 @@ export interface RollFrame {
   alt: string;
   title: string;
   aspectRatio: number;
+  thumbnailSrc?: string;
 }
 
-export const ROLL_FRAMES: readonly RollFrame[] = [
-  {
-    id: "frame-01-harbor",
-    order: 1,
-    src: "/assets/photos/frame-01-harbor.jpg",
-    alt: "Harbor scene with calm water, moored boats, and weathered dock pilings",
-    title: "Harbor",
-    aspectRatio: 1.5,
-  },
-  {
-    id: "frame-02-diner",
-    order: 2,
-    src: "/assets/photos/frame-02-diner.jpg",
-    alt: "Classic diner counter with swivel stools and warm ambient interior glow",
-    title: "Diner",
-    aspectRatio: 1.5,
-  },
-  {
-    id: "frame-03-bicycle",
-    order: 3,
-    src: "/assets/photos/frame-03-bicycle.jpg",
-    alt: "Vintage bicycle parked against an urban brick wall with deep shadows",
-    title: "Bicycle",
-    aspectRatio: 1.5,
-  },
-  {
-    id: "frame-04-laundromat",
-    order: 4,
-    src: "/assets/photos/frame-04-laundromat.jpg",
-    alt: "Row of industrial laundromat washing machines illuminated by neon",
-    title: "Laundromat",
-    aspectRatio: 1.5,
-  },
-  {
-    id: "frame-05-road",
-    order: 5,
-    src: "/assets/photos/frame-05-road.jpg",
-    alt: "Two-lane open highway cutting through a wide desert landscape to the horizon",
-    title: "Road",
-    aspectRatio: 1.5,
-  },
-] as const;
+export const ROLL_FRAMES: readonly RollFrame[] = photoSources.map(frame => ({ ...frame, thumbnailSrc: frame.src.replace(/\.jpg$/, ".thumb.jpg") }));
+
 
 export const ROLL_MANIFEST = {
   rollId: "roll-01",

@@ -21,6 +21,8 @@ interface CameraRigProps {
   inspectPan?: { x: number; z: number };
   isLoupeActive?: boolean;
   onUpdateRoomPose: (pose: Partial<RoomCameraPose>) => void;
+  onCameraMotion?: (moving: boolean) => void;
+  onZoomAt?: (delta: number, x: number, z: number) => void;
   onAdjustInspectZoom?: (delta: number) => void;
   onAdjustInspectPan?: (dx: number, dz: number) => void;
   onTransitionComplete: () => void;
@@ -36,6 +38,8 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   inspectPan = { x: 0, z: TABLE_CENTER_Z },
   isLoupeActive = false,
   onUpdateRoomPose,
+  onCameraMotion,
+  onZoomAt,
   onAdjustInspectZoom,
   onAdjustInspectPan,
   onTransitionComplete,
@@ -56,6 +60,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   const desiredLookTarget = useRef(new THREE.Vector3(...ROOM_CAMERA_TARGET));
 
   const maxDragDistRef = useRef(0);
+  const wasMovingRef = useRef(false);
 
   // Spacebar tracking for table pan
   useEffect(() => {
@@ -87,13 +92,19 @@ export const CameraRig: React.FC<CameraRigProps> = ({
         // Proportional step scaling: micro-steps when zoomed in, large steps when zoomed out
         const step = Math.min(0.35, Math.max(0.025, inspectZoom * 0.085));
         const zoomDelta = Math.sign(e.deltaY) * step;
-        onAdjustInspectZoom(zoomDelta);
+        if (onZoomAt) {
+          const rect = canvas.getBoundingClientRect();
+          const ray = new THREE.Raycaster();
+          ray.setFromCamera(new THREE.Vector2((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1), camera);
+          const point = ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -TABLE_SURFACE_Y), new THREE.Vector3());
+          if (point) onZoomAt(zoomDelta, point.x, point.z);
+        } else onAdjustInspectZoom(zoomDelta);
       }
     };
 
     canvas.addEventListener("wheel", handleWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", handleWheel);
-  }, [gl, roomMode, isTransitioning, inspectZoom, onAdjustInspectZoom]);
+  }, [gl, roomMode, isTransitioning, inspectZoom, onAdjustInspectZoom, onZoomAt, camera]);
 
   // Pointer drag for room orbit or table pan
   useEffect(() => {
@@ -131,6 +142,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
 
         if (isPanButton) {
           isPanningTableRef.current = true;
+          maxDragDistRef.current = 0;
           panStartRef.current = { x: e.clientX, y: e.clientY };
           try {
             canvas.setPointerCapture(e.pointerId);
@@ -158,6 +170,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       } else if (roomMode === "inspect" && isPanningTableRef.current) {
         const dx = e.clientX - panStartRef.current.x;
         const dy = e.clientY - panStartRef.current.y;
+        maxDragDistRef.current += Math.hypot(dx, dy);
         panStartRef.current = { x: e.clientX, y: e.clientY };
 
         if (onAdjustInspectPan) {
@@ -234,6 +247,8 @@ export const CameraRig: React.FC<CameraRigProps> = ({
         ? [inspectPan.x, TABLE_SURFACE_Y + inspectZoom, inspectPan.z]
         : sphericalToCartesian(savedRoomPose, ROOM_CAMERA_TARGET);
     targetPos.current.set(rx, ry, rz);
+    const moving = !isDeterministic && !isReducedMotion && (camera.position.distanceTo(targetPos.current) > .001 || isPanningTableRef.current);
+    if (moving !== wasMovingRef.current) { wasMovingRef.current = moving; onCameraMotion?.(moving); }
 
     const desiredUp = roomMode === "inspect" ? INSPECT_CAMERA_UP : ROOM_CAMERA_UP;
     targetUp.current.set(...desiredUp);

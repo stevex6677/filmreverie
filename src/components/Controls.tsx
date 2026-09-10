@@ -1,3 +1,5 @@
+import { RollNavigator } from "./RollNavigator";
+import { BASELINE_ROLL } from "../utils/rollLayout";
 import { FILM_STOCKS, getFilmStock, isFilmStockId } from "../data/filmStocks";
 import React from "react";
 import { ROLL_FRAMES } from "../data/rollManifest";
@@ -11,7 +13,8 @@ interface ControlsProps {
 
 export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
   const stock = getFilmStock(state.filmStockId);
-  const currentFrame = ROLL_FRAMES[state.loupe.frameIndex] || ROLL_FRAMES[0];
+  const multi = state.roll !== BASELINE_ROLL;
+  const currentFrame = state.roll.frames[state.loupe.frameIndex] || state.roll.frames[0];
   const isPositive = state.filmMode === "positive";
   const isRoomMode = state.roomMode === "room";
 
@@ -22,7 +25,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
         <div className="branding">
           <span className="dot" />
           <h1>DARKROOM FILM VIEWER</h1>
-          <span className="roll-id">ROLL 01 — 35MM</span>
+          <span className="roll-id">{multi ? "36-SLOT FIXTURE" : "ROLL 01 — 35MM"}</span>
         </div>
 
         <div className="action-buttons">
@@ -57,7 +60,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
                 onClick={() => dispatch({ type: "RETURN_TO_ROOM" })}
                 title="Step back to darkroom view (Escape)"
               >
-                ← Return to Room (Esc)
+                ← Return to Room{multi ? "" : " (Esc)"}
               </button>
 
               {/* Only negative stocks have a preview conversion. */}
@@ -154,10 +157,16 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
         </div>
       </header>
 
+      {!isRoomMode && multi && <RollNavigator state={state} dispatch={dispatch} />}
+      {state.assetsLoading && <div className="asset-status" role="status" data-testid="loading-indicator">Loading photographs… Navigation remains available.</div>}
+      {state.assetFailures.length > 0 && <div className="asset-status" role="alert">
+        Failed frames: {state.roll.frames.filter(frame => state.assetFailures.includes(frame.src)).map(frame => frame.order).join(", ")}. Other frames remain available.
+        <button onClick={() => dispatch({ type: "RETRY_ASSETS" })}>Retry photographs</button>
+      </div>}
       {/* Bottom Frame Strip Navigator Bar */}
       <footer className="controls-footer">
         {/* Only show frame strip navigator in inspect mode */}
-        {!isRoomMode && (
+        {!isRoomMode && !multi && (
           <div className="frames-nav" role="toolbar" aria-label="Photo Frames">
             {ROLL_FRAMES.map((frame, index) => {
               const isSelected = state.loupe.frameIndex === index;

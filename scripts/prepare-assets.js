@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -19,21 +19,18 @@ if (!fs.existsSync(targetDir)) {
   fs.mkdirSync(targetDir, { recursive: true });
 }
 
-const frames = [
-  "frame-01-harbor",
-  "frame-02-diner",
-  "frame-03-bicycle",
-  "frame-04-laundromat",
-  "frame-05-road",
-];
+const frames = [...JSON.parse(fs.readFileSync(path.join(projectRoot, "src/data/photoSources.json"), "utf8")), ...JSON.parse(fs.readFileSync(path.join(projectRoot, "src/data/localRoll.json"), "utf8")).frames];
 
 for (const frame of frames) {
-  const srcPng = path.join(sourceDir, frame + ".png");
-  const dstJpg = path.join(targetDir, frame + ".jpg");
+  if (!frame.source) continue; // Runtime-only sources are handled by the viewer's per-slot error/retry UI.
+  const srcPng = path.join(projectRoot, frame.source);
+  const dstJpg = path.join(projectRoot, "public", frame.src);
+  fs.mkdirSync(path.dirname(dstJpg), { recursive: true });
 
   if (!fs.existsSync(srcPng)) {
     console.error("Source file missing: " + srcPng);
-    process.exit(1);
+    if (frame.source.startsWith("photos/roll-01/")) process.exit(1);
+    continue;
   }
 
   let needsBuild = !fs.existsSync(dstJpg);
@@ -46,28 +43,28 @@ for (const frame of frames) {
   }
 
   if (needsBuild) {
-    console.log("Generating derivative for " + frame + "...");
+    console.log("Generating derivative for " + frame.id + "...");
     let converted = false;
     try {
-      execSync("sips -s format jpeg -s formatOptions 92 \"" + srcPng + "\" --out \"" + dstJpg + "\"", {
-        stdio: "pipe",
-      });
+      execFileSync("sips", ["-s", "format", "jpeg", "-s", "formatOptions", "92", srcPng, "--out", dstJpg], { stdio: "pipe" });
       converted = true;
     } catch {}
 
     if (!converted) {
       try {
-        execSync("ffmpeg -y -i \"" + srcPng + "\" -q:v 2 \"" + dstJpg + "\"", {
-          stdio: "pipe",
-        });
+        execFileSync("ffmpeg", ["-y", "-i", srcPng, "-q:v", "2", dstJpg], { stdio: "pipe" });
         converted = true;
       } catch {}
     }
 
     if (!converted) {
-      console.warn("Conversion failed; copying source file as fallback.");
-      fs.copyFileSync(srcPng, dstJpg);
+      throw new Error("Unable to prepare JPEG derivative: " + srcPng);
     }
+  }
+  const thumbnail = frame.thumbnailSrc ? path.join(projectRoot, "public", frame.thumbnailSrc) : dstJpg.replace(/\.jpg$/, ".thumb.jpg");
+  if (!fs.existsSync(thumbnail) || needsBuild) {
+    fs.mkdirSync(path.dirname(thumbnail), { recursive: true });
+    execFileSync("ffmpeg", ["-y", "-i", dstJpg, "-vf", "scale=384:-2", "-q:v", "4", thumbnail], { stdio: "pipe" });
   }
 }
 
