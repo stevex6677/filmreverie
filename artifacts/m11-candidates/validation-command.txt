@@ -1,0 +1,6 @@
+# Run from /root/worktrees/codex/41ad/film_photo after flushing codex-worktrees-41ad.
+REVIEW_ARTIFACTS_DIR=artifacts/m11-candidates/regressions \
+M9_CANDIDATE_DIR=artifacts/m11-candidates/legacy-output/m9-m10-candidates/stocks \
+M10_CANDIDATE_DIR=artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting \
+M9_M10_CANDIDATE_DIR=artifacts/m11-candidates/legacy-output/m9-m10-candidates/combined \
+PLAYWRIGHT_PORT=5192 npm run validate:m11
