@@ -1,3 +1,4 @@
+import { BASELINE_ROLL, FULL_ROLL_FIXTURE, LOCAL_ROLL, validateRoll } from "./utils/rollLayout";
 import { useReducer, useEffect, useMemo, useState, Suspense } from "react";
 import * as THREE from "three";
 import { DISPLAY_EXPOSURE } from "./shaders/tableIllumination";
@@ -61,10 +62,15 @@ export function App() {
     return new URLSearchParams(window.location.search).get("test_error") === "1";
   });
 
+  const roll = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("fixture") === "36" ? FULL_ROLL_FIXTURE : params.get("roll") === "local" && LOCAL_ROLL.frames.length ? LOCAL_ROLL : BASELINE_ROLL;
+  }, []);
+
   const [state, dispatch] = useReducer(
     viewerReducer,
     undefined,
-    () => createInitialViewerState(initialRoomMode)
+    () => createInitialViewerState(initialRoomMode, roll)
   );
 
   const handleRetry = () => {
@@ -104,6 +110,14 @@ export function App() {
         return;
       }
 
+      if ((e.target instanceof HTMLElement && e.target.isContentEditable) ||
+          (e.target instanceof HTMLButtonElement && ["Enter", " "].includes(e.key))) return;
+      if (roll !== BASELINE_ROLL && state.roomMode === "inspect") {
+        const directions = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" } as const;
+        if (e.key in directions) { e.preventDefault(); dispatch({ type: "NAVIGATE", direction: directions[e.key as keyof typeof directions] }); return; }
+        if (e.key === "Enter") { e.preventDefault(); dispatch({ type: "OPEN_FRAME", frameIndex: state.activeFrameIndex }); return; }
+        if (/^[1-9]$/.test(e.key)) return;
+      }
       if (state.roomMode === "room") {
         if ((e.key === "Enter" || e.key === " ") && !state.isTransitioning) {
           dispatch({ type: "APPROACH_TABLE" });
@@ -138,18 +152,26 @@ export function App() {
           const nextBrightness = cur <= 0.35 ? 1.0 : cur <= 0.55 ? 0.30 : cur <= 0.80 ? 0.50 : 0.75;
           dispatch({ type: "SET_TABLE_BRIGHTNESS", brightness: nextBrightness });
         } else if (e.key === "Escape") {
-          dispatch({ type: "RETURN_TO_ROOM" });
+          dispatch({ type: "ESCAPE_INSPECTION" });
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.roomMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness]);
+  }, [state.roomMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, roll]);
+
+  const localError = new URLSearchParams(window.location.search).get("roll") === "local" ? validateRoll(LOCAL_ROLL) : null;
+  if (localError) return <main className="darkroom-error-fallback"><div className="error-card" role="alert"><h2>Local roll unavailable</h2><p>{localError}</p><a href="/">Open the five-photo example</a></div></main>;
 
   return (
     <main
-      className="darkroom-app-container"
+      className={`darkroom-app-container ${roll !== BASELINE_ROLL ? "full-roll" : ""}`}
+      data-inspection-level={state.inspectionLevel}
+      data-selected-frame={state.activeFrameIndex + 1}
+      data-assets-ready={!state.assetsLoading}
+      data-inspect-zoom={state.inspectZoom}
+      data-inspect-pan={`${state.inspectPan.x},${state.inspectPan.z}`}
       data-room-mode={state.roomMode}
       data-is-transitioning={state.isTransitioning ? "true" : "false"}
       data-film-mode={state.filmMode}

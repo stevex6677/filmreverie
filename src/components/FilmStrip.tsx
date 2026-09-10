@@ -110,6 +110,8 @@ export const FilmStrip: React.FC<FilmStripProps> = ({
     return geo;
   }, [width, height, top, bottom]);
 
+  useEffect(() => () => substrateGeometry.dispose(), [substrateGeometry]);
+
   return (
     <group position={[0, 0, 0.004]}>
       {/* Continuous glossy 35mm film acetate substrate with authentic rebate print and physical curl */}

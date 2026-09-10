@@ -1,5 +1,6 @@
 export interface FilmStripLayout {
   frameCount: number;
+  frameNumberOffset?: number;
   frameWidth: number;
   frameHeight: number;
   gap: number;

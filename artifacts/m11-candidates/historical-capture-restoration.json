@@ -1,0 +1,390 @@
+{
+  "artifacts/m9-m10-candidates/lighting/dimmer-interaction.webm": {
+    "historical_sha256": "7fb2f08efa9688bc91ae0466deaf324c6affd857cbb1561b5b40474797c43a32",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/dimmer-interaction.webm"
+  },
+  "artifacts/m9-m10-candidates/lighting/frame-times-negative-100.json": {
+    "historical_sha256": "c8dc59d4876c8bc07f7fb5e6d1b78079cb6691d1732f0e5d71352513dd57f1e8",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/frame-times-negative-100.json"
+  },
+  "artifacts/m9-m10-candidates/lighting/frame-times-negative-30.json": {
+    "historical_sha256": "826af8ebcc052badf9022d2378a62770df0bab3091b2f39dfc01ba0c185f0d35",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/frame-times-negative-30.json"
+  },
+  "artifacts/m9-m10-candidates/lighting/frame-times-positive-100.json": {
+    "historical_sha256": "6f412626fb2428436f0618b0f49cd908a1259fdd636e5e7d4148cb9ea4b5b477",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/frame-times-positive-100.json"
+  },
+  "artifacts/m9-m10-candidates/lighting/frame-times-positive-30.json": {
+    "historical_sha256": "236199df9d017655466293b64f822eb27276a1ada22141b0493bf8235ef29937",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/frame-times-positive-30.json"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-100-10-hole.png": {
+    "historical_sha256": "4f1a02f9a0d478ede26420dfb49432ed683046b8eebab85d82088c3e7afe0d1e",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-100-10-hole.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-100-10-panel.png": {
+    "historical_sha256": "042cb4b3beba823d76e1ac7e47584f5713206a8be53e3078c5454d3c8179af4f",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-100-10-panel.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-100-10-photo.png": {
+    "historical_sha256": "c02beabb25684739da1685b482af83086804155926ace6198cb377aa001d56fc",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-100-10-photo.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-100-10-rebate.png": {
+    "historical_sha256": "91d294589fb93add185419c60aef799ebebb6565fa0a830e65aa9ccee5346b64",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-100-10-rebate.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-100-2.5-hole.png": {
+    "historical_sha256": "6b559df5c4d6cfbeb2e60f8b5506029c5d22c75068ce6cc9b667ac3aa26d9c80",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-100-2.5-hole.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-100-2.5-panel.png": {
+    "historical_sha256": "fb75f46769b548aa77460eeeac7d57f9639155b44ac60575b45e2673ec82dc26",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-100-2.5-panel.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-100-2.5-photo.png": {
+    "historical_sha256": "18d199515e89479e13aedfadc154cfc6cb09c9f518cb7a00924244d236362f13",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-100-2.5-photo.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-100-2.5-rebate.png": {
+    "historical_sha256": "aaeaf343039a4e2197630bc35b2d00420fec0b338eae80d068fc7a5981655637",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-100-2.5-rebate.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-100-4-hole.png": {
+    "historical_sha256": "5a4d191134bbb3a668132e5fc87418a95e972c54468453458848012e68179a34",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-100-4-hole.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-100-4-panel.png": {
+    "historical_sha256": "e4c5f2d09064dfd82bd4b35f3e5ab936bed7bad7fa25b5f7dda5fe55c350064a",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-100-4-panel.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-100-4-photo.png": {
+    "historical_sha256": "7ceaf6c7bd4103e2ae2453e1df19cf67bb29b3d955bdbd7eac6ebcb5c40d6cdb",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-100-4-photo.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-100-4-rebate.png": {
+    "historical_sha256": "d8cf4af7481eac988429ad6f3ba8e123260b2dbb2c30f00a3e056d0739ebdf91",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-100-4-rebate.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-1.5-hole.png": {
+    "historical_sha256": "ad33fdee22c604167fd663671a67e4e48136f7d20a2e07b56a2e39df83fc70fd",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-1.5-hole.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-1.5-panel.png": {
+    "historical_sha256": "b8e893360e8f2862a0e5ee0e2b26b2a567c8d2074a61987171c72df3aa3a9429",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-1.5-panel.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-1.5-photo.png": {
+    "historical_sha256": "63361fd9df33c131f13efe5b147baa3da95b72c3d2f5c6368ca9d4f3db823677",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-1.5-photo.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-1.5-rebate.png": {
+    "historical_sha256": "01f2758daa83bd9d17def3cb22e4920c415154e7963b9e6937c38746e96ad2e7",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-1.5-rebate.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-10-hole.png": {
+    "historical_sha256": "e34da4e37013dbc3b34e7fad611e747ed099c25ce6fb10c3a9d363ac8b63d0dc",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-10-hole.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-10-panel.png": {
+    "historical_sha256": "17ad046fa1f8a8f297d0c545715831f769fe4da7f6ff821710337b23c4382ae3",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-10-panel.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-10-photo.png": {
+    "historical_sha256": "cf41c40a4bfe957df32f20c3e5a33a91ebeadcb9b657d182a70008ba90882776",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-10-photo.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-10-rebate.png": {
+    "historical_sha256": "af5ab19cedd8738ea8323d9b8c1b86a0d8edf6e03c83d2c41f3a81481c4cfb5e",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-10-rebate.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-2.5-hole.png": {
+    "historical_sha256": "fb50782f6b1874f1379b4446de5da5bf43952761e89ed908583debd002aabf3e",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-2.5-hole.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-2.5-panel.png": {
+    "historical_sha256": "5f933e57d164b2f49f3b213397d6a77971558de04dd50a99de9c955a45f92c5a",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-2.5-panel.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-2.5-photo.png": {
+    "historical_sha256": "8deb5fa2bc5666f750d79c89c0152d1a8c196712ba259aff4704b472f0b96406",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-2.5-photo.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-2.5-rebate.png": {
+    "historical_sha256": "fd187a08b7920fd6af7aa4de7ac890fe1556e61eb59a307660045f54bde009b6",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-2.5-rebate.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-4-hole.png": {
+    "historical_sha256": "d2ea57e7f771c8b6ff200d879361d09972cf54cbf9b6daf238fa022b9cf12ea6",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-4-hole.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-4-panel.png": {
+    "historical_sha256": "65952bef72c56e2669fbb9dfb0df04e83c5925ec4eda0372707cf5c6a1f344b2",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-4-panel.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-4-photo.png": {
+    "historical_sha256": "06e2b2d591ae894e06c103d8d98ce7aa65aa5e1f9da7c3b3b66c307b0171a056",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-4-photo.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-negative-30-4-rebate.png": {
+    "historical_sha256": "1757440ed336cdc5a6f6d9ef5c2608c710cb1b095b7b187a626aef2d70aff7bd",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-negative-30-4-rebate.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-1.5-hole.png": {
+    "historical_sha256": "4634a61db419bd93ecd8be4537d8fcb532837f22ef0ce0849ebaea3a4bcbcf87",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-1.5-hole.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-1.5-panel.png": {
+    "historical_sha256": "f543ba49d1e5efac886d5800c7fb50ddeeb238a3cda7338966d9821786695f31",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-1.5-panel.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-1.5-photo.png": {
+    "historical_sha256": "987b256a066242170503541e6146539dc2e8cf02b13c740c3a68f167e8d6a039",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-1.5-photo.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-1.5-rebate.png": {
+    "historical_sha256": "bb988a16292eea60ff0b4783cd94fd9249e9eea73fd619a97f857394939aeae6",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-1.5-rebate.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-10-hole.png": {
+    "historical_sha256": "5dffa8e64bc668edbf9dfe696f5914ddd3f6b4e8b32d8802603805e682701c18",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-10-hole.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-10-panel.png": {
+    "historical_sha256": "41092518706fc536ca6feb23c1ccf2bb6cf6cc6babbb983793f8f4d5d06515e2",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-10-panel.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-10-photo.png": {
+    "historical_sha256": "3406b945b2dc2541d3006fe4bf9e6ca4d0dd312711090b4469126c45fa80f2db",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-10-photo.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-10-rebate.png": {
+    "historical_sha256": "81b828d5d113e3997d0b510b94a4f5c82af12f3a075bd465cb1b326957625a67",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-10-rebate.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-2.5-hole.png": {
+    "historical_sha256": "ef2fb85c2b688f04723df3277ac705ae9b492c0a06f84553bcefc6c21f895763",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-2.5-hole.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-2.5-panel.png": {
+    "historical_sha256": "9fd5630b43db6a7048d06b7d987fd079f1f0f1c83cd2b80dce63f863796ecebb",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-2.5-panel.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-2.5-photo.png": {
+    "historical_sha256": "f1fa794cc81cc7ef5e7fbf6070e1aa1283c9af057dfffa037310cfaaa2a28c97",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-2.5-photo.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-2.5-rebate.png": {
+    "historical_sha256": "6b1bafe28c28f72ad766ad280c6e0e3e96e442b7ac8727727bf21cba14127848",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-2.5-rebate.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-4-hole.png": {
+    "historical_sha256": "dca55b4fd8c369e410c10e84277749ee01f98c9cd030f6bb060e50ecbb3d871b",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-4-hole.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-4-panel.png": {
+    "historical_sha256": "ac2a37aacddbddf1b6107a827a4ac8072706e1d483eb36f550648cbffbb52f49",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-4-panel.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-4-photo.png": {
+    "historical_sha256": "ef1efedc71b263cb3283668ad85a1c16270acaba0b194264d3b109f1bb0477a3",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-4-photo.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-100-4-rebate.png": {
+    "historical_sha256": "de714787c88186d77a261b7a91cd184b299ccc7d157a467933d22d31c7888fc9",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-100-4-rebate.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-1.5-hole.png": {
+    "historical_sha256": "aae0a62f6736933ece99131403661690678f82a9af7d871ef81d014cf4b43f91",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-1.5-hole.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-1.5-panel.png": {
+    "historical_sha256": "3cea6882f5600f0ab495e5ef0942cf6c155ecd74c6cbedcf0d119176f57c08d7",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-1.5-panel.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-1.5-photo.png": {
+    "historical_sha256": "5f3ff0df0183f0271b06f368acf6d28d8d7c4f5ef82dcf53fd921cc5fb321fa3",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-1.5-photo.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-1.5-rebate.png": {
+    "historical_sha256": "2b97b5bbc89853e325f411d22a6858f2573a33502977f679c3c8db0c29b0f80c",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-1.5-rebate.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-10-hole.png": {
+    "historical_sha256": "36d36405a82ce5b05f46ccf06e79ce5b44d4e02fffc57cbbb4699f8f750c2b8d",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-10-hole.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-10-panel.png": {
+    "historical_sha256": "fa202f5dd149d57ff2296b5e73d93939a4a07cfc15a84c4df17e69d724ead9a1",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-10-panel.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-10-photo.png": {
+    "historical_sha256": "db8e60aeb81553c4deeb4fcb3382c68668c50457b7f7c6bfd201d064842db47c",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-10-photo.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-10-rebate.png": {
+    "historical_sha256": "b569a759f6a13adfa57bd72b39eb6a4d3bed01993cf333cb2eb4ee9668783780",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-10-rebate.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-2.5-hole.png": {
+    "historical_sha256": "cb18fe534cf2e79c09a1b778f9aa92896170dd3c4f2f99de68dea6cb0da29993",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-2.5-hole.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-2.5-panel.png": {
+    "historical_sha256": "adafc603505d76badf1a299902b7ecd07a4fe7c6736ead9175f2750ea465c541",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-2.5-panel.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-2.5-photo.png": {
+    "historical_sha256": "7b6d8f7ca3ae1a6d46e41ae1d008868e6d6f00f0a1fc981109dc35cbea24bc8a",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-2.5-photo.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-2.5-rebate.png": {
+    "historical_sha256": "ebb6139b908c933fb5b05a420d82587779b63abfc4a7548f420df45342aaf68c",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-2.5-rebate.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-4-hole.png": {
+    "historical_sha256": "e4c501133923f4478350329a75532178000ef9a5eafbe6047dbc4f4f958c9214",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-4-hole.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-4-panel.png": {
+    "historical_sha256": "90941c15f9aa9a69d8160711965a19b58f669a1685c7fd3f1ed9c09f12a6a2b6",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-4-panel.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-4-photo.png": {
+    "historical_sha256": "67327b8653c9075e2e54b50e193f32d424f80b542367e241049c3b175fb89c6a",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-4-photo.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/loupe-positive-30-4-rebate.png": {
+    "historical_sha256": "2cc2e9b4622b3eaaef93aa2640e580f2258de835ba08bbd39c3b0b5234163261",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/loupe-positive-30-4-rebate.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/macro-100.png": {
+    "historical_sha256": "58c539979d5c5b4f962fbc840745f711d3aadfe92ca752556a0c414491d5a2f7",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/macro-100.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/macro-30.png": {
+    "historical_sha256": "dcd6c9001fd078d3b5c2eec173e6715568ead30121834ec0404969355475c2a2",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/macro-30.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/macro-pan-100.png": {
+    "historical_sha256": "1b09ffb7886e76cbe2ca7816bafe29f68f2b7b42f885a025eb10961e092cd73f",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/macro-pan-100.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/macro-pan-30.png": {
+    "historical_sha256": "524d194efbafd8807b7cb27724e30d0688790ba644256e48d6113661791673e6",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/macro-pan-30.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/negative-100.png": {
+    "historical_sha256": "71adb88c28ad8dbdf8967a80b1200688e088c517162ad232a7de52fd253ce41d",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/negative-100.png"
+  },
+  "artifacts/m9-m10-candidates/lighting/positive-100.png": {
+    "historical_sha256": "fb48e418aa93fa32a397266f346632c8b30340d5f925b8907590d086e804f4c5",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/lighting/positive-100.png"
+  },
+  "artifacts/m9-m10-candidates/stocks/e100-after-mode-shortcut.png": {
+    "historical_sha256": "6b8f75e17f2c23c7793c7b2a734b54ac3bb0f87bfbcbd869120d30dea6bc34ab",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/stocks/e100-after-mode-shortcut.png"
+  },
+  "artifacts/m9-m10-candidates/stocks/ektachrome-e100-macro-loupe.png": {
+    "historical_sha256": "a3788c4553dc1cfdb8076545bde873e30d721cdebf6d10aa53c2ecee67140d1f",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/stocks/ektachrome-e100-macro-loupe.png"
+  },
+  "artifacts/m9-m10-candidates/stocks/ektar-100-negative-return.png": {
+    "historical_sha256": "e7cae28ad2114fbbb3a0f8c99af9c0e4914d00b1b51c1a90762c4eddf2ed33bb",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/stocks/ektar-100-negative-return.png"
+  },
+  "artifacts/m9-m10-candidates/stocks/portra-160-macro-loupe.png": {
+    "historical_sha256": "c595037eafc36d782e3b73faf1a687e76d9c2ebf83c40b2a9e6b269a02ef3841",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/stocks/portra-160-macro-loupe.png"
+  },
+  "artifacts/m9-m10-candidates/stocks/portra-160-positive-preview.png": {
+    "historical_sha256": "3b643998075209698d4b1f5531bf53526e0b9873bd549747917fc5c5182c85c2",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/stocks/portra-160-positive-preview.png"
+  },
+  "artifacts/m9-m10-candidates/stocks/portra-400-macro-edge.png": {
+    "historical_sha256": "59e294f1d14bbeab2966ff39919b32e26eaa4dd2e8cf7a33205a650831a21865",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/stocks/portra-400-macro-edge.png"
+  },
+  "artifacts/m9-m10-candidates/stocks/portra-400-macro-loupe.png": {
+    "historical_sha256": "29589f41eb48bd469991bc38383a4c68232bd95bf258b170b2c0d995d0698e90",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/stocks/portra-400-macro-loupe.png"
+  },
+  "artifacts/m9-m10-candidates/stocks/portra-400-positive-preview.png": {
+    "historical_sha256": "7644f4809568cd65c9d5b66eec0c913bf4b778e2c29cba7c7a6608bdc6e142d8",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/stocks/portra-400-positive-preview.png"
+  },
+  "artifacts/m9-m10-candidates/stocks/portra-800-macro-edge.png": {
+    "historical_sha256": "632245292153ed0e4fc24ff49377fe46bbb53cc252078cdc3284b9c3b7c37e9a",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/stocks/portra-800-macro-edge.png"
+  },
+  "artifacts/m9-m10-candidates/stocks/portra-800-macro-loupe.png": {
+    "historical_sha256": "c85d410bb8eaea7559e01677b66726e7b9734ee23aff2f9fc052b284a97b25af",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/stocks/portra-800-macro-loupe.png"
+  },
+  "artifacts/m9-m10-candidates/stocks/portra-800-positive-preview.png": {
+    "historical_sha256": "fa10beec40b8be3dd0157ffb4a47e734ca4d0943cfa8d230854e0b99ef19d398",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/stocks/portra-800-positive-preview.png"
+  },
+  "artifacts/m9-m10-candidates/stocks/rapid-before.png": {
+    "historical_sha256": "c8cf00c0635b681e54300684414ab1fc06e058c1c6fc3270c64f39b977865d6f",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/stocks/rapid-before.png"
+  },
+  "artifacts/m9-m10-candidates/stocks/stock-switching.webm": {
+    "historical_sha256": "e8c59b7f6cdcf6e69d0b8e12349377c9d45725ea4bb81e3f39ef97b4dac21786",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/stocks/stock-switching.webm"
+  },
+  "artifacts/m9-m10-candidates/combined/ektachrome-e100-positive-30-loupe.png": {
+    "historical_sha256": "8d69cde8b2c3b618321fbcfe9a8080f307387440f58e083080af63a5b24575ed",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/combined/ektachrome-e100-positive-30-loupe.png"
+  },
+  "artifacts/m9-m10-candidates/combined/ektar-100-negative-30-loupe.png": {
+    "historical_sha256": "c90ee5a2b8c2644582716547a3e19fcccd6974831361be283014b81f2a5d3baf",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/combined/ektar-100-negative-30-loupe.png"
+  },
+  "artifacts/m9-m10-candidates/combined/ektar-100-positive-60.png": {
+    "historical_sha256": "ec96c127c04338beb2c67ea3921f316a8344231f465c57947d641b7e2aff55fb",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/combined/ektar-100-positive-60.png"
+  },
+  "artifacts/m9-m10-candidates/combined/portra-160-negative-30-loupe.png": {
+    "historical_sha256": "6341b49d34783251737f89b0bf10a4f600d1b51e9715de1c7c3d3545959266dc",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/combined/portra-160-negative-30-loupe.png"
+  },
+  "artifacts/m9-m10-candidates/combined/portra-160-positive-30.png": {
+    "historical_sha256": "ed0b1eafd384bb830b5b955e0f8ef63bbada50d687d7abae920a08298d548a20",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/combined/portra-160-positive-30.png"
+  },
+  "artifacts/m9-m10-candidates/combined/portra-160-positive-60.png": {
+    "historical_sha256": "8d63a5cca96b44e3553e0d3f189f962ee1989776b57f180d0ddd37df2ef4e21d",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/combined/portra-160-positive-60.png"
+  },
+  "artifacts/m9-m10-candidates/combined/portra-400-negative-30-loupe.png": {
+    "historical_sha256": "1757440ed336cdc5a6f6d9ef5c2608c710cb1b095b7b187a626aef2d70aff7bd",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/combined/portra-400-negative-30-loupe.png"
+  },
+  "artifacts/m9-m10-candidates/combined/portra-400-positive-100.png": {
+    "historical_sha256": "7c549aa563c39655ce9c38455222a3adf0fa4b53352e57d59f8d271fe6d1ed5c",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/combined/portra-400-positive-100.png"
+  },
+  "artifacts/m9-m10-candidates/combined/portra-400-positive-30.png": {
+    "historical_sha256": "cf8fb089f236bd432884f22a742d9434272e71eaa0282abf916de70c08019b66",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/combined/portra-400-positive-30.png"
+  },
+  "artifacts/m9-m10-candidates/combined/portra-400-positive-60-loupe.png": {
+    "historical_sha256": "4c924320ed66ca1fe25a0f74051aba8ac7acda3dd83019859454887376b2502e",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/combined/portra-400-positive-60-loupe.png"
+  },
+  "artifacts/m9-m10-candidates/combined/portra-800-negative-100-loupe.png": {
+    "historical_sha256": "f9c39a4ac31f75135a0b566c14053c8895d86eaa0e7f6fea720349eefd2e353b",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/combined/portra-800-negative-100-loupe.png"
+  },
+  "artifacts/m9-m10-candidates/combined/portra-800-negative-30-loupe.png": {
+    "historical_sha256": "f5af084e5764a06a0b8b1bac3cc1aa10f14bfb6dc4993ea656c5873f13bfa112",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/combined/portra-800-negative-30-loupe.png"
+  },
+  "artifacts/m9-m10-candidates/combined/portra-800-positive-60.png": {
+    "historical_sha256": "69082b16a4049cae04c4a30f01969a1adea20fa1bc482696c7d62feff9a89cf0",
+    "new_capture": "artifacts/m11-candidates/legacy-output/m9-m10-candidates/combined/portra-800-positive-60.png"
+  }
+}

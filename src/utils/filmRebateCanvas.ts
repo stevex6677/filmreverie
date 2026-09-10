@@ -59,11 +59,11 @@ export function createFilmRebateCanvas(
     // on one outer rail, and full/half-frame numbers on the opposite outer rail.
     // Both rails read in the same direction. No cartridge DX or KEYKODE artwork.
     ctx.fillStyle = colors.rebateText;
-    ctx.fillText(String(i + 1), left + 12, 13);
+    ctx.fillText(String(i + 1 + (layout.frameNumberOffset ?? 0)), left + 12, 13);
     ctx.fillText(stock.rebate.label, left + 95, 13);
-    ctx.fillText(String(i + 1), left + 12, height - 13);
+    ctx.fillText(String(i + 1 + (layout.frameNumberOffset ?? 0)), left + 12, height - 13);
     if (stock.rebate.halfFrameNumbers) {
-      ctx.fillText(`${i + 1}A`, midpoint + 12, height - 13);
+      ctx.fillText(`${i + 1 + (layout.frameNumberOffset ?? 0)}A`, midpoint + 12, height - 13);
       if (stock.type === "negative") {
         ctx.beginPath();
         ctx.moveTo(midpoint + 52, height - 19);

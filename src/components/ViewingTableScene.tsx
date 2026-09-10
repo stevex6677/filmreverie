@@ -1,8 +1,9 @@
+import { BASELINE_ROLL, createRollLayout } from "../utils/rollLayout";
+import { useRollTextures } from "../utils/useRollTextures";
+import { useThree } from "@react-three/fiber";
 import { getFilmStock } from "../data/filmStocks";
 import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { useTexture } from "@react-three/drei";
-import { ROLL_FRAMES } from "../data/rollManifest";
 import { DEFAULT_LAYOUT, getFrameCenter } from "../utils/loupeMapping";
 import { TABLE_SURFACE_Y, TABLE_CENTER_Z } from "../utils/cameraBounds";
 import { ViewerAction, ViewerState } from "../state/viewerState";
@@ -27,24 +28,18 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
 }) => {
   const tableGroupRef = useRef<THREE.Group>(null);
 
-  // Load textures for all five frames
-  const imageSources = useMemo(() => ROLL_FRAMES.map((f) => f.src), []);
-  const textures = useTexture(imageSources) as THREE.Texture[];
-
-  useEffect(() => {
-    textures.forEach((tex) => {
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.minFilter = THREE.LinearFilter;
-      tex.magFilter = THREE.LinearFilter;
-      tex.needsUpdate = true;
-    });
-  }, [textures]);
+  const { size } = useThree();
+  const multi = state.roll !== BASELINE_ROLL;
+  const strips = useMemo(() => createRollLayout(state.roll), [state.roll]);
+  const { textures, failed, settled } = useRollTextures(state.roll, state.activeFrameIndex, state.assetRetry);
+  useEffect(() => { dispatch({ type: "ASSET_STATUS", failures: failed, loading: !settled }); }, [failed, settled, dispatch]);
+  useEffect(() => { dispatch({ type: "VIEWPORT", aspect: size.width / size.height }); }, [size.width, size.height, dispatch]);
 
   const activeTexture = textures[state.loupe.frameIndex] || textures[0];
   const isPositive = state.filmMode === "positive";
 
   const handlePointerMove = (point: THREE.Vector3) => {
-    if (state.roomMode === "inspect" && state.loupe.isActive) {
+    if (state.roomMode === "inspect" && state.loupe.isActive && !state.isTransitioning && !state.cameraMoving) {
       const local = tableGroupRef.current
         ? tableGroupRef.current.worldToLocal(point.clone())
         : point;
@@ -58,6 +53,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       dispatch({ type: "APPROACH_TABLE" });
       dispatch({ type: "SELECT_FRAME", frameIndex: index });
     } else {
+      if (multi) { dispatch({ type: "OPEN_FRAME", frameIndex: index }); return; }
       dispatch({ type: "SELECT_FRAME", frameIndex: index });
       // When zoomed in, also center the table view on the selected photo frame
       if (state.inspectZoom < 2.8) {
@@ -93,6 +89,8 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         inspectPan={state.inspectPan}
         isLoupeActive={state.loupe.isActive}
         onUpdateRoomPose={(pose) => dispatch({ type: "UPDATE_ROOM_POSE", pose })}
+        onCameraMotion={multi ? moving => dispatch({ type: "CAMERA_MOTION", moving }) : undefined}
+        onZoomAt={multi ? (delta, x, z) => dispatch({ type: "ZOOM_AT", delta, x, z }) : undefined}
         onAdjustInspectZoom={(delta) => dispatch({ type: "ADJUST_TABLE_ZOOM", delta })}
         onAdjustInspectPan={(dx, dz) => dispatch({ type: "ADJUST_TABLE_PAN", dx, dz })}
         onTransitionComplete={() => dispatch({ type: "SET_TRANSITIONING", isTransitioning: false })}
@@ -116,19 +114,16 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
           onClick={handleTableClick}
         />
 
-        {/* Film Strip with 5 Frames */}
-        <FilmStrip
-          stock={getFilmStock(state.filmStockId)}
-          textures={textures}
-          isPositive={isPositive}
-          layout={DEFAULT_LAYOUT}
-          brightness={state.tableBrightness}
-          onSelectFrame={handleFrameSelect}
-          onPointerMove={handlePointerMove}
-        />
+        {strips.map(strip => <group key={strip.index} position={[0, strip.y, multi ? 0.003 : 0]} scale={strip.scale}>
+          <FilmStrip stock={getFilmStock(state.filmStockId)} textures={textures.slice(strip.offset, strip.offset + strip.frames.length)}
+            isPositive={isPositive} layout={strip.layout} brightness={state.tableBrightness}
+            onSelectFrame={index => handleFrameSelect(strip.offset + index)} onPointerMove={handlePointerMove} />
+        </group>)}
 
         {/* Magnifying Loupe */}
         <Loupe
+          physicalScale={state.roll.scale}
+          suspended={state.isTransitioning || state.cameraMoving}
           isActive={state.roomMode === "inspect" && state.loupe.isActive}
           targetX={state.loupe.worldX}
           targetY={state.loupe.worldY}

@@ -6,6 +6,8 @@ import { captureLoupeScene, createLoupeRenderTarget, updateTableIllumination } f
 import { TABLE_SURFACE_Y } from "../utils/cameraBounds";
 
 interface LoupeProps {
+  physicalScale?: number;
+  suspended?: boolean;
   isActive: boolean;
   targetX: number;
   targetY: number;
@@ -21,6 +23,8 @@ interface LoupeProps {
 }
 
 export const Loupe: React.FC<LoupeProps> = ({
+  physicalScale = 1,
+  suspended = false,
   isActive,
   targetX,
   targetY,
@@ -38,7 +42,7 @@ export const Loupe: React.FC<LoupeProps> = ({
 
   // Resting position (bottom-right on the light table off the film strip)
   const restingPos = useMemo(() => new THREE.Vector3(1.3, -0.42, 0.08), []);
-  const activePos = useMemo(() => new THREE.Vector3(targetX, targetY, 0.08), [targetX, targetY]);
+  const activePos = useMemo(() => new THREE.Vector3(targetX, targetY, 0.08 * physicalScale), [targetX, targetY, physicalScale]);
 
   const targetPos = isActive ? activePos : restingPos;
 
@@ -73,7 +77,7 @@ export const Loupe: React.FC<LoupeProps> = ({
     groupRef.current.getWorldPosition(worldPos.current);
 
     const safeMag = Math.max(1.0, magnification);
-    const halfSize = 0.14 / safeMag;
+    const halfSize = 0.14 * physicalScale / safeMag;
     virtualCamera.left = -halfSize;
     virtualCamera.right = halfSize;
     virtualCamera.top = halfSize;
@@ -88,7 +92,7 @@ export const Loupe: React.FC<LoupeProps> = ({
     virtualCamera.updateProjectionMatrix();
 
     // 3. Render offscreen into render target
-    captureLoupeScene(gl, scene, virtualCamera, renderTarget, groupRef.current);
+    if (!suspended) captureLoupeScene(gl, scene, virtualCamera, renderTarget, groupRef.current);
 
     // 4. Update shader uniforms for the main scene render pass
     if (lensMaterial.uniforms) {
@@ -126,6 +130,8 @@ export const Loupe: React.FC<LoupeProps> = ({
 
   return (
     <group
+      scale={physicalScale}
+      visible={!suspended}
       ref={groupRef}
       position={[targetPos.x, targetPos.y, targetPos.z]}
       onClick={(e) => {

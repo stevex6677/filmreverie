@@ -51,6 +51,8 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
     return geo;
   }, [layout.frameWidth, layout.frameHeight, layout.marginY]);
 
+  useEffect(() => () => frameGeometry.dispose(), [frameGeometry]);
+
   // Smoothly transition uniform if needed
   useFrame((_, delta) => {
     if (material.uniforms.uModeTransition) {
