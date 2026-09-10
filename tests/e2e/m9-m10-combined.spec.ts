@@ -4,7 +4,7 @@ import path from "node:path";
 import { FILM_STOCKS } from "../../src/data/filmStocks";
 import { parsePng, getRegionStats } from "./helpers/pixelAnalysis";
 
-const output = path.resolve("artifacts/m9-m10-candidates/combined");
+const output = path.resolve(process.env.M9_M10_CANDIDATE_DIR || "artifacts/m9-m10-candidates/combined");
 for (const stock of FILM_STOCKS) {
   test(`M9 + M10: ${stock.id} retains density and illuminated borders in every allowed view`, async ({ page }) => {
     test.setTimeout(600000);

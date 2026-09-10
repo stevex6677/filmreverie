@@ -1,0 +1,30 @@
+
+Running 4 tests using 1 worker
+
+  ✓  1 tests/e2e/m11-full-roll-navigation.spec.ts:33:1 › M11 six strips, 36 photo regions, 29→30→31 loupe journey and overview restoration (1.2m)
+  ✓  2 tests/e2e/m11-full-roll-navigation.spec.ts:75:1 › M11 keyboard, direct strips, endpoints, nested Escape, stock and dimmer (22.0s)
+  ✓  3 tests/e2e/m11-full-roll-navigation.spec.ts:105:1 › M11 failed photograph keeps slots usable and recovers through visible retry (15.1s)
+  ✘  4 tests/e2e/m11-full-roll-navigation.spec.ts:131:1 › M11 combined stocks, first/last strips and transmitted loupe brightness (44.6s)
+
+
+  1) tests/e2e/m11-full-roll-navigation.spec.ts:131:1 › M11 combined stocks, first/last strips and transmitted loupe brightness 
+
+    Error: expect(received).toBeGreaterThan(expected)
+
+    Expected: > 4
+    Received:   3.8640705126428787
+
+      152 |           const p = await point(page, index);
+      153 |           const photo = getRegionStats(png, Math.round(p.x), Math.round(p.y), 22);
+    > 154 |           expect(photo.stdDev).toBeGreaterThan(4);
+          |                                ^
+      155 |           regions.push(photo.meanLum);
+      156 |           // The lower rail and physical sprocket row lie outside the exposure.
+      157 |           const f = locateFrame(FULL_ROLL_FIXTURE, index);
+        at /root/worktrees/codex/41ad/film_photo/tests/e2e/m11-full-roll-navigation.spec.ts:154:32
+
+    Error Context: test-results/m11-full-roll-navigation-M-84aeb-ransmitted-loupe-brightness/error-context.md
+
+  1 failed
+    tests/e2e/m11-full-roll-navigation.spec.ts:131:1 › M11 combined stocks, first/last strips and transmitted loupe brightness 
+  3 passed (2.6m)

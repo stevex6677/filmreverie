@@ -1,0 +1,6 @@
+
+Running 1 test using 1 worker
+
+  ✓  1 tests/e2e/m11-full-roll-navigation.spec.ts:75:1 › M11 keyboard, direct strips, endpoints, nested Escape, stock and dimmer (36.6s)
+
+  1 passed (38.6s)
