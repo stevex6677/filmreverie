@@ -40,6 +40,14 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
               {FILM_STOCKS.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
             </select>
           </div>
+          {isRoomMode && <>
+            <button className="btn" disabled={state.isTransitioning} onClick={() => dispatch({ type: "FACE_TABLE" })}>Face table</button>
+            <div className="room-light-control">
+              <button className="btn" role="switch" aria-checked={state.roomBrightness > 0} onClick={() => dispatch({ type: "TOGGLE_ROOM_LIGHTS" })}>Room lights</button>
+              <input aria-label="Room brightness" type="range" min="0" max="100" step="1" value={Math.round(state.roomBrightness * 100)} onChange={e => dispatch({ type: "SET_ROOM_BRIGHTNESS", brightness: Number(e.target.value) / 100 })} />
+              <output>{Math.round(state.roomBrightness * 100)}%</output>
+            </div>
+          </>}
           {/* Room navigation */}
           {isRoomMode ? (
             <button
@@ -203,7 +211,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
           {isRoomMode ? (
             <div className="status-item room-hint-wrapper">
               <span className="room-nav-hint">
-                Drag to orbit room • Click light table or "Approach Table" to inspect
+                Drag or use arrow keys to look • 0 faces table • Enter approaches
               </span>
             </div>
           ) : (

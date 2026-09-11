@@ -1,0 +1,10 @@
+Local: /Users/zhangzimou/.codex/worktrees/41ad/film_photo
+Branch: codex/m13-room-exploration
+Base: 5d5d204
+Remote: root@209.151.144.140:/root/worktrees/codex/41ad/film_photo
+Mutagen: codex-worktrees-41ad (connected, matching 1714-file trees, no conflict before gate)
+
+mutagen sync flush codex-worktrees-41ad
+ssh root@209.151.144.140 'cd /root/worktrees/codex/41ad/film_photo && REVIEW_ARTIFACTS_DIR=artifacts/m13-candidates/regressions M9_CANDIDATE_DIR=artifacts/m13-candidates/stocks M10_CANDIDATE_DIR=artifacts/m13-candidates/lighting M9_M10_CANDIDATE_DIR=artifacts/m13-candidates/combined M11_CANDIDATE_DIR=artifacts/m13-candidates/navigation M12_CANDIDATE_DIR=artifacts/m13-candidates/library M12_PANEL_CANDIDATE_DIR=artifacts/m13-candidates/panel PLAYWRIGHT_PORT=5197 npm run validate:m13'
+
+The gate builds once, then runs all integration and browser tests. Historical accepted artifacts are kept separate by the environment variables above. Review recordings and timing use the stable preview at port 5193 after the gate, with no overlapping browser-test run.

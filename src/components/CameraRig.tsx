@@ -4,12 +4,13 @@ import { useFrame, useThree } from "@react-three/fiber";
 import {
   DEFAULT_INSPECT_DISTANCE,
   INSPECT_CAMERA_UP,
-  ROOM_CAMERA_TARGET,
   ROOM_CAMERA_UP,
   TABLE_CENTER_Z,
   TABLE_SURFACE_Y,
   RoomCameraPose,
-  sphericalToCartesian,
+  ROOM_EYE,
+  ROOM_CAMERA_FOV,
+  roomLookTarget,
 } from "../utils/cameraBounds";
 import { RoomMode } from "../state/viewerState";
 
@@ -53,11 +54,8 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   const dragStartRef = useRef({ x: 0, y: 0, yaw: 0, pitch: 0 });
   const panStartRef = useRef({ x: 0, y: 0 });
 
-  // Compute desired camera position, up vector, and look target based on mode
   const targetPos = useRef(new THREE.Vector3());
-  const targetUp = useRef(new THREE.Vector3(...ROOM_CAMERA_UP));
-  const lookTarget = useRef(new THREE.Vector3(...ROOM_CAMERA_TARGET));
-  const desiredLookTarget = useRef(new THREE.Vector3(...ROOM_CAMERA_TARGET));
+  const desiredCamera = useRef(new THREE.PerspectiveCamera());
 
   const maxDragDistRef = useRef(0);
   const wasMovingRef = useRef(false);
@@ -65,7 +63,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   // Spacebar tracking for table pan
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space" && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement)) {
+      if (e.code === "Space" && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement || (e.target instanceof HTMLElement && !!e.target.closest('button, [role="dialog"], [contenteditable="true"]')))) {
         isSpacePressedRef.current = true;
       }
     };
@@ -74,9 +72,12 @@ export const CameraRig: React.FC<CameraRigProps> = ({
         isSpacePressedRef.current = false;
       }
     };
+    const clearSpace = () => { isSpacePressedRef.current = false; };
+    window.addEventListener("blur", clearSpace);
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     return () => {
+      window.removeEventListener("blur", clearSpace);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
@@ -106,7 +107,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     return () => canvas.removeEventListener("wheel", handleWheel);
   }, [gl, roomMode, isTransitioning, inspectZoom, onAdjustInspectZoom, onZoomAt, camera]);
 
-  // Pointer drag for room orbit or table pan
+  // Pointer drag for fixed-eye room look or table pan
   useEffect(() => {
     const canvas = gl.domElement;
 
@@ -120,7 +121,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       if (isTransitioning) return;
 
       if (roomMode === "room") {
-        // Orbit room with primary button
+        // Look around from the standing eye with primary button
         if (e.button !== 0) return;
         isDraggingRoomRef.current = true;
         maxDragDistRef.current = 0;
@@ -163,8 +164,9 @@ export const CameraRig: React.FC<CameraRigProps> = ({
         }
 
         const sensitivity = 0.0035;
-        const newYaw = dragStartRef.current.yaw - dx * sensitivity;
-        const newPitch = dragStartRef.current.pitch + dy * sensitivity;
+        // Grab the room: its contents follow the pointer on both axes.
+        const newYaw = dragStartRef.current.yaw + dx * sensitivity;
+        const newPitch = dragStartRef.current.pitch - dy * sensitivity;
 
         onUpdateRoomPose({ yaw: newYaw, pitch: newPitch });
       } else if (roomMode === "inspect" && isPanningTableRef.current) {
@@ -212,6 +214,11 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       }
     };
 
+    const cancelInput = () => { isDraggingRoomRef.current = false; isPanningTableRef.current = false; isSpacePressedRef.current = false; };
+    if (isTransitioning) cancelInput();
+    window.addEventListener("blur", cancelInput);
+    window.addEventListener("pointercancel", cancelInput);
+    canvas.addEventListener("lostpointercapture", cancelInput);
     canvas.addEventListener("contextmenu", handleContextMenu);
     canvas.addEventListener("pointerdown", handlePointerDown);
     window.addEventListener("pointermove", handlePointerMove);
@@ -219,6 +226,9 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     canvas.addEventListener("click", handleClickCapture, true);
 
     return () => {
+      window.removeEventListener("blur", cancelInput);
+      window.removeEventListener("pointercancel", cancelInput);
+      canvas.removeEventListener("lostpointercapture", cancelInput);
       canvas.removeEventListener("contextmenu", handleContextMenu);
       canvas.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("pointermove", handlePointerMove);
@@ -236,52 +246,43 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     onAdjustInspectPan,
   ]);
 
-  // Animate camera position and orientation
+  // Room input directly controls orientation at the fixed eye. Only automatic
+  // journeys move it; quaternion interpolation remains stable across the yaw seam.
   useFrame((_, delta) => {
-    const desiredTarget: [number, number, number] =
-      roomMode === "inspect"
-        ? [inspectPan.x, TABLE_SURFACE_Y, inspectPan.z]
-        : ROOM_CAMERA_TARGET;
-    const [rx, ry, rz] =
-      roomMode === "inspect"
-        ? [inspectPan.x, TABLE_SURFACE_Y + inspectZoom, inspectPan.z]
-        : sphericalToCartesian(savedRoomPose, ROOM_CAMERA_TARGET);
-    targetPos.current.set(rx, ry, rz);
-    const moving = !isDeterministic && !isReducedMotion && (camera.position.distanceTo(targetPos.current) > .001 || isPanningTableRef.current);
+    const inspecting = roomMode === "inspect";
+    targetPos.current.set(...(inspecting
+      ? [inspectPan.x, TABLE_SURFACE_Y + inspectZoom, inspectPan.z] as [number, number, number]
+      : ROOM_EYE));
+    const desired = desiredCamera.current;
+    desired.position.copy(targetPos.current);
+    desired.up.set(...(inspecting ? INSPECT_CAMERA_UP : ROOM_CAMERA_UP));
+    desired.lookAt(...(inspecting ? [inspectPan.x, TABLE_SURFACE_Y, inspectPan.z] as [number, number, number] : roomLookTarget(savedRoomPose)));
+    const immediate = isDeterministic || isReducedMotion || (!inspecting && !isTransitioning);
+    const moving = !immediate && (camera.position.distanceTo(targetPos.current) > .001 || camera.quaternion.angleTo(desired.quaternion) > .001 || isPanningTableRef.current);
     if (moving !== wasMovingRef.current) { wasMovingRef.current = moving; onCameraMotion?.(moving); }
-
-    const desiredUp = roomMode === "inspect" ? INSPECT_CAMERA_UP : ROOM_CAMERA_UP;
-    targetUp.current.set(...desiredUp);
-    desiredLookTarget.current.set(...desiredTarget);
-
-    if (isDeterministic || isReducedMotion) {
+    if (immediate) {
       camera.position.copy(targetPos.current);
-      camera.up.copy(targetUp.current);
-      lookTarget.current.copy(desiredLookTarget.current);
-      camera.lookAt(lookTarget.current);
-      if (isTransitioning) {
-        onTransitionComplete();
-      }
-      return;
+      camera.quaternion.copy(desired.quaternion);
+    } else {
+      const alpha = 1 - Math.exp(-delta * (isTransitioning ? 7 : 12));
+      camera.position.lerp(targetPos.current, alpha);
+      camera.quaternion.slerp(desired.quaternion, alpha);
     }
-
-    // Smooth camera transition
-    const speed = isTransitioning ? 7.0 : 12.0;
-    camera.position.lerp(targetPos.current, Math.min(1.0, delta * speed));
-    camera.up.lerp(targetUp.current, Math.min(1.0, delta * speed)).normalize();
-    lookTarget.current.lerp(desiredLookTarget.current, Math.min(1.0, delta * speed));
-    camera.lookAt(lookTarget.current);
-
-    if (isTransitioning) {
-      const dist = camera.position.distanceTo(targetPos.current);
-      if (dist < 0.015) {
-        camera.position.copy(targetPos.current);
-        camera.up.copy(targetUp.current);
-        lookTarget.current.copy(desiredLookTarget.current);
-        onTransitionComplete();
-      }
+    const perspective = camera as THREE.PerspectiveCamera;
+    const desiredFov = inspecting ? 45 : ROOM_CAMERA_FOV;
+    perspective.fov = immediate ? desiredFov : THREE.MathUtils.lerp(perspective.fov, desiredFov, 1 - Math.exp(-delta * 7));
+    perspective.updateProjectionMatrix();
+    camera.up.copy(desired.up);
+    // Camera telemetry exposes the real rendered pose for regression checks.
+    gl.domElement.dataset.cameraFov = String(perspective.fov);
+    gl.domElement.dataset.cameraPosition = camera.position.toArray().join(",");
+    gl.domElement.dataset.cameraQuaternion = camera.quaternion.toArray().join(",");
+    if (isTransitioning && camera.position.distanceTo(targetPos.current) < .001 && camera.quaternion.angleTo(desired.quaternion) < .001 && Math.abs(perspective.fov - desiredFov) < .001) {
+      camera.position.copy(targetPos.current);
+      camera.quaternion.copy(desired.quaternion);
+      perspective.fov = desiredFov; perspective.updateProjectionMatrix();
+      onTransitionComplete();
     }
   });
-
   return null;
 };

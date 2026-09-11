@@ -17,20 +17,24 @@ export interface CameraBounds {
 export const TABLE_SURFACE_Y = -0.72; // Illuminated table surface resting flat on workbench
 export const TABLE_CENTER_Z = -0.10;  // Centered front-to-back on workbench top
 
+// Room envelope and immobile standing eye, shared by geometry and camera.
+export const ROOM_ENVELOPE = { width: 7.6, front: -1.1, back: 6.8, floor: -1.7, ceiling: 3.15 };
 export const DEFAULT_CAMERA_BOUNDS: CameraBounds = {
-  minYaw: -0.42,  // ~ -24 deg (restrained room orbit)
-  maxYaw: 0.42,   // ~ +24 deg
-  minPitch: 0.10, // ~ 5.7 deg (comfortably above workbench/floor)
-  maxPitch: 0.45, // ~ 25.8 deg (restrained elevation)
-  minDistance: 3.0,
-  maxDistance: 4.2,
+  minYaw: -Infinity, maxYaw: Infinity,
+  minPitch: -85 * Math.PI / 180, maxPitch: 85 * Math.PI / 180,
+  minDistance: 3.5, maxDistance: 3.5,
 };
-
-export const DEFAULT_ROOM_POSE: RoomCameraPose = {
-  yaw: 0.18,     // ~10.3 deg gentle 3/4 architectural perspective
-  pitch: 0.28,   // ~16 deg natural standing eye-level downward gaze toward flat table & workbench
-  distance: 3.5, // room overview showing flat table, bench, steel legs, shelf, floor, and safelight
-};
+export const DEFAULT_ROOM_POSE: RoomCameraPose = { yaw: .18, pitch: .28, distance: 3.5 };
+export const ROOM_CAMERA_FOV = 60;
+export const ROOM_EYE: [number, number, number] = [
+  3.5 * Math.cos(.28) * Math.sin(.18),
+  -.78 + 3.5 * Math.sin(.28),
+  TABLE_CENTER_Z + 3.5 * Math.cos(.28) * Math.cos(.18),
+];
+export function roomLookTarget(pose: RoomCameraPose): [number, number, number] {
+  const { yaw, pitch } = clampRoomPose(pose);
+  return [ROOM_EYE[0] - Math.cos(pitch) * Math.sin(yaw), ROOM_EYE[1] - Math.sin(pitch), ROOM_EYE[2] - Math.cos(pitch) * Math.cos(yaw)];
+}
 
 export const INSPECT_CAMERA_DISTANCE = 3.2;
 export const MIN_INSPECT_DISTANCE = 0.32; // Allows zooming up to 1000% (3.2m / 0.32m = 10x)
@@ -65,9 +69,9 @@ export function clampRoomPose(
   bounds: CameraBounds = DEFAULT_CAMERA_BOUNDS
 ): RoomCameraPose {
   return {
-    yaw: clamp(pose.yaw, bounds.minYaw, bounds.maxYaw),
-    pitch: clamp(pose.pitch, bounds.minPitch, bounds.maxPitch),
-    distance: clamp(pose.distance, bounds.minDistance, bounds.maxDistance),
+    yaw: Number.isFinite(pose.yaw) ? pose.yaw : DEFAULT_ROOM_POSE.yaw,
+    pitch: clamp(Number.isFinite(pose.pitch) ? pose.pitch : DEFAULT_ROOM_POSE.pitch, bounds.minPitch, bounds.maxPitch),
+    distance: DEFAULT_ROOM_POSE.distance,
   };
 }
 
