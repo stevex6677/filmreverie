@@ -43,6 +43,8 @@ export interface ViewerState {
   inspectZoom: number;
   inspectPan: { x: number; z: number };
   tableBrightness: number;
+  roomBrightness: number;
+  lastRoomBrightness: number;
   assetFailures: string[];
   assetsLoading: boolean;
   assetRetry: number;
@@ -76,6 +78,8 @@ export const INITIAL_VIEWER_STATE: ViewerState = {
   inspectZoom: DEFAULT_INSPECT_DISTANCE,
   inspectPan: { x: 0, z: TABLE_CENTER_Z },
   tableBrightness: DEFAULT_TABLE_BRIGHTNESS,
+  roomBrightness: .45,
+  lastRoomBrightness: .45,
   assetFailures: [],
   assetsLoading: true,
   assetRetry: 0,
@@ -92,11 +96,17 @@ export function createInitialViewerState(initialRoomMode: RoomMode = "inspect", 
     inspectZoom: roll === BASELINE_ROLL ? DEFAULT_INSPECT_DISTANCE : fitRollView(roll, "roll", 0).zoom,
     inspectPan: { x: 0, z: TABLE_CENTER_Z },
     tableBrightness: DEFAULT_TABLE_BRIGHTNESS,
+  roomBrightness: .45,
+  lastRoomBrightness: .45,
     error: null,
   };
 }
 
 export type ViewerAction =
+  | { type: "FACE_TABLE" }
+  | { type: "LOOK_ROOM"; yaw: number; pitch: number }
+  | { type: "SET_ROOM_BRIGHTNESS"; brightness: number }
+  | { type: "TOGGLE_ROOM_LIGHTS" }
   | { type: "LOAD_ROLL"; roll: RollDefinition; stockId?: FilmStockId; view?: import("../storage/rollRepository").SavedView }
   | { type: "CAMERA_MOTION"; moving: boolean }
   | { type: "ASSET_STATUS"; failures: string[]; loading: boolean }
@@ -137,6 +147,17 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
   const safeZoom = (zoom: number) => multi ? Math.max(0.32 * state.roll.scale, Math.min(3.6, zoom)) : clampInspectZoom(zoom);
   const safePan = (x: number, z: number) => multi ? clampRollPan(state.roll, x, z) : clampInspectPan(x, z);
   switch (action.type) {
+    case "SET_ROOM_BRIGHTNESS": {
+      if (!Number.isFinite(action.brightness)) return state;
+      const value = Math.max(0, Math.min(1, action.brightness));
+      return { ...state, roomBrightness: value, lastRoomBrightness: value > 0 ? value : state.lastRoomBrightness };
+    }
+    case "TOGGLE_ROOM_LIGHTS":
+      return { ...state, roomBrightness: state.roomBrightness > 0 ? 0 : state.lastRoomBrightness };
+    case "FACE_TABLE":
+      return state.roomMode === "room" && !state.isTransitioning ? { ...state, savedRoomPose: { ...DEFAULT_ROOM_POSE } } : state;
+    case "LOOK_ROOM":
+      return viewerReducer(state, { type: "UPDATE_ROOM_POSE", pose: { yaw: state.savedRoomPose.yaw + action.yaw, pitch: state.savedRoomPose.pitch + action.pitch } });
     case "LOAD_ROLL": {
       let next = createInitialViewerState("inspect", action.roll);
       next = viewerReducer(next, { type: "SET_FILM_STOCK", stockId: action.stockId ?? DEFAULT_FILM_STOCK_ID });
@@ -154,7 +175,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
         }
         next.savedOverview = v.overview && Number.isFinite(v.overview.zoom) && Number.isFinite(v.overview.pan?.x) && Number.isFinite(v.overview.pan?.z) ? { zoom: Math.max(.1,Math.min(3.6,v.overview.zoom)), pan: clampRollPan(action.roll,v.overview.pan.x,v.overview.pan.z), frameIndex: locateFrame(action.roll,v.overview.frameIndex).globalIndex } : null;
       }
-      return { ...next, viewportAspect: state.viewportAspect, isTransitioning: true };
+      return { ...next, roomBrightness: state.roomBrightness, lastRoomBrightness: state.lastRoomBrightness, savedRoomPose: state.savedRoomPose, viewportAspect: state.viewportAspect, isTransitioning: true };
     }
     case "CAMERA_MOTION": {
       if (state.cameraMoving === action.moving) return state;
@@ -328,7 +349,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       };
 
     case "UPDATE_ROOM_POSE": {
-      if (state.roomMode !== "room") {
+      if (state.roomMode !== "room" || state.isTransitioning) {
         return state;
       }
       const updated = {

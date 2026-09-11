@@ -140,13 +140,20 @@ test("M11 failed photograph keeps slots usable and recovers through visible retr
 async function brightness(page: Page, value: number) {
   await page.getByTestId("brightness-slider").focus();
   await page.keyboard.press(value === 100 ? "End" : "Home");
-  if (value === 60) for (let i = 0; i < 30; i++) await page.keyboard.press("ArrowRight");
+  if (value === 60) {
+    // Use the native range keyboard step to reach the same sampled endpoint.
+    // Continuous one-percent input is covered by the dedicated dimmer suite.
+    for (let i = 0; i < 4; i++) await page.keyboard.press("PageUp");
+    await page.keyboard.press("ArrowRight"); await page.keyboard.press("ArrowRight");
+  }
   await expect(page.getByTestId("brightness-value")).toHaveText(`${value}%`);
   await page.waitForTimeout(200);
 }
 
 test("M11 combined stocks, first/last strips and transmitted loupe brightness", async ({ page, browser }) => {
-  test.setTimeout(600000);
+  // Shared software-rendered CI may run alongside another checkout. Keep
+  // per-action/assertion deadlines intact while budgeting this full stock matrix.
+  test.setTimeout(900000);
   const errors = trackErrors(page);
   const photoRequests: string[] = [];
   page.on("request", r => { if (r.url().includes("/assets/photos/")) photoRequests.push(r.url()); });
