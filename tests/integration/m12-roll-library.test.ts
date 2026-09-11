@@ -66,3 +66,18 @@ it('processes real image bytes through an explicit canvas adapter, commits the d
     await expect(processPhotos(Array.from({length:73},()=>files[0]),'too-many',new AbortController().signal,()=>{})).rejects.toThrow('72');
   } finally { vi.unstubAllGlobals(); }
 });
+
+describe('M14 lazy originals and runtime ownership',()=>{
+  it('opens viewing derivatives independently and reports a missing original only when requested',async()=>{
+    const factory=new IDBFactory(),repo=new RollRepository(factory);await repo.save(bundle());expect(await (await repo.original('a')).text()).toBe('a');
+    const db=await openRollDatabase(factory);await new Promise<void>(resolve=>{const tx=db.transaction('blobs','readwrite');tx.objectStore('blobs').delete('a:original');tx.oncomplete=()=>resolve();});db.close();expect((await repo.read('r')).frames).toHaveLength(2);await expect(repo.original('a')).rejects.toThrow('Original unavailable');
+  });
+  it('keeps runtime URLs alive until the active cache releases them',()=>{
+    const create=vi.spyOn(URL,'createObjectURL').mockImplementation(()=>`blob:${Math.random()}`),revoke=vi.spyOn(URL,'revokeObjectURL').mockImplementation(()=>{});
+    try{const runtime=createRuntimeRoll(bundle()),release=runtime.definition.retainResources!();runtime.dispose();expect(revoke).not.toHaveBeenCalled();release();expect(revoke).toHaveBeenCalledTimes(4);release();runtime.dispose();expect(revoke).toHaveBeenCalledTimes(4);}finally{create.mockRestore();revoke.mockRestore();}
+  });
+});
+
+  it('M14 saved frame removal cleans owned blobs atomically, while aborted edits preserve them',async()=>{
+    const factory=new IDBFactory(),repo=new RollRepository(factory),data=bundle();await repo.save(data);const edited={roll:{...data.roll,frameIds:['b'],coverId:'b'},frames:[data.frames[1]],blobs:[]};const controller=new AbortController();controller.abort();await expect(repo.save(edited,controller.signal)).rejects.toThrow();expect((await repo.read('r')).frames).toHaveLength(2);await repo.save(edited);expect((await repo.read('r')).frames.map(f=>f.id)).toEqual(['b']);await expect(repo.original('a')).rejects.toThrow();expect(await (await repo.original('b')).text()).toBe('b');const db=await openRollDatabase(factory);const count=await new Promise<number>(resolve=>{const q=db.transaction('blobs').objectStore('blobs').count();q.onsuccess=()=>resolve(q.result);});db.close();expect(count).toBe(3);
+  });

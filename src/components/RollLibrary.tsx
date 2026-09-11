@@ -1,83 +1,79 @@
-import { photoCropPreview } from "../utils/photoFraming";
+import { photoCropPreview } from '../utils/photoFraming';
 import { useEffect, useRef, useState } from 'react';
 import { FILM_STOCKS, DEFAULT_FILM_STOCK_ID, FilmStockId, getFilmStock } from '../data/filmStocks';
 import { FILM_FORMATS, FilmFormat } from '../data/filmFormats';
 import { RollBundle, RollRepository, StoredRoll, storageMessage } from '../storage/rollRepository';
 import { DraftPhoto, processPhotos, releaseDraft } from '../storage/importPhotos';
+import { CropInspector } from './CropInspector';
 export const rollRepository = new RollRepository();
-interface Props { onClose: () => void; onOpen: (id: string) => Promise<void>; onExample: () => void; activeId: string; onRemoved: (id: string) => void }
-export function RollLibrary({ onClose, onOpen, onExample, activeId, onRemoved }: Props) {
-  const dialog = useRef<HTMLDialogElement>(null), abort = useRef<AbortController | null>(null), draftRef = useRef<DraftPhoto[]>([]);
-  const [rolls,setRolls] = useState<StoredRoll[]>([]), [error,setError] = useState(''), [busy,setBusy] = useState(false), [progress,setProgress] = useState('');
-  const [draft,setDraft] = useState<DraftPhoto[] | null>(null), [editing,setEditing] = useState<StoredRoll | null>(null), [rollId,setRollId] = useState('');
-  const [name,setName] = useState(''), [stock,setStock] = useState<FilmStockId>(DEFAULT_FILM_STOCK_ID), [format,setFormat] = useState<FilmFormat>('135'), [cover,setCover] = useState('');
-  const [trash,setTrash] = useState(false), [usage,setUsage] = useState(''), [covers,setCovers] = useState<Record<string,{url:string;rotation:number}>>({});
-  const drag = useRef<number | null>(null);
-  const refresh = async () => { setRolls(await rollRepository.list()); const estimate = await navigator.storage?.estimate?.(); if (estimate?.usage !== undefined) setUsage(`${(estimate.usage / 1048576).toFixed(1)} MB used by this site`); };
-  const run = async (fn: () => Promise<void>) => { setError(''); setBusy(true); try { await fn(); } catch (e) { setError(storageMessage(e)); } finally { setBusy(false); } };
-  useEffect(() => { const previous = document.activeElement as HTMLElement; dialog.current?.showModal(); void run(refresh); return () => { abort.current?.abort(); releaseDraft(draftRef.current); previous?.focus(); }; }, []);
-  useEffect(() => { let cancelled = false; const urls: string[] = []; void Promise.all(rolls.map(async r => { try { const cover = await rollRepository.thumbnail(r.id, r.coverId); const url = URL.createObjectURL(cover.blob); urls.push(url); return [r.id,{url,rotation:cover.rotation}] as const; } catch { return [r.id,{url:'',rotation:0}] as const; } })).then(entries => { if (!cancelled) setCovers(Object.fromEntries(entries)); else urls.forEach(URL.revokeObjectURL); }); return () => { cancelled = true; urls.forEach(URL.revokeObjectURL); }; }, [rolls]);
-  const updateDraft = (photos: DraftPhoto[] | null) => { draftRef.current = photos ?? []; setDraft(photos); };
-  const reset = () => { abort.current?.abort(); releaseDraft(draftRef.current); updateDraft(null); setEditing(null); setError(''); setProgress(''); };
-  const start = () => { reset(); const id = crypto.randomUUID(); setRollId(id); setName(''); setStock(DEFAULT_FILM_STOCK_ID); setFormat('135'); setCover(''); updateDraft([]); };
-  const choose = (files: File[]) => void run(async () => {
-    if (draft?.length) throw new Error('Cancel this draft to choose a different batch.');
-    abort.current = new AbortController();
-    try { const photos = await processPhotos(files, rollId, abort.current.signal, (done,total) => setProgress(`Processed ${done} / ${total}`)); updateDraft(photos); setCover(photos.find(p => p.frame)?.id ?? ''); } catch (e) { if (!abort.current.signal.aborted) throw e; }
+interface Props { onClose:()=>void;onOpen:(id:string)=>Promise<void>;onExample:()=>void;activeId:string;onRemoved:(id:string)=>void }
+type Step='photos'|'details'|'review';
+export function RollLibrary({onClose,onOpen,onExample,activeId,onRemoved}:Props) {
+  const dialog=useRef<HTMLDialogElement>(null),abort=useRef<AbortController|null>(null),draftRef=useRef<DraftPhoto[]>([]),scroll=useRef(0),returnId=useRef('');
+  const [rolls,setRolls]=useState<StoredRoll[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(false),[progress,setProgress]=useState(''),[loading,setLoading]=useState(true);
+  const [draft,setDraft]=useState<DraftPhoto[]|null>(null),[editing,setEditing]=useState<StoredRoll|null>(null),[rollId,setRollId]=useState(''),[step,setStep]=useState<Step>('photos'),[selected,setSelected]=useState('');
+  const [name,setName]=useState(''),[stock,setStock]=useState<FilmStockId>(DEFAULT_FILM_STOCK_ID),[format,setFormat]=useState<FilmFormat>('135'),[cover,setCover]=useState('');
+  const [trash,setTrash]=useState(false),[usage,setUsage]=useState(''),[menu,setMenu]=useState<string|null>(null),[covers,setCovers]=useState<Record<string,{url:string;rotation:number}>>({});
+  const drag=useRef<number|null>(null);
+  const refresh=async()=>{setRolls(await rollRepository.list());const estimate=await navigator.storage?.estimate?.();if(estimate?.usage!==undefined)setUsage(`${(estimate.usage/1048576).toFixed(1)} MB used by this site`);};
+  const run=async(fn:()=>Promise<void>)=>{setError('');setBusy(true);try{await fn();}catch(e){setError(storageMessage(e));}finally{setBusy(false);setLoading(false);}};
+  useEffect(()=>{const previous=document.activeElement as HTMLElement;dialog.current?.showModal();void run(refresh);return()=>{abort.current?.abort();releaseDraft(draftRef.current);previous?.focus();};},[]);
+  useEffect(()=>{let cancelled=false;const urls:string[]=[];void Promise.all(rolls.map(async r=>{try{const c=await rollRepository.thumbnail(r.id,r.coverId),url=URL.createObjectURL(c.blob);urls.push(url);return [r.id,{url,rotation:c.rotation}] as const;}catch{return [r.id,{url:'',rotation:0}] as const;}})).then(entries=>{if(!cancelled)setCovers(Object.fromEntries(entries));else urls.forEach(URL.revokeObjectURL);});return()=>{cancelled=true;urls.forEach(URL.revokeObjectURL);};},[rolls]);
+  useEffect(()=>{if(draft!==null){dialog.current?.querySelector<HTMLElement>('[data-step-title]')?.focus();dialog.current?.scrollTo(0,0);}else{dialog.current?.scrollTo(0,scroll.current);if(returnId.current)dialog.current?.querySelector<HTMLButtonElement>(`[data-card-id="${returnId.current}"]`)?.focus({preventScroll:true});}},[step,draft===null]);
+  useEffect(()=>{if(menu)dialog.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();},[menu]);
+  const updateDraft=(photos:DraftPhoto[]|null)=>{draftRef.current=photos??[];setDraft(photos);};
+  const reset=()=>{abort.current?.abort();releaseDraft(draftRef.current);updateDraft(null);setEditing(null);setError('');setProgress('');};
+  const start=()=>{scroll.current=dialog.current?.scrollTop??0;returnId.current='';reset();setRollId(crypto.randomUUID());setName('');setStock(DEFAULT_FILM_STOCK_ID);setFormat('135');setCover('');setSelected('');setStep('photos');updateDraft([]);};
+  const choose=(files:File[])=>void run(async()=>{
+    abort.current=new AbortController();const controller=abort.current,prior=draftRef.current;setProgress('Processing photographs…');
+    try{const photos=await processPhotos(files,rollId,controller.signal,(done,total)=>setProgress(`Processed ${done} / ${total}`),prior);controller.signal.throwIfAborted();updateDraft([...prior,...photos]);if(!cover)setCover(photos.find(p=>p.frame)?.id??'');if(!selected)setSelected(photos[0]?.id??'');}
+    catch(e){if(!controller.signal.aborted)throw e;setProgress('Processing cancelled. Your earlier photographs are retained.');}
   });
-  const edit = (id: string) => void run(async () => {
-    const bundle = await rollRepository.read(id); setEditing(bundle.roll); setRollId(id); setName(bundle.roll.name); setStock(bundle.roll.stockId); setFormat(bundle.roll.format); setCover(bundle.roll.coverId);
-    updateDraft(bundle.frames.map(frame => ({ id: frame.id, filename: frame.filename, frame, blobs: [], duplicate: false, keepDuplicate: true, preview: URL.createObjectURL(bundle.blobs.find(b => b.key === frame.thumbnailKey)!.blob) })));
+  const edit=(id:string)=>void run(async()=>{scroll.current=dialog.current?.scrollTop??0;returnId.current=id;setMenu(null);const b=await rollRepository.read(id);setEditing(b.roll);setRollId(id);setName(b.roll.name);setStock(b.roll.stockId);setFormat(b.roll.format);setCover(b.roll.coverId);setSelected(b.frames[0]?.id??'');setStep('details');updateDraft(b.roll.frameIds.map(id=>{const frame=b.frames.find(f=>f.id===id)!;return {id,filename:frame.filename,frame,blobs:[],duplicate:false,keepDuplicate:true,preview:URL.createObjectURL(b.blobs.find(x=>x.key===frame.thumbnailKey)!.blob),reviewPreview:URL.createObjectURL(b.blobs.find(x=>x.key===frame.viewingKey)!.blob)};}));});
+  const move=(from:number,to:number)=>{if(!draft||to<0||to>=draft.length)return;const next=[...draft], [p]=next.splice(from,1);next.splice(to,0,p);updateDraft(next);};
+  const valid=!!draft?.length&&!draft.some(p=>!p.frame||p.duplicate&&!p.keepDuplicate);
+  const save=()=>void run(async()=>{
+    if(!valid||!draft)throw new Error('Resolve failed files and duplicates before saving.');
+    const frames=draft.map(p=>p.frame!),ids=frames.map(f=>f.id),now=Date.now();
+    const roll:StoredRoll={id:rollId,name,stockId:stock,format,frameIds:ids,coverId:ids.includes(cover)?cover:ids[0],createdAt:editing?.createdAt??now,updatedAt:now,trashedAt:null,view:editing?.view?{...editing.view,zoom:NaN,overview:null}:undefined};
+    const bundle:RollBundle={roll,frames,blobs:draft.flatMap(p=>p.blobs)};abort.current=new AbortController();await rollRepository.save(bundle,abort.current.signal);await navigator.storage?.persist?.().catch(()=>false);await refresh();await onOpen(rollId);reset();onClose();
   });
-  const move = (from: number, to: number) => { if (!draft || to < 0 || to >= draft.length) return; const next = [...draft]; const [photo] = next.splice(from,1); next.splice(to,0,photo); updateDraft(next); };
-  const save = () => void run(async () => {
-    if (!draft?.length || draft.some(p => !p.frame || p.duplicate && !p.keepDuplicate)) throw new Error('Remove failed files and explicitly retain or remove duplicates before saving.');
-    const frames = draft.map(p => p.frame!), ids = frames.map(f => f.id), now = Date.now();
-    const roll: StoredRoll = { id: rollId, name, stockId: stock, format, frameIds: ids, coverId: ids.includes(cover) ? cover : ids[0], createdAt: editing?.createdAt ?? now, updatedAt: now, trashedAt: null, view: editing?.view ? { ...editing.view, zoom: NaN, overview: null } : undefined };
-    const bundle: RollBundle = { roll, frames, blobs: draft.flatMap(p => p.blobs) };
-    abort.current = new AbortController(); await rollRepository.save(bundle,abort.current.signal);
-    await navigator.storage?.persist?.().catch(() => false);
-    await refresh(); reset(); await onOpen(rollId); onClose();
-  });
-  const removePhoto = (id: string) => { const photo = draft!.find(p => p.id === id)!; releaseDraft([photo]); updateDraft(draft!.filter(p => p.id !== id)); };
-  const visible = rolls.filter(r => trash ? r.trashedAt !== null : r.trashedAt === null);
-  return <dialog ref={dialog} className="library-dialog" aria-label={draft ? 'Review roll' : 'Roll library'} onCancel={e => { e.preventDefault(); if (busy) abort.current?.abort(); else onClose(); }} onKeyDown={e => e.stopPropagation()}>
-    <header><div><p className="library-eyebrow">YOUR DARKROOM</p><h1>{draft ? editing ? 'Edit roll' : 'New roll' : trash ? 'Trash' : 'Rolls'}</h1></div><button onClick={() => { if (busy) abort.current?.abort(); else onClose(); }}>{busy ? 'Cancel processing' : 'Close'}</button></header>
-    <p>Stored in this browser. Clearing site data removes your rolls. Keep your originals. {usage}</p>
-    {error && <p role="alert" className="library-error">{error} <button disabled={busy} onClick={() => void run(refresh)}>Retry storage</button></p>}
-    {progress && <p role="status">{progress}</p>}
-    {draft === null ? <>
-      <div className="library-toolbar"><button disabled={busy} onClick={start}>New roll</button><button disabled={busy} onClick={() => setTrash(!trash)}>{trash ? 'Back to rolls' : 'Trash'}</button><button disabled={busy} onClick={() => { onExample(); onClose(); }}>Open built-in example</button></div>
-      {!visible.length && <p className="library-empty">{trash ? 'Trash is empty. Removed rolls stay here until you restore them.' : 'Your photographs, on the light table. Add a roll to begin.'}</p>}
-      <div className="library-cards">{visible.map(r => <article key={r.id} data-roll-id={r.id}>
-        {covers[r.id]?.url && <img style={{transform:`rotate(${covers[r.id].rotation}deg)`,width:covers[r.id].rotation % 180 ? 145 : undefined,margin:"auto",display:"block"}} src={covers[r.id].url} alt={`Cover of ${r.name}`} />}<h2>{r.name}</h2><p>{FILM_FORMATS[r.format].label} · {r.frameIds.length} frames</p><p>{getFilmStock(r.stockId).displayName}{activeId === r.id ? ' · Open' : ''}</p>
-        {trash ? <button disabled={busy} onClick={() => void run(async () => { await rollRepository.trash(r.id,false); await refresh(); })}>Restore {r.name}</button> : <>
-          <button disabled={busy} onClick={() => void run(async () => { await onOpen(r.id); onClose(); })}>Open {r.name}</button>
-          <button disabled={busy} onClick={() => edit(r.id)}>Edit {r.name}</button>
-          <button disabled={busy} onClick={() => void run(async () => { await rollRepository.trash(r.id); onRemoved(r.id); await refresh(); })}>Move {r.name} to Trash</button>
-        </>}
+  const removePhoto=(id:string)=>{const i=draft!.findIndex(p=>p.id===id);releaseDraft([draft![i]]);const next=draft!.filter(p=>p.id!==id);updateDraft(next);if(cover===id)setCover(next.find(p=>p.frame)?.id??'');if(selected===id)setSelected(next[Math.min(i,next.length-1)]?.id??'');};
+  const closeMenu=()=>{const id=menu;setMenu(null);dialog.current?.querySelector<HTMLElement>(`[data-menu-id="${id}"]`)?.focus();};
+  const visible=rolls.filter(r=>trash?r.trashedAt!==null:r.trashedAt===null),active=draft?.find(p=>p.id===selected)??draft?.[0],index=draft?.findIndex(p=>p.id===active?.id)??0;
+  const go=(next:Step)=>{setError('');setStep(next);};
+  return <dialog ref={dialog} className="library-dialog" aria-label={draft?'Review roll':'Roll library'} onCancel={e=>{e.preventDefault();if(menu)closeMenu();else if(busy)abort.current?.abort();else if(draft)reset();else onClose();}} onKeyDown={e=>e.stopPropagation()}>
+    <header><div><p className="library-eyebrow">YOUR DARKROOM</p><h1>{draft?editing?'Edit roll':'New roll':trash?'Trash':'Your rolls'}</h1></div><div className="library-header-actions">{draft===null&&!trash&&<button className="primary" disabled={busy} onClick={start}>New roll</button>}<button onClick={()=>busy?abort.current?.abort():onClose()}>{busy?'Cancel processing':'Close'}</button></div></header>
+    {error&&<p role="alert" className="library-error">{error} <button disabled={busy} onClick={()=>void run(refresh)}>Retry storage</button></p>}
+    {progress&&draft&&step==='photos'&&<p role="status">{progress}</p>}
+    {draft===null?<>
+      <div className="library-toolbar"><p>{trash?'Removed rolls can always be restored.':`${visible.length} ${visible.length===1?'roll':'rolls'} in your archive`}</p><button disabled={busy} onClick={()=>setTrash(!trash)}>{trash?'Back to rolls':'Trash'}</button><button disabled={busy} onClick={()=>{onExample();onClose();}}>Open built-in example</button></div>
+      {loading?<p role="status" className="library-empty">Opening your archive…</p>:!visible.length&&<div className="library-empty"><h2>{trash?'Nothing in Trash':'A home for your photographs'}</h2><p>{trash?'Removed rolls stay here until you restore them.':'Bring your scans to the light table. Start with a few photographs or an entire roll.'}</p></div>}
+      <div className="library-cards">{visible.map(r=><article key={r.id} data-roll-id={r.id}>
+        <button data-card-id={r.id} className="roll-card-open" disabled={busy||trash} aria-label={`Open ${r.name}`} onClick={()=>void run(async()=>{await onOpen(r.id);onClose();})}>
+          <div className="roll-cover">{covers[r.id]?.url?<img style={{transform:`rotate(${covers[r.id].rotation}deg)`,maxWidth:covers[r.id].rotation%180?'150px':undefined}} src={covers[r.id].url} alt={`Cover of ${r.name}`}/>:<span>Cover unavailable</span>}</div><h2>{r.name}</h2><p>{FILM_FORMATS[r.format].label} · {r.frameIds.length} frames</p><p>{getFilmStock(r.stockId).displayName}</p>
+        </button>
+        <div className="roll-card-footer">{activeId===r.id?<span className="current-roll">Currently open</span>:<span/>}{trash?<button disabled={busy} onClick={()=>void run(async()=>{await rollRepository.trash(r.id,false);await refresh();})}>Restore {r.name}</button>:<button data-menu-id={r.id} aria-label={`Actions for ${r.name}`} aria-haspopup="menu" aria-expanded={menu===r.id} disabled={busy} onClick={()=>setMenu(menu===r.id?null:r.id)}>•••</button>}</div>
+        {menu===r.id&&<div role="menu" className="roll-menu" aria-label={`Actions for ${r.name}`} onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();closeMenu();}if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const items=Array.from(e.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]'));items[(items.indexOf(document.activeElement as HTMLElement)+(e.key==='ArrowDown'?1:items.length-1))%items.length]?.focus();}if(e.key==='Tab')setMenu(null);}}><button role="menuitem" onClick={()=>edit(r.id)}>Edit {r.name}</button><button role="menuitem" onClick={()=>void run(async()=>{setMenu(null);await rollRepository.trash(r.id);onRemoved(r.id);await refresh();})}>Move {r.name} to Trash</button></div>}
       </article>)}</div>
-    </> : <>
-      <div className="library-details"><label>Roll name<input maxLength={120} value={name} disabled={busy} onChange={e => setName(e.target.value)} /></label>
-      <label>Film stock<select aria-label="Film stock" value={stock} disabled={busy} onChange={e => setStock(e.target.value as FilmStockId)}>{FILM_STOCKS.map(s => <option key={s.id} value={s.id}>{s.displayName}</option>)}</select></label>
-      <label>Film format<select aria-label="Film format" value={format} disabled={busy} onChange={e => setFormat(e.target.value as FilmFormat)}>{(["135","645","66","67","69"] as FilmFormat[]).map(id => <option key={id} value={id}>{FILM_FORMATS[id].label}</option>)}</select></label></div>
-      <p>{draft.length} photographs · Photos are center-cropped to fill the frame. Originals stay unchanged. Partial rolls are welcome.</p>
-      {draft.length > FILM_FORMATS[format].typicalCount && <p role="status">This exceeds the usual {FILM_FORMATS[format].typicalCount} exposures for this format. Every imported frame will be retained.</p>}
-      {!editing && !draft.length && <div className="photo-drop" onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); if (!busy) choose(Array.from(e.dataTransfer.files)); }}>
-        <label>Choose photographs<input type="file" accept="image/jpeg,image/png" multiple disabled={busy} onChange={e => choose(Array.from(e.target.files ?? []))} /></label><p>Or drop JPEG/PNG positive scans here. Up to 72 files, 40 MB / 40 MP each, 300 MB per batch. Images process one at a time.</p>
-      </div>}
-      <ol className="draft-photos">{draft.map((p,i) => {
-        const f = p.frame, a = f ? (f.rotation % 180 ? f.height/f.width : f.width/f.height) : 1, gate = FILM_FORMATS[format];
-        return <li key={p.id} draggable={!busy} onDragStart={() => { drag.current = i; }} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); if (drag.current !== null) move(drag.current,i); drag.current = null; }}>
-          <div className="draft-preview" style={{ aspectRatio: `${gate.width}/${gate.height}` }}>{p.preview && <img src={p.preview} alt={p.filename} style={photoCropPreview(f ? f.width/f.height : 1, gate.width/gate.height, f?.rotation ?? 0)} />}</div>
-          <div><strong>Frame {i+1}</strong><p>{p.filename}</p>{p.error && <p role="alert">{p.error}</p>}{f && Math.abs(a / (gate.width/gate.height)-1) > .08 && <p>Aspect mismatch: edges will be cropped. Rotate or choose another format to change the crop.</p>}
-          {p.duplicate && <label><input type="checkbox" checked={p.keepDuplicate} disabled={busy} onChange={e => updateDraft(draft.map(x => x.id === p.id ? { ...x,keepDuplicate:e.target.checked } : x))} />Keep this duplicate content</label>}
-          <div className="draft-actions"><button disabled={busy || i === 0} onClick={() => move(i,i-1)} aria-label={`Move frame ${i+1} earlier`}>Earlier</button><button disabled={busy || i === draft.length-1} onClick={() => move(i,i+1)} aria-label={`Move frame ${i+1} later`}>Later</button>
-          <button disabled={busy || !f} onClick={() => updateDraft(draft.map(x => x.id === p.id ? { ...x,frame: { ...x.frame!,rotation: (x.frame!.rotation+90)%360 } } : x))} aria-label={`Rotate frame ${i+1}`}>Rotate 90°</button>
-          <button disabled={busy || !f} aria-pressed={cover === p.id} onClick={() => setCover(p.id)}>Cover</button>{!editing && <button disabled={busy} onClick={() => removePhoto(p.id)}>Remove {p.filename}</button>}</div></div>
-        </li>;
-      })}</ol>
-      <footer><button onClick={() => busy ? abort.current?.abort() : reset()}>{busy ? 'Cancel processing' : 'Cancel draft'}</button><button disabled={busy || !name.trim() || !draft.length || draft.some(p => !p.frame || p.duplicate && !p.keepDuplicate)} onClick={save}>Save and open</button></footer>
+      <footer className="storage-footer"><details><summary>Stored in this browser{usage?` · ${usage}`:''}</summary><p>Clearing site data removes your rolls. Keep your originals. Photographs stay on this device and are never uploaded.</p></details></footer>
+    </>:<>
+      <nav className="import-steps" aria-label="Import progress">{(['photos','details','review'] as Step[]).filter(s=>!editing||s!=='photos').map((s,i)=><button key={s} aria-label={s==='photos'?'Photographs':s==='details'?'Roll details':'Review'} aria-current={step===s?'step':undefined} disabled={busy||(s!=='photos'&&!draft.length)||(s==='review'&&!name.trim())} onClick={()=>go(s)}><span>{i+1}</span>{s==='photos'?'Photographs':s==='details'?'Roll details':'Review'}</button>)}</nav>
+      <h2 tabIndex={-1} data-step-title>{step==='photos'?'Choose your photographs':step==='details'?'Give this roll an identity':'Review every frame'}</h2>
+      {step==='photos'&&<>
+        <div className="photo-drop" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();if(!busy)choose(Array.from(e.dataTransfer.files));}}><h3>{draft.length?'Add to this roll':'Bring your scans into the darkroom'}</h3><p>Drop JPEG or PNG positive scans here</p><label className="choose-photos">{draft.length?'Add photographs':'Choose photographs'}<input aria-label="Choose photographs" type="file" accept="image/jpeg,image/png" multiple disabled={busy} onChange={e=>{choose(Array.from(e.target.files??[]));e.target.value='';}}/></label></div>
+        <p>{draft.length} photographs selected · Your order and edits are retained when adding another batch.</p><details><summary>Supported files and limits</summary><p>JPEG/PNG positive scans. Up to 72 files and 300 MB per draft; 40 MB and 40 megapixels per file. Partial rolls are welcome.</p></details>
+        {!!draft.length&&<div className="import-filmline">{draft.map(p=><div key={p.id}>{p.preview&&<img src={p.preview} alt={p.filename}/>}<span>{p.filename}</span>{p.error&&<span role="alert">{p.error}</span>}{p.duplicate&&<span>Duplicate — resolve in Review</span>}</div>)}</div>}
+      </>}
+      {step==='details'&&<><div className="library-details"><label>Roll name<input maxLength={120} value={name} disabled={busy} onChange={e=>setName(e.target.value)} placeholder="e.g. Summer on the coast"/></label>
+        <fieldset disabled={busy}><legend>Film type</legend><label><input type="radio" name="film-type" checked={format==='135'} onChange={()=>setFormat('135')}/>35mm</label><label><input type="radio" name="film-type" checked={format!=='135'} onChange={()=>setFormat('66')}/>120</label></fieldset>
+        <label>Film format<select aria-label="Film format" value={format} disabled={busy} onChange={e=>setFormat(e.target.value as FilmFormat)}>{(format==='135'?['135']:['645','66','67','69']).map(id=><option key={id} value={id}>{FILM_FORMATS[id as FilmFormat].label}</option>)}</select></label>
+        <label>Film stock<select aria-label="Film stock" value={stock} disabled={busy} onChange={e=>setStock(e.target.value as FilmStockId)}>{FILM_STOCKS.map(s=><option key={s.id} value={s.id}>{s.displayName}</option>)}</select></label></div><div className="live-roll-label"><span>{FILM_FORMATS[format].label} / {getFilmStock(stock).displayName}</span><h3>{name||'Untitled roll'}</h3><p>{draft.length} photographs</p></div></>}
+      {step==='review'&&<><p className="review-summary">{name} · {FILM_FORMATS[format].label} · {draft.length} photographs</p><div className="review-layout"><div><ol className="draft-photos">{draft.map((p,i)=><li key={p.id} draggable={!busy} onDragStart={()=>{drag.current=i;setSelected(p.id);}} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();if(drag.current!==null)move(drag.current,i);drag.current=null;}}><button aria-label={`Select frame ${i+1}`} aria-pressed={active?.id===p.id} onClick={()=>setSelected(p.id)}><div className="draft-preview" style={{aspectRatio:`${FILM_FORMATS[format].width}/${FILM_FORMATS[format].height}`}}>{p.preview&&<img src={p.preview} alt={p.filename} style={photoCropPreview(p.frame?p.frame.width/p.frame.height:1,FILM_FORMATS[format].width/FILM_FORMATS[format].height,p.frame?.rotation??0,p.frame?.cropPosition)}/>}</div><strong>Frame {i+1}{cover===p.id?' · Cover':''}</strong><span>{p.filename}</span>{p.error&&<span className="photo-issue">Cannot read file</span>}{p.duplicate&&!p.keepDuplicate&&<span className="photo-issue">Duplicate</span>}</button></li>)}</ol></div>
+        {active&&<div className="selected-review"><CropInspector key={active.id} photo={active} format={format} disabled={busy} onChange={cropPosition=>updateDraft(draft.map(p=>p.id===active.id?{...p,frame:{...p.frame!,cropPosition}}:p))}/><h3>Frame {index+1} · {active.filename}</h3>{active.error&&<p role="alert">{active.error}</p>}{active.duplicate&&<label><input type="checkbox" checked={active.keepDuplicate} disabled={busy} onChange={e=>updateDraft(draft.map(p=>p.id===active.id?{...p,keepDuplicate:e.target.checked}:p))}/>Keep this duplicate content</label>}<div className="draft-actions"><button disabled={busy||index===0} aria-label={`Move frame ${index+1} earlier`} onClick={()=>move(index,index-1)}>Earlier</button><button disabled={busy||index===draft.length-1} aria-label={`Move frame ${index+1} later`} onClick={()=>move(index,index+1)}>Later</button><button disabled={busy||!active.frame} aria-label={`Rotate frame ${index+1}`} onClick={()=>updateDraft(draft.map(p=>p.id===active.id?{...p,frame:{...p.frame!,rotation:(p.frame!.rotation+90)%360,cropPosition:p.frame!.cropPosition?{x:-p.frame!.cropPosition.y,y:p.frame!.cropPosition.x}:undefined}}:p))}>Rotate 90°</button><button disabled={busy||!active.frame} aria-pressed={cover===active.id} onClick={()=>setCover(active.id)}>Cover</button><button disabled={busy} onClick={()=>removePhoto(active.id)}>Remove {active.filename}</button></div></div>}
+      </div>{!valid&&<p role="status">Select flagged photographs to resolve issues before saving.</p>}</>}
+      {draft.length>FILM_FORMATS[format].typicalCount&&<p role="status">This exceeds the usual {FILM_FORMATS[format].typicalCount} exposures for this format. Every imported frame will be retained.</p>}
+      <footer className="import-footer"><button onClick={()=>busy?abort.current?.abort():reset()}>{busy?'Cancel processing':editing?'Cancel edits':'Cancel draft'}</button><div>{step!=='photos'&&!(editing&&step==='details')&&<button disabled={busy} onClick={()=>go(step==='review'?'details':'photos')}>Back</button>}{step==='photos'?<button className="primary" disabled={busy||!draft.length} onClick={()=>go('details')}>Continue to roll details</button>:step==='details'?<button className="primary" disabled={busy||!name.trim()||!draft.length} onClick={()=>go('review')}>Review photographs</button>:<button className="primary" disabled={busy||!name.trim()||!valid} onClick={save}>Save and open</button>}</div></footer>
     </>}
   </dialog>;
 }
