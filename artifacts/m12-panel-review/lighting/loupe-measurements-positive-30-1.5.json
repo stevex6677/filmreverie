@@ -1,0 +1,234 @@
+[
+  {
+    "mode": "positive",
+    "brightness": 30,
+    "mag": 1.5,
+    "name": "photo",
+    "source": {
+      "meanR": 9,
+      "meanG": 8.11111111111111,
+      "meanB": 7.222222222222222,
+      "meanLum": 8.275555555555556,
+      "variance": 2.7579389135802463,
+      "stdDev": 1.6607043426149781,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 8.88888888888889,
+      "meanG": 8,
+      "meanB": 7,
+      "meanLum": 8.151777777777777,
+      "variance": 0.40367461728395054,
+      "stdDev": 0.6353539307220429,
+      "count": 9
+    },
+    "differences": [
+      0.11111111111111072,
+      0.11111111111111072,
+      0.22222222222222232
+    ]
+  },
+  {
+    "mode": "positive",
+    "brightness": 30,
+    "mag": 1.5,
+    "name": "rebate",
+    "source": {
+      "meanR": 7,
+      "meanG": 7,
+      "meanB": 7,
+      "meanLum": 7,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 7,
+      "meanG": 7,
+      "meanB": 7,
+      "meanLum": 7,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "differences": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "mode": "positive",
+    "brightness": 30,
+    "mag": 1.5,
+    "name": "hole",
+    "source": {
+      "meanR": 141,
+      "meanG": 141,
+      "meanB": 141,
+      "meanLum": 141,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 141,
+      "meanG": 141,
+      "meanB": 141,
+      "meanLum": 141,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "differences": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "mode": "positive",
+    "brightness": 30,
+    "mag": 1.5,
+    "name": "panel",
+    "source": {
+      "meanR": 141,
+      "meanG": 141,
+      "meanB": 141,
+      "meanLum": 141,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 141,
+      "meanG": 141,
+      "meanB": 141,
+      "meanLum": 141,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "differences": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "mode": "positive",
+    "brightness": 30,
+    "mag": 2.5,
+    "name": "photo",
+    "source": {
+      "meanR": 9,
+      "meanG": 8.11111111111111,
+      "meanB": 7.222222222222222,
+      "meanLum": 8.275555555555556,
+      "variance": 2.7579389135802463,
+      "stdDev": 1.6607043426149781,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 9.88888888888889,
+      "meanG": 8.666666666666666,
+      "meanB": 7.555555555555555,
+      "meanLum": 8.905444444444445,
+      "variance": 1.611361802469136,
+      "stdDev": 1.2693942659666997,
+      "count": 9
+    },
+    "differences": [
+      0.8888888888888893,
+      0.5555555555555554,
+      0.33333333333333304
+    ]
+  },
+  {
+    "mode": "positive",
+    "brightness": 30,
+    "mag": 2.5,
+    "name": "rebate",
+    "source": {
+      "meanR": 7,
+      "meanG": 7,
+      "meanB": 7,
+      "meanLum": 7,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 7,
+      "meanG": 7,
+      "meanB": 7,
+      "meanLum": 7,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "differences": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "mode": "positive",
+    "brightness": 30,
+    "mag": 2.5,
+    "name": "hole",
+    "source": {
+      "meanR": 141,
+      "meanG": 141,
+      "meanB": 141,
+      "meanLum": 141,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 141,
+      "meanG": 141,
+      "meanB": 141,
+      "meanLum": 141,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "differences": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "mode": "positive",
+    "brightness": 30,
+    "mag": 2.5,
+    "name": "panel",
+    "source": {
+      "meanR": 141,
+      "meanG": 141,
+      "meanB": 141,
+      "meanLum": 141,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 141,
+      "meanG": 141,
+      "meanB": 141,
+      "meanLum": 141,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "differences": [
+      0,
+      0,
+      0
+    ]
+  }
+]

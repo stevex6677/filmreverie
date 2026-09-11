@@ -351,8 +351,8 @@ html, body, #root {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-/* Subtle Darkroom Vignette Overlay */
-.darkroom-app-container::after {
+/* Room atmosphere only; inspection keeps the light table neutral. */
+.darkroom-app-container[data-room-mode="room"]::after {
   content: "";
   position: absolute;
   inset: 0;

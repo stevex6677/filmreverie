@@ -1,3 +1,4 @@
+import { useThree } from "@react-three/fiber";
 import { DEFAULT_FILM_STOCK_ID, FilmStockProfile, getFilmStock } from "../data/filmStocks";
 import React, { useEffect, useMemo } from "react";
 import * as THREE from "three";
@@ -52,6 +53,7 @@ export const FilmStrip: React.FC<FilmStripProps> = ({
   onSelectFrame,
   onPointerMove,
 }) => {
+  const { gl } = useThree();
   const { width, height } = useMemo(() => getStripDimensions(layout), [layout]);
 
   const { top, bottom } = useMemo(() => getPerforationPositions(layout), [layout]);
@@ -59,13 +61,13 @@ export const FilmStrip: React.FC<FilmStripProps> = ({
 
   // High-resolution authentic 35mm rebate print texture (stock lettering and frame numbers)
   const rebateTexture = useMemo(() => {
-    return createFilmRebateTexture(stock, layout);
-  }, [stock, layout]);
+    return createFilmRebateTexture(stock, layout, gl.capabilities.maxTextureSize, gl.capabilities.getMaxAnisotropy());
+  }, [stock, layout, gl]);
 
   const rebateMaterial = useMemo(() => {
     const channels = stock.base.substrateBase.match(/[\d.]+/g)!.slice(0, 3).map(Number);
     const base = new THREE.Color().setRGB(channels[0] / 255, channels[1] / 255, channels[2] / 255, THREE.SRGBColorSpace);
-    return createRebateMaterial(rebateTexture, brightness, isPositive, stock.type === "negative", base, Number(stock.base.substrateBase.match(/[\d.]+/g)?.[3] ?? 1));
+    return createRebateMaterial(rebateTexture, brightness, isPositive, stock.type === "negative", base, Number(stock.base.substrateBase.match(/[\d.]+/g)?.[3] ?? 1), layout);
   }, [rebateTexture, stock]);
   rebateMaterial.uniforms.uModeTransition.value = isPositive && stock.type === "negative" ? 1 : 0;
   updateTableIllumination(rebateMaterial, brightness);
