@@ -18,13 +18,13 @@ root. Thus the Tripo input is
 accepted v2 model is
 `ignored_generated/blender/mamiya_universal/hybrid/v2/mamiya_universal_hybrid_v2.blend`.
 The five renders, GLB and Blender backups are beside that model.
-`shared-assets-manifest.json` records every migrated file, original checkout,
-relative destination, byte size and SHA-256. Duplicate inputs were consolidated
-only after verifying identical bytes. Differing copies get separate destinations. The task's lens study and refined
+Duplicate inputs were consolidated only after verifying identical bytes.
+Differing copies get separate destinations. The task's lens study and refined
 donor differed from the main checkout; both versions were preserved, and the
 hybrid builder points to the task's original donor copies under `preserved_variants/`.
-This manifest is a migration snapshot; historical validation JSON paths describe
-the original runs and should be interpreted using this mapping.
+Historical validation JSON paths describe the original runs. The completed
+migration's file inventory and verification script remain available in Git
+history at commit `55366c3`.
 
 ## Generating and using media
 
@@ -68,16 +68,9 @@ Back up both shared directories separately: Git and Mutagen are not a versioned
 backup. Removing a temporary worktree must not remove either shared directory.
 Commit scripts and manifests normally; never force-add their binary outputs.
 
-## Verify the migration
+## Model version manifests
 
-From the active mapped remote checkout, run:
-
-```sh
-python3 scripts/verify-shared-assets.py
-```
-
-This verifies every migrated destination against its recorded checksum without
-modifying any media. New generated versions should have a manifest recording
+New generated versions should have a manifest recording
 their source checksums, source-code revision, settings and output paths/checksums.
 
 ## Validation of this setup

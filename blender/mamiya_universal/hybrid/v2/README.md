@@ -1,6 +1,6 @@
 # Hybrid v2 — original Tripo lens and local cleanup
 
-Media has moved to the main checkout: `ignored_generated/blender/mamiya_universal/hybrid/v2/`. Source inputs live under `ignored_assets/`. See [the shared asset workflow](../../../../SHARED_ASSETS.md) and the tracked migration manifest for exact paths. New builds allocate unique run folders; renders/exports follow the opened shared master.
+Media has moved to the main checkout: `ignored_generated/blender/mamiya_universal/hybrid/v2/`. Source inputs live under `ignored_assets/`. See [the shared asset workflow](../../../../SHARED_ASSETS.md) and [this version's manifest](asset-manifest.json) for exact paths. New builds allocate unique run folders; renders/exports follow the opened shared master.
 
 This revision follows the circled-artifact screenshot: it removes the two pale
 scratch clusters below the nameplate, restores Tripo's lens and textured glass,
