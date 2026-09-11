@@ -1,5 +1,7 @@
 # Mamiya Universal — hybrid front revision
 
+Media has moved to the main checkout: `ignored_generated/blender/mamiya_universal/hybrid/`. Source inputs live under `ignored_assets/`. See [the shared asset workflow](../../../SHARED_ASSETS.md) and the tracked migration manifest for exact paths. New builds allocate unique run folders; renders/exports follow the opened shared master.
+
 This first hybrid combines the Tripo camera body and its textures with fitted,
 editable details from the existing Blender models. The original GLB is never
 written to. This is a front-detail revision, not a completed full-camera cleanup.

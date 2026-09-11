@@ -4,6 +4,11 @@ test-results
 .DS_Store
 GEMINI.md
 AGENTS.md
+!/AGENTS.md
+
+# Durable shared media lives only in the main checkout (see SHARED_ASSETS.md).
+/ignored_assets/
+/ignored_generated/
 
 # Binary and 3D media formats
 *.blend

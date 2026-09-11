@@ -1,8 +1,13 @@
 """Detail pass from IMG_1971–1977. Execute locally authored code through Blender MCP."""
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))
+from shared_assets import asset_path, generated_path, output_dir
+
 import bpy, math
 from mathutils import Vector
 scene=bpy.context.scene
-OUT='/root/projects/film_photo/blender/mamiya_universal'
+OUT=str(output_dir('blender/mamiya_universal', bpy.data.filepath))
 assert scene.name=='Mamiya Universal | Studio'
 
 def shader(name,color,metal,rough):

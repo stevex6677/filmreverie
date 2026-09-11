@@ -4,15 +4,19 @@ Open ../tripo_source_review.blend in a fresh Blender MCP background process.
 Atlas repairs operate on copies, by projecting clean source texture samples
 onto the actual UV triangles. No source GLB, source image or v1 file is written.
 """
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / 'scripts'))
+from shared_assets import asset_path, generated_path, output_dir
+
 import bpy, math, json, hashlib, gc
 import numpy as np
-from pathlib import Path
 from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 
-OUT=Path(__file__).resolve().parent
+OUT=output_dir('blender/mamiya_universal/hybrid/v2')
 EXPECTED='a6edda4742e79317a226ee5466251469987fa9c8efeacc4271c5dfec08f644d0'
-SOURCE=OUT.parent.parent/'tripo/mamiya_universal_8k.glb'
+SOURCE=asset_path('blender/mamiya_universal/tripo/mamiya_universal_8k.glb')
 assert hashlib.sha256(SOURCE.read_bytes()).hexdigest()==EXPECTED
 src=bpy.data.objects['Tripo source | preserved import'];original=bpy.context.scene
 original.name='01 Original Tripo | comparison'
@@ -56,7 +60,7 @@ base.data.normals_split_custom_set_from_vertices(vn)
 del vn,newco
 
 # Keep the clean v1 nameplate and shallow text; original Tripo lens stays whole.
-with bpy.data.libraries.load(str(OUT.parent/'mamiya_universal_hybrid.blend'),link=False) as (a,b):
+with bpy.data.libraries.load(str(generated_path('blender/mamiya_universal/hybrid/mamiya_universal_hybrid.blend')),link=False) as (a,b):
     b.objects=[n for n in a.objects if n.startswith(('Badge |','Nameplate |')) or n.startswith('Lens inscription |')]
 donors=list(b.objects)
 for o in donors:

@@ -3,10 +3,15 @@
 blender --background mamiya_universal.blend --python refine_photo_details.py
 Writes mamiya_universal_refined.blend beside this script. Replaced objects are hidden.
 """
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))
+from shared_assets import asset_path, generated_path, output_dir
+
 import bpy, bmesh, math, os, json
 from math import sin, cos, pi
 from mathutils import Vector
-OUT=os.path.dirname(os.path.abspath(__file__))
+OUT=str(output_dir('blender/mamiya_universal'))
 s=bpy.data.scenes['Mamiya Universal | Studio'];bpy.context.window.scene=s
 if bpy.context.object and bpy.context.object.mode!='OBJECT':bpy.ops.object.mode_set(mode='OBJECT')
 assert '08 Closeup refinements' not in bpy.data.collections, 'Pass already applied; open the previous master.'
@@ -230,7 +235,7 @@ for title,pos,target,scale in views:
 d=bpy.data.lights.new('Rear detail softbox','AREA');d.energy=4;d.shape='RECTANGLE';d.size=.22;d.size_y=.3;o=bpy.data.objects.new(d.name,d);studio.objects.link(o);o.location=(-.25,.35,.30);o.rotation_euler=(Vector((0,.04,.08))-o.location).to_track_quat('-Z','Y').to_euler()
 s.render.engine='CYCLES';s.cycles.device='CPU';s.cycles.samples=64;s.cycles.use_denoising=True;s.cycles.max_bounces=12;s.cycles.transmission_bounces=10
 s.render.threads_mode='AUTO';s.render.use_persistent_data=False;s.render.resolution_x=1600;s.render.resolution_y=1600;s.render.resolution_percentage=100;s.render.image_settings.file_format='PNG';s.render.image_settings.color_mode='RGB'
-s.camera=bpy.data.objects['CAM • Refined 01 Front three-quarter'];s.render.filepath='//renders_refined/01_front_three_quarter.png'
+s.camera=bpy.data.objects['CAM • Refined 01 Front three-quarter'];s.render.filepath=os.path.join(OUT,'renders_refined/01_front_three_quarter.png')
 root['reference']='IMG_1964–1977 plus detail series IMG_1978–2009 (IMG_2000 absent)';root['closeup_revision']='Continuous film back, ASA and advance controls, body fittings, finder optics, lens hardware; 2026-09-09'
 root['strap_visibility']='Removable strap retained hidden to match new assembled reference photographs.'
 for im in bpy.data.images:

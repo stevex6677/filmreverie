@@ -2,9 +2,13 @@
 
 Globals: INDEX (1..5; 0 = QA close-up), RESOLUTION (default 1400), SAMPLES (20).
 """
-import bpy
 from pathlib import Path
-OUT=Path(__file__).resolve().parent
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / 'scripts'))
+from shared_assets import asset_path, generated_path, output_dir
+
+import bpy
+OUT=output_dir('blender/mamiya_universal/hybrid/v2', bpy.data.filepath)
 s=bpy.data.scenes['02 Hybrid v2 | Tripo lens'];bpy.context.window.scene=s
 index=globals().get('INDEX',1)
 names=['V2 QA detail','V2 01 Front three quarter','V2 02 Opposite front','V2 03 Rear three quarter','V2 04 Side profile','V2 05 Elevated front']

@@ -1,9 +1,14 @@
 """Photo-referenced Mamiya Universal; execute using Blender MCP. Dimensions in mm."""
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))
+from shared_assets import asset_path, generated_path, output_dir
+
 import bpy, math, os
 from mathutils import Vector
 from math import sin, cos, pi
 
-OUT = '/root/projects/film_photo/blender/mamiya_universal'
+OUT = str(output_dir('blender/mamiya_universal'))
 S = .001
 scene = bpy.data.scenes.new('Mamiya Universal | Studio')
 bpy.context.window.scene = scene

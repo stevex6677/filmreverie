@@ -4,15 +4,19 @@ Run with Blender MCP CLI, opening tripo_source_review.blend first.
 The GLB is read only. Source mesh/UVs stay intact; an object-level Mask hides
 the replaced front regions. Donor geometry is copied before fitting.
 """
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / 'scripts'))
+from shared_assets import asset_path, generated_path, output_dir
+
 import bpy, math, json, hashlib
 import numpy as np
-from pathlib import Path
 from mathutils import Vector, Matrix
 from math import sin, cos, pi, sqrt
 
-OUT=Path(__file__).resolve().parent
+OUT=output_dir('blender/mamiya_universal/hybrid')
 EXPECTED='a6edda4742e79317a226ee5466251469987fa9c8efeacc4271c5dfec08f644d0'
-SOURCE=OUT.parent/'tripo/mamiya_universal_8k.glb'
+SOURCE=asset_path('blender/mamiya_universal/tripo/mamiya_universal_8k.glb')
 assert hashlib.sha256(SOURCE.read_bytes()).hexdigest()==EXPECTED
 original=bpy.context.scene; original.name='01 Tripo original | comparison'
 src=bpy.data.objects['Tripo source | preserved import']
@@ -89,7 +93,7 @@ for h in np.arange(.509,.563,.0012):
 o=bpy.data.objects.new(cu.name,cu);finish(o,cu.name,plate)
 
 # Reuse editable typography from the assembled Blender master.
-with bpy.data.libraries.load(str(OUT.parent/'mamiya_universal_refined.blend'),link=False) as (available,loaded):
+with bpy.data.libraries.load(str(generated_path('preserved_variants/codex-3296/blender/mamiya_universal/mamiya_universal_refined.blend')),link=False) as (available,loaded):
     loaded.objects=[n for n in available.objects if n in ['UNIVERSAL badge','MAMIYA badge'] or n.startswith('D • Front engraving ')]
 donor_labels=list(loaded.objects)
 for donor in donor_labels:
@@ -115,7 +119,7 @@ for donor in donor_labels:
         donor['donor']='mamiya_universal_refined.blend / corrected f2.8 engraving'
 
 # Evaluate the existing study's rounded hood slots, then fit independent copies.
-with bpy.data.libraries.load(str(OUT.parent/'component_studies/lens_study.blend'),link=False) as (available,loaded):
+with bpy.data.libraries.load(str(generated_path('preserved_variants/codex-3296/blender/mamiya_universal/component_studies/lens_study.blend')),link=False) as (available,loaded):
     loaded.objects=[n for n in available.objects if n in ['Vented tapered hood','Hood leading rolled rim','Front optical element'] or 'construction' in n.lower()]
 study=list(loaded.objects)
 for o in study:construction.objects.link(o);o.hide_render=True;o.hide_set(False)

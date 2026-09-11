@@ -1,0 +1,680 @@
+{
+  "schema_version": 1,
+  "migration_date": "2026-09-11",
+  "paths_relative_to": "shared main checkout",
+  "source_commit": "e86dc6d14ed4031f75433648493d20532de11fa4",
+  "files": [
+    {
+      "origin_checkout": "main",
+      "original_path": "artifacts/real_film_strips/film_strip_1_color_negative.jpg",
+      "path": "ignored_assets/artifacts/real_film_strips/film_strip_1_color_negative.jpg",
+      "bytes": 6637634,
+      "sha256": "81c418e851728447c4a7ba1945c1bb6fb9335b84d47828183271f304b062a526"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "artifacts/real_film_strips/film_strip_2_horizontal_strip.jpg",
+      "path": "ignored_assets/artifacts/real_film_strips/film_strip_2_horizontal_strip.jpg",
+      "bytes": 902548,
+      "sha256": "3e71914bc0483672e2e96c3e5ec2cd14568da29a3308ec4e643fd6d0b033d3f2"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "artifacts/real_film_strips/film_strip_3_agfa_vista.jpg",
+      "path": "ignored_assets/artifacts/real_film_strips/film_strip_3_agfa_vista.jpg",
+      "bytes": 6873682,
+      "sha256": "aa874d96d9399257d0d6a1f0ea49f87b128c76d5a1e7d71c7b014630d24e6e5a"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "artifacts/real_film_strips/film_strip_4_color_neg_macro.jpg",
+      "path": "ignored_assets/artifacts/real_film_strips/film_strip_4_color_neg_macro.jpg",
+      "bytes": 544804,
+      "sha256": "d64c8f120644bba665c8bc4a3a7f1f2b1495c7dbb5e0d337fdaa1f54a623647c"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "artifacts/real_film_strips/film_strip_5_bw_strip.jpg",
+      "path": "ignored_assets/artifacts/real_film_strips/film_strip_5_bw_strip.jpg",
+      "bytes": 327253,
+      "sha256": "269e1504b94d414725558f24915fbc7bd4941661f4282cb6d244df4ef848aaef"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/component_studies/body_study.blend",
+      "path": "ignored_generated/blender/mamiya_universal/component_studies/body_study.blend",
+      "bytes": 331139,
+      "sha256": "8abd49d4bf9fc54c5a2e7feaa16496027d93b1990f339da19eb502a2f9226020"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/component_studies/body_study.blend1",
+      "path": "ignored_generated/blender/mamiya_universal/component_studies/body_study.blend1",
+      "bytes": 332368,
+      "sha256": "fc6264dd3cbca7031d8701ecb7ac9e199b4358925fcb0df8908184739ded29b8"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/component_studies/film_back_study.blend",
+      "path": "ignored_generated/blender/mamiya_universal/component_studies/film_back_study.blend",
+      "bytes": 228734,
+      "sha256": "a36601b4dac54f6423d66fe06091c4305a19a1e4d9c438de839cff633325d857"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/component_studies/film_back_study.blend1",
+      "path": "ignored_generated/blender/mamiya_universal/component_studies/film_back_study.blend1",
+      "bytes": 229492,
+      "sha256": "2167c27d8e1669c3222b1fea16817270f21b2c16ffa6f3d5b2e2bbc37f62657c"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/component_studies/lens_study.blend",
+      "path": "ignored_generated/blender/mamiya_universal/component_studies/lens_study.blend",
+      "bytes": 784717,
+      "sha256": "7ddb90f5f6502cb2565bf1da8b4d08ec0c05e086cc3eefacbdf006435df917c0"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/component_studies/lens_study.blend1",
+      "path": "ignored_generated/blender/mamiya_universal/component_studies/lens_study.blend1",
+      "bytes": 785480,
+      "sha256": "8ed221d22cda936edfae55c466eef2ad906c471af12d3952db32f686263c5fdf"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal.blend",
+      "path": "ignored_generated/blender/mamiya_universal/mamiya_universal.blend",
+      "bytes": 2066060,
+      "sha256": "faf0b64dcbf74223adece3a67872b6aab89f5c4b8a7ad0391b5402cf64a70106"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal.blend1",
+      "path": "ignored_generated/blender/mamiya_universal/mamiya_universal.blend1",
+      "bytes": 2066090,
+      "sha256": "5c3b8a1931a6a56abb7ce0e1f2ab97a5a4a01d9520cbfb9d0f189126e96bd5c6"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1978.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1978.jpg",
+      "bytes": 1534643,
+      "sha256": "53edd6e91aa2c7565b2ac37665669c58aa1d0f6184603d5d1f36c0848949378c"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1979.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1979.jpg",
+      "bytes": 1552854,
+      "sha256": "bda7b5e84a9b91e4177739cc2ba7c4c3c5ae60790716cfdbbb89f89361582203"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1980.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1980.jpg",
+      "bytes": 1487264,
+      "sha256": "49eee15c58f498c4337a547b9858e8a5a482c2dc9ffd122437befd675288bda0"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1981.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1981.jpg",
+      "bytes": 1460629,
+      "sha256": "86e4e88cf9370b474bf95a41770d5aca2ee1d947646c03fd4440db362d20925b"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1982.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1982.jpg",
+      "bytes": 1525736,
+      "sha256": "afb60fdf0e564ee11c480938b0e9e9c5e3a348016226549b036a063207411f58"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1983.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1983.jpg",
+      "bytes": 1733047,
+      "sha256": "73be404a8932482f389a827de34adcca3be206b49c815be7c9570b35fea0ab2e"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1984.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1984.jpg",
+      "bytes": 1863488,
+      "sha256": "9068a2b0e0665b3625c1e71ed918a72472f3ab496e7fe098fb7f563da8e4bed5"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1985.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1985.jpg",
+      "bytes": 2016759,
+      "sha256": "8b961580ff86037fa3278f3eed4933ccce42965a38407b74ae19e3579f71a9b8"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1986.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1986.jpg",
+      "bytes": 2027530,
+      "sha256": "0d4fe2003159490d4ff0a48eb964e3087bf8eb256709f5ce627a44089a8301c6"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1987.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1987.jpg",
+      "bytes": 1717943,
+      "sha256": "c0db01b47d469ee62c8996841660b9c112dbd0d852e251aa5b5314c852a75bea"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1988.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1988.jpg",
+      "bytes": 1582238,
+      "sha256": "64afb8e4ca5c9002013b8c323cdf12afc5977b5ea58008409e6376e24d986fb4"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1989.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1989.jpg",
+      "bytes": 1805147,
+      "sha256": "a26d82cd429cd21bbece06ce921e69234423f4b06ec9cd2c38ab6985ed7d349d"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1990.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1990.jpg",
+      "bytes": 1849646,
+      "sha256": "8d19492d567b5e68fc964a1c3ab2fc29ddff825e2fcb897a7be963dcafd06771"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1991.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1991.jpg",
+      "bytes": 2281015,
+      "sha256": "3a249280d56c43680ff00fb822cb98d6c79fb14a22994c517ef6aef2936b4bce"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1992.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1992.jpg",
+      "bytes": 1765761,
+      "sha256": "a44fcbc1f7a144e16b4438cb5545fb742194fe6c693455f6648154852c1b9c24"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1993.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1993.jpg",
+      "bytes": 1693021,
+      "sha256": "de77bd2ca936aeb5a01ddd41ee56885bbb916a9bf18dc61e56ad182b4faf2103"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1994.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1994.jpg",
+      "bytes": 1678337,
+      "sha256": "faa367714b61a51b4d1d6b1706108620308ab824a97413953eda0c96251bba9d"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1995.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1995.jpg",
+      "bytes": 2493425,
+      "sha256": "68c5af0d9b5e6518a289ab0868cf15694b7489361dcad15cdd323e2f8268d884"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1996.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1996.jpg",
+      "bytes": 2065449,
+      "sha256": "d02045c319c82e8bdff514400e93ce0dd0c836a2cf2c5799252b1ecae248e555"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1997.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1997.jpg",
+      "bytes": 2318315,
+      "sha256": "f072026e39fb7f6c4226e9eff984eee2799a0f9eac3c4cb9d0ca061c1cc80111"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1998.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1998.jpg",
+      "bytes": 2503194,
+      "sha256": "a3c5fb778ff39c0dc7fa6408fc19fb63e3e4109656b5bd4371fceb3be020598f"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_1999.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_1999.jpg",
+      "bytes": 2249137,
+      "sha256": "194ed7e28af29abc12dd47f726b9a761ccdb881a331e75b4faeabd90470db4ef"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_2001.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_2001.jpg",
+      "bytes": 2076230,
+      "sha256": "2cd6ddf0a0a9b400a718fe9ecde5508bc96e96e26e979192ac738a360b071658"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_2002.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_2002.jpg",
+      "bytes": 2025389,
+      "sha256": "7c8698c5a72f0cc02d26e9c997d15df8056b2d8058e214fdee3f83fc72de3b79"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_2004.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_2004.jpg",
+      "bytes": 1862696,
+      "sha256": "60e01ee75452bbc8c2b22582fab819951c0051588619d524ec9a067c1a0dde97"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_2005.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_2005.jpg",
+      "bytes": 2257672,
+      "sha256": "5a01f1e25ed9e12fba291b3f2484665a005991214ad98c5973bb03a3cdaca993"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_2006.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_2006.jpg",
+      "bytes": 2047351,
+      "sha256": "dab49658934d9e7ad1788beaff78dd1d827578df0b97b49f8dc3bd400d4eb42d"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_2007.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_2007.jpg",
+      "bytes": 1929928,
+      "sha256": "96545215d1986a734c2512ec625f1968834c937093ed9e98e520971cddb62370"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_2008.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_2008.jpg",
+      "bytes": 2053448,
+      "sha256": "2c96e4cdf5a4e7bae51a87841427ebaae2cd46f7f21dc31d6b49bf088e6c0347"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_2009.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_2009.jpg",
+      "bytes": 2155926,
+      "sha256": "32e43f04ae52141f236232b8e8b7f1b17c09b066d3a84ce9855c87efa732e71f"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_photos_details/IMG_2012.jpg",
+      "path": "ignored_assets/blender/mamiya_universal/mamiya_universal_photos_details/IMG_2012.jpg",
+      "bytes": 1953934,
+      "sha256": "c05cf74d824901cf7b0927f99e1549f7a386d188bd333c905a102ec55fee801b"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_refined.blend",
+      "path": "ignored_generated/blender/mamiya_universal/mamiya_universal_refined.blend",
+      "bytes": 2097146,
+      "sha256": "c90d820dfe49bb2f5c048a8e1c732746dc469f9b43d16b4734cd77d06d4f4628"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/mamiya_universal_refined.blend1",
+      "path": "ignored_generated/blender/mamiya_universal/mamiya_universal_refined.blend1",
+      "bytes": 2096035,
+      "sha256": "bce2f76ecc391afbbd71c10492123a10a70c49010d49485e655fcb37d7503f24"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/reference_previews/IMG_1964.jpg",
+      "path": "ignored_generated/blender/mamiya_universal/reference_previews/IMG_1964.jpg",
+      "bytes": 193712,
+      "sha256": "0bf12d7c24fff7314391ea78f7950b86e29a03e4477245bc90ebfd2e12a4aee1"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/reference_previews/IMG_1965.jpg",
+      "path": "ignored_generated/blender/mamiya_universal/reference_previews/IMG_1965.jpg",
+      "bytes": 209235,
+      "sha256": "77acbdb10bb6a3d6e6e93ef1ca650e061c89cddd6c8dee246269d92909323ff6"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/reference_previews/IMG_1966.jpg",
+      "path": "ignored_generated/blender/mamiya_universal/reference_previews/IMG_1966.jpg",
+      "bytes": 190258,
+      "sha256": "fc364da0c506378b4dde6eba82ebad3df7220ed461646d910107017a20eec899"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/reference_previews/IMG_1967.jpg",
+      "path": "ignored_generated/blender/mamiya_universal/reference_previews/IMG_1967.jpg",
+      "bytes": 146129,
+      "sha256": "b036e28a24dc3092154396aac81ef645f3159b02d90a066b9ce435dc4af03e1c"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/reference_previews/IMG_1968.jpg",
+      "path": "ignored_generated/blender/mamiya_universal/reference_previews/IMG_1968.jpg",
+      "bytes": 236222,
+      "sha256": "e146fcb9d03efda1da80a1fa1f3b517b6375966c377357e796c172dc29f1203b"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/reference_previews/IMG_1969.jpg",
+      "path": "ignored_generated/blender/mamiya_universal/reference_previews/IMG_1969.jpg",
+      "bytes": 190427,
+      "sha256": "84b22670b4813390ad7378afcda285d47c91f78e218611cff4d1045fad7cf0ea"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/reference_previews/IMG_1970.jpg",
+      "path": "ignored_generated/blender/mamiya_universal/reference_previews/IMG_1970.jpg",
+      "bytes": 166085,
+      "sha256": "ac96484e2a2f81e46d1103177ca0a27508e748ada98a257c8c574501cd22c0c9"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/reference_previews/IMG_1971.jpg",
+      "path": "ignored_generated/blender/mamiya_universal/reference_previews/IMG_1971.jpg",
+      "bytes": 792852,
+      "sha256": "8b78ff90236820fba9b30b89a9773b11c757f415767b0e7a73989872ef7f1ea7"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/reference_previews/IMG_1972.jpg",
+      "path": "ignored_generated/blender/mamiya_universal/reference_previews/IMG_1972.jpg",
+      "bytes": 872466,
+      "sha256": "c0a62686d7d664f7f4b4e8457af57f22f1459c272ecd7eaf2f67812b49daaebf"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/reference_previews/IMG_1973.jpg",
+      "path": "ignored_generated/blender/mamiya_universal/reference_previews/IMG_1973.jpg",
+      "bytes": 695054,
+      "sha256": "3a6802f00be70576dc250ce7eacda7f747717bd5bb0da15e3688200a596b4063"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/reference_previews/IMG_1974.jpg",
+      "path": "ignored_generated/blender/mamiya_universal/reference_previews/IMG_1974.jpg",
+      "bytes": 823111,
+      "sha256": "4d1026cefaccd59737129e2db7dfed21829a78d5c6f637faab5593c7a959ea7d"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/reference_previews/IMG_1975.jpg",
+      "path": "ignored_generated/blender/mamiya_universal/reference_previews/IMG_1975.jpg",
+      "bytes": 736614,
+      "sha256": "eabea0123cc1271e8301c4141c3ef29bc699dc8c762efe139393a78e33f8242a"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/reference_previews/IMG_1976.jpg",
+      "path": "ignored_generated/blender/mamiya_universal/reference_previews/IMG_1976.jpg",
+      "bytes": 989857,
+      "sha256": "a968551c65463c26b55edea93750d0f871c0bec2d8dce866ac20b47f5e84f374"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/reference_previews/IMG_1977.jpg",
+      "path": "ignored_generated/blender/mamiya_universal/reference_previews/IMG_1977.jpg",
+      "bytes": 721144,
+      "sha256": "7cf07db4c089407ad18b88a4fc3fd77f2c9939b709859c5ed4a1b55dd4c62cf7"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "blender/mamiya_universal/tripo/mamiya_universal_8k.glb",
+      "path": "ignored_assets/blender/mamiya_universal/tripo/mamiya_universal_8k.glb",
+      "bytes": 60298632,
+      "sha256": "a6edda4742e79317a226ee5466251469987fa9c8efeacc4271c5dfec08f644d0"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "public/assets/photos/frame-01-harbor.jpg",
+      "path": "ignored_generated/public/assets/photos/frame-01-harbor.jpg",
+      "bytes": 294336,
+      "sha256": "07e07e40da39cc0c981bb92ba8a35b876396f25a04b49ce47580112c54df726a"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "public/assets/photos/frame-01-harbor.thumb.jpg",
+      "path": "ignored_generated/public/assets/photos/frame-01-harbor.thumb.jpg",
+      "bytes": 14075,
+      "sha256": "c26c4c80173f79a600c2164b2664db106698dba04abdcec45c1c8a00a85f0cf4"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "public/assets/photos/frame-02-diner.jpg",
+      "path": "ignored_generated/public/assets/photos/frame-02-diner.jpg",
+      "bytes": 395357,
+      "sha256": "2964ad5b629debcd8f5d0f18fa86e4221fbbde3e259586729abe6459a4fbaa3b"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "public/assets/photos/frame-02-diner.thumb.jpg",
+      "path": "ignored_generated/public/assets/photos/frame-02-diner.thumb.jpg",
+      "bytes": 22138,
+      "sha256": "e1a5a41eca0978585ca23fe854f3b6cd615730566d2d5e9d09aa18d7a855b1ae"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "public/assets/photos/frame-03-bicycle.jpg",
+      "path": "ignored_generated/public/assets/photos/frame-03-bicycle.jpg",
+      "bytes": 401560,
+      "sha256": "d78b08fea6ec678ae7d5592d02a71cabe41ab042af129e58c5196b19363e9197"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "public/assets/photos/frame-03-bicycle.thumb.jpg",
+      "path": "ignored_generated/public/assets/photos/frame-03-bicycle.thumb.jpg",
+      "bytes": 21962,
+      "sha256": "1eed1951bf9f6be719f1014e26579325cba7e83cfa119a06db66cae3b2c8c175"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "public/assets/photos/frame-04-laundromat.jpg",
+      "path": "ignored_generated/public/assets/photos/frame-04-laundromat.jpg",
+      "bytes": 398848,
+      "sha256": "504546a6a0df0b83eb2e062a62ca5f1c38e04b6e275a19853958a4ceacbe9baa"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "public/assets/photos/frame-04-laundromat.thumb.jpg",
+      "path": "ignored_generated/public/assets/photos/frame-04-laundromat.thumb.jpg",
+      "bytes": 24992,
+      "sha256": "9c169b519d5f7012a96b224f2b86d218a3142ba2b1617f7b9e26499486bb08c8"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "public/assets/photos/frame-05-road.jpg",
+      "path": "ignored_generated/public/assets/photos/frame-05-road.jpg",
+      "bytes": 151197,
+      "sha256": "d0bc2ab886314401f2a8ea7614d0b25f42abcb46e2bc5acfa13b6fd0ca9de5d1"
+    },
+    {
+      "origin_checkout": "main",
+      "original_path": "public/assets/photos/frame-05-road.thumb.jpg",
+      "path": "ignored_generated/public/assets/photos/frame-05-road.thumb.jpg",
+      "bytes": 9697,
+      "sha256": "d426047decc2c97f8f467e30e5247d28efd22835ee492df0137a18ee2675decd"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/component_studies/lens_study.blend",
+      "path": "ignored_generated/preserved_variants/codex-3296/blender/mamiya_universal/component_studies/lens_study.blend",
+      "bytes": 785480,
+      "sha256": "8ed221d22cda936edfae55c466eef2ad906c471af12d3952db32f686263c5fdf"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/hybrid_detail.png",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/hybrid_detail.png",
+      "bytes": 2907630,
+      "sha256": "6fcc9ff144fc8b76fa4e899ad613e562bffe83df3e62ce0bfcfbdc369d5787d4"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/hybrid_preview.png",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/hybrid_preview.png",
+      "bytes": 1249910,
+      "sha256": "7086e06f64c44e1995a5e27b1d098ce81176bcc6a6a6b37eff9d6f39c43ab5c9"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/hybrid_side.png",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/hybrid_side.png",
+      "bytes": 1155826,
+      "sha256": "c150bc25253beea319f925e9edf4b3c02d85d0fdcc8c84223ea23c2d187871f2"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/hybrid_three_quarter.png",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/hybrid_three_quarter.png",
+      "bytes": 2387961,
+      "sha256": "24e302dbb4c59822f201a20030b1a6b2a1c8f14193fdc49fe72c3eb52ae66fa0"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/mamiya_universal_hybrid.blend",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/mamiya_universal_hybrid.blend",
+      "bytes": 75781922,
+      "sha256": "3067120052ec10ac00a67dcc6d472ed9439994f05395a604cb685b6789fd0b39"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/mamiya_universal_hybrid.blend1",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/mamiya_universal_hybrid.blend1",
+      "bytes": 75785937,
+      "sha256": "1a9fd61cb66e8a03d94d4ad1187b5ab3bc9abf35036ce3c97bedfcfff8d3274e"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/mamiya_universal_hybrid.glb",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/mamiya_universal_hybrid.glb",
+      "bytes": 56147436,
+      "sha256": "9950dd75ca8875cef3cec35b1159d1008e4f9b64becfcc5aa45f2b080bcf8b1d"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/source_detail.png",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/source_detail.png",
+      "bytes": 3026814,
+      "sha256": "eda608a76f7994d05eb1beb91b74f25290665402f0f247ba7ef94e9a8ba2efd6"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/source_front.png",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/source_front.png",
+      "bytes": 1240704,
+      "sha256": "3cac430c5b7da6aea0196b7065f4ed1c4b13b5cadce8a958c80e394c3b1e3c73"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/source_side.png",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/source_side.png",
+      "bytes": 1159933,
+      "sha256": "bdad49b0c7e1f75830d3601c1e7e20da611c3984436e9e995b2373a7e2b2b216"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/source_three_quarter.png",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/source_three_quarter.png",
+      "bytes": 2428948,
+      "sha256": "60775262e45ec7bc93e341af0fbefb720bb80aeaee030b4b7c1551d10ba7ec0b"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/tripo_source_review.blend",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/tripo_source_review.blend",
+      "bytes": 74742496,
+      "sha256": "ab9b7ea80b1b84890137dc6d518a85fe2992aacf19706cb4da8029fadb22b7d1"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/v2/01_front_three_quarter.png",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/01_front_three_quarter.png",
+      "bytes": 2411726,
+      "sha256": "7ed6f301361f9ce61c49f4ecceb75cdf70d0b81413c2d299a92328857d446e73"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/v2/02_opposite_front.png",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/02_opposite_front.png",
+      "bytes": 2297065,
+      "sha256": "58fb4047f00483c163af038efd5cd7690a9d662121af0498f63f1b6be08b73d5"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/v2/03_rear_three_quarter.png",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/03_rear_three_quarter.png",
+      "bytes": 2403240,
+      "sha256": "667cc2cd2a7ba6d3afe060ef5427f9e42781ada213f94eff4edc1b28a79f690c"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/v2/04_side_profile.png",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/04_side_profile.png",
+      "bytes": 2221364,
+      "sha256": "677942e72377368209a6f6a8a8647b6b888ca6fd6580a95de74393c3ebe13dcd"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/v2/05_elevated_front.png",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/05_elevated_front.png",
+      "bytes": 2661207,
+      "sha256": "f7f835f2e028a518130f1ee6da2527b832ab8d59fc99f5d5568cd7a7709e2343"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/v2/mamiya_universal_hybrid_v2.blend",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/mamiya_universal_hybrid_v2.blend",
+      "bytes": 199685455,
+      "sha256": "d7ff162ff0b34fd6a6ad3d2453fea1dc05d2cc4fe0faef1b6398362167ecf52f"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/v2/mamiya_universal_hybrid_v2.blend1",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/mamiya_universal_hybrid_v2.blend1",
+      "bytes": 199687076,
+      "sha256": "4918586ed26762b0839ce5335c0870a9d6535973140cae64b959b127803aa56f"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/v2/mamiya_universal_hybrid_v2.glb",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/mamiya_universal_hybrid_v2.glb",
+      "bytes": 110036840,
+      "sha256": "ac7a3d8618c7cdabeb95d8f4da60166337b8b66acaf2dbe09df6d45c607e2cb6"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/v2/qa_detail.png",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/qa_detail.png",
+      "bytes": 1569298,
+      "sha256": "122e163130135cc9079b6c3a1400d0ea91163598dc9c5c8c673962b95a409142"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/hybrid/v2/repair_correspondences.npy",
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/repair_correspondences.npy",
+      "bytes": 62655488,
+      "sha256": "11a4c15a2436e0fde69ba2cb8d44652e7630b46633011af4baa6b1385e3fa043"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/mamiya_universal_refined.blend",
+      "path": "ignored_generated/preserved_variants/codex-3296/blender/mamiya_universal/mamiya_universal_refined.blend",
+      "bytes": 2096035,
+      "sha256": "bce2f76ecc391afbbd71c10492123a10a70c49010d49485e655fcb37d7503f24"
+    },
+    {
+      "origin_checkout": "codex-3296",
+      "original_path": "blender/mamiya_universal/tripo/mamiya_universal_8k.glb",
+      "path": "ignored_assets/blender/mamiya_universal/tripo/mamiya_universal_8k.glb",
+      "bytes": 60298632,
+      "sha256": "a6edda4742e79317a226ee5466251469987fa9c8efeacc4271c5dfec08f644d0"
+    }
+  ]
+}

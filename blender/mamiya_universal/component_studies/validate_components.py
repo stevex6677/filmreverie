@@ -1,7 +1,12 @@
 """Verify independent scenes, camera margins, external assets and the body's open throat."""
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / 'scripts'))
+from shared_assets import asset_path, generated_path, output_dir
+
 import bpy,os,json,math
 from mathutils import Vector
-OUT=os.path.dirname(os.path.abspath(__file__))
+OUT=str(generated_path('blender/mamiya_universal/component_studies'))
 reports=[]
 for part,expected_cameras in [('body',4),('lens',3),('film_back',4)]:
  bpy.ops.wm.open_mainfile(filepath=os.path.join(OUT,part+'_study.blend'))

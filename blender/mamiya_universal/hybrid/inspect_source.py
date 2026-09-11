@@ -1,10 +1,14 @@
 """Import a read-only GLB source into a separate review file. Run via Blender MCP CLI."""
-import bpy, json, hashlib
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / 'scripts'))
+from shared_assets import asset_path, generated_path, output_dir
+
+import bpy, json, hashlib
 from mathutils import Vector
 
-OUT = Path(__file__).resolve().parent
-SOURCE = OUT.parent / 'tripo/mamiya_universal_8k.glb'
+OUT = output_dir('blender/mamiya_universal/hybrid')
+SOURCE = asset_path('blender/mamiya_universal/tripo/mamiya_universal_8k.glb')
 SOURCE_SHA = 'a6edda4742e79317a226ee5466251469987fa9c8efeacc4271c5dfec08f644d0'
 assert hashlib.sha256(SOURCE.read_bytes()).hexdigest() == SOURCE_SHA
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -41,7 +45,7 @@ s.render.threads_mode='FIXED';s.render.threads=4
 s.render.resolution_x=1000;s.render.resolution_y=1000;s.render.resolution_percentage=100
 s.view_settings.view_transform='AgX'
 s.camera=bpy.data.objects['01 Front']
-OUT.mkdir(exist_ok=True)
+OUT.mkdir(parents=True, exist_ok=True)
 (OUT/'source_inspection.json').write_text(json.dumps(info,indent=2))
 bpy.ops.wm.save_as_mainfile(filepath=str(OUT/'tripo_source_review.blend'),compress=True)
 s.render.filepath=str(OUT/'source_front.png');bpy.ops.render.render(write_still=True)

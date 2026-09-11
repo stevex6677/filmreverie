@@ -3,10 +3,14 @@
 Run via Blender MCP CLI with mamiya_universal_hybrid.blend open. Conversion
 and physical scale are applied to temporary export copies in this process.
 """
-import bpy, json, hashlib
 from pathlib import Path
-OUT=Path(__file__).resolve().parent
-source=OUT.parent/'tripo/mamiya_universal_8k.glb'
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / 'scripts'))
+from shared_assets import asset_path, generated_path, output_dir
+
+import bpy, json, hashlib
+OUT=output_dir('blender/mamiya_universal/hybrid', bpy.data.filepath)
+source=asset_path('blender/mamiya_universal/tripo/mamiya_universal_8k.glb')
 expected='a6edda4742e79317a226ee5466251469987fa9c8efeacc4271c5dfec08f644d0'
 assert hashlib.sha256(source.read_bytes()).hexdigest()==expected
 master=bpy.data.scenes['02 Hybrid | refined front'];bpy.context.window.scene=master

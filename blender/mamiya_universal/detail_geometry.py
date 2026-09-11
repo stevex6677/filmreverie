@@ -1,8 +1,13 @@
 """Photo-backed geometry refinements, after detail_materials.py. Execute with Blender MCP."""
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))
+from shared_assets import asset_path, generated_path, output_dir
+
 import bpy,bmesh,math,random
 from math import sin,cos,pi
 from mathutils import Vector
-S=.001;OUT='/root/projects/film_photo/blender/mamiya_universal';scene=bpy.context.scene
+S=.001;OUT=str(output_dir('blender/mamiya_universal', bpy.data.filepath));scene=bpy.context.scene
 root=next(o for o in scene.objects if o.type=='EMPTY' and o.name.startswith('MAMIYA'))
 assert '07 Photo details' not in bpy.data.collections, 'Detail pass already applied'
 group=bpy.data.collections.new('07 Photo details');scene.collection.children.link(group)
@@ -142,7 +147,7 @@ box('D • Eyepiece rectangular field',(-39,48.6,155),(17,.15,19),bpy.data.mater
 
 # Authentic photographed memo insert. UVs select only the paper, not the surrounding scene.
 hide_prefix(['Memo title','Memo subtitle','Memo footer','Memo paper insert'])
-im=bpy.data.images.load(OUT+'/reference_previews/IMG_1976.jpg',check_existing=True);im.pack();im.filepath='//reference_previews/IMG_1976.jpg'
+im=bpy.data.images.load(str(generated_path('blender/mamiya_universal/reference_previews/IMG_1976.jpg')),check_existing=True);im.pack();im.filepath='//reference_previews/IMG_1976.jpg'
 mat=bpy.data.materials.new('Photographed aged memo label | IMG_1976');mat.use_nodes=True
 n=mat.node_tree.nodes;l=mat.node_tree.links;p=n.get('Principled BSDF');p.inputs['Roughness'].default_value=.86
 tex=n.new('ShaderNodeTexImage');tex.image=im;l.new(tex.outputs['Color'],p.inputs['Base Color'])
