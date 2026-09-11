@@ -196,7 +196,7 @@ o=bpy.data.objects.new('Leather grazing strip',d);bpy.data.collections['06 Studi
 d=bpy.data.cameras.new('CAM • Material and lens closeup');o=bpy.data.objects.new(d.name,d);bpy.data.collections['06 Studio'].objects.link(o)
 o.location=(.20,-.36,.20);o.rotation_euler=(Vector((.003,-.046,.100))-o.location).to_track_quat('-Z','Y').to_euler();d.type='ORTHO';d.ortho_scale=.208;d.clip_start=.001
 scene.cycles.samples=64;scene.cycles.use_denoising=True;scene.cycles.max_bounces=12;scene.cycles.transmission_bounces=10
-scene.render.threads_mode='FIXED';scene.render.threads=4
+scene.render.threads_mode='AUTO'
 scene.render.resolution_x=1600;scene.render.resolution_y=1600
 scene.camera=bpy.data.objects['CAM • Material and lens closeup'];scene.render.filepath=OUT+'/mamiya_universal_detail.png'
 bpy.context.view_layer.update()
