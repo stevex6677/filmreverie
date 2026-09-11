@@ -99,7 +99,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       />
 
       {/* Surrounding 3D Darkroom Environment & Workbench */}
-      <DarkroomRoom brightness={state.tableBrightness} />
+      <DarkroomRoom brightness={state.tableBrightness} roomBrightness={state.roomBrightness} immediate={isDeterministic || isReducedMotion} />
 
       {/* Flat Light Table on Workbench (placed horizontally on tabletop) */}
       <group

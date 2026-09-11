@@ -12,7 +12,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     { order: 5, name: "road", x: 1047, y: 400 },
   ];
 
-  test("validates room drag orbit, table approach transition, pose restoration, repeated cycles, and M1 journey", async ({
+  test("validates fixed-eye room look, table approach transition, pose restoration, repeated cycles, and M1 journey", async ({
     page,
   }) => {
     test.setTimeout(180000);
@@ -54,11 +54,11 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     const initialCenterStats = getRegionStats(roomInitialPng, 640, 400, 50);
     expect(initialCenterStats.meanLum).toBeGreaterThan(40); // Table glows in the darkroom
 
-    // 2. Real pointer drag produces a bounded camera/canvas change
+    // 2. Real pointer drag produces a fixed-eye camera/canvas change
     const box = await canvas.boundingBox();
     expect(box).toBeTruthy();
     if (box) {
-      // Smoothly drag to orbit camera horizontally and vertically
+      // Smoothly drag to look horizontally horizontally and vertically
       await page.mouse.move(box.x + 640, box.y + 400);
       await page.mouse.down();
       await page.mouse.move(box.x + 820, box.y + 360, { steps: 15 });
@@ -69,7 +69,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
       fs.writeFileSync(path.join(artifactsDir, "m2-room-dragged.png"), roomDraggedBuffer);
       const roomDraggedPng = parsePng(roomDraggedBuffer);
 
-      // Verify canvas changed visibly from the drag orbit (offset from pivot center)
+      // Verify canvas changed visibly from the changed viewing direction
       const dragDiff = getRegionMeanDifference(roomInitialPng, roomDraggedPng, 500, 400, 80);
       expect(dragDiff).toBeGreaterThan(8);
     }
@@ -100,9 +100,8 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     fs.writeFileSync(path.join(artifactsDir, "m2-room-restored-1.png"), restoredBuffer);
     const restoredPng = parsePng(restoredBuffer);
 
-    // Assert room mode is restored
-    const restoredStats = getRegionStats(restoredPng, 640, 400, 50);
-    expect(restoredStats.meanLum).toBeGreaterThan(40);
+    // M13 allows looking away from the table; exact image restoration below
+    // replaces the obsolete assumption that the center must remain illuminated.
 
     // Verify EXACT POSE RESTORATION: restored view exactly matches the dragged view
     const roomDraggedPng = parsePng(fs.readFileSync(path.join(artifactsDir, "m2-room-dragged.png")));
@@ -119,7 +118,9 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     await expect(page.locator("[data-room-mode=room]")).toBeAttached();
     await page.waitForTimeout(600);
 
-    // Cycle 2: Click directly on the 3D table to test spatial selection and approach
+    // Cycle 2: Face the table before testing spatial selection from a known view.
+    await page.getByRole("button", { name: "Face table", exact: true }).click();
+    await page.waitForTimeout(200);
     if (box) {
       await page.mouse.click(box.x + 640, box.y + 400);
     } else {

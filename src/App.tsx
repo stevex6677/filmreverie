@@ -16,6 +16,7 @@ import {
   INSPECT_CAMERA_POSITION,
   INSPECT_CAMERA_UP,
   ROOM_CAMERA_TARGET,
+  ROOM_CAMERA_FOV,
   ROOM_CAMERA_UP,
   sphericalToCartesian,
 } from "./utils/cameraBounds";
@@ -148,7 +149,7 @@ export function App() {
     return {
       position: sphericalToCartesian(DEFAULT_ROOM_POSE, ROOM_CAMERA_TARGET),
       up: ROOM_CAMERA_UP,
-      fov: 45,
+      fov: ROOM_CAMERA_FOV,
       near: 0.04,
       far: 50,
     };
@@ -172,6 +173,10 @@ export function App() {
         if (/^[1-9]$/.test(e.key)) return;
       }
       if (state.roomMode === "room") {
+        if (e.target instanceof HTMLElement && e.target.closest('button, input, select, textarea, [role="dialog"], [contenteditable="true"]')) return;
+        const look: Record<string, [number, number]> = { ArrowLeft: [.12, 0], ArrowRight: [-.12, 0], ArrowUp: [0, -.1], ArrowDown: [0, .1] };
+        if (look[e.key]) { e.preventDefault(); dispatch({ type: "LOOK_ROOM", yaw: look[e.key][0], pitch: look[e.key][1] }); return; }
+        if (e.key === "0") { dispatch({ type: "FACE_TABLE" }); return; }
         if ((e.key === "Enter" || e.key === " ") && !state.isTransitioning) {
           dispatch({ type: "APPROACH_TABLE" });
         }
@@ -228,6 +233,8 @@ export function App() {
       data-inspect-zoom={state.inspectZoom}
       data-inspect-pan={`${state.inspectPan.x},${state.inspectPan.z}`}
       data-room-mode={state.roomMode}
+      data-room-pose={`${state.savedRoomPose.yaw},${state.savedRoomPose.pitch}`}
+      data-room-brightness={state.roomBrightness}
       data-is-transitioning={state.isTransitioning ? "true" : "false"}
       data-film-mode={state.filmMode}
       data-film-stock={state.filmStockId}
@@ -256,7 +263,7 @@ export function App() {
       ) : (
         <Suspense fallback={<LoadingFallback />}>
           <div className="canvas-wrapper">
-            <Canvas
+            <Canvas shadows
               frameloop={libraryOpen ? "never" : "always"}
               camera={initialCamera}
               dpr={[1, Math.min(typeof window !== "undefined" ? window.devicePixelRatio : 1, 1.5)]}

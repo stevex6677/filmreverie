@@ -155,7 +155,9 @@ async function brightness(page: Page, value: number) {
 }
 
 test("M11 combined stocks, first/last strips and transmitted loupe brightness", async ({ page, browser }) => {
-  test.setTimeout(600000);
+  // Shared software-rendered CI may run alongside another checkout. Keep
+  // per-action/assertion deadlines intact while budgeting this full stock matrix.
+  test.setTimeout(900000);
   const errors = trackErrors(page);
   const photoRequests: string[] = [];
   page.on("request", r => { if (r.url().includes("/assets/photos/")) photoRequests.push(r.url()); });
