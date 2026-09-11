@@ -3,10 +3,12 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { updateTableIllumination } from "../shaders/tableIllumination";
 import { createFilmShaderMaterial } from "../shaders/filmShader";
+import { photoCropScale } from "../utils/photoFraming";
 import { FilmStripLayout, getFilmCurlZ, getFrameCenter } from "../utils/loupeMapping";
 
 interface FilmFrameProps {
   index: number;
+  photo?: import("../data/rollManifest").RollFrame;
   texture: THREE.Texture;
   isPositive: boolean;
   layout: FilmStripLayout;
@@ -18,6 +20,7 @@ interface FilmFrameProps {
 
 export const FilmFrame: React.FC<FilmFrameProps> = ({
   index,
+  photo,
   texture,
   isPositive,
   layout,
@@ -35,6 +38,10 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
   ), [texture, isPositive, negativeMask]);
   useEffect(() => () => material.dispose(), [material]);
 
+  const rotation = photo?.rotation ?? 0;
+  const crop = photoCropScale(photo?.aspectRatio ?? layout.frameWidth / layout.frameHeight, layout.frameWidth / layout.frameHeight, rotation);
+  material.uniforms.uPhotoCrop.value.set(crop.x, crop.y);
+  material.uniforms.uPhotoRotation.value = rotation * Math.PI / 180;
   updateTableIllumination(material, brightness);
 
   // Curved plane geometry with 16 Y-segments matching the substrate transverse curl

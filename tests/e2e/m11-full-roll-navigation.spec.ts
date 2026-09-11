@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { FULL_ROLL_FIXTURE, locateFrame } from "../../src/utils/rollLayout";
 import { parsePng, getRegionStats, getRegionMeanDifference } from "./helpers/pixelAnalysis";
 
-const dir = "artifacts/m11-candidates";
+const dir = process.env.M11_CANDIDATE_DIR || "artifacts/m11-candidates";
 const app = (page: Page) => page.locator("main");
 async function ready(page: Page) {
   await expect(app(page)).toHaveAttribute("data-assets-ready", "true", { timeout: 30000 });
@@ -138,15 +138,26 @@ test("M11 failed photograph keeps slots usable and recovers through visible retr
 });
 
 async function brightness(page: Page, value: number) {
-  await page.getByTestId("brightness-slider").focus();
+  const slider = page.getByTestId("brightness-slider");
+  await slider.focus();
   await page.keyboard.press(value === 100 ? "End" : "Home");
-  if (value === 60) for (let i = 0; i < 30; i++) await page.keyboard.press("ArrowRight");
+  if (value === 60) {
+    // Use native coarse steps before fine adjustment; the optical matrix repeats
+    // this many times, and every separate key press waits on the busy renderer.
+    for (let i = 0; i < 4; i++) await page.keyboard.press("PageUp");
+    const current = Math.round(Number(await slider.inputValue()) * 100);
+    for (let i = 0; i < Math.abs(value - current); i++) {
+      await page.keyboard.press(current < value ? "ArrowRight" : "ArrowLeft");
+    }
+  }
   await expect(page.getByTestId("brightness-value")).toHaveText(`${value}%`);
   await page.waitForTimeout(200);
 }
 
 test("M11 combined stocks, first/last strips and transmitted loupe brightness", async ({ page, browser }) => {
-  test.setTimeout(600000);
+  // Shared software-rendered CI may run alongside another checkout. Keep
+  // per-action/assertion deadlines intact while budgeting this full stock matrix.
+  test.setTimeout(900000);
   const errors = trackErrors(page);
   const photoRequests: string[] = [];
   page.on("request", r => { if (r.url().includes("/assets/photos/")) photoRequests.push(r.url()); });

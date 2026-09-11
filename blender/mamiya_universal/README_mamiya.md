@@ -47,11 +47,10 @@ cavities and physical nameplate ribs, based on inspection of the closeup render.
 Final previews are 1200×1200 Cycles renders with denoising (32 samples for the
 overall views and 16 for the closeup),
 rendered one at a time in separate Blender MCP background processes. The saved
-viewport uses Solid shading and rendering uses four CPU threads to fit the
-remote server's memory. Switch to Material Preview to inspect the shaders
+viewport uses Solid shading and rendering uses auto-detected CPU threads to utilize
+available server cores. Switch to Material Preview to inspect the shaders
 interactively when sufficient memory is available.
-All files for this model are grouped under `blender/mamiya_universal/` and
-tracked in Git, including the original photos, previews, and Blender backup.
+All files for this model are grouped under `blender/mamiya_universal/`.
 
 
 ## Closeup refinement — 2026-09-09

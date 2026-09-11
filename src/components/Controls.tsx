@@ -7,11 +7,12 @@ import { ViewerAction, ViewerState } from "../state/viewerState";
 import { DEFAULT_INSPECT_DISTANCE, TABLE_CENTER_Z } from "../utils/cameraBounds";
 
 interface ControlsProps {
+  onOpenLibrary?: () => void;
   state: ViewerState;
   dispatch: React.Dispatch<ViewerAction>;
 }
 
-export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
+export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibrary }) => {
   const stock = getFilmStock(state.filmStockId);
   const multi = state.roll !== BASELINE_ROLL;
   const currentFrame = state.roll.frames[state.loupe.frameIndex] || state.roll.frames[0];
@@ -23,9 +24,10 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
       {/* Top Header / Mode Control Bar */}
       <header className="controls-header">
         <div className="branding">
+          {onOpenLibrary && <button className="rolls-button" onClick={onOpenLibrary}>Rolls</button>}
           <span className="dot" />
           <h1>DARKROOM FILM VIEWER</h1>
-          <span className="roll-id">{multi ? "36-SLOT FIXTURE" : "ROLL 01 — 35MM"}</span>
+          <span className="roll-id">{state.roll.imported ? `${state.roll.frames.length} FRAMES · ${state.roll.format === "135" ? "35MM" : "120"}` : multi ? "36-SLOT FIXTURE" : "ROLL 01 — 35MM"}</span>
         </div>
 
         <div className="action-buttons">
@@ -38,6 +40,14 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
               {FILM_STOCKS.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
             </select>
           </div>
+          {isRoomMode && <>
+            <button className="btn" disabled={state.isTransitioning} onClick={() => dispatch({ type: "FACE_TABLE" })}>Face table</button>
+            <div className="room-light-control">
+              <button className="btn" role="switch" aria-checked={state.roomBrightness > 0} onClick={() => dispatch({ type: "TOGGLE_ROOM_LIGHTS" })}>Room lights</button>
+              <input aria-label="Room brightness" type="range" min="0" max="100" step="1" value={Math.round(state.roomBrightness * 100)} onChange={e => dispatch({ type: "SET_ROOM_BRIGHTNESS", brightness: Number(e.target.value) / 100 })} />
+              <output>{Math.round(state.roomBrightness * 100)}%</output>
+            </div>
+          </>}
           {/* Room navigation */}
           {isRoomMode ? (
             <button
@@ -201,7 +211,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch }) => {
           {isRoomMode ? (
             <div className="status-item room-hint-wrapper">
               <span className="room-nav-hint">
-                Drag to orbit room • Click light table or "Approach Table" to inspect
+                Drag or use arrow keys to look • 0 faces table • Enter approaches
               </span>
             </div>
           ) : (

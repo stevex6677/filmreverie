@@ -27,7 +27,8 @@ export function useRollTextures(roll: RollDefinition, priority: number, retry: n
     const owned = new Map<string, THREE.Texture>();
     const errors: string[] = [];
     const overviewUrls = roll === BASELINE_ROLL ? [] : [...new Set(roll.frames.flatMap(frame => frame.thumbnailSrc ? [frame.thumbnailSrc] : []))];
-    const pending = new Set([...overviewUrls, ...uniqueRollSources(roll)]);
+    const details = roll.imported ? prioritizedSources(roll, priorityRef.current).slice(0, roll.framesPerStrip * 3) : uniqueRollSources(roll);
+    const pending = new Set([...overviewUrls, ...details]);
     setLoaded(new Map()); setFailed([]); setSettled(false);
     const loader = new THREE.TextureLoader();
     async function worker() {
@@ -51,6 +52,6 @@ export function useRollTextures(roll: RollDefinition, priority: number, retry: n
     Promise.all([worker(), worker(), worker()]).then(() => { if (!cancelled) setSettled(true); });
     return () => { cancelled = true; owned.forEach(texture => texture.dispose()); };
     // Selection updates the priority ref; only explicit retry or roll replacement restarts work.
-  }, [roll, retry]);
+  }, [roll, retry, roll.imported ? Math.floor(priority / roll.framesPerStrip) : 0]);
   return { textures: roll.frames.map(frame => loaded.get(frame.src) ?? (frame.thumbnailSrc ? loaded.get(frame.thumbnailSrc) : undefined) ?? placeholder), failed, settled, loadedCount: loaded.size };
 }

@@ -377,7 +377,7 @@ for i,(position,title) in enumerate(zip(positions,names),1):
 for n,p,power,size in [('Large key',(-250,-350,450),8,.3),('Right fill',(300,-50,280),4,.3),('Rear softbox',(-200,330,400),7,.3)]:
  d=bpy.data.lights.new(n,'AREA');d.energy=power*.18;d.shape='DISK';d.size=size;o=bpy.data.objects.new(n,d);studio.objects.link(o);o.location=Vector(p)*.001;o.rotation_euler=(center-o.location).to_track_quat('-Z','Y').to_euler()
 s.world=bpy.data.worlds.new('Neutral studio world');s.world.use_nodes=True;s.world.node_tree.nodes['Background'].inputs[0].default_value=(.5,.5,.5,1);s.world.node_tree.nodes['Background'].inputs[1].default_value=.18
-s.render.engine='CYCLES';s.cycles.samples=48;s.cycles.use_denoising=True;s.render.threads_mode='FIXED';s.render.threads=6
+s.render.engine='CYCLES';s.cycles.samples=48;s.cycles.use_denoising=True;s.render.threads_mode='AUTO'
 s.render.resolution_x=s.render.resolution_y=1400;s.render.resolution_percentage=100;s.render.image_settings.file_format='PNG';s.render.image_settings.color_mode='RGB';s.view_settings.view_transform='AgX'
 s.camera=bpy.data.objects['CAM 01 '+names[0]];s.render.filepath=f'//renders/{PART}_01_{names[0]}.png'
 for screen in bpy.data.screens:

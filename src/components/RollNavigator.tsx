@@ -39,7 +39,7 @@ export function RollNavigator({ state, dispatch }: { state: ViewerState; dispatc
     {state.inspectionLevel !== "roll" && <nav className="strip-thumbnails" aria-label="Current strip photographs">
       {strip.frames.map((frame, index) => <button key={frame.id} aria-label={`View frame ${frame.order}`} aria-pressed={state.activeFrameIndex === strip.offset + index}
         disabled={state.isTransitioning} onClick={() => open(strip.offset + index)}>
-        <img src={frame.thumbnailSrc ?? frame.src} alt={frame.alt} /><span>Frame {frame.order}{state.activeFrameIndex === strip.offset + index ? " · Selected" : ""}</span>
+        <img style={{ transform: `rotate(${frame.rotation ?? 0}deg)`, width: (frame.rotation ?? 0) % 180 ? "var(--thumbnail-height)" : undefined, margin: "auto" }} src={frame.thumbnailSrc ?? frame.src} alt={frame.alt} /><span>Frame {frame.order}{state.activeFrameIndex === strip.offset + index ? " · Selected" : ""}</span>
       </button>)}
     </nav>}
   </>;
