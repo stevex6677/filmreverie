@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { updateTableIllumination } from "../shaders/tableIllumination";
 import { createFilmShaderMaterial } from "../shaders/filmShader";
-import { photoCropScale } from "../utils/photoFraming";
+import { photoCropScale, photoCropOffset } from "../utils/photoFraming";
 import { FilmStripLayout, getFilmCurlZ, getFrameCenter } from "../utils/loupeMapping";
 
 interface FilmFrameProps {
@@ -41,6 +41,8 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
   const rotation = photo?.rotation ?? 0;
   const crop = photoCropScale(photo?.aspectRatio ?? layout.frameWidth / layout.frameHeight, layout.frameWidth / layout.frameHeight, rotation);
   material.uniforms.uPhotoCrop.value.set(crop.x, crop.y);
+  const offset = photoCropOffset(photo?.aspectRatio ?? layout.frameWidth / layout.frameHeight, layout.frameWidth / layout.frameHeight, rotation, photo?.cropPosition);
+  material.uniforms.uPhotoOffset.value.set(offset.x, -offset.y);
   material.uniforms.uPhotoRotation.value = rotation * Math.PI / 180;
   updateTableIllumination(material, brightness);
 

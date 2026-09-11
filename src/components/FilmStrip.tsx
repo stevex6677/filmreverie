@@ -6,7 +6,6 @@ import {
   FilmStripLayout,
   getStripDimensions,
   getPerforationPositions,
-  getFilmCurlZ,
   SPROCKET_WIDTH,
   SPROCKET_HEIGHT,
   SPROCKET_CORNER_RADIUS,
@@ -15,6 +14,7 @@ import { createFilmRebateTexture } from "../utils/filmRebateCanvas";
 import { createRebateMaterial } from "../shaders/filmShader";
 import { updateTableIllumination } from "../shaders/tableIllumination";
 import { FilmFrame } from "./FilmFrame";
+import { curveFilmSubstrate } from "../utils/filmSurfaceGeometry";
 
 interface FilmStripProps {
   textures: THREE.Texture[];
@@ -102,22 +102,11 @@ export const FilmStrip: React.FC<FilmStripProps> = ({
       );
     }
 
-    const geo = new THREE.ShapeGeometry(shape, 8);
-    const pos = geo.attributes.position;
-    const uv = geo.attributes.uv;
-    for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i);
-      const y = pos.getY(i);
-      pos.setZ(i, getFilmCurlZ(y, height));
-      if (uv) {
-        uv.setXY(i, (x + hw) / width, (y + hh) / height);
-      }
-    }
-    pos.needsUpdate = true;
-    if (uv) uv.needsUpdate = true;
-    geo.computeVertexNormals();
+    const flat = new THREE.ShapeGeometry(shape, 8);
+    const geo = curveFilmSubstrate(flat, layout);
+    flat.dispose();
     return geo;
-  }, [width, height, top, bottom]);
+  }, [width, height, top, bottom, layout]);
 
   useEffect(() => () => substrateGeometry.dispose(), [substrateGeometry]);
 

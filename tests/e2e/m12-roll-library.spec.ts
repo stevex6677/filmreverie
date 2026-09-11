@@ -9,17 +9,22 @@ function photo(name:string,width=600,height=400,seed=0) {
   return {name,mimeType:'image/png',buffer:PNG.sync.write(png)};
 }
 async function library(page:Page){await page.getByRole('button',{name:'Rolls',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();}
+async function details(page:Page){if(!await page.getByLabel('Roll name',{exact:true}).isVisible())await page.getByRole('button',{name:'Roll details',exact:true}).click();}
+async function formatOf(page:Page,format:string){await details(page);await page.getByRole('radio',{name:format==='135'?'35mm':'120',exact:true}).check();await page.getByLabel('Film format',{exact:true}).selectOption(format);}
+async function review(page:Page){if(!await page.getByRole('button',{name:'Save and open',exact:true}).isVisible())await page.getByRole('button',{name:'Review photographs',exact:true}).click();}
+async function editRoll(page:Page,name:string){await page.getByRole('button',{name:`Actions for ${name}`,exact:true}).click();await page.getByRole('menuitem',{name:`Edit ${name}`,exact:true}).click();}
+async function rotate(page:Page,n:number){await review(page);await page.getByRole('button',{name:`Select frame ${n}`,exact:true}).click();await page.getByLabel(`Rotate frame ${n}`,{exact:true}).click();}
 async function start(page:Page,name:string,format='135',files=[photo('scan2.png'),photo('scan10.png',600,400,1)]) {
-  await library(page);await page.getByRole('button',{name:'New roll',exact:true}).click();await page.getByLabel('Roll name',{exact:true}).fill(name);await page.getByLabel('Film format',{exact:true}).selectOption(format);await page.getByLabel('Choose photographs').setInputFiles(files);await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText(`${files.length} / ${files.length}`,{timeout:120000});
+  await library(page);await page.getByRole('button',{name:'New roll',exact:true}).click();await page.getByLabel('Choose photographs').setInputFiles(files);await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText(`${files.length} / ${files.length}`,{timeout:120000});await page.getByRole('button',{name:'Continue to roll details'}).click();await page.getByLabel('Roll name',{exact:true}).fill(name);await formatOf(page,format);await review(page);
 }
-async function save(page:Page){await page.getByRole('button',{name:'Save and open',exact:true}).click();await expect(page.getByRole('dialog')).not.toBeVisible();await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:30000});}
+async function save(page:Page){await review(page);await page.getByRole('button',{name:'Save and open',exact:true}).click();await expect(page.getByRole('dialog')).not.toBeVisible();await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:30000});}
 async function dbRolls(page:Page){return page.evaluate(async()=>new Promise<any[]>((resolve,reject)=>{const req=indexedDB.open('darkroom-rolls');req.onsuccess=()=>{const db=req.result;const r=db.transaction('rolls').objectStore('rolls').getAll();r.onsuccess=()=>{db.close();resolve(r.result);};r.onerror=()=>reject(r.error);};}));}
 test.beforeEach(async({page})=>{await fs.mkdir(OUT,{recursive:true});await page.goto('/?mode=inspect&reduced_motion=true');});
 test('M12 real import, editing, duplicate handling, switching and persistent Trash',async({page})=>{
   const requests:string[]=[];page.on('request',r=>{if(r.method()!=='GET'||r.postData())requests.push(r.url());});
   await start(page,'Harbor scans','135',[photo('scan10.png',600,400,1),photo('scan2.png'),{name:'bad.jpg',mimeType:'image/jpeg',buffer:Buffer.from('invalid')},photo('duplicate.png')]);
-  await expect(page.getByRole('button',{name:'Save and open'})).toBeDisabled();await page.getByRole('button',{name:'Remove bad.jpg'}).click();await page.getByLabel('Keep this duplicate content').check();
-  await page.locator('.draft-photos li').nth(0).dragTo(page.locator('.draft-photos li').nth(2));await page.getByLabel('Move frame 3 earlier',{exact:true}).click();await page.getByLabel('Rotate frame 1',{exact:true}).click();
+  await expect(page.getByRole('button',{name:'Save and open'})).toBeDisabled();await page.locator('.draft-photos li').filter({hasText:'bad.jpg'}).getByRole('button').click();await page.getByRole('button',{name:'Remove bad.jpg'}).click();await page.locator('.draft-photos li').filter({has:page.locator('.photo-issue')}).getByRole('button').click();await page.getByLabel('Keep this duplicate content').check();
+  await page.locator('.draft-photos li').nth(0).dragTo(page.locator('.draft-photos li').nth(2));await page.getByLabel('Move frame 3 earlier',{exact:true}).click();await rotate(page,1);
   await page.screenshot({path:`${OUT}/import-review.png`});await save(page);expect(requests).toEqual([]);
   const first=(await dbRolls(page))[0];expect(first.frameIds).toHaveLength(3);
   await page.getByLabel('Open frame 2',{exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');
@@ -29,13 +34,13 @@ test('M12 real import, editing, duplicate handling, switching and persistent Tra
   await page.setViewportSize({width:1280,height:800});
   await page.keyboard.press('b');await expect.poll(async()=>(await dbRolls(page))[0].view?.frameId).toBe(first.frameIds[1]);const before=await page.locator('main').getAttribute('data-selected-frame');
   await page.reload();await expect(page.locator('main')).toHaveAttribute('data-roll-id',first.id);await expect(page.locator('main')).toHaveAttribute('data-selected-frame',before!);await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true');
-  await library(page);await page.getByRole('button',{name:'Edit Harbor scans',exact:true}).click();await page.getByLabel('Roll name',{exact:true}).fill('Renamed scans');await page.getByRole('dialog').getByLabel('Film stock',{exact:true}).selectOption('ektachrome-e100');await page.getByLabel('Film format',{exact:true}).selectOption('66');await save(page);
+  await library(page);await editRoll(page,'Harbor scans');await page.getByLabel('Roll name',{exact:true}).fill('Renamed scans');await details(page);await page.getByRole('dialog').getByLabel('Film stock',{exact:true}).selectOption('ektachrome-e100');await formatOf(page,'66');await save(page);
   await expect(page.locator('main')).toHaveAttribute('data-film-mode','positive');await expect(page.locator('main')).toHaveAttribute('data-film-format','66');
-  await library(page);await page.getByRole('button',{name:'Move Renamed scans to Trash',exact:true}).click();await expect(page.getByRole('button',{name:'Open Renamed scans',exact:true})).toHaveCount(0);await page.getByRole('button',{name:'Trash',exact:true}).click();await page.getByRole('button',{name:'Restore Renamed scans',exact:true}).click();await page.getByRole('button',{name:'Back to rolls'}).click();await page.getByRole('button',{name:'Open Renamed scans',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-film-mode','positive');
-  await library(page);await page.screenshot({path:`${OUT}/library.png`});await page.getByRole('button',{name:'New roll',exact:true}).click();await page.getByLabel('Roll name',{exact:true}).fill('Cancelled');await page.getByRole('button',{name:'Cancel draft'}).click();expect(await dbRolls(page)).toHaveLength(1);
+  await library(page);await page.getByRole('button',{name:'Actions for Renamed scans',exact:true}).click();await page.getByRole('menuitem',{name:'Move Renamed scans to Trash',exact:true}).click();await expect(page.getByRole('button',{name:'Open Renamed scans',exact:true})).toHaveCount(0);await page.getByRole('button',{name:'Trash',exact:true}).click();await page.getByRole('button',{name:'Restore Renamed scans',exact:true}).click();await page.getByRole('button',{name:'Back to rolls'}).click();await page.getByRole('button',{name:'Open Renamed scans',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-film-mode','positive');
+  await library(page);await page.screenshot({path:`${OUT}/library.png`});await page.getByRole('button',{name:'New roll',exact:true}).click();await page.getByRole('button',{name:'Cancel draft'}).click();expect(await dbRolls(page)).toHaveLength(1);
 });
 for(const [format,width,height] of [['645',415,560],['66',560,560],['67',685,560],['69',826,560]] as const) test(`M12 ${format} real imported photo fit, loupe and reopen`,async({page,context})=>{
-  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await start(page,`Format ${format}`,format,[photo('frame1.png',width,height),photo('frame2.png',width,height,1),photo('frame3.png',width,height,2)]);await page.getByRole('dialog').getByLabel('Film stock',{exact:true}).selectOption('ektachrome-e100');await save(page);
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await start(page,`Format ${format}`,format,[photo('frame1.png',width,height),photo('frame2.png',width,height,1),photo('frame3.png',width,height,2)]);await details(page);await page.getByRole('dialog').getByLabel('Film stock',{exact:true}).selectOption('ektachrome-e100');await save(page);
   await expect(page.locator('main')).toHaveAttribute('data-film-format',format);await page.screenshot({path:`${OUT}/${format}-whole-roll.png`});
   await page.getByLabel('Open frame 1',{exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');const source=PNG.sync.read(await page.locator('canvas').screenshot());
   const cx=Math.floor(source.width/2),cy=Math.floor(source.height/2);
@@ -83,7 +88,7 @@ test('M12 repeated switching restores roll settings and releases owned object UR
   await page.evaluate(()=>{const live=new Set<string>();const create=URL.createObjectURL,revoke=URL.revokeObjectURL;URL.createObjectURL=function(blob){const url=create.call(this,blob);live.add(url);return url;};URL.revokeObjectURL=function(url){live.delete(url);revoke.call(this,url);};(window as any).__liveRollUrls=live;});
   await start(page,'Switch A');await save(page);expect(page.url()).not.toContain('fixture=36');await page.getByLabel('Open frame 2',{exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');await page.keyboard.press('b');
   await expect.poll(async()=>(await dbRolls(page)).find(r=>r.name==='Switch A')?.view?.brightness).toBe(.75);
-  await start(page,'Switch B','66',[photo('square1.png',400,400),photo('square2.png',400,400,1)]);await page.getByRole('dialog').getByLabel('Film stock',{exact:true}).selectOption('ektachrome-e100');await save(page);
+  await start(page,'Switch B','66',[photo('square1.png',400,400),photo('square2.png',400,400,1)]);await details(page);await page.getByRole('dialog').getByLabel('Film stock',{exact:true}).selectOption('ektachrome-e100');await save(page);
   for(const name of ['Switch A','Switch B','Switch A','Switch B']){await library(page);await page.getByRole('button',{name:`Open ${name}`,exact:true}).click();await expect(page.getByRole('dialog')).not.toBeVisible();await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true');await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');if(name==='Switch A'){await expect(page.locator('main')).toHaveAttribute('data-selected-frame','2');await expect(page.getByRole('slider',{name:'Light Table Brightness'})).toHaveValue('0.75');}else{await expect(page.locator('main')).toHaveAttribute('data-film-mode','positive');}await expect.poll(()=>page.evaluate(()=>(window as any).__liveRollUrls.size)).toBe(4);}
   await fs.writeFile(`${OUT}/resource-switching.json`,JSON.stringify({switches:4,liveRuntimeObjectUrls:await page.evaluate(()=>(window as any).__liveRollUrls.size),expectedForTwoFrames:4},null,2));
   await page.goto('/?roll=local');await page.getByRole('link',{name:'Open the five-photo example',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-roll-id','roll-01');
@@ -91,17 +96,17 @@ test('M12 repeated switching restores roll settings and releases owned object UR
 });
 
 test('M12 cancellation during processing leaves no committed roll and modal owns keyboard focus',async({page})=>{
-  await library(page);await page.getByRole('button',{name:'New roll',exact:true}).click();await page.getByLabel('Roll name',{exact:true}).fill('Cancelled while processing');
+  await library(page);await page.getByRole('button',{name:'New roll',exact:true}).click();
   await page.getByLabel('Choose photographs').setInputFiles(Array.from({length:72},(_,i)=>photo(`cancel${i}.png`,600,400,i)));
-  await page.getByRole('button',{name:'Cancel processing',exact:true}).first().click();await expect(page.getByRole('button',{name:'Cancel draft',exact:true})).toBeEnabled();expect(await dbRolls(page)).toEqual([]);await expect(page.getByRole('button',{name:'Save and open',exact:true})).toBeDisabled();
-  await page.getByLabel('Roll name',{exact:true}).focus();await page.keyboard.press('l');await page.keyboard.press('ArrowRight');await expect(page.locator('main')).toHaveAttribute('data-loupe-active','false');await expect(page.locator('main')).toHaveAttribute('data-selected-frame','1');await page.getByRole('button',{name:'Close',exact:true}).click();await expect(page.getByRole('button',{name:'Rolls',exact:true})).toBeFocused();
+  await page.getByRole('button',{name:'Cancel processing',exact:true}).first().click();await expect(page.getByRole('button',{name:'Cancel draft',exact:true})).toBeEnabled();expect(await dbRolls(page)).toEqual([]);await expect(page.getByRole('button',{name:'Continue to roll details',exact:true})).toBeDisabled();
+  await page.getByLabel('Choose photographs',{exact:true}).focus();await page.keyboard.press('l');await page.keyboard.press('ArrowRight');await expect(page.locator('main')).toHaveAttribute('data-loupe-active','false');await expect(page.locator('main')).toHaveAttribute('data-selected-frame','1');await page.getByRole('button',{name:'Close',exact:true}).click();await expect(page.getByRole('button',{name:'Rolls',exact:true})).toBeFocused();
 });
 
 
 test('M12 crop fills the full gate at every rotation and survives reload',async({page})=>{
   const make=(name:string,width:number)=>{const png=new PNG({width,height:300});for(let y=0;y<300;y++)for(let x=0;x<width;x++){const i=(y*width+x)*4;const center=width===300||(x>=300&&x<600);png.data[i]=center?35:230;png.data[i+1]=center?210:25;png.data[i+2]=45;png.data[i+3]=255;}return {name,mimeType:'image/png',buffer:PNG.sync.write(png)};};
   await start(page,'Crop review','66',[make('1-reference.png',300),make('2-wide.png',900)]);
-  await expect(page.getByText('Aspect mismatch: edges will be cropped.',{exact:false})).toBeVisible();await save(page);
+  await page.getByRole('button',{name:'Select frame 2',exact:true}).click();await expect(page.getByText('Aspect mismatch: edges will be cropped.',{exact:false})).toBeVisible();await save(page);
   await page.getByTestId('mode-toggle').click();await page.getByLabel('Open frame 1',{exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');
   const ref=PNG.sync.read(await page.locator('canvas').screenshot());const cx=ref.width/2,cy=ref.height/2;
   const rgb=(p:PNG,x:number,y:number)=>[...p.data.subarray((Math.round(y)*p.width+Math.round(x))*4,(Math.round(y)*p.width+Math.round(x))*4+3)];
@@ -117,7 +122,7 @@ test('M12 crop fills the full gate at every rotation and survives reload',async(
 
   await page.getByLabel('Open frame 2',{exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');
   for(const rotation of [0,90,180,270]){
-    if(rotation){await library(page);await page.getByRole('button',{name:'Edit Crop review',exact:true}).click();await page.getByLabel('Rotate frame 2',{exact:true}).click();await page.screenshot({path:`${OUT}/crop-draft-${rotation}.png`});await save(page);await page.getByLabel('Open frame 2',{exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');}
+    if(rotation){await library(page);await editRoll(page,'Crop review');await rotate(page,2);await page.screenshot({path:`${OUT}/crop-draft-${rotation}.png`});await save(page);await page.getByLabel('Open frame 2',{exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');}
     const shot=PNG.sync.read(await page.locator('canvas').screenshot({path:`${OUT}/crop-filled-${rotation}.png`}));
     for(const x of [left+4,cx,right-4])for(const y of [top+4,cy,bottom-4])expect(green(shot,x,y),`rotation ${rotation}, gate ${x},${y}`).toBe(true);
   }

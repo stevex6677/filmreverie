@@ -1,3 +1,4 @@
+import { photoSourceDemand } from "../utils/photoFraming";
 import { BASELINE_ROLL, createRollLayout } from "../utils/rollLayout";
 import { useRollTextures } from "../utils/useRollTextures";
 import { useThree } from "@react-three/fiber";
@@ -28,11 +29,17 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
 }) => {
   const tableGroupRef = useRef<THREE.Group>(null);
 
-  const { size } = useThree();
+  const { size, gl } = useThree();
   const multi = state.roll !== BASELINE_ROLL;
   const strips = useMemo(() => createRollLayout(state.roll), [state.roll]);
-  const { textures, failed, settled } = useRollTextures(state.roll, state.activeFrameIndex, state.assetRetry);
-  useEffect(() => { dispatch({ type: "ASSET_STATUS", failures: failed, loading: !settled }); }, [failed, settled, dispatch]);
+  const gate=strips[Math.floor(state.activeFrameIndex/state.roll.framesPerStrip)].layout;
+  const projected=gate.frameWidth*state.roll.scale/(2*state.inspectZoom*Math.tan(Math.PI/8))*size.height*gl.getPixelRatio();
+  const selected=state.roll.frames[state.activeFrameIndex];
+  const sourcePixels=photoSourceDemand(projected,selected.aspectRatio,gate.frameWidth/gate.frameHeight,selected.rotation??0);
+  const demand=state.roomMode === "inspect" && !state.isTransitioning && !state.cameraMoving ? sourcePixels*(state.loupe.isActive?state.loupe.magnification:1) : 0;
+  const { textures, failed, settled, bytes, loadedCount, detailStatus } = useRollTextures(state.roll, state.activeFrameIndex, state.assetRetry, demand, gl.capabilities.maxTextureSize);
+  useEffect(()=>{gl.domElement.dataset.textureIds=JSON.stringify(textures.map(t=>t.uuid));gl.domElement.dataset.textureBytes=String(bytes);gl.domElement.dataset.textureCount=String(loadedCount);gl.domElement.dataset.detailStatus=detailStatus;gl.domElement.dataset.textureEdge=String(Math.max(textures[state.activeFrameIndex]?.image?.width||0,textures[state.activeFrameIndex]?.image?.height||0));},[bytes,loadedCount,detailStatus,textures,state.activeFrameIndex,gl]);
+  useEffect(() => { dispatch({ type: "ASSET_STATUS", failures: failed, loading: !settled, detailStatus }); }, [failed, settled, detailStatus, dispatch]);
   useEffect(() => { dispatch({ type: "VIEWPORT", aspect: size.width / size.height }); }, [size.width, size.height, dispatch]);
 
   const activeTexture = textures[state.loupe.frameIndex] || textures[0];
@@ -48,7 +55,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   };
 
   const handleFrameSelect = (index: number) => {
-    if (state.isTransitioning) return;
+    if (state.isTransitioning && state.transitionKind !== "inspection") return;
     if (state.roomMode === "room") {
       dispatch({ type: "APPROACH_TABLE" });
       dispatch({ type: "SELECT_FRAME", frameIndex: index });
@@ -83,6 +90,8 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       {/* Dynamic Camera Rig with Orbit and Smooth Transitions */}
       <CameraRig
         roomMode={state.roomMode}
+        inspectionTransition={state.transitionKind === "inspection"}
+        stripIndex={Math.floor(state.activeFrameIndex/state.roll.framesPerStrip)}
         isTransitioning={state.isTransitioning}
         savedRoomPose={state.savedRoomPose}
         inspectZoom={state.inspectZoom}

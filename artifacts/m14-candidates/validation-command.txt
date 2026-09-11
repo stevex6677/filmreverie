@@ -1,0 +1,6 @@
+Local checkout: /Users/zhangzimou/.codex/worktrees/41ad/film_photo
+Base: d0fee21; branch: codex/m13-room-exploration
+Remote checkout: root@209.151.144.140:/root/worktrees/codex/41ad/film_photo
+Mutagen: codex-worktrees-41ad, verified connected and conflict-free; flushed before execution.
+
+REVIEW_ARTIFACTS_DIR=artifacts/m14-candidates/regressions M9_CANDIDATE_DIR=artifacts/m14-candidates/stocks M10_CANDIDATE_DIR=artifacts/m14-candidates/lighting M9_M10_CANDIDATE_DIR=artifacts/m14-candidates/combined M11_CANDIDATE_DIR=artifacts/m14-candidates/navigation M12_CANDIDATE_DIR=artifacts/m14-candidates/library-regressions M12_PANEL_CANDIDATE_DIR=artifacts/m14-candidates/panel M13_CANDIDATE_DIR=artifacts/m14-candidates/room PLAYWRIGHT_PORT=5197 PLAYWRIGHT_WORKERS=4 npm run validate:m14
