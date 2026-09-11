@@ -1,0 +1,10 @@
+Local source: /Users/zhangzimou/.codex/worktrees/41ad/film_photo
+Remote build/test checkout: root@209.151.144.140:/root/worktrees/codex/41ad/film_photo
+Mutagen: codex-worktrees-41ad, both endpoints connected; flushed before running.
+Branch: codex/m12-roll-library; starting commit 8b88896; changes uncommitted.
+
+cd /root/worktrees/codex/41ad/film_photo
+REVIEW_ARTIFACTS_DIR=artifacts/m12-border-review/regressions M9_CANDIDATE_DIR=artifacts/m12-border-review/stocks M10_CANDIDATE_DIR=artifacts/m12-border-review/lighting M9_M10_CANDIDATE_DIR=artifacts/m12-border-review/combined M11_CANDIDATE_DIR=artifacts/m12-border-review/m11 M12_CANDIDATE_DIR=artifacts/m12-border-review/library PLAYWRIGHT_PORT=5197 npm run validate:m12 > artifacts/m12-border-review/validation.log 2>&1
+
+Separate normal-animation review:
+node scripts/review-m12-borders.mjs

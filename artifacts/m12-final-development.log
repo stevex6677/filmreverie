@@ -1,0 +1,15 @@
+
+Running 10 tests using 1 worker
+
+  ✓   1 tests/e2e/m12-roll-library.spec.ts:18:1 › M12 real import, editing, duplicate handling, switching and persistent Trash (10.2s)
+  ✓   2 tests/e2e/m12-roll-library.spec.ts:33:109 › M12 645 real imported photo fit, loupe and reopen (10.4s)
+  ✓   3 tests/e2e/m12-roll-library.spec.ts:33:109 › M12 66 real imported photo fit, loupe and reopen (10.6s)
+  ✓   4 tests/e2e/m12-roll-library.spec.ts:33:109 › M12 67 real imported photo fit, loupe and reopen (9.9s)
+  ✓   5 tests/e2e/m12-roll-library.spec.ts:33:109 › M12 69 real imported photo fit, loupe and reopen (11.0s)
+  ✓   6 tests/e2e/m12-roll-library.spec.ts:49:1 › M12 36 distinct imported frames navigate final strips and preserve originals (10.4s)
+  ✓   7 tests/e2e/m12-roll-library.spec.ts:53:1 › M12 quota and unavailable storage leave no half-saved roll (2.3s)
+  ✓   8 tests/e2e/m12-roll-library.spec.ts:57:1 › M12 persistent browser profile survives browser restart (4.4s)
+  ✓   9 tests/e2e/m12-roll-library.spec.ts:63:1 › M12 cancellation, unavailable storage, EXIF normalization and zero upload requests (5.3s)
+  ✓  10 tests/e2e/m12-roll-library.spec.ts:77:1 › M12 repeated switching restores roll settings and releases owned object URLs (10.4s)
+
+  10 passed (1.4m)
