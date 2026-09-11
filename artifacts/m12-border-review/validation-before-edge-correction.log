@@ -1,0 +1,129 @@
+
+> develop_darkroom_film_viewer@1.0.0 validate:m12
+> npm run build && npm run test:integration && npm run test:e2e
+
+
+> develop_darkroom_film_viewer@1.0.0 build
+> node scripts/prepare-assets.js && tsc --noEmit && vite build
+
+Local photo derivatives are ready in public/assets/photos/
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 62 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                     0.59 kB │ gzip:   0.37 kB
+dist/assets/index-DO6miN8s.css     12.91 kB │ gzip:   3.56 kB
+dist/assets/index-BeH14PI4.js   1,036.24 kB │ gzip: 285.40 kB
+
+✓ built in 312ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+> develop_darkroom_film_viewer@1.0.0 test:integration
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.0 [39m[90m/root/worktrees/codex/41ad/film_photo[39m
+
+ [32m✓[39m tests/integration/m1-loupe.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/integration/m3-film-realism.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/integration/m1-manifest.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/integration/m1-state.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/integration/m7-macro-zoom-and-brightness.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/integration/m4-darkroom-hardening.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/integration/m6-table-navigation-and-magnification.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/integration/m8-continuous-dimmer-and-physical-loupe.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/integration/m2-camera-journey.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/integration/m10-light-transmission.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/integration/m5-film-rebate-and-curl.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/integration/m12-film-presentation.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 79[2mms[22m[39m
+ [32m✓[39m tests/integration/m11-full-roll-navigation.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m tests/integration/m12-roll-library.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 104[2mms[22m[39m
+ [32m✓[39m tests/integration/m9-film-stocks.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 140[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m15 passed[39m[22m[90m (15)[39m
+[2m      Tests [22m [1m[32m138 passed[39m[22m[90m (138)[39m
+[2m   Start at [22m 09:16:44
+[2m   Duration [22m 686ms[2m (transform 63%, import 23%, tests 12%, worker 2%)[22m
+
+[2m  Transform [22m [33mtransforming modules took 2.37s[39m[2m · 63% of tracked time, re-done on every run[22m
+[2m            [22m [2mpersist transforms across runs with [22m[33mfsModuleCache: true[39m
+[2m            [22m [2mlearn more: https://vitest.dev/guide/improving-performance#caching-between-reruns[22m
+
+
+> develop_darkroom_film_viewer@1.0.0 test:e2e
+> playwright test
+
+
+Running 45 tests using 2 workers
+
+  ✓   1 tests/e2e/m1-viewer.spec.ts:16:3 › M1 E2E — Five-Photo Darkroom Film Viewer › loads production app and all 5 assets with zero errors (2.2s)
+  ✓   3 tests/e2e/m1-viewer.spec.ts:50:3 › M1 E2E — Five-Photo Darkroom Film Viewer › validates nonblank frames, variance, table contrast, mode toggle, and loupe journey (29.2s)
+  ✓   4 tests/e2e/m1-viewer.spec.ts:204:3 › M1 E2E — Five-Photo Darkroom Film Viewer › reloads and repeats the core journey successfully (4.1s)
+  ✓   2 tests/e2e/m10-light-transmission.spec.ts:43:1 › M10 ordered transmission, local spill, detail and navigation at both dimmer extremes (41.2s)
+  ✓   5 tests/e2e/m1-viewer.spec.ts:246:3 › M1 E2E — Five-Photo Darkroom Film Viewer › verifies loupe lens shows pure table surface when resting or off-strip, and shows image only on-strip (10.2s)
+  ✘   6 tests/e2e/m10-light-transmission.spec.ts:112:3 › M10 macro pan and room return at 30% (10.9s)
+  ✘   7 tests/e2e/m11-full-roll-navigation.spec.ts:33:1 › M11 six strips, 36 photo regions, 29→30→31 loupe journey and overview restoration (6.3s)
+
+
+  1) tests/e2e/m10-light-transmission.spec.ts:112:3 › M10 macro pan and room return at 30% ─────────
+
+    Test was interrupted.
+
+    Error: mouse.wheel: Test ended.
+
+      118 |     await page.mouse.move(640, 400);
+      119 |     for (let i = 0; i < 60 && await page.getByTestId("zoom-badge").textContent() !== "1000%"; i++) {
+    > 120 |       await page.mouse.wheel(0, -350);
+          |                        ^
+      121 |       await page.waitForTimeout(50);
+      122 |     }
+      123 |     await expect(page.getByTestId("zoom-badge")).toHaveText("1000%");
+        at /root/worktrees/codex/41ad/film_photo/tests/e2e/m10-light-transmission.spec.ts:120:24
+
+    attachment #1: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/m10-light-transmission-M10-macro-pan-and-room-return-at-30-/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/m10-light-transmission-M10-macro-pan-and-room-return-at-30-/error-context.md
+
+  2) tests/e2e/m11-full-roll-navigation.spec.ts:33:1 › M11 six strips, 36 photo regions, 29→30→31 loupe journey and overview restoration 
+
+    Test was interrupted.
+
+    Error: locator.click: Test ended.
+    Call log:
+      - waiting for getByTestId('mode-toggle')
+        - locator resolved to <button id="mode-toggle" data-testid="mode-toggle" class="btn btn-mode btn-mode-negative" title="Toggle between color negative and positive preview (M)">Switch to Positive</button>
+      - attempting click action
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - performing click action
+
+
+      36 |   await page.goto("/?fixture=36&deterministic=true&mode=inspect"); await ready(page);
+      37 |   await expect(page.getByText("Development fixture · 36 slots / 5 repeated photographs")).toBeVisible();
+    > 38 |   await page.getByTestId("mode-toggle").click(); await page.waitForTimeout(500);
+         |                                         ^
+      39 |   const canvas = page.locator("canvas");
+      40 |   const overview = parsePng(await canvas.screenshot({ path: `${dir}/whole-roll-positive.png` }));
+      41 |   for (let i = 0; i < 36; i++) {
+        at /root/worktrees/codex/41ad/film_photo/tests/e2e/m11-full-roll-navigation.spec.ts:38:41
+
+    attachment #1: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/m11-full-roll-navigation-M-b5fab-ey-and-overview-restoration/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/m11-full-roll-navigation-M-b5fab-ey-and-overview-restoration/error-context.md
+
+  2 interrupted
+    tests/e2e/m10-light-transmission.spec.ts:112:3 › M10 macro pan and room return at 30% ──────────
+    tests/e2e/m11-full-roll-navigation.spec.ts:33:1 › M11 six strips, 36 photo regions, 29→30→31 loupe journey and overview restoration 
+  38 did not run
+  5 passed (54.0s)

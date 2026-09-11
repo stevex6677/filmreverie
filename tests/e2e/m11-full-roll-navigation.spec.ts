@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { FULL_ROLL_FIXTURE, locateFrame } from "../../src/utils/rollLayout";
 import { parsePng, getRegionStats, getRegionMeanDifference } from "./helpers/pixelAnalysis";
 
-const dir = "artifacts/m11-candidates";
+const dir = process.env.M11_CANDIDATE_DIR || "artifacts/m11-candidates";
 const app = (page: Page) => page.locator("main");
 async function ready(page: Page) {
   await expect(app(page)).toHaveAttribute("data-assets-ready", "true", { timeout: 30000 });

@@ -7,6 +7,7 @@ export interface RollFrame {
   title: string;
   aspectRatio: number;
   thumbnailSrc?: string;
+  rotation?: number;
 }
 
 export const ROLL_FRAMES: readonly RollFrame[] = photoSources.map(frame => ({ ...frame, thumbnailSrc: frame.src.replace(/\.jpg$/, ".thumb.jpg") }));

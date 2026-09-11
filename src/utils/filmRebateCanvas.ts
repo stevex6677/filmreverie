@@ -1,3 +1,4 @@
+import { draw120Rebate } from "./film120Rebate";
 import * as THREE from "three";
 import { DEFAULT_LAYOUT, FilmStripLayout, getFrameCenter, getStripDimensions } from "./loupeMapping";
 import { DEFAULT_FILM_STOCK_ID, FilmStockProfile, getFilmStock } from "../data/filmStocks";
@@ -11,7 +12,7 @@ export interface RebateColors {
 
 export const NEGATIVE_REBATE_COLORS: RebateColors = getFilmStock(DEFAULT_FILM_STOCK_ID).base;
 
-// Physical identity is independent of the photo's negative/positive preview.
+// Base artwork represents developed film; positive inversion is applied by the shared rebate shader.
 export function getRebateColors(stock: FilmStockProfile): RebateColors {
   return stock.base;
 }
@@ -51,9 +52,8 @@ export function createFilmRebateCanvas(
     const frameWidth = layout.frameWidth * scaleX;
     const midpoint = left + frameWidth / 2;
     ctx.clearRect(left, py, frameWidth, ph);
-    ctx.strokeStyle = colors.frameShadow;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(left, py, frameWidth, ph);
+    // No artificial dark stroke around the image gate.
+    if (layout.perforated === false) continue;
 
     // The developed 135 references put stock lettering and a full-frame number
     // on one outer rail, and full/half-frame numbers on the opposite outer rail.
@@ -76,6 +76,7 @@ export function createFilmRebateCanvas(
     // Optical edge codes are visible on the source negatives but their exact
     // bit patterns/registration are unverified. Omit instead of inventing bars.
   }
+  if (layout.perforated === false) draw120Rebate(ctx, stock, layout, width, height);
   return canvas;
 }
 

@@ -21,10 +21,15 @@ export const FilmFragmentShader = `
   uniform float uExposure;
   uniform float uTableOutput;
   uniform float uSurfaceReflection;
+  uniform vec2 uPhotoCrop;
+  uniform float uPhotoRotation;
   varying vec2 vUv;
   ${FILM_TRANSMISSION_GLSL}
   void main() {
-    vec3 source = texture2D(uTexture, vUv).rgb * uExposure;
+    vec2 p = (vUv - 0.5) * uPhotoCrop;
+    float c = cos(uPhotoRotation), s = sin(uPhotoRotation);
+    vec2 photoUV = vec2(c * p.x - s * p.y, s * p.x + c * p.y) + 0.5;
+    vec3 source = texture2D(uTexture, clamp(photoUV, vec2(0.0), vec2(1.0))).rgb * uExposure;
     vec3 transmission = filmTransmittance(source, uModeTransition, uOrangeMask);
     gl_FragColor = vec4(transmitTableLight(transmission, uTableOutput, uSurfaceReflection), 1.0);
     ${DISPLAY_FRAGMENT}
@@ -37,6 +42,8 @@ export function createFilmShaderMaterial(texture: THREE.Texture, isPositive: boo
     fragmentShader: FilmFragmentShader,
     uniforms: {
       uTexture: { value: texture },
+      uPhotoCrop: { value: new THREE.Vector2(1, 1) },
+      uPhotoRotation: { value: 0 },
       uModeTransition: { value: isPositive ? 1.0 : 0.0 },
       uOrangeMask: { value: base.clone() },
       uExposure: { value: FILM_EXPOSURE },
@@ -45,20 +52,29 @@ export function createFilmShaderMaterial(texture: THREE.Texture, isPositive: boo
   });
 }
 
-export function createRebateMaterial(texture: THREE.Texture, brightness = 1) {
+export function createRebateMaterial(texture: THREE.Texture, brightness = 1, isPositive = false, negativeStock = true, base = new THREE.Color("rgb(217,119,36)"), baseOpacity = .88) {
   return new THREE.ShaderMaterial({
     vertexShader: FilmVertexShader,
-    uniforms: { uTexture: { value: texture }, ...illuminationUniforms(brightness) },
+    uniforms: { uTexture: { value: texture }, uModeTransition: { value: isPositive && negativeStock ? 1 : 0 }, uRebateBase: { value: base.clone() }, uBaseOpacity: { value: baseOpacity }, ...illuminationUniforms(brightness) },
     fragmentShader: `
       uniform sampler2D uTexture;
       uniform float uTableOutput;
       uniform float uSurfaceReflection;
+      uniform float uModeTransition;
+      uniform vec3 uRebateBase;
+      uniform float uBaseOpacity;
       varying vec2 vUv;
       void main() {
         vec4 rebate = texture2D(uTexture, vUv);
         if (rebate.a < 0.1) discard;
-        // Artwork is a transmission map; alpha cuts photo gates, never adds white light.
-        gl_FragColor = vec4(rebate.rgb * 0.5 * uTableOutput + vec3(uSurfaceReflection), 1.0);
+        // Linear filtering mixes transparent gate texels into the edge. Recover
+        // the covered film color so it cannot create a dark (or inverted white) seam.
+        rebate.rgb /= max(min(rebate.a / uBaseOpacity, 1.0), 0.001);
+        // Normalize away the orange mask before reversing the entire rebate,
+        // including its lettering. E-6 is already positive and bypasses this.
+        vec3 positive = vec3(0.004) + max(vec3(0.0), vec3(1.0) - rebate.rgb / max(uRebateBase, vec3(0.001))) * 0.5;
+        vec3 transmission = mix(rebate.rgb * 0.5, positive, uModeTransition);
+        gl_FragColor = vec4(transmission * uTableOutput + vec3(uSurfaceReflection), 1.0);
         ${DISPLAY_FRAGMENT}
       }
     `,

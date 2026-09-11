@@ -1,0 +1,234 @@
+[
+  {
+    "mode": "negative",
+    "brightness": 30,
+    "mag": 1.5,
+    "name": "photo",
+    "source": {
+      "meanR": 82.88888888888889,
+      "meanG": 58.77777777777778,
+      "meanB": 35,
+      "meanLum": 63.276333333333326,
+      "variance": 24.537746222222236,
+      "stdDev": 4.9535589450638655,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 81.88888888888889,
+      "meanG": 58.22222222222222,
+      "meanB": 34.888888888888886,
+      "meanLum": 62.63855555555556,
+      "variance": 4.188813358024699,
+      "stdDev": 2.0466590722503586,
+      "count": 9
+    },
+    "differences": [
+      1,
+      0.5555555555555571,
+      0.11111111111111427
+    ]
+  },
+  {
+    "mode": "negative",
+    "brightness": 30,
+    "mag": 1.5,
+    "name": "rebate",
+    "source": {
+      "meanR": 69,
+      "meanG": 30,
+      "meanB": 11,
+      "meanLum": 39.495,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 69,
+      "meanG": 30,
+      "meanB": 11,
+      "meanLum": 39.495,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "differences": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "mode": "negative",
+    "brightness": 30,
+    "mag": 1.5,
+    "name": "hole",
+    "source": {
+      "meanR": 131,
+      "meanG": 132,
+      "meanB": 132.88888888888889,
+      "meanLum": 131.80233333333337,
+      "variance": 0.001283555555555653,
+      "stdDev": 0.035826743580119766,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 131,
+      "meanG": 132,
+      "meanB": 132.88888888888889,
+      "meanLum": 131.80233333333337,
+      "variance": 0.001283555555555653,
+      "stdDev": 0.035826743580119766,
+      "count": 9
+    },
+    "differences": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "mode": "negative",
+    "brightness": 30,
+    "mag": 1.5,
+    "name": "panel",
+    "source": {
+      "meanR": 137.33333333333334,
+      "meanG": 138,
+      "meanB": 139,
+      "meanLum": 137.91466666666668,
+      "variance": 0.019866888888889767,
+      "stdDev": 0.14094995171652158,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 137.22222222222223,
+      "meanG": 138,
+      "meanB": 139,
+      "meanLum": 137.88144444444447,
+      "variance": 0.015452024691358708,
+      "stdDev": 0.12430617318282591,
+      "count": 9
+    },
+    "differences": [
+      0.11111111111111427,
+      0,
+      0
+    ]
+  },
+  {
+    "mode": "negative",
+    "brightness": 30,
+    "mag": 2.5,
+    "name": "photo",
+    "source": {
+      "meanR": 82.88888888888889,
+      "meanG": 58.77777777777778,
+      "meanB": 35,
+      "meanLum": 63.276333333333326,
+      "variance": 24.537746222222236,
+      "stdDev": 4.9535589450638655,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 79.11111111111111,
+      "meanG": 57.111111111111114,
+      "meanB": 34.333333333333336,
+      "meanLum": 61.092444444444446,
+      "variance": 8.626018024691366,
+      "stdDev": 2.937008346037063,
+      "count": 9
+    },
+    "differences": [
+      3.7777777777777715,
+      1.6666666666666643,
+      0.6666666666666643
+    ]
+  },
+  {
+    "mode": "negative",
+    "brightness": 30,
+    "mag": 2.5,
+    "name": "rebate",
+    "source": {
+      "meanR": 69,
+      "meanG": 30,
+      "meanB": 11,
+      "meanLum": 39.495,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 69,
+      "meanG": 30,
+      "meanB": 11,
+      "meanLum": 39.495,
+      "variance": 0,
+      "stdDev": 0,
+      "count": 9
+    },
+    "differences": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "mode": "negative",
+    "brightness": 30,
+    "mag": 2.5,
+    "name": "hole",
+    "source": {
+      "meanR": 131,
+      "meanG": 132,
+      "meanB": 132.88888888888889,
+      "meanLum": 131.80233333333337,
+      "variance": 0.001283555555555653,
+      "stdDev": 0.035826743580119766,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 131,
+      "meanG": 132,
+      "meanB": 132.66666666666666,
+      "meanLum": 131.77700000000002,
+      "variance": 0.0028880000000002185,
+      "stdDev": 0.05374011537017964,
+      "count": 9
+    },
+    "differences": [
+      0,
+      0,
+      0.22222222222222854
+    ]
+  },
+  {
+    "mode": "negative",
+    "brightness": 30,
+    "mag": 2.5,
+    "name": "panel",
+    "source": {
+      "meanR": 137.33333333333334,
+      "meanG": 138,
+      "meanB": 139,
+      "meanLum": 137.91466666666668,
+      "variance": 0.019866888888889767,
+      "stdDev": 0.14094995171652158,
+      "count": 9
+    },
+    "lens": {
+      "meanR": 137,
+      "meanG": 138,
+      "meanB": 139,
+      "meanLum": 137.81500000000003,
+      "variance": 8.077935669463161e-28,
+      "stdDev": 2.842170943040401e-14,
+      "count": 9
+    },
+    "differences": [
+      0.3333333333333428,
+      0,
+      0
+    ]
+  }
+]
