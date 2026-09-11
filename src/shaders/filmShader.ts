@@ -22,11 +22,12 @@ export const FilmFragmentShader = `
   uniform float uTableOutput;
   uniform float uSurfaceReflection;
   uniform vec2 uPhotoCrop;
+  uniform vec2 uPhotoOffset;
   uniform float uPhotoRotation;
   varying vec2 vUv;
   ${FILM_TRANSMISSION_GLSL}
   void main() {
-    vec2 p = (vUv - 0.5) * uPhotoCrop;
+    vec2 p = (vUv - 0.5) * uPhotoCrop + uPhotoOffset;
     float c = cos(uPhotoRotation), s = sin(uPhotoRotation);
     vec2 photoUV = vec2(c * p.x - s * p.y, s * p.x + c * p.y) + 0.5;
     vec3 source = texture2D(uTexture, clamp(photoUV, vec2(0.0), vec2(1.0))).rgb * uExposure;
@@ -43,6 +44,7 @@ export function createFilmShaderMaterial(texture: THREE.Texture, isPositive: boo
     uniforms: {
       uTexture: { value: texture },
       uPhotoCrop: { value: new THREE.Vector2(1, 1) },
+      uPhotoOffset: { value: new THREE.Vector2() },
       uPhotoRotation: { value: 0 },
       uModeTransition: { value: isPositive ? 1.0 : 0.0 },
       uOrangeMask: { value: base.clone() },

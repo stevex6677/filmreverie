@@ -3,7 +3,7 @@ import { RollFrame, ROLL_FRAMES } from "../data/rollManifest";
 import { DEFAULT_LAYOUT, FilmStripLayout, getFrameCenter, getStripDimensions, mapWorldPointToFrame } from "./loupeMapping";
 import { TABLE_CENTER_Z } from "./cameraBounds";
 
-export interface RollDefinition { format?: import("../data/filmFormats").FilmFormat; layout?: Omit<FilmStripLayout, "frameCount">; imported?: boolean; rollId: string; label: string; frames: readonly RollFrame[]; framesPerStrip: number; scale: number; fixture: boolean }
+export interface RollDefinition { retainResources?: () => () => void; format?: import("../data/filmFormats").FilmFormat; layout?: Omit<FilmStripLayout, "frameCount">; imported?: boolean; rollId: string; label: string; frames: readonly RollFrame[]; framesPerStrip: number; scale: number; fixture: boolean }
 export const BASELINE_ROLL: RollDefinition = { rollId: "roll-01", label: "Roll 01 · five photographs", frames: ROLL_FRAMES, framesPerStrip: 5, scale: 1, fixture: false };
 export const FULL_ROLL_FIXTURE: RollDefinition = {
   rollId: "development-36", label: "Development fixture · 36 slots / 5 repeated photographs",

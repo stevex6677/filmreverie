@@ -20,10 +20,12 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
   const isRoomMode = state.roomMode === "room";
 
   return (
-    <div className="darkroom-controls" data-testid="controls-panel">
+    <div className={`darkroom-controls ${state.focusMode && !isRoomMode ? "focus-mode" : ""}`} data-testid="controls-panel">
       {/* Top Header / Mode Control Bar */}
       <header className="controls-header">
         <div className="branding">
+      {!isRoomMode && <button className="focus-toggle" aria-pressed={state.focusMode} onClick={()=>dispatch({type:"TOGGLE_FOCUS"})}>{state.focusMode?"Exit focus":"Focus"}</button>}
+
           {onOpenLibrary && <button className="rolls-button" onClick={onOpenLibrary}>Rolls</button>}
           <span className="dot" />
           <h1>DARKROOM FILM VIEWER</h1>
@@ -167,7 +169,9 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
         </div>
       </header>
 
+      {!isRoomMode && !multi && state.focusMode && <nav className="focus-legacy" aria-label="Focused frame navigation"><span>Frame {state.activeFrameIndex+1} / {state.roll.frames.length}</span><button disabled={state.activeFrameIndex===0} onClick={()=>dispatch({type:"SELECT_FRAME",frameIndex:state.activeFrameIndex-1})}>Previous</button><button disabled={state.activeFrameIndex===state.roll.frames.length-1} onClick={()=>dispatch({type:"SELECT_FRAME",frameIndex:state.activeFrameIndex+1})}>Next</button></nav>}
       {!isRoomMode && multi && <RollNavigator state={state} dispatch={dispatch} />}
+      {state.detailStatus && !state.assetsLoading && <div className="detail-status" role="status">{state.detailStatus}{state.detailStatus.includes("unavailable") && <button onClick={()=>dispatch({type:"RETRY_ASSETS"})}>Retry detail</button>}</div>}
       {state.assetsLoading && <div className="asset-status" role="status" data-testid="loading-indicator">Loading photographs… Navigation remains available.</div>}
       {state.assetFailures.length > 0 && <div className="asset-status" role="alert">
         Failed frames: {state.roll.frames.filter(frame => state.assetFailures.includes(frame.src)).map(frame => frame.order).join(", ")}. Other frames remain available.

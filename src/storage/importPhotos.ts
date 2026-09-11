@@ -1,6 +1,6 @@
 import { BlobRecord, StoredFrame } from './rollRepository';
 export const IMPORT_LIMITS = { files: 72, bytes: 40 * 1024 * 1024, pixels: 40_000_000, batchBytes: 300 * 1024 * 1024, viewingEdge: 2048, thumbnailEdge: 256, concurrency: 1 };
-export interface DraftPhoto { id: string; filename: string; frame?: StoredFrame; blobs: BlobRecord[]; preview?: string; error?: string; duplicate: boolean; keepDuplicate: boolean }
+export interface DraftPhoto { id: string; filename: string; frame?: StoredFrame; blobs: BlobRecord[]; preview?: string; reviewPreview?: string; error?: string; duplicate: boolean; keepDuplicate: boolean }
 export function naturalFiles(files: readonly File[]) { return files.map((file, index) => ({ file, index })).sort((a,b) => a.file.name.localeCompare(b.file.name, undefined, { numeric: true }) || a.index - b.index).map(x => x.file); }
 export function imageHeader(bytes: Uint8Array): { mime: string; width: number; height: number } {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -28,10 +28,10 @@ async function derivative(bitmap: ImageBitmap, edge: number) {
   ctx.fillStyle = '#000'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
   try { return await canvasBlob(canvas); } finally { canvas.width = canvas.height = 1; }
 }
-export async function processPhotos(files: readonly File[], rollId: string, signal: AbortSignal, progress: (done: number, total: number) => void): Promise<DraftPhoto[]> {
-  if (!files.length || files.length > IMPORT_LIMITS.files) throw new Error('Choose between 1 and 72 photographs per import.');
-  if (files.reduce((sum,f) => sum + f.size,0) > IMPORT_LIMITS.batchBytes) throw new Error('This batch exceeds 300 MB. Choose a smaller batch.');
-  const photos: DraftPhoto[] = [], hashes = new Set<string>();
+export async function processPhotos(files: readonly File[], rollId: string, signal: AbortSignal, progress: (done: number, total: number) => void, existing: readonly DraftPhoto[] = []): Promise<DraftPhoto[]> {
+  if (!files.length || files.length + existing.length > IMPORT_LIMITS.files) throw new Error('Choose between 1 and 72 photographs per import.');
+  if (files.reduce((sum,f) => sum + f.size,0) + existing.reduce((sum,p)=>sum+(p.blobs.find(b=>b.key===p.frame?.originalKey)?.blob.size??0),0) > IMPORT_LIMITS.batchBytes) throw new Error('This draft would exceed 300 MB. Choose a smaller batch.');
+  const photos: DraftPhoto[] = [], hashes = new Set<string>(existing.flatMap(p=>p.frame?[p.frame.hash]:[]));
   try {
     for (const file of naturalFiles(files)) {
       signal.throwIfAborted();
@@ -48,7 +48,7 @@ export async function processPhotos(files: readonly File[], rollId: string, sign
           const viewing = await derivative(bitmap, IMPORT_LIMITS.viewingEdge), thumbnail = await derivative(bitmap, IMPORT_LIMITS.thumbnailEdge);
           photo.frame = { id, rollId, filename: file.name, mime: header.mime, width: bitmap.width, height: bitmap.height, rotation: 0, hash, originalKey: `${id}:original`, viewingKey: `${id}:view`, thumbnailKey: `${id}:thumb` };
           photo.blobs = [{ key: photo.frame.originalKey, blob: file }, { key: photo.frame.viewingKey, blob: viewing }, { key: photo.frame.thumbnailKey, blob: thumbnail }];
-          photo.preview = URL.createObjectURL(thumbnail); photo.duplicate = hashes.has(hash); hashes.add(hash);
+          photo.preview = URL.createObjectURL(thumbnail); photo.reviewPreview = URL.createObjectURL(viewing); photo.duplicate = hashes.has(hash); hashes.add(hash);
         } finally { bitmap.close(); }
       } catch (error) { if (signal.aborted) throw error; photo.error = error instanceof Error ? error.message : 'Cannot decode this image.'; }
       photos.push(photo); progress(photos.length, files.length);
@@ -56,4 +56,4 @@ export async function processPhotos(files: readonly File[], rollId: string, sign
     signal.throwIfAborted(); return photos;
   } catch (error) { releaseDraft(photos); throw error; }
 }
-export function releaseDraft(photos: readonly DraftPhoto[]) { photos.forEach(p => { if (p.preview) URL.revokeObjectURL(p.preview); }); }
+export function releaseDraft(photos: readonly DraftPhoto[]) { photos.forEach(p => { if (p.preview) URL.revokeObjectURL(p.preview); if(p.reviewPreview) URL.revokeObjectURL(p.reviewPreview); }); }
