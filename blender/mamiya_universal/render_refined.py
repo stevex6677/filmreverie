@@ -1,6 +1,11 @@
 """Render one or all five saved refined cameras. Optional: -- INDEX RESOLUTION SAMPLES."""
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))
+from shared_assets import asset_path, generated_path, output_dir
+
 import bpy, os, sys
-OUT=os.path.dirname(os.path.abspath(__file__))
+OUT=str(output_dir('blender/mamiya_universal', bpy.data.filepath))
 s=bpy.data.scenes['Mamiya Universal | Studio'];bpy.context.window.scene=s
 args=sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else []
 index=int(args[0]) if args else 0

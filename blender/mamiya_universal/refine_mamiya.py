@@ -1,3 +1,8 @@
+
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))
+from shared_assets import asset_path, generated_path, output_dir
 import bpy, bmesh, math
 from math import pi, sin, cos
 from mathutils import Vector
@@ -61,5 +66,5 @@ for name in ['Rear maker','Rear country']:
     bpy.data.objects[name].data.size*=.86
 bpy.data.objects['Film advance lever'].location.x=-.068
 bpy.data.objects['Film advance thumb pad'].location.x=-.053
-bpy.ops.wm.save_as_mainfile(filepath='/root/projects/film_photo/blender/mamiya_universal/mamiya_universal.blend')
+bpy.ops.wm.save_as_mainfile(filepath=str(output_dir('blender/mamiya_universal', bpy.data.filepath)/'mamiya_universal.blend'))
 result={'refined':True,'objects':len(scene.objects)}

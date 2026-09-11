@@ -3,10 +3,14 @@
 Set globals VARIANT='hybrid'|'source', VIEW='three_quarter'|'detail'|'front'|'side',
 RESOLUTION=1400, SAMPLES=16 before executing this file.
 """
-import bpy
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / 'scripts'))
+from shared_assets import asset_path, generated_path, output_dir
+
+import bpy
 from mathutils import Vector
-OUT=Path(__file__).resolve().parent
+OUT=output_dir('blender/mamiya_universal/hybrid', bpy.data.filepath)
 variant=globals().get('VARIANT','hybrid');view=globals().get('VIEW','three_quarter')
 s=bpy.data.scenes['02 Hybrid | refined front' if variant=='hybrid' else '01 Tripo original | comparison']
 bpy.context.window.scene=s

@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "prepare:assets": "node scripts/prepare-assets.js",
+    "predev": "npm run prepare:assets",
     "dev": "vite",
     "build": "node scripts/prepare-assets.js && tsc --noEmit && vite build",
     "preview": "vite preview",

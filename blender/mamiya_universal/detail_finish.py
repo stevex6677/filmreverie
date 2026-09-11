@@ -1,4 +1,9 @@
 """Render-reviewed finish calibration and recessed finder optics."""
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))
+from shared_assets import asset_path, generated_path, output_dir
+
 import bpy,math
 from mathutils import Vector
 s=bpy.context.scene
@@ -44,7 +49,7 @@ for i in range(43):
     z=.1177+i*.00025;sp=me.splines.new('POLY');sp.points.add(1)
     sp.points[0].co=(-.066,-.028125,z,1);sp.points[1].co=(.066,-.028125,z,1)
 o=bpy.data.objects.new(me.name,me);group.objects.link(o);o.parent=root;me.materials.append(bpy.data.materials['Black anodized machined aluminum'])
-s.camera=bpy.data.objects['CAM • Material and lens closeup'];s.render.filepath='/root/projects/film_photo/blender/mamiya_universal/mamiya_universal_detail.png'
+s.camera=bpy.data.objects['CAM • Material and lens closeup'];s.render.filepath=str(output_dir('blender/mamiya_universal', bpy.data.filepath)/'mamiya_universal_detail.png')
 s.render.resolution_percentage=100;s.cycles.samples=48
 smoked=bpy.data.materials['Finder glass | smoked violet'].copy();smoked.name='Recessed finder smoked optical glass'
 p=smoked.node_tree.nodes.get('Principled BSDF')

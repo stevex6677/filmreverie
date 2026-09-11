@@ -1,5 +1,7 @@
 # Hybrid v2 — original Tripo lens and local cleanup
 
+Media has moved to the main checkout: `ignored_generated/blender/mamiya_universal/hybrid/v2/`. Source inputs live under `ignored_assets/`. See [the shared asset workflow](../../../../SHARED_ASSETS.md) and the tracked migration manifest for exact paths. New builds allocate unique run folders; renders/exports follow the opened shared master.
+
 This revision follows the circled-artifact screenshot: it removes the two pale
 scratch clusters below the nameplate, restores Tripo's lens and textured glass,
 and makes the lens inscriptions clearer. The original GLB and hybrid v1 files
@@ -52,7 +54,7 @@ The working/export scale remains an approximate 0.24 meters per Tripo unit.
 
 Through Blender MCP's background CLI tool:
 
-1. Open `../tripo_source_review.blend` and execute `build_v2.py`, setting its
+1. Open the shared `ignored_generated/blender/mamiya_universal/hybrid/tripo_source_review.blend` and execute `build_v2.py`, setting its
    actual `__file__`. Always rebuild from that review file, not a previous v2.
 2. Open the v2 master and execute `render_v2.py` once per `INDEX` from 1 to 5.
    Optional globals: `RESOLUTION`, `SAMPLES`; `INDEX=0` is the inspection detail.

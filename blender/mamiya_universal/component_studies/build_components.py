@@ -2,10 +2,15 @@
 Run in a fresh background Blender: --python build_components.py -- body|lens|film_back
 The dimensions below are working estimates, not measured engineering dimensions.
 """
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / 'scripts'))
+from shared_assets import asset_path, generated_path, output_dir
+
 import bpy, bmesh, math, os, sys, json
 from math import pi, sin, cos
 from mathutils import Vector
-OUT=os.path.dirname(os.path.abspath(__file__))
+OUT=str(output_dir('blender/mamiya_universal/component_studies'))
 PART=sys.argv[sys.argv.index('--')+1]
 assert PART in ('body','lens','film_back')
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -379,7 +384,7 @@ for n,p,power,size in [('Large key',(-250,-350,450),8,.3),('Right fill',(300,-50
 s.world=bpy.data.worlds.new('Neutral studio world');s.world.use_nodes=True;s.world.node_tree.nodes['Background'].inputs[0].default_value=(.5,.5,.5,1);s.world.node_tree.nodes['Background'].inputs[1].default_value=.18
 s.render.engine='CYCLES';s.cycles.samples=48;s.cycles.use_denoising=True;s.render.threads_mode='AUTO'
 s.render.resolution_x=s.render.resolution_y=1400;s.render.resolution_percentage=100;s.render.image_settings.file_format='PNG';s.render.image_settings.color_mode='RGB';s.view_settings.view_transform='AgX'
-s.camera=bpy.data.objects['CAM 01 '+names[0]];s.render.filepath=f'//renders/{PART}_01_{names[0]}.png'
+s.camera=bpy.data.objects['CAM 01 '+names[0]];s.render.filepath=os.path.join(OUT,f'renders/{PART}_01_{names[0]}.png')
 for screen in bpy.data.screens:
  for area in screen.areas:
   if area.type=='VIEW_3D':

@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { createHash, randomUUID } from "node:crypto";
+import { assetPath, generatedPath } from "./shared-assets.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,9 +25,9 @@ const frames = [...JSON.parse(fs.readFileSync(path.join(projectRoot, "src/data/p
 
 for (const frame of frames) {
   if (!frame.source) continue; // Runtime-only sources are handled by the viewer's per-slot error/retry UI.
-  const srcPng = path.join(projectRoot, frame.source);
-  const dstJpg = path.join(projectRoot, "public", frame.src);
-  fs.mkdirSync(path.dirname(dstJpg), { recursive: true });
+  const localSource = path.join(projectRoot, frame.source);
+  const sharedSource = assetPath(frame.source);
+  const srcPng = fs.existsSync(sharedSource) ? sharedSource : localSource;
 
   if (!fs.existsSync(srcPng)) {
     console.error("Source file missing: " + srcPng);
@@ -33,38 +35,50 @@ for (const frame of frames) {
     continue;
   }
 
-  let needsBuild = !fs.existsSync(dstJpg);
-  if (!needsBuild) {
-    const srcStat = fs.statSync(srcPng);
-    const dstStat = fs.statSync(dstJpg);
-    if (srcStat.mtimeMs > dstStat.mtimeMs) {
-      needsBuild = true;
-    }
-  }
+  // Content-addressed derivatives are shared across worktrees. The public copy
+  // is a disposable serving/build cache, never the only durable copy.
+  const version = createHash('sha256').update('jpeg92-thumbnail384-v1\n').update(fs.readFileSync(srcPng)).digest('hex');
+  const dstJpg = generatedPath(`photo-derivatives/${version}/photo.jpg`);
+  const thumbnail = generatedPath(`photo-derivatives/${version}/photo.thumb.jpg`);
+  fs.mkdirSync(path.dirname(dstJpg), { recursive: true });
+  const needsBuild = !fs.existsSync(dstJpg);
 
   if (needsBuild) {
     console.log("Generating derivative for " + frame.id + "...");
+    const temporary = dstJpg.replace(/\.jpg$/, `.${randomUUID()}.jpg`);
     let converted = false;
     try {
-      execFileSync("sips", ["-s", "format", "jpeg", "-s", "formatOptions", "92", srcPng, "--out", dstJpg], { stdio: "pipe" });
+      execFileSync("sips", ["-s", "format", "jpeg", "-s", "formatOptions", "92", srcPng, "--out", temporary], { stdio: "pipe" });
       converted = true;
     } catch {}
 
     if (!converted) {
       try {
-        execFileSync("ffmpeg", ["-y", "-i", srcPng, "-q:v", "2", dstJpg], { stdio: "pipe" });
+        execFileSync("ffmpeg", ["-y", "-i", srcPng, "-q:v", "2", temporary], { stdio: "pipe" });
         converted = true;
       } catch {}
     }
 
     if (!converted) {
+      fs.rmSync(temporary, { force: true });
       throw new Error("Unable to prepare JPEG derivative: " + srcPng);
     }
+    fs.renameSync(temporary, dstJpg);
   }
-  const thumbnail = frame.thumbnailSrc ? path.join(projectRoot, "public", frame.thumbnailSrc) : dstJpg.replace(/\.jpg$/, ".thumb.jpg");
-  if (!fs.existsSync(thumbnail) || needsBuild) {
-    fs.mkdirSync(path.dirname(thumbnail), { recursive: true });
-    execFileSync("ffmpeg", ["-y", "-i", dstJpg, "-vf", "scale=384:-2", "-q:v", "4", thumbnail], { stdio: "pipe" });
+  if (!fs.existsSync(thumbnail)) {
+    const temporary = thumbnail.replace(/\.jpg$/, `.${randomUUID()}.jpg`);
+    try {
+      execFileSync("ffmpeg", ["-y", "-i", dstJpg, "-vf", "scale=384:-2", "-q:v", "4", temporary], { stdio: "pipe" });
+      fs.renameSync(temporary, thumbnail);
+    } finally {
+      fs.rmSync(temporary, { force: true });
+    }
+  }
+  const published = path.join(projectRoot, "public", frame.src);
+  const publishedThumb = frame.thumbnailSrc ? path.join(projectRoot, "public", frame.thumbnailSrc) : published.replace(/\.jpg$/, ".thumb.jpg");
+  for (const [source, target] of [[dstJpg, published], [thumbnail, publishedThumb]]) {
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.copyFileSync(source, target);
   }
 }
 

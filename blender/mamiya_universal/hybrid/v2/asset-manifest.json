@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "model": "mamiya_universal",
+  "version": "hybrid_v2",
+  "paths_relative_to": "shared main checkout",
+  "original_build_commit": "cb95228",
+  "inputs": [
+    {
+      "path": "ignored_assets/blender/mamiya_universal/tripo/mamiya_universal_8k.glb",
+      "sha256": "a6edda4742e79317a226ee5466251469987fa9c8efeacc4271c5dfec08f644d0"
+    },
+    {
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/tripo_source_review.blend",
+      "sha256": "ab9b7ea80b1b84890137dc6d518a85fe2992aacf19706cb4da8029fadb22b7d1"
+    },
+    {
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/mamiya_universal_hybrid.blend",
+      "sha256": "3067120052ec10ac00a67dcc6d472ed9439994f05395a604cb685b6789fd0b39"
+    }
+  ],
+  "scripts": {
+    "build": "blender/mamiya_universal/hybrid/v2/build_v2.py",
+    "render": "blender/mamiya_universal/hybrid/v2/render_v2.py",
+    "export": "blender/mamiya_universal/hybrid/v2/export_v2.py"
+  },
+  "render_settings": {
+    "engine": "CYCLES",
+    "resolution": [
+      1400,
+      1400
+    ],
+    "samples": 20,
+    "denoise": true,
+    "view_transform": "AgX"
+  },
+  "outputs": [
+    {
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/01_front_three_quarter.png",
+      "bytes": 2411726,
+      "sha256": "7ed6f301361f9ce61c49f4ecceb75cdf70d0b81413c2d299a92328857d446e73"
+    },
+    {
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/02_opposite_front.png",
+      "bytes": 2297065,
+      "sha256": "58fb4047f00483c163af038efd5cd7690a9d662121af0498f63f1b6be08b73d5"
+    },
+    {
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/03_rear_three_quarter.png",
+      "bytes": 2403240,
+      "sha256": "667cc2cd2a7ba6d3afe060ef5427f9e42781ada213f94eff4edc1b28a79f690c"
+    },
+    {
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/04_side_profile.png",
+      "bytes": 2221364,
+      "sha256": "677942e72377368209a6f6a8a8647b6b888ca6fd6580a95de74393c3ebe13dcd"
+    },
+    {
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/05_elevated_front.png",
+      "bytes": 2661207,
+      "sha256": "f7f835f2e028a518130f1ee6da2527b832ab8d59fc99f5d5568cd7a7709e2343"
+    },
+    {
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/mamiya_universal_hybrid_v2.blend",
+      "bytes": 199685455,
+      "sha256": "d7ff162ff0b34fd6a6ad3d2453fea1dc05d2cc4fe0faef1b6398362167ecf52f"
+    },
+    {
+      "path": "ignored_generated/blender/mamiya_universal/hybrid/v2/mamiya_universal_hybrid_v2.glb",
+      "bytes": 110036840,
+      "sha256": "ac7a3d8618c7cdabeb95d8f4da60166337b8b66acaf2dbe09df6d45c607e2cb6"
+    }
+  ]
+}
