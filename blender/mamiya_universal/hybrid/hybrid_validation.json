@@ -1,0 +1,15 @@
+{
+  "source_sha256": "a6edda4742e79317a226ee5466251469987fa9c8efeacc4271c5dfec08f644d0",
+  "source_unchanged": true,
+  "source_vertices": 985826,
+  "masked_vertices": 110923,
+  "precision_objects": 60,
+  "donor_labels": 37,
+  "scenes": [
+    "01 Tripo original | comparison",
+    "02 Hybrid | refined front"
+  ],
+  "deliverable": "mamiya_universal_hybrid.blend",
+  "scope": "First hybrid front pass: donor badges, hood and optics; retained Tripo body/texture.",
+  "remaining": "Barrel scales, finder glass, rear labels and other Tripo artifacts are retained for later passes."
+}

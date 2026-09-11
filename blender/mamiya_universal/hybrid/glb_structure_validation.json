@@ -1,0 +1,14 @@
+{
+  "bytes": 56147436,
+  "nodes": 60,
+  "meshes": 59,
+  "triangles": 1730020,
+  "images": 3,
+  "materials": 8,
+  "extensions": [
+    "KHR_materials_transmission"
+  ],
+  "camera_only": true,
+  "lettering_present": true,
+  "embedded_images": true
+}

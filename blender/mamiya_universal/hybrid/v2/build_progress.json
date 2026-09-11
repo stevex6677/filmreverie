@@ -1,0 +1,7 @@
+{
+  "source_sha256": "a6edda4742e79317a226ee5466251469987fa9c8efeacc4271c5dfec08f644d0",
+  "scar_vertices": 6302,
+  "repair_texels_8k": 978990,
+  "candidate_faces": 85459,
+  "lens_geometry_unchanged": true
+}
