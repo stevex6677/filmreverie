@@ -1,3 +1,4 @@
+import { InspectionMotion, Point3 } from "../utils/inspectionMotion";
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
@@ -16,6 +17,8 @@ import { RoomMode } from "../state/viewerState";
 
 interface CameraRigProps {
   roomMode: RoomMode;
+  inspectionTransition?: boolean;
+  stripIndex?: number;
   isTransitioning: boolean;
   savedRoomPose: RoomCameraPose;
   inspectZoom?: number;
@@ -33,6 +36,8 @@ interface CameraRigProps {
 
 export const CameraRig: React.FC<CameraRigProps> = ({
   roomMode,
+  inspectionTransition = false,
+  stripIndex = 0,
   isTransitioning,
   savedRoomPose,
   inspectZoom = DEFAULT_INSPECT_DISTANCE,
@@ -59,6 +64,9 @@ export const CameraRig: React.FC<CameraRigProps> = ({
 
   const maxDragDistRef = useRef(0);
   const wasMovingRef = useRef(false);
+  const flight = useRef<InspectionMotion | null>(null);
+  const lastTarget = useRef("");
+  const lastStrip = useRef(stripIndex);
 
   // Spacebar tracking for table pan
   useEffect(() => {
@@ -260,10 +268,21 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     const immediate = isDeterministic || isReducedMotion || (!inspecting && !isTransitioning);
     const moving = !immediate && (camera.position.distanceTo(targetPos.current) > .001 || camera.quaternion.angleTo(desired.quaternion) > .001 || isPanningTableRef.current);
     if (moving !== wasMovingRef.current) { wasMovingRef.current = moving; onCameraMotion?.(moving); }
-    if (immediate) {
+    if (inspecting && inspectionTransition && !immediate) {
+      const key=targetPos.current.toArray().join(',');
+      if (key !== lastTarget.current) {
+        if (!flight.current) flight.current=new InspectionMotion(camera.position.toArray() as Point3);
+        flight.current.retarget(targetPos.current.toArray() as Point3,Math.abs(stripIndex-lastStrip.current));
+        lastTarget.current=key;lastStrip.current=stripIndex;
+      }
+      camera.position.set(...flight.current!.step(delta));
+      camera.quaternion.slerp(desired.quaternion,1-Math.exp(-delta*12));
+    } else if (immediate) {
+      flight.current=null;lastTarget.current="";lastStrip.current=stripIndex;
       camera.position.copy(targetPos.current);
       camera.quaternion.copy(desired.quaternion);
     } else {
+      flight.current=null;lastTarget.current="";lastStrip.current=stripIndex;
       const alpha = 1 - Math.exp(-delta * (isTransitioning ? 7 : 12));
       camera.position.lerp(targetPos.current, alpha);
       camera.quaternion.slerp(desired.quaternion, alpha);
@@ -277,7 +296,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     gl.domElement.dataset.cameraFov = String(perspective.fov);
     gl.domElement.dataset.cameraPosition = camera.position.toArray().join(",");
     gl.domElement.dataset.cameraQuaternion = camera.quaternion.toArray().join(",");
-    if (isTransitioning && camera.position.distanceTo(targetPos.current) < .001 && camera.quaternion.angleTo(desired.quaternion) < .001 && Math.abs(perspective.fov - desiredFov) < .001) {
+    if (isTransitioning && (!inspectionTransition || immediate || flight.current?.done) && camera.position.distanceTo(targetPos.current) < .001 && camera.quaternion.angleTo(desired.quaternion) < .001 && Math.abs(perspective.fov - desiredFov) < .001) {
       camera.position.copy(targetPos.current);
       camera.quaternion.copy(desired.quaternion);
       perspective.fov = desiredFov; perspective.updateProjectionMatrix();

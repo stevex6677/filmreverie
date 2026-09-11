@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import { parsePng, getRegionStats, getRegionMeanDifference } from "./helpers/pixelAnalysis";
-const output = path.resolve("artifacts/m13-candidates");
+const output = path.resolve(process.env.M13_CANDIDATE_DIR || "artifacts/m13-candidates");
 const ready = async (page: Page) => { await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true'); await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false'); await page.waitForTimeout(350); };
 const pose = async (page: Page) => (await page.locator('main').getAttribute('data-room-pose'))!.split(',').map(Number);
 async function light(page: Page, n: number) { const slider=page.getByRole('slider',{name:'Room brightness',exact:true}); await slider.focus(); await slider.press(n===100?'End':'Home'); if(n>0 && n<100){for(let i=0;i<Math.floor(n/10);i++)await slider.press('PageUp');for(let i=0;i<n%10;i++)await slider.press('ArrowRight');} await slider.blur(); await page.waitForTimeout(700); }

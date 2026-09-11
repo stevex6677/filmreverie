@@ -8,6 +8,11 @@ export interface RollFrame {
   aspectRatio: number;
   thumbnailSrc?: string;
   rotation?: number;
+  cropPosition?: import('../utils/photoFraming').CropPosition;
+  original?: Blob;
+  loadOriginal?: () => Promise<Blob>;
+  sourceWidth?: number;
+  sourceHeight?: number;
 }
 
 export const ROLL_FRAMES: readonly RollFrame[] = photoSources.map(frame => ({ ...frame, thumbnailSrc: frame.src.replace(/\.jpg$/, ".thumb.jpg") }));

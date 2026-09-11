@@ -100,9 +100,9 @@ test("M11 keyboard, direct strips, endpoints, nested Escape, stock and dimmer", 
   await page.keyboard.press("ArrowRight"); await ready(page);
   await expect(app(page)).toHaveAttribute("data-selected-frame", "8");
   await page.getByRole("button", { name: "Strip 5", exact: true }).click(); await ready(page);
-  await expect(page.getByTestId("roll-position")).toContainText("Strip 5 / 6");
+  await expect(page.getByRole("button", { name: "Strip 5", exact: true })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Next", exact: true }).click(); await ready(page);
-  await expect(page.getByTestId("roll-position")).toContainText("Strip 6 / 6");
+  await expect(page.getByRole("button", { name: "Strip 6", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
   await open(page, 1); await expect(page.getByRole("button", { name: "Previous", exact: true })).toBeDisabled();
   await open(page, 36); await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();

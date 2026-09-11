@@ -235,6 +235,8 @@ export function App() {
       data-room-mode={state.roomMode}
       data-room-pose={`${state.savedRoomPose.yaw},${state.savedRoomPose.pitch}`}
       data-room-brightness={state.roomBrightness}
+      data-focus-mode={state.focusMode ? "true" : "false"}
+      data-settled-frame={state.settledFrameIndex+1}
       data-is-transitioning={state.isTransitioning ? "true" : "false"}
       data-film-mode={state.filmMode}
       data-film-stock={state.filmStockId}

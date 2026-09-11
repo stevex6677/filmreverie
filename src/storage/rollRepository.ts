@@ -5,6 +5,7 @@ export interface SavedView {
   zoom: number; pan: { x: number; z: number }; overview: { zoom: number; pan: { x: number; z: number }; frameIndex: number } | null;
 }
 export interface StoredFrame {
+  cropPosition?: import('../utils/photoFraming').CropPosition;
   id: string; rollId: string; filename: string; mime: string; width: number; height: number; rotation: number; hash: string;
   originalKey: string; viewingKey: string; thumbnailKey: string;
 }
@@ -36,6 +37,7 @@ export function validateBundle(bundle: RollBundle) {
   if (!roll.name.trim() || roll.name.length > 120 || !isFilmStockId(roll.stockId) || !isFilmFormat(roll.format)) throw new Error('Enter a name, stock and valid film format.');
   if (!frames.length || frames.length > 72 || new Set(roll.frameIds).size !== frames.length || roll.frameIds.length !== frames.length || !roll.frameIds.includes(roll.coverId)) throw new Error('Invalid frame membership or cover.');
   for (const frame of frames) if (frame.rollId !== roll.id || !roll.frameIds.includes(frame.id) || ![0,90,180,270].includes(frame.rotation)) throw new Error('Invalid frame metadata.');
+  for (const frame of frames) if (frame.cropPosition && [frame.cropPosition.x, frame.cropPosition.y].some(n => !Number.isFinite(n) || Math.abs(n) > 1)) throw new Error('Invalid crop position.');
 }
 export class RollRepository {
   constructor(private factory?: IDBFactory, private name = DB_NAME) {}
@@ -48,12 +50,15 @@ export class RollRepository {
       if (!roll) throw new Error('This roll is no longer available. Refresh the library.');
       const frames = await Promise.all(roll.frameIds.map(frameId => result<StoredFrame | undefined>(tx.objectStore('frames').get(frameId))));
       if (frames.some(f => !f)) throw new Error('Some stored frames are missing. The current roll has been kept open.');
-      const originals = frames.map(f => result(tx.objectStore('blobs').count(f!.originalKey)));
       const keys = [...new Set(frames.flatMap(f => [f!.viewingKey, f!.thumbnailKey]))];
       const blobs = await Promise.all(keys.map(key => result<BlobRecord | undefined>(tx.objectStore('blobs').get(key))));
-      if ((await Promise.all(originals)).some(count => count !== 1) || blobs.some(b => !b)) throw new Error('Some stored images are missing. The current roll has been kept open.');
+      if (blobs.some(b => !b)) throw new Error('Some stored images are missing. The current roll has been kept open.');
       return { roll, frames: frames as StoredFrame[], blobs: blobs as BlobRecord[] };
     } finally { db.close(); }
+  }
+  async original(frameId: string): Promise<Blob> {
+    const db=await openRollDatabase(this.factory,this.name);
+    try { const tx=db.transaction(['frames','blobs']);const frame=await result<StoredFrame|undefined>(tx.objectStore('frames').get(frameId));if(!frame)throw new Error('Original unavailable.');const record=await result<BlobRecord|undefined>(tx.objectStore('blobs').get(frame.originalKey));if(!record)throw new Error('Original unavailable.');return record.blob; } finally { db.close(); }
   }
   async thumbnail(id: string, frameId: string): Promise<{ blob: Blob; rotation: number }> {
     const db = await openRollDatabase(this.factory, this.name);
@@ -75,6 +80,11 @@ export class RollRepository {
       const abort = () => { try { tx.abort(); } catch { /* Already committed. */ } };
       signal?.addEventListener('abort', abort, { once: true });
       try {
+        const prior=tx.objectStore('rolls').get(bundle.roll.id);
+        prior.onsuccess=()=>{
+          const removed=(prior.result as StoredRoll|undefined)?.frameIds.filter(id=>!bundle.roll.frameIds.includes(id))??[];
+          for(const id of removed){const old=tx.objectStore('frames').get(id);old.onsuccess=()=>{const frame=old.result as StoredFrame|undefined;if(frame){for(const key of [frame.originalKey,frame.viewingKey,frame.thumbnailKey])tx.objectStore('blobs').delete(key);tx.objectStore('frames').delete(id);}};}
+        };
         tx.objectStore('rolls').put({ ...bundle.roll, name: bundle.roll.name.trim(), updatedAt: Date.now() });
         for (const frame of bundle.frames) tx.objectStore('frames').put(frame);
         for (const blob of bundle.blobs) tx.objectStore('blobs').put(blob);
