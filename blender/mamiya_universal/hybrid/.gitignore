@@ -1,0 +1,5 @@
+# Generated review images and master/export binaries stay local.
+*.png
+*.blend
+*.blend[0-9]
+*.glb

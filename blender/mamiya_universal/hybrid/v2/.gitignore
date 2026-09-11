@@ -1,0 +1,6 @@
+*.npy
+*.npz
+*.png
+*.blend
+*.blend[0-9]
+*.glb

@@ -1,0 +1,11 @@
+{
+  "source_sha256": "a6edda4742e79317a226ee5466251469987fa9c8efeacc4271c5dfec08f644d0",
+  "scar_vertices": 6302,
+  "repair_texels_8k": 978990,
+  "candidate_faces": 85459,
+  "projected_text_vertices": 1951,
+  "source_unchanged": true,
+  "glass_and_lens_outside_inscription_band_unchanged": true,
+  "restored_lens": "Original mesh and textured glass; only inscription atlas/glyphs refined",
+  "output": "mamiya_universal_hybrid_v2.blend"
+}

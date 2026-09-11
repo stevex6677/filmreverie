@@ -1,0 +1,49 @@
+{
+  "source_glbs_unchanged": true,
+  "source_sha256": "a6edda4742e79317a226ee5466251469987fa9c8efeacc4271c5dfec08f644d0",
+  "glb_bytes": 110036840,
+  "glb_meshes": 38,
+  "glb_triangles": 1852136,
+  "renders": [
+    {
+      "file": "01_front_three_quarter.png",
+      "pixels": [
+        1400,
+        1400
+      ],
+      "sha256": "7ed6f301361f9ce61c49f4ecceb75cdf70d0b81413c2d299a92328857d446e73"
+    },
+    {
+      "file": "02_opposite_front.png",
+      "pixels": [
+        1400,
+        1400
+      ],
+      "sha256": "58fb4047f00483c163af038efd5cd7690a9d662121af0498f63f1b6be08b73d5"
+    },
+    {
+      "file": "03_rear_three_quarter.png",
+      "pixels": [
+        1400,
+        1400
+      ],
+      "sha256": "667cc2cd2a7ba6d3afe060ef5427f9e42781ada213f94eff4edc1b28a79f690c"
+    },
+    {
+      "file": "04_side_profile.png",
+      "pixels": [
+        1400,
+        1400
+      ],
+      "sha256": "677942e72377368209a6f6a8a8647b6b888ca6fd6580a95de74393c3ebe13dcd"
+    },
+    {
+      "file": "05_elevated_front.png",
+      "pixels": [
+        1400,
+        1400
+      ],
+      "sha256": "f7f835f2e028a518130f1ee6da2527b832ab8d59fc99f5d5568cd7a7709e2343"
+    }
+  ]
+}

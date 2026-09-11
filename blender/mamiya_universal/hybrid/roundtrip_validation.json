@@ -1,0 +1,32 @@
+{
+  "reimported_meshes": 59,
+  "dimensions_m": [
+    0.2353784143924713,
+    0.23448540270328522,
+    0.19522704184055328
+  ],
+  "packed_images": [
+    [
+      "vintage+camera+3d+model_basecolor",
+      [
+        8192,
+        8192
+      ]
+    ],
+    [
+      "vintage+camera+3d+model_normal",
+      [
+        4096,
+        4096
+      ]
+    ],
+    [
+      "vintage+camera+3d+model_rm",
+      [
+        4096,
+        4096
+      ]
+    ]
+  ],
+  "all_meshes_nonempty": true
+}
