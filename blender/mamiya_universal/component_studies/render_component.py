@@ -7,7 +7,7 @@ args=sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else []
 resolution=int(args[0]) if args else 1400;samples=int(args[1]) if len(args)>1 else 48;index=int(args[2]) if len(args)>2 else 0
 part=os.path.basename(bpy.data.filepath).split('_study.blend')[0]
 folder=os.path.join(os.path.dirname(bpy.data.filepath),'renders' if resolution>=1400 else 'previews');os.makedirs(folder,exist_ok=True)
-s.render.resolution_x=s.render.resolution_y=resolution;s.render.resolution_percentage=100;s.cycles.samples=samples
+s.render.resolution_x=s.render.resolution_y=resolution;s.render.resolution_percentage=100;s.cycles.samples=samples;s.render.threads_mode='AUTO'
 for cam in sorted((o for o in s.objects if o.type=='CAMERA'),key=lambda o:o.name):
  number=int(cam.name.split()[1])
  if index and number!=index:continue

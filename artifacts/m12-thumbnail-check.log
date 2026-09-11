@@ -1,0 +1,30 @@
+
+Running 1 test using 1 worker
+
+  ✘  1 tests/e2e/m12-roll-library.spec.ts:18:1 › M12 real import, editing, duplicate handling, switching and persistent Trash (5.0s)
+
+
+  1) tests/e2e/m12-roll-library.spec.ts:18:1 › M12 real import, editing, duplicate handling, switching and persistent Trash 
+
+    Error: expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 717
+    Received:    717.6500244140625
+
+      24 |   const first=(await dbRolls(page))[0];expect(first.frameIds).toHaveLength(3);
+      25 |   await page.getByLabel('Open frame 2',{exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');
+    > 26 |   const thumbnailBounds=await page.locator('.strip-thumbnails button').first().evaluate(button=>({photo:button.querySelector('img')!.getBoundingClientRect().bottom,caption:button.querySelector('span')!.getBoundingClientRect().top}));expect(thumbnailBounds.photo).toBeLessThanOrEqual(thumbnailBounds.caption);
+         |                                                                                                                                                                                                                                                                        ^
+      27 |   await page.keyboard.press('b');await expect.poll(async()=>(await dbRolls(page))[0].view?.frameId).toBe(first.frameIds[1]);const before=await page.locator('main').getAttribute('data-selected-frame');
+      28 |   await page.reload();await expect(page.locator('main')).toHaveAttribute('data-roll-id',first.id);await expect(page.locator('main')).toHaveAttribute('data-selected-frame',before!);await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true');
+      29 |   await library(page);await page.getByRole('button',{name:'Edit Harbor scans',exact:true}).click();await page.getByLabel('Roll name',{exact:true}).fill('Renamed scans');await page.getByRole('dialog').getByLabel('Film stock',{exact:true}).selectOption('ektachrome-e100');await page.getByLabel('Film format',{exact:true}).selectOption('66');await save(page);
+        at /root/worktrees/codex/41ad/film_photo/tests/e2e/m12-roll-library.spec.ts:26:264
+
+    attachment #1: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/m12-roll-library-M12-real--f4f5f-tching-and-persistent-Trash/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/m12-roll-library-M12-real--f4f5f-tching-and-persistent-Trash/error-context.md
+
+  1 failed
+    tests/e2e/m12-roll-library.spec.ts:18:1 › M12 real import, editing, duplicate handling, switching and persistent Trash 

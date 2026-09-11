@@ -20,7 +20,9 @@
     "validate:m8": "npm run build && npm run test:integration && npm run test:e2e",
     "validate:m9": "npm run build && npm run test:integration && npm run test:e2e",
     "validate:m10": "npm run build && npm run test:integration && npm run test:e2e",
-    "validate:m11": "npm run build && npm run test:integration && npm run test:e2e"
+    "validate:m12": "npm run build && npm run test:integration && npm run test:e2e",
+    "validate:m11": "npm run build && npm run test:integration && npm run test:e2e",
+    "validate:m13": "npm run build && npm run test:integration && npm run test:e2e"
   },
   "keywords": [],
   "author": "",
@@ -44,6 +46,7 @@
     "pngjs": "^7.0.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.0",
+    "fake-indexeddb": "^6.2.5"
   }
 }

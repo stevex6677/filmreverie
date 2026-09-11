@@ -1,5 +1,8 @@
+import { RollLibrary, rollRepository } from "./components/RollLibrary";
+import { createRuntimeRoll } from "./storage/rollRuntime";
+import { SavedView, storageMessage } from "./storage/rollRepository";
 import { BASELINE_ROLL, FULL_ROLL_FIXTURE, LOCAL_ROLL, validateRoll } from "./utils/rollLayout";
-import { useReducer, useEffect, useMemo, useState, Suspense } from "react";
+import { useReducer, useEffect, useMemo, useState, useRef, Suspense } from "react";
 import * as THREE from "three";
 import { DISPLAY_EXPOSURE } from "./shaders/tableIllumination";
 import { Canvas } from "@react-three/fiber";
@@ -13,6 +16,7 @@ import {
   INSPECT_CAMERA_POSITION,
   INSPECT_CAMERA_UP,
   ROOM_CAMERA_TARGET,
+  ROOM_CAMERA_FOV,
   ROOM_CAMERA_UP,
   sphericalToCartesian,
 } from "./utils/cameraBounds";
@@ -62,7 +66,7 @@ export function App() {
     return new URLSearchParams(window.location.search).get("test_error") === "1";
   });
 
-  const roll = useMemo(() => {
+  const initialRoll = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("fixture") === "36" ? FULL_ROLL_FIXTURE : params.get("roll") === "local" && LOCAL_ROLL.frames.length ? LOCAL_ROLL : BASELINE_ROLL;
   }, []);
@@ -70,8 +74,57 @@ export function App() {
   const [state, dispatch] = useReducer(
     viewerReducer,
     undefined,
-    () => createInitialViewerState(initialRoomMode, roll)
+    () => createInitialViewerState(initialRoomMode, initialRoll)
   );
+
+  const roll = state.roll;
+  useEffect(() => { document.title = roll.imported ? `${roll.label} — Darkroom Film Viewer` : "Darkroom Film Viewer — Roll 01"; }, [roll]);
+  const [libraryOpen, setLibraryOpen] = useState(false), [libraryError, setLibraryError] = useState("");
+  const ownedRuntime = useRef<ReturnType<typeof createRuntimeRoll> | null>(null), switchRequest = useRef(0);
+  const stateRef = useRef(state); stateRef.current = state;
+  const saveView = async () => {
+    const current = stateRef.current;
+    if (!current.roll.imported || current.roomMode !== "inspect" || current.cameraMoving || current.isTransitioning || current.assetsLoading) return;
+    const view: SavedView = { frameId: current.roll.frames[current.activeFrameIndex].id, level: current.inspectionLevel, mode: current.filmMode, brightness: current.tableBrightness, magnification: current.loupe.magnification, zoom: current.inspectZoom, pan: current.inspectPan, overview: current.savedOverview };
+    await rollRepository.update(current.roll.rollId, r => ({ ...r, stockId: current.filmStockId, view }));
+  };
+  const openSaved = async (id: string) => {
+    const request = ++switchRequest.current;
+    if (id !== stateRef.current.roll.rollId) await saveView();
+    const bundle = await rollRepository.read(id);
+    if (bundle.roll.trashedAt !== null) throw new Error("This roll is in Trash. Restore it to open it.");
+    const runtime = createRuntimeRoll(bundle);
+    try {
+      // Decode the small overview before replacing the current roll; originals are never decoded here.
+      await Promise.all(runtime.definition.frames.map(frame => new Promise<void>((resolve,reject) => { const img = new Image(); img.onload = () => resolve(); img.onerror = () => reject(new Error("Stored preview could not be loaded.")); img.src = frame.thumbnailSrc!; })));
+      if (request !== switchRequest.current) { runtime.dispose(); return; }
+      const previous = ownedRuntime.current; ownedRuntime.current = runtime;
+      dispatch({ type: "LOAD_ROLL", roll: runtime.definition, stockId: bundle.roll.stockId, view: bundle.roll.view });
+      previous?.dispose(); setLibraryError("");
+      const url = new URL(location.href); for (const key of ["fixture", "roll", "example"]) url.searchParams.delete(key); history.replaceState({}, "", url);
+      try { localStorage.setItem("darkroom-active-roll", id); } catch { /* IndexedDB remains authoritative. */ }
+    } catch (error) { runtime.dispose(); throw error; }
+  };
+  const openExample = () => {
+    void saveView().catch(error => setLibraryError(storageMessage(error)));
+    ++switchRequest.current; ownedRuntime.current?.dispose(); ownedRuntime.current = null;
+    dispatch({ type: "LOAD_ROLL", roll: BASELINE_ROLL });
+    const url = new URL(location.href); for (const key of ["fixture", "roll", "example"]) url.searchParams.delete(key); history.replaceState({}, "", url);
+    try { localStorage.removeItem("darkroom-active-roll"); } catch { /* Storage may be disabled. */ }
+  };
+  useEffect(() => {
+    let id: string | null = null; try { id = localStorage.getItem("darkroom-active-roll"); } catch { /* Library reports availability when opened. */ }
+    const params = new URLSearchParams(location.search);
+    if (id && !["fixture", "roll", "example"].some(key => params.has(key))) void openSaved(id).catch(error => setLibraryError(storageMessage(error)));
+    return () => { ++switchRequest.current; ownedRuntime.current?.dispose(); };
+  }, []);
+  useEffect(() => {
+    if (!roll.imported) return;
+    void saveView().catch(error => setLibraryError(storageMessage(error)));
+    const flush = () => { void saveView().catch(error => setLibraryError(storageMessage(error))); };
+    window.addEventListener("pagehide", flush);
+    return () => { window.removeEventListener("pagehide", flush); };
+  }, [roll, state.activeFrameIndex, state.inspectionLevel, state.filmStockId, state.filmMode, state.tableBrightness, state.loupe.magnification, state.inspectZoom, state.inspectPan, state.isTransitioning, state.cameraMoving, state.assetsLoading]);
 
   const handleRetry = () => {
     setInjectedError(false);
@@ -96,7 +149,7 @@ export function App() {
     return {
       position: sphericalToCartesian(DEFAULT_ROOM_POSE, ROOM_CAMERA_TARGET),
       up: ROOM_CAMERA_UP,
-      fov: 45,
+      fov: ROOM_CAMERA_FOV,
       near: 0.04,
       far: 50,
     };
@@ -105,6 +158,7 @@ export function App() {
   // Keyboard shortcut support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (libraryOpen) return;
       // Ignore when typing in input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
         return;
@@ -119,6 +173,10 @@ export function App() {
         if (/^[1-9]$/.test(e.key)) return;
       }
       if (state.roomMode === "room") {
+        if (e.target instanceof HTMLElement && e.target.closest('button, input, select, textarea, [role="dialog"], [contenteditable="true"]')) return;
+        const look: Record<string, [number, number]> = { ArrowLeft: [.12, 0], ArrowRight: [-.12, 0], ArrowUp: [0, -.1], ArrowDown: [0, .1] };
+        if (look[e.key]) { e.preventDefault(); dispatch({ type: "LOOK_ROOM", yaw: look[e.key][0], pitch: look[e.key][1] }); return; }
+        if (e.key === "0") { dispatch({ type: "FACE_TABLE" }); return; }
         if ((e.key === "Enter" || e.key === " ") && !state.isTransitioning) {
           dispatch({ type: "APPROACH_TABLE" });
         }
@@ -159,20 +217,24 @@ export function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.roomMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, roll]);
+  }, [state.roomMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, roll, libraryOpen]);
 
   const localError = new URLSearchParams(window.location.search).get("roll") === "local" ? validateRoll(LOCAL_ROLL) : null;
-  if (localError) return <main className="darkroom-error-fallback"><div className="error-card" role="alert"><h2>Local roll unavailable</h2><p>{localError}</p><a href="/">Open the five-photo example</a></div></main>;
+  if (localError) return <main className="darkroom-error-fallback"><div className="error-card" role="alert"><h2>Local roll unavailable</h2><p>{localError}</p><a href="/?example=1">Open the five-photo example</a></div></main>;
 
   return (
     <main
       className={`darkroom-app-container ${roll !== BASELINE_ROLL ? "full-roll" : ""}`}
+      data-roll-id={roll.rollId}
+      data-film-format={roll.format ?? "135"}
       data-inspection-level={state.inspectionLevel}
       data-selected-frame={state.activeFrameIndex + 1}
       data-assets-ready={!state.assetsLoading}
       data-inspect-zoom={state.inspectZoom}
       data-inspect-pan={`${state.inspectPan.x},${state.inspectPan.z}`}
       data-room-mode={state.roomMode}
+      data-room-pose={`${state.savedRoomPose.yaw},${state.savedRoomPose.pitch}`}
+      data-room-brightness={state.roomBrightness}
       data-is-transitioning={state.isTransitioning ? "true" : "false"}
       data-film-mode={state.filmMode}
       data-film-stock={state.filmStockId}
@@ -201,7 +263,8 @@ export function App() {
       ) : (
         <Suspense fallback={<LoadingFallback />}>
           <div className="canvas-wrapper">
-            <Canvas
+            <Canvas shadows
+              frameloop={libraryOpen ? "never" : "always"}
               camera={initialCamera}
               dpr={[1, Math.min(typeof window !== "undefined" ? window.devicePixelRatio : 1, 1.5)]}
               gl={{
@@ -224,7 +287,9 @@ export function App() {
         </Suspense>
       )}
 
-      <Controls state={state} dispatch={dispatch} />
+      <Controls state={state} dispatch={dispatch} onOpenLibrary={() => setLibraryOpen(true)} />
+      {libraryError && <div className="library-notice" role="alert">{libraryError}<button onClick={() => setLibraryOpen(true)}>Open library</button></div>}
+      {libraryOpen && <RollLibrary activeId={roll.rollId} onClose={() => setLibraryOpen(false)} onOpen={openSaved} onExample={openExample} onRemoved={id => { if (id === roll.rollId) openExample(); }} />}
     </main>
   );
 }

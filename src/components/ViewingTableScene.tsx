@@ -99,7 +99,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       />
 
       {/* Surrounding 3D Darkroom Environment & Workbench */}
-      <DarkroomRoom brightness={state.tableBrightness} />
+      <DarkroomRoom brightness={state.tableBrightness} roomBrightness={state.roomBrightness} immediate={isDeterministic || isReducedMotion} />
 
       {/* Flat Light Table on Workbench (placed horizontally on tabletop) */}
       <group
@@ -115,7 +115,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         />
 
         {strips.map(strip => <group key={strip.index} position={[0, strip.y, multi ? 0.003 : 0]} scale={strip.scale}>
-          <FilmStrip stock={getFilmStock(state.filmStockId)} textures={textures.slice(strip.offset, strip.offset + strip.frames.length)}
+          <FilmStrip frames={strip.frames} stock={getFilmStock(state.filmStockId)} textures={textures.slice(strip.offset, strip.offset + strip.frames.length)}
             isPositive={isPositive} layout={strip.layout} brightness={state.tableBrightness}
             onSelectFrame={index => handleFrameSelect(strip.offset + index)} onPointerMove={handlePointerMove} />
         </group>)}

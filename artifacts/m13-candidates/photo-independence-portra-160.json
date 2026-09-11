@@ -1,0 +1,30 @@
+[
+  {
+    "stock": "portra-160",
+    "mode": "negative",
+    "table": 30,
+    "photoDifference": 0,
+    "loupeDifference": 0
+  },
+  {
+    "stock": "portra-160",
+    "mode": "negative",
+    "table": 100,
+    "photoDifference": 0,
+    "loupeDifference": 0
+  },
+  {
+    "stock": "portra-160",
+    "mode": "positive",
+    "table": 30,
+    "photoDifference": 0,
+    "loupeDifference": 0
+  },
+  {
+    "stock": "portra-160",
+    "mode": "positive",
+    "table": 100,
+    "photoDifference": 0,
+    "loupeDifference": 0
+  }
+]
