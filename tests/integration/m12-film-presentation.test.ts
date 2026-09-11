@@ -56,3 +56,23 @@ describe('M12 review: crop and complete strip presentation', () => {
     }
   });
 });
+
+it('rasterizes 120 lettering at substantially higher vertical detail using less texture memory', async () => {
+  const { createFilmRebateAtlas } = await import('../../src/utils/filmRebateCanvas');
+  const stock=getFilmStock('ektachrome-e100');
+  const layout={...formatLayout('66'),frameCount:3};
+  const factory=()=>createCanvas(1,1) as unknown as HTMLCanvasElement;
+  const old=createFilmRebateCanvas(stock,layout,6144,936,factory);
+  const atlas=createFilmRebateAtlas(stock,layout,8192,factory);
+  const inkRows=(canvas:HTMLCanvasElement,start:number,height:number)=>{
+    const pixels=canvas.getContext('2d')!.getImageData(0,start,canvas.width,height).data;
+    let rows=0;for(let y=0;y<height;y++){let ink=false;for(let x=0;x<canvas.width;x++){const i=(y*canvas.width+x)*4;if(pixels[i]>100&&pixels[i+3]>200){ink=true;break;}}if(ink)rows++;}return rows;
+  };
+  const oldRows=inkRows(old,0,Math.floor(936*layout.marginY/getStripDimensions(layout).height));
+  const newRows=inkRows(atlas,0,256);
+  expect(oldRows).toBeGreaterThan(5);expect(newRows).toBeGreaterThan(oldRows*4);
+  expect(inkRows(atlas,256,256)).toBeGreaterThan(40);
+  expect(atlas.width*atlas.height).toBeLessThan(old.width*old.height);
+  const limited=createFilmRebateAtlas(stock,layout,4096,factory);
+  expect(limited.width).toBe(4096);expect(limited.height).toBe(512);
+});

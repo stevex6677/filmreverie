@@ -19,7 +19,7 @@ export const LightTable: React.FC<LightTableProps> = ({
   onPointerMove,
   onClick,
 }) => {
-  const panelMaterial = useMemo(() => createPanelMaterial(1, width - 0.20, height - 0.20), [width, height]);
+  const panelMaterial = useMemo(() => createPanelMaterial(), []);
   updateTableIllumination(panelMaterial, brightness);
   useEffect(() => () => panelMaterial.dispose(), [panelMaterial]);
   const panelWidth = width - 0.20;
