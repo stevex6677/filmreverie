@@ -58,7 +58,7 @@ describe("M5 Integration — 35mm Film Rebate, Substrate Translucency & Transver
       expect(NEGATIVE_REBATE_COLORS.rebateText).toBe("#2a1208");
     });
 
-    it("keeps negative-stock preview borders orange; reversal has a dark developed border (M9)", () => {
+    it("retains orange negative base artwork and a dark E-6 base before shader inversion", () => {
       expect(getRebateColors(getFilmStock("portra-400"))).toBe(NEGATIVE_REBATE_COLORS);
       expect(getRebateColors(getFilmStock("ektachrome-e100")).substrateBase).toContain("24, 22, 27");
     });

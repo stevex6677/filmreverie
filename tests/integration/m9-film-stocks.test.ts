@@ -113,7 +113,7 @@ describe("M9 — whole-strip stock profiles, state, material and real rebate ras
     expect(signatures.size).toBe(5);
   });
 
-  it("propagates the physical mask to photo materials without grading positive images or converting borders", () => {
+  it("propagates the physical mask to photo materials without grading positive images; base artwork remains reusable for whole-strip inversion", () => {
     const texture = new THREE.Texture();
     for (const stock of FILM_STOCKS) {
       const state = viewerReducer(createInitialViewerState(), {type: "SET_FILM_STOCK", stockId: stock.id});
