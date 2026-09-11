@@ -1,5 +1,6 @@
 export interface FilmStripLayout {
   frameCount: number;
+  perforated?: boolean;
   frameNumberOffset?: number;
   frameWidth: number;
   frameHeight: number;
@@ -54,6 +55,7 @@ export function getPerforationPositions(layout: FilmStripLayout = DEFAULT_LAYOUT
   top: PerforationPosition[];
   bottom: PerforationPosition[];
 } {
+  if (layout.perforated === false) return { top: [], bottom: [] };
   const { height } = getStripDimensions(layout);
   const top: PerforationPosition[] = [];
   const bottom: PerforationPosition[] = [];

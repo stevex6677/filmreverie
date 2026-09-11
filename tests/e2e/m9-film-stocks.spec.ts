@@ -77,14 +77,16 @@ test("M9: every stock, physical borders, allowed views and keyboard restrictions
       const positive = await capture(page, `${stock.id}-positive-preview`);
       readablePhotos(positive);
       expect(getRegionMeanDifference(initial, positive, 640, 400, 50)).toBeGreaterThan(15);
-      // M9 intentionally keeps the same orange physical stock around converted photo regions.
-      expect(getRegionMeanDifference(initial, positive, 640, 330, 12)).toBeLessThan(1);
+      // User review: positive preview now reverses the complete strip, including its border.
+      expect(getRegionMeanDifference(initial, positive, 640, 330, 12)).toBeGreaterThan(15);
+      expect(getRegionStats(positive, 645, 338, 2).meanLum).toBeLessThan(base.meanLum - 30);
       for (const x of [233, 437, 640, 843, 1047]) {
         expect(getRegionMeanDifference(positiveMaster!, positive, x, 400, 28)).toBeLessThan(1);
       }
       await page.getByTestId("mode-toggle").click();
       const negativeAgain = await capture(page, `${stock.id}-negative-return`);
       expect(getRegionMeanDifference(initial, negativeAgain, 640, 400, 50)).toBeLessThan(1);
+      expect(getRegionMeanDifference(initial, negativeAgain, 640, 330, 12)).toBeLessThan(1);
     }
   }
   // Native keyboard selection must not invoke global frame/mode/navigation shortcuts.

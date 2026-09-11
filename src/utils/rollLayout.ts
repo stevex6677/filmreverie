@@ -3,7 +3,7 @@ import { RollFrame, ROLL_FRAMES } from "../data/rollManifest";
 import { DEFAULT_LAYOUT, FilmStripLayout, getFrameCenter, getStripDimensions, mapWorldPointToFrame } from "./loupeMapping";
 import { TABLE_CENTER_Z } from "./cameraBounds";
 
-export interface RollDefinition { rollId: string; label: string; frames: readonly RollFrame[]; framesPerStrip: number; scale: number; fixture: boolean }
+export interface RollDefinition { format?: import("../data/filmFormats").FilmFormat; layout?: Omit<FilmStripLayout, "frameCount">; imported?: boolean; rollId: string; label: string; frames: readonly RollFrame[]; framesPerStrip: number; scale: number; fixture: boolean }
 export const BASELINE_ROLL: RollDefinition = { rollId: "roll-01", label: "Roll 01 · five photographs", frames: ROLL_FRAMES, framesPerStrip: 5, scale: 1, fixture: false };
 export const FULL_ROLL_FIXTURE: RollDefinition = {
   rollId: "development-36", label: "Development fixture · 36 slots / 5 repeated photographs",
@@ -15,11 +15,12 @@ export const LOCAL_ROLL: RollDefinition = { ...localRoll, frames: localRoll.fram
 export interface PlacedStrip { index: number; offset: number; y: number; scale: number; layout: FilmStripLayout; frames: readonly RollFrame[] }
 export function createRollLayout(roll: RollDefinition): PlacedStrip[] {
   const count = Math.ceil(roll.frames.length / roll.framesPerStrip);
-  const pitch = (getStripDimensions().height + 0.10) * roll.scale;
+  const base = { ...DEFAULT_LAYOUT, ...roll.layout };
+  const pitch = (getStripDimensions(base).height + 0.10) * roll.scale;
   return Array.from({ length: count }, (_, index) => {
     const offset = index * roll.framesPerStrip;
     const frames = roll.frames.slice(offset, offset + roll.framesPerStrip);
-    return { index, offset, y: ((count - 1) / 2 - index) * pitch, scale: roll.scale, frames, layout: { ...DEFAULT_LAYOUT, frameCount: frames.length, frameNumberOffset: offset } };
+    return { index, offset, y: ((count - 1) / 2 - index) * pitch, scale: roll.scale, frames, layout: { ...base, frameCount: frames.length, frameNumberOffset: offset } };
   });
 }
 export function locateFrame(roll: RollDefinition, index: number) {

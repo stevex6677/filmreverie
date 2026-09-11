@@ -97,6 +97,7 @@ export function createInitialViewerState(initialRoomMode: RoomMode = "inspect", 
 }
 
 export type ViewerAction =
+  | { type: "LOAD_ROLL"; roll: RollDefinition; stockId?: FilmStockId; view?: import("../storage/rollRepository").SavedView }
   | { type: "CAMERA_MOTION"; moving: boolean }
   | { type: "ASSET_STATUS"; failures: string[]; loading: boolean }
   | { type: "RETRY_ASSETS" }
@@ -136,6 +137,25 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
   const safeZoom = (zoom: number) => multi ? Math.max(0.32 * state.roll.scale, Math.min(3.6, zoom)) : clampInspectZoom(zoom);
   const safePan = (x: number, z: number) => multi ? clampRollPan(state.roll, x, z) : clampInspectPan(x, z);
   switch (action.type) {
+    case "LOAD_ROLL": {
+      let next = createInitialViewerState("inspect", action.roll);
+      next = viewerReducer(next, { type: "SET_FILM_STOCK", stockId: action.stockId ?? DEFAULT_FILM_STOCK_ID });
+      const v = action.view;
+      if (v) {
+        const index = Math.max(0, action.roll.frames.findIndex(f => f.id === v.frameId));
+        next = viewerReducer(next, { type: "SELECT_FRAME", frameIndex: index });
+        next = viewerReducer(next, { type: "VIEW_LEVEL", level: ["roll", "strip", "frame"].includes(v.level) ? v.level : "roll" });
+        next = viewerReducer(next, { type: "SET_FILM_MODE", mode: v.mode });
+        next = viewerReducer(next, { type: "SET_TABLE_BRIGHTNESS", brightness: Number.isFinite(v.brightness) ? v.brightness : 1 });
+        next = viewerReducer(next, { type: "SET_LOUPE_MAGNIFICATION", magnification: Number.isFinite(v.magnification) ? v.magnification : 2.5 });
+        if (Number.isFinite(v.zoom) && Number.isFinite(v.pan?.x) && Number.isFinite(v.pan?.z)) {
+          next = viewerReducer(next, { type: "SET_TABLE_ZOOM", zoom: v.zoom });
+          next = viewerReducer(next, { type: "SET_TABLE_PAN", ...v.pan });
+        }
+        next.savedOverview = v.overview && Number.isFinite(v.overview.zoom) && Number.isFinite(v.overview.pan?.x) && Number.isFinite(v.overview.pan?.z) ? { zoom: Math.max(.1,Math.min(3.6,v.overview.zoom)), pan: clampRollPan(action.roll,v.overview.pan.x,v.overview.pan.z), frameIndex: locateFrame(action.roll,v.overview.frameIndex).globalIndex } : null;
+      }
+      return { ...next, viewportAspect: state.viewportAspect, isTransitioning: true };
+    }
     case "CAMERA_MOTION": {
       if (state.cameraMoving === action.moving) return state;
       const center = locateFrame(state.roll, state.activeFrameIndex);
