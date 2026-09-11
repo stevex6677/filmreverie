@@ -138,9 +138,18 @@ test("M11 failed photograph keeps slots usable and recovers through visible retr
 });
 
 async function brightness(page: Page, value: number) {
-  await page.getByTestId("brightness-slider").focus();
+  const slider = page.getByTestId("brightness-slider");
+  await slider.focus();
   await page.keyboard.press(value === 100 ? "End" : "Home");
-  if (value === 60) for (let i = 0; i < 30; i++) await page.keyboard.press("ArrowRight");
+  if (value === 60) {
+    // Use native coarse steps before fine adjustment; the optical matrix repeats
+    // this many times, and every separate key press waits on the busy renderer.
+    for (let i = 0; i < 4; i++) await page.keyboard.press("PageUp");
+    const current = Math.round(Number(await slider.inputValue()) * 100);
+    for (let i = 0; i < Math.abs(value - current); i++) {
+      await page.keyboard.press(current < value ? "ArrowRight" : "ArrowLeft");
+    }
+  }
   await expect(page.getByTestId("brightness-value")).toHaveText(`${value}%`);
   await page.waitForTimeout(200);
 }

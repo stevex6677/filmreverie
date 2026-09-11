@@ -149,7 +149,8 @@ test(`M10 linear HDR loupe: ${mode} ${brightness}% at ${magnifications.join(",")
   const comparisons: unknown[] = [];
   if (mode === "positive") await page.getByTestId("mode-toggle").click();
       await dim(page, brightness);
-      const source = await capture(page, `source-${mode}-${brightness}`);
+      // Both magnification groups run independently; keep their source evidence separate.
+      const source = await capture(page, `source-${mode}-${brightness}-${magnifications[0]}`);
       await page.getByTestId("loupe-toggle").click();
       for (const mag of magnifications) {
         // Visible preset buttons plus existing keyboard increments reach endpoints.
