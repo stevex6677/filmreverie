@@ -51,6 +51,20 @@ history at commit `55366c3`.
   in their normal worktree locations. This policy concerns durable ignored media,
   not every ignored file. Existing tracked images/media were not untracked.
 
+## Reusable browser preview for 3D models
+
+For GLB viewing, drag-to-rotate previews or remote iPad access, reuse
+[`standalone/model-viewer/`](standalone/model-viewer/README.md). Read its README
+before creating a new preview page. Add each new model to
+[`models.json`](standalone/model-viewer/models.json); the `asset` path is relative
+to the shared generated root described above, and `/?model=<id>` is its stable
+browser link. Keep the module independent of the existing Web App unless the
+user asks for integration. The module README covers deployment and checks.
+
+Keep exported GLB files and their textures in unique shared generated run
+folders. Only preview code and model configuration belong in Git. Do not copy
+model binaries into the module directory to make a new model discoverable.
+
 ## Synchronization and backups
 
 Use the existing **film-photo** Mutagen session:

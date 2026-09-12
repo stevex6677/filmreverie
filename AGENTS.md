@@ -4,6 +4,26 @@ These instructions apply to the repository root and all descendants. The local
 Mac filesystem is the source of truth. The remote Linux server is used to run
 the application and its tooling.
 
+## Existing reusable tools: check before implementing
+
+- For **3D model previews, GLB viewers, drag-to-rotate model pages, or iPad model
+  viewing**, first read [standalone/model-viewer/README.md](standalone/model-viewer/README.md).
+  The reusable viewer already exists in `standalone/model-viewer/`; use it for
+  new models instead of creating another one-off page.
+- Add models to [standalone/model-viewer/models.json](standalone/model-viewer/models.json).
+  Each model has a stable `/?model=<id>` link. Configure labels, orientation and
+  initial views there; keep special material adjustments in opt-in `profiles/`.
+- Keep this viewer independent of the existing Web App unless the user asks for
+  integration. Follow the module README for deployment and validation, and
+  [SHARED_ASSETS.md](SHARED_ASSETS.md) for GLB/texture storage. Commit code and
+  configuration; leave generated model binaries in the shared ignored directory.
+- Before changing a running viewer, inspect its actual service working directory
+  and port. A new agent worktree is not automatically the deployed checkout.
+  Preserve existing model entries and links when adding a model.
+- Repository entry points are listed in [README.md](README.md). Other branches
+  and worktrees must include the relevant commits to discover these tools;
+  Git does not distribute the ignored model binaries.
+
 ## 1. Read and edit files locally
 
 - Perform all file discovery, inspection, creation, and editing on the local Mac.
