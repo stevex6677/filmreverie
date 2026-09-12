@@ -1,0 +1,8 @@
+{
+  "name": "standalone-model-viewer",
+  "private": true,
+  "type": "module",
+  "scripts": {"start": "node server.mjs", "test": "node --test tests/catalog.test.mjs", "test:browser": "node verify.mjs", "test:reuse": "node tests/reuse-browser.mjs", "inspect": "node inspect-model.mjs"},
+  "dependencies": {"three": "0.169.0"},
+  "devDependencies": {"playwright": "1.58.2"}
+}
