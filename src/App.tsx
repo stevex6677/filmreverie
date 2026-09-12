@@ -276,7 +276,7 @@ export function App() {
           <div className="canvas-wrapper">
             <Canvas shadows key={canvasVersion}
               onCreated={({gl})=>{gl.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();setContextLost(true);});gl.domElement.addEventListener('webglcontextrestored',()=>setContextLost(false));}}
-              frameloop={libraryOpen || sheet || hidden || contextLost ? "never" : "always"}
+              frameloop={libraryOpen || sheet === 'frames' || hidden || contextLost ? "never" : "always"}
               camera={initialCamera}
               dpr={[1, Math.min(typeof window !== "undefined" ? window.devicePixelRatio : 1, 1.5)]}
               gl={{

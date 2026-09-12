@@ -63,11 +63,12 @@ html, body, #root {
 .mobile-layout[data-focus-mode=true] .mobile-secondary { visibility: hidden; }
 .mobile-sheet { color: #e8e8e5; background: #171a1e; border: 1px solid #494b4e; border-radius: 18px 18px 0 0; padding: 16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); width: 100%; max-width: 100%; max-height: min(85dvh, var(--visible-height, 85dvh)); margin: auto 0 0; overscroll-behavior: contain; overflow-y: auto; }
 .mobile-sheet::backdrop { background: #0009; }
+.mobile-sheet:not(.frame-sheet)::backdrop { background: transparent; }
 .mobile-sheet > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
 .mobile-sheet h2 { font-size: 1.2rem; }
 .mobile-tool-content { display: grid; gap: 20px; }
 .mobile-tool-content label { display: grid; gap: 8px; font-size: .9rem; }
-.mobile-tool-content select { width: 100%; background: #25292e; color: #fff; padding: 8px; border: 1px solid #494b4e; border-radius: 6px; font-size: 1rem; }
+.mobile-tool-content select { appearance: none; color-scheme: dark; width: 100%; background: #25292e; color: #fff; padding: 8px 32px 8px 8px; border: 1px solid #494b4e; border-radius: 6px; font-size: 1rem; background-image: linear-gradient(45deg,transparent 50%,#fff 50%),linear-gradient(135deg,#fff 50%,transparent 50%); background-position: calc(100% - 18px) 50%,calc(100% - 12px) 50%; background-size: 6px 6px; background-repeat: no-repeat; }
 .mobile-tool-content fieldset { border: 0; min-width: 0; }
 .mobile-tool-content legend { margin-bottom: 8px; }
 .mobile-frame-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }

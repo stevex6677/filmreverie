@@ -2,6 +2,8 @@
 
 Status: Awaiting human review. Implementation and the full automated gate passed. Physical iPhone/iPad Safari review, performance profiling and human acceptance remain pending. M1–M14 were explicitly accepted by the user on 2026-09-11.
 
+2026-09-12 iPad follow-up: the user reported dimmed/frozen tools previews and fixed-size touch loupe behavior. These were revised, and Zoom +/- was removed from Viewing tools. The full gate below is historical evidence for `66cb870`; see `../m15-ipad-feedback/` for the follow-up revision and focused verification. Tools now render live without a dimming backdrop; import and frame-chooser dialogs still pause rendering.
+
 Source: Codex worktree `5de95a8d-70dd-42f4-b72e-a8f17b2560d6`, base `e5850e0`. Local files are authoritative; builds and tests run in `/root/worktrees/codex/5de95a8d-70dd-42f4-b72e-a8f17b2560d6/film_photo` after flushing the connected, conflict-free `codex-worktrees-5de95a8d-70dd-42f4-b72e-a8f17b2560d6` Mutagen session.
 
 ## Changes

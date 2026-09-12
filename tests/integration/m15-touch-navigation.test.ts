@@ -50,4 +50,13 @@ describe('M15 touch gestures and shared viewer',()=>{
     for(const [x,y] of [[3,3],[372,3],[3,480],[372,480],[180,240]]){const r=touchLoupePlacement(x,y,375,490);expect(r.x-r.radius).toBeGreaterThanOrEqual(0);expect(r.x+r.radius).toBeLessThanOrEqual(375);expect(r.y-r.radius).toBeGreaterThanOrEqual(0);expect(r.y+r.radius).toBeLessThanOrEqual(490);expect(Math.hypot(r.x-x,r.y-y)).toBeGreaterThan(r.radius+20);}
     expect(touchLoupePlacement(-20,200,375,490).visible).toBe(false);
   });
+  it('scales the touch lens with the film while retaining usable placement at extreme zoom',()=>{
+    const normal=touchLoupePlacement(195,330,390,672,58),zoomed=touchLoupePlacement(195,330,390,672,116);
+    expect(zoomed.radius).toBe(normal.radius*2);
+    for(const [w,h] of [[390,672],[1180,698],[844,290],[390,390]]){
+      const r=touchLoupePlacement(w/2,h/2,w,h,1000);
+      expect(r.visible).toBe(true);expect(r.x-r.radius).toBeGreaterThanOrEqual(0);expect(r.x+r.radius).toBeLessThanOrEqual(w);expect(r.y-r.radius).toBeGreaterThanOrEqual(0);expect(r.y+r.radius).toBeLessThanOrEqual(h);
+      expect(Math.hypot(r.x-w/2,r.y-h/2)).toBeGreaterThan(r.radius+20);
+    }
+  });
 });
