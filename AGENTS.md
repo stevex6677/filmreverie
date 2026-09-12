@@ -77,7 +77,9 @@ Preserve every path component below `<project_name>` when translating a path.
 
 - Run builds, tests, package-manager commands, scripts, development servers, and
   application runtimes on the remote server through `ssh remote "<command>"`.
-- Do not run application runtimes or heavy build tools locally.
+- Remote execution is the default. If the user explicitly requests starting the
+  app locally, local application startup is allowed and must follow the same
+  Tailscale access rules below. Keep builds, tests, and heavy tooling remote.
 - Before a remote command that depends on local edits, flush the exact Mutagen
   session for the active checkout. Examples:
 
@@ -97,6 +99,29 @@ Preserve every path component below `<project_name>` when translating a path.
   ```bash
   ssh remote "cd /root/worktrees/codex/<worktree_id>/film_photo && <command>"
   ```
+
+### App startup and Tailscale access
+
+- Expose apps directly through Tailscale on the machine running them, whether
+  that is the remote server or an explicitly requested local Mac. Do not create
+  SSH port forwards for app access. SSH is still used to run remote commands.
+- Discover the running machine's actual Tailscale IP and DNS name from its
+  Tailscale status; do not assume an SSH alias is a resolvable Tailscale hostname.
+- Bind the app explicitly to that machine's Tailscale IP (for example, pass
+  `--host <tailscale-ip>` to Vite). Do not bind to `0.0.0.0`, `::`, a public IP,
+  or a Wi-Fi/LAN IP. Loopback-only binding is insufficient for access from other
+  Tailscale devices. Do not open the app port to the public internet.
+- Access remains subject to Tailscale access rules and the host firewall. If a
+  firewall adjustment is necessary, restrict it to Tailscale traffic for the app
+  port. If Tailscale is unavailable, report the blocker instead of falling back
+  to public/LAN exposure or an SSH tunnel.
+- After startup, verify the listening address and an HTTP response through the
+  Tailscale address. For a remote app, also check access from the local Mac over
+  Tailscale; checking only server-local loopback is not sufficient.
+- Always provide a clickable, usable URL after starting the app, including its
+  actual port. Prefer a verified Tailscale DNS URL and include the Tailscale IP
+  URL as a fallback. State any access limitation or failed check explicitly;
+  clients must be connected to Tailscale and permitted by its access rules.
 
 ## 4. Keep Git local
 
@@ -130,7 +155,7 @@ Preserve every path component below `<project_name>` when translating a path.
 - Read `SHARED_ASSETS.md` before using or generating media. Both shared folders use the existing `film-photo` sync session; do not create overlapping routes.
 - Keep scripts in the active worktree and run them from its mapped remote checkout. Shared media resolves to `/root/projects/film_photo` remotely.
 - Use unique output run folders; do not overwrite another worktree's output or the original source assets.
-- Git commits contain scripts and manifests, not ignored binary files. Local checksum/copy/move operations are allowed for asset management; application runtimes and tests remain remote.
+- Git commits contain scripts and manifests, not ignored binary files. Local checksum/copy/move operations are allowed for asset management; application runtimes and tests remain remote except for explicitly requested local app startup under section 3.
 
 ## 7. Verification checklist
 
