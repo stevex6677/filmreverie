@@ -15,7 +15,7 @@ Node scripts use `scripts/shared-assets.js`.
 Existing media retains its former repository-relative path below its shared
 root. Thus the Tripo input is
 `ignored_assets/blender/mamiya_universal/tripo/mamiya_universal_8k.glb` and the
-accepted v2 model is
+historical initial v2 model is
 `ignored_generated/blender/mamiya_universal/hybrid/v2/mamiya_universal_hybrid_v2.blend`.
 The five renders, GLB and Blender backups are beside that model.
 Duplicate inputs were consolidated only after verifying identical bytes.
@@ -83,6 +83,14 @@ backup. Removing a temporary worktree must not remove either shared directory.
 Commit scripts and manifests normally; never force-add their binary outputs.
 
 ## Model version manifests
+
+The tracked [Mamiya CURRENT.json](blender/mamiya_universal/CURRENT.json) is the
+entry point for the latest editable master, browser GLB, renders and continuation
+state. Resolve its asset paths against the shared generated root, not a worktree.
+Each model should maintain an equivalent current record. Update it on delivery,
+verify file checksums and the GLB's source master, and keep the viewer catalog in
+agreement. Preserve previous run manifests as history; do not select the current
+delivery by file modification time. Commit the records, not the binary assets.
 
 New generated versions should have a manifest recording
 their source checksums, source-code revision, settings and output paths/checksums.

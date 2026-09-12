@@ -6,6 +6,14 @@ the application and its tooling.
 
 ## Existing reusable tools: check before implementing
 
+- For **Mamiya model continuation or latest .blend / GLB / renders**, first read
+  [blender/mamiya_universal/CURRENT.json](blender/mamiya_universal/CURRENT.json).
+  It is the authoritative current-delivery record; older revision READMEs and
+  file modification times do not select the current version. After each new
+  delivery, update its paths, checksums, source/export relationship and state;
+  update the viewer catalog when its GLB changes, verify both agree, and commit
+  the records. For new models, create an equivalent per-model `CURRENT.json`
+  and link it from the repository README.
 - For **3D model previews, GLB viewers, drag-to-rotate model pages, or iPad model
   viewing**, first read [standalone/model-viewer/README.md](standalone/model-viewer/README.md).
   The reusable viewer already exists in `standalone/model-viewer/`; use it for
