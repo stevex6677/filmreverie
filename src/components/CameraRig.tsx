@@ -16,6 +16,8 @@ import {
 import { RoomMode } from "../state/viewerState";
 
 interface CameraRigProps {
+  touchInput?: boolean;
+  inputBlocked?: boolean;
   roomMode: RoomMode;
   inspectionTransition?: boolean;
   stripIndex?: number;
@@ -35,6 +37,8 @@ interface CameraRigProps {
 }
 
 export const CameraRig: React.FC<CameraRigProps> = ({
+  touchInput = false,
+  inputBlocked = false,
   roomMode,
   inspectionTransition = false,
   stripIndex = 0,
@@ -95,7 +99,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   useEffect(() => {
     const canvas = gl.domElement;
     const handleWheel = (e: WheelEvent) => {
-      if (roomMode !== "inspect" || isTransitioning) return;
+      if (inputBlocked || roomMode !== "inspect" || isTransitioning) return;
       e.preventDefault();
       if (onAdjustInspectZoom) {
         // Proportional step scaling: micro-steps when zoomed in, large steps when zoomed out
@@ -113,7 +117,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
 
     canvas.addEventListener("wheel", handleWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", handleWheel);
-  }, [gl, roomMode, isTransitioning, inspectZoom, onAdjustInspectZoom, onZoomAt, camera]);
+  }, [gl, roomMode, isTransitioning, inspectZoom, onAdjustInspectZoom, onZoomAt, camera, inputBlocked]);
 
   // Pointer drag for fixed-eye room look or table pan
   useEffect(() => {
@@ -126,7 +130,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     };
 
     const handlePointerDown = (e: PointerEvent) => {
-      if (isTransitioning) return;
+      if (inputBlocked || e.pointerType === 'touch' || e.pointerType === 'pen' || isTransitioning) return;
 
       if (roomMode === "room") {
         // Look around from the standing eye with primary button
@@ -161,7 +165,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     };
 
     const handlePointerMove = (e: PointerEvent) => {
-      if (isTransitioning) return;
+      if (inputBlocked || e.pointerType === 'touch' || e.pointerType === 'pen' || isTransitioning) return;
 
       if (roomMode === "room" && isDraggingRoomRef.current) {
         const dx = e.clientX - dragStartRef.current.x;
@@ -223,7 +227,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     };
 
     const cancelInput = () => { isDraggingRoomRef.current = false; isPanningTableRef.current = false; isSpacePressedRef.current = false; };
-    if (isTransitioning) cancelInput();
+    if (isTransitioning || inputBlocked) cancelInput();
     window.addEventListener("blur", cancelInput);
     window.addEventListener("pointercancel", cancelInput);
     canvas.addEventListener("lostpointercapture", cancelInput);
@@ -252,6 +256,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     isLoupeActive,
     onUpdateRoomPose,
     onAdjustInspectPan,
+    inputBlocked,
   ]);
 
   // Room input directly controls orientation at the fixed eye. Only automatic
@@ -265,7 +270,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     desired.position.copy(targetPos.current);
     desired.up.set(...(inspecting ? INSPECT_CAMERA_UP : ROOM_CAMERA_UP));
     desired.lookAt(...(inspecting ? [inspectPan.x, TABLE_SURFACE_Y, inspectPan.z] as [number, number, number] : roomLookTarget(savedRoomPose)));
-    const immediate = isDeterministic || isReducedMotion || (!inspecting && !isTransitioning);
+    const immediate = isDeterministic || isReducedMotion || (!inspecting && !isTransitioning) || (touchInput && !isTransitioning);
     const moving = !immediate && (camera.position.distanceTo(targetPos.current) > .001 || camera.quaternion.angleTo(desired.quaternion) > .001 || isPanningTableRef.current);
     if (moving !== wasMovingRef.current) { wasMovingRef.current = moving; onCameraMotion?.(moving); }
     if (inspecting && inspectionTransition && !immediate) {

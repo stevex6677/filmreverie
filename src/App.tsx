@@ -22,6 +22,8 @@ import {
 } from "./utils/cameraBounds";
 import { ViewingTableScene } from "./components/ViewingTableScene";
 import { Controls } from "./components/Controls";
+import { MobileControls, MobileSheet } from "./components/MobileControls";
+import { useMobileLayout } from "./utils/useMobileLayout";
 
 function LoadingFallback() {
   return (
@@ -34,6 +36,12 @@ function LoadingFallback() {
 }
 
 export function App() {
+  const mobile = useMobileLayout();
+  const [sheet,setSheet]=useState<MobileSheet>(null);
+  const [hidden,setHidden]=useState(document.hidden);
+  const [contextLost,setContextLost]=useState(false);
+  const [canvasVersion,setCanvasVersion]=useState(0);
+  useEffect(()=>{const update=()=>setHidden(document.hidden);document.addEventListener('visibilitychange',update);return()=>document.removeEventListener('visibilitychange',update);},[]);
   const { isDeterministic, initialRoomMode, isReducedMotion } = useMemo(() => {
     if (typeof window === "undefined") {
       return { isDeterministic: false, initialRoomMode: "inspect" as RoomMode, isReducedMotion: false };
@@ -78,6 +86,7 @@ export function App() {
   );
 
   const roll = state.roll;
+  useEffect(()=>{if(mobile)dispatch({type:'INPUT_TOUCH',active:true});else setSheet(null);},[mobile]);
   useEffect(() => { document.title = roll.imported ? `${roll.label} — Darkroom Film Viewer` : "Darkroom Film Viewer — Roll 01"; }, [roll]);
   const [libraryOpen, setLibraryOpen] = useState(false), [libraryError, setLibraryError] = useState("");
   const ownedRuntime = useRef<ReturnType<typeof createRuntimeRoll> | null>(null), switchRequest = useRef(0);
@@ -158,7 +167,7 @@ export function App() {
   // Keyboard shortcut support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (libraryOpen) return;
+      if (libraryOpen || sheet) return;
       // Ignore when typing in input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
         return;
@@ -217,14 +226,14 @@ export function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.roomMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, roll, libraryOpen]);
+  }, [state.roomMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, roll, libraryOpen, sheet]);
 
   const localError = new URLSearchParams(window.location.search).get("roll") === "local" ? validateRoll(LOCAL_ROLL) : null;
   if (localError) return <main className="darkroom-error-fallback"><div className="error-card" role="alert"><h2>Local roll unavailable</h2><p>{localError}</p><a href="/?example=1">Open the five-photo example</a></div></main>;
 
   return (
     <main
-      className={`darkroom-app-container ${roll !== BASELINE_ROLL ? "full-roll" : ""}`}
+      className={`darkroom-app-container ${roll !== BASELINE_ROLL ? "full-roll" : ""} ${mobile ? "mobile-layout" : ""}`}
       data-roll-id={roll.rollId}
       data-film-format={roll.format ?? "135"}
       data-inspection-level={state.inspectionLevel}
@@ -265,8 +274,9 @@ export function App() {
       ) : (
         <Suspense fallback={<LoadingFallback />}>
           <div className="canvas-wrapper">
-            <Canvas shadows
-              frameloop={libraryOpen ? "never" : "always"}
+            <Canvas shadows key={canvasVersion}
+              onCreated={({gl})=>{gl.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();setContextLost(true);});gl.domElement.addEventListener('webglcontextrestored',()=>setContextLost(false));}}
+              frameloop={libraryOpen || sheet || hidden || contextLost ? "never" : "always"}
               camera={initialCamera}
               dpr={[1, Math.min(typeof window !== "undefined" ? window.devicePixelRatio : 1, 1.5)]}
               gl={{
@@ -279,6 +289,7 @@ export function App() {
               }}
             >
               <ViewingTableScene
+                inputBlocked={libraryOpen || !!sheet || hidden || contextLost}
                 state={state}
                 dispatch={dispatch}
                 isDeterministic={isDeterministic}
@@ -289,7 +300,8 @@ export function App() {
         </Suspense>
       )}
 
-      <Controls state={state} dispatch={dispatch} onOpenLibrary={() => setLibraryOpen(true)} />
+      {contextLost&&<div className="context-recovery" role="alert"><p>The graphics view was interrupted. Your rolls are saved.</p><button onClick={()=>{setContextLost(false);setCanvasVersion(v=>v+1);}}>Restore view</button></div>}
+      {mobile ? <MobileControls state={state} dispatch={dispatch} onOpenLibrary={()=>setLibraryOpen(true)} sheet={sheet} setSheet={setSheet}/> : <Controls state={state} dispatch={dispatch} onOpenLibrary={() => setLibraryOpen(true)} />}
       {libraryError && <div className="library-notice" role="alert">{libraryError}<button onClick={() => setLibraryOpen(true)}>Open library</button></div>}
       {libraryOpen && <RollLibrary activeId={roll.rollId} onClose={() => setLibraryOpen(false)} onOpen={openSaved} onExample={openExample} onRemoved={id => { if (id === roll.rollId) openExample(); }} />}
     </main>

@@ -3,9 +3,11 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { createLoupeShaderMaterial } from "../shaders/loupeShader";
 import { captureLoupeScene, createLoupeRenderTarget, updateTableIllumination } from "../shaders/tableIllumination";
-import { TABLE_SURFACE_Y } from "../utils/cameraBounds";
+import { TABLE_SURFACE_Y, TABLE_CENTER_Z } from "../utils/cameraBounds";
+import { touchLoupePlacement } from "../utils/touchLoupe";
 
 interface LoupeProps {
+  touchInput?: boolean;
   physicalScale?: number;
   suspended?: boolean;
   isActive: boolean;
@@ -23,6 +25,7 @@ interface LoupeProps {
 }
 
 export const Loupe: React.FC<LoupeProps> = ({
+  touchInput = false,
   physicalScale = 1,
   suspended = false,
   isActive,
@@ -39,6 +42,7 @@ export const Loupe: React.FC<LoupeProps> = ({
 }) => {
   const groupRef = useRef<THREE.Group>(null);
   const worldPos = useRef(new THREE.Vector3());
+  const marker = useRef<THREE.Mesh>(null);
 
   // Resting position (bottom-right on the light table off the film strip)
   const restingPos = useMemo(() => new THREE.Vector3(1.3, -0.42, 0.08), []);
@@ -62,7 +66,7 @@ export const Loupe: React.FC<LoupeProps> = ({
   useEffect(() => () => lensMaterial.dispose(), [lensMaterial]);
 
   // Update uniforms, smooth positioning, and full-scene capture
-  useFrame(({ gl, scene }, delta) => {
+  useFrame(({ gl, scene, camera, size }, delta) => {
     if (!groupRef.current) return;
 
     // Position interpolation
@@ -76,8 +80,30 @@ export const Loupe: React.FC<LoupeProps> = ({
     // 2. Position virtual camera in world space directly above the current loupe lens position
     groupRef.current.getWorldPosition(worldPos.current);
 
+    let opticalScale = physicalScale;
+    if (touchInput && isActive) {
+      const sample = new THREE.Vector3(targetX, TABLE_SURFACE_Y, TABLE_CENTER_Z-targetY);
+      const projected=sample.clone().project(camera);
+      const placement=touchLoupePlacement((projected.x+1)*size.width/2,(1-projected.y)*size.height/2,size.width,size.height);
+      const wpp=2*(camera.position.y-TABLE_SURFACE_Y)*Math.tan(Math.PI/8)/size.height;
+      opticalScale=placement.radius*wpp/.17;
+      groupRef.current.scale.setScalar(opticalScale);
+      const display = new THREE.Vector3(placement.x/size.width*2-1,1-placement.y/size.height*2,projected.z).unproject(camera);
+      groupRef.current.position.set(display.x,TABLE_CENTER_Z-display.z,.012);
+      groupRef.current.visible=placement.visible&&!suspended;
+      worldPos.current.copy(sample);
+      if(marker.current){marker.current.visible=placement.visible&&!suspended;marker.current.position.set(targetX,targetY,.008);marker.current.scale.setScalar(wpp*5);}
+      gl.domElement.dataset.loupeSample=`${targetX},${targetY}`;
+      gl.domElement.dataset.loupeDisplay=`${placement.x},${placement.y},${placement.radius}`;
+      gl.domElement.dataset.loupeVisible=String(placement.visible&&!suspended);
+    } else {
+      groupRef.current.scale.setScalar(physicalScale);
+      groupRef.current.visible=!suspended;
+      if(marker.current)marker.current.visible=false;
+    }
+
     const safeMag = Math.max(1.0, magnification);
-    const halfSize = 0.14 * physicalScale / safeMag;
+    const halfSize = 0.14 * opticalScale / safeMag;
     virtualCamera.left = -halfSize;
     virtualCamera.right = halfSize;
     virtualCamera.top = halfSize;
@@ -92,7 +118,12 @@ export const Loupe: React.FC<LoupeProps> = ({
     virtualCamera.updateProjectionMatrix();
 
     // 3. Render offscreen into render target
-    if (!suspended) captureLoupeScene(gl, scene, virtualCamera, renderTarget, groupRef.current);
+    if (!suspended && groupRef.current.visible && (isActive || !touchInput)) {
+      const markerVisible=marker.current?.visible;
+      if(marker.current)marker.current.visible=false;
+      captureLoupeScene(gl, scene, virtualCamera, renderTarget, groupRef.current);
+      if(marker.current)marker.current.visible=!!markerVisible;
+    }
 
     // 4. Update shader uniforms for the main scene render pass
     if (lensMaterial.uniforms) {
@@ -129,6 +160,8 @@ export const Loupe: React.FC<LoupeProps> = ({
   const barrelHeight = 0.07;
 
   return (
+    <>
+    <mesh ref={marker} visible={false}><ringGeometry args={[.7,1,24]}/><meshBasicMaterial color="#ffffff" depthTest={false}/></mesh>
     <group
       scale={physicalScale}
       visible={!suspended}
@@ -136,7 +169,7 @@ export const Loupe: React.FC<LoupeProps> = ({
       position={[targetPos.x, targetPos.y, targetPos.z]}
       onClick={(e) => {
         e.stopPropagation();
-        onClick?.();
+        if(!touchInput)onClick?.();
       }}
     >
       {/* Soft radial contact shadow */}
@@ -220,5 +253,6 @@ export const Loupe: React.FC<LoupeProps> = ({
         <circleGeometry args={[lensRadius, 48]} />
       </mesh>
     </group>
+    </>
   );
 };
