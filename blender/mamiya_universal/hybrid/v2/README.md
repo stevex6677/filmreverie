@@ -1,5 +1,9 @@
 # Hybrid v2 — original Tripo lens and local cleanup
 
+This document describes the **historical initial v2**. For the latest editable
+master, black-body refinement, browser GLB and renders, read
+[CURRENT.json](../../CURRENT.json) before continuing work.
+
 Media has moved to the main checkout: `ignored_generated/blender/mamiya_universal/hybrid/v2/`. Source inputs live under `ignored_assets/`. See [the shared asset workflow](../../../../SHARED_ASSETS.md) and [this version's manifest](asset-manifest.json) for exact paths. New builds allocate unique run folders; renders/exports follow the opened shared master.
 
 This revision follows the circled-artifact screenshot: it removes the two pale

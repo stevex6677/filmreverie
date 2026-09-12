@@ -11,6 +11,7 @@ Agent 请先阅读 [AGENTS.md](AGENTS.md)：文件在本地工作区编辑，代
 
 | 要做的事情 | 先看这里 |
 | --- | --- |
+| 查 Mamiya 最新可编辑 .blend、GLB、渲染和继续工作状态 | [当前模型状态](blender/mamiya_universal/CURRENT.json) |
 | 浏览器查看 3D 模型、GLB 旋转预览、iPad 远程看模型 | [通用模型预览器](standalone/model-viewer/README.md) |
 | 给预览器增加模型、标题或默认视角 | [模型配置清单](standalone/model-viewer/models.json) |
 | 查找或保存照片、Blender 文件、GLB、贴图和渲染图 | [共享资源工作流](SHARED_ASSETS.md) |

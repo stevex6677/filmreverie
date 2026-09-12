@@ -1,6 +1,13 @@
 # Mamiya Universal camera model
 
-Open **`mamiya_universal_refined.blend`** for the latest model and select the
+For the **latest delivered model**, read [CURRENT.json](CURRENT.json). It records
+the editable `.blend`, scene, browser GLB, renders and instructions for continuing
+work. Resolve asset paths using the repository's `shared-assets.json`.
+
+## Historical procedural model — 2026-09-09
+
+The following describes the earlier procedural version, not the current hybrid.
+Open **`mamiya_universal_refined.blend`** for this historical model and select the
 **Mamiya Universal | Studio** scene. `mamiya_universal.blend` is the preserved previous master.
 The original startup scene is preserved separately.
 
