@@ -23,6 +23,20 @@ test('M15 native multi-touch navigates across strips, anchors zoom, pins a loupe
   const lens=PNG.sync.read(await canvas.screenshot());expect(getRegionStats(lens,Math.round(display[0]),Math.round(display[1]),35).stdDev).toBeGreaterThan(3);
   await page.screenshot({path:info.outputPath('touch-loupe.png')});
   await touch('touchStart',[{x:x-30,y:y+80,id:1},{x:x+30,y:y+80,id:2}]);await touch('touchMove',[{x:x-40,y:y+90,id:1},{x:x+40,y:y+90,id:2}]);await touch('touchEnd',[]);expect(await canvas.getAttribute('data-loupe-sample')).toBe(sample);
+  await page.waitForTimeout(500);
+  const enlargedDisplay=(await canvas.getAttribute('data-loupe-display'))!.split(',').map(Number);
+  expect(enlargedDisplay[2]/display[2]).toBeGreaterThan(1.2);
+  const enlarged=PNG.sync.read(await canvas.screenshot());
+  const barrelWidth=(png:PNG,position:number[])=>{
+    const [cx,cy,r]=position,dark:number[]=[];
+    for(let px=Math.ceil(cx-r*1.25);px<=Math.floor(cx+r*1.25);px++){
+      const i=(Math.round(cy)*png.width+px)*4;
+      if(Math.max(png.data[i],png.data[i+1],png.data[i+2])<55)dark.push(px);
+    }
+    return Math.max(...dark)-Math.min(...dark);
+  };
+  expect(barrelWidth(enlarged,enlargedDisplay)/barrelWidth(lens,display)).toBeGreaterThan(1.2);
+  await page.screenshot({path:info.outputPath('touch-loupe-after-pinch.png')});
   // Context loss is injected as a fault; all navigation above is native input.
   await page.evaluate(()=>{const canvas=document.querySelector('canvas')!;const gl=canvas.getContext('webgl2')!;gl.getExtension('WEBGL_lose_context')!.loseContext();});
   await expect(page.getByRole('button',{name:'Restore view'})).toBeVisible();await page.getByRole('button',{name:'Restore view'}).tap();await ready(page);await expect(page.locator('main')).toHaveAttribute('data-selected-frame','7');

@@ -43,6 +43,7 @@ export const Loupe: React.FC<LoupeProps> = ({
   const groupRef = useRef<THREE.Group>(null);
   const worldPos = useRef(new THREE.Vector3());
   const marker = useRef<THREE.Mesh>(null);
+  const touchPhysicalScale = useRef<number | null>(null);
 
   // Resting position (bottom-right on the light table off the film strip)
   const restingPos = useMemo(() => new THREE.Vector3(1.3, -0.42, 0.08), []);
@@ -84,8 +85,11 @@ export const Loupe: React.FC<LoupeProps> = ({
     if (touchInput && isActive) {
       const sample = new THREE.Vector3(targetX, TABLE_SURFACE_Y, TABLE_CENTER_Z-targetY);
       const projected=sample.clone().project(camera);
-      const placement=touchLoupePlacement((projected.x+1)*size.width/2,(1-projected.y)*size.height/2,size.width,size.height);
       const wpp=2*(camera.position.y-TABLE_SURFACE_Y)*Math.tan(Math.PI/8)/size.height;
+      // Calibrate a comfortable initial lens once, then keep its world size.
+      // Pinching now scales the barrel and its optical image with the film.
+      touchPhysicalScale.current ??= Math.min(58,size.width/5,size.height/5)*wpp/.17;
+      const placement=touchLoupePlacement((projected.x+1)*size.width/2,(1-projected.y)*size.height/2,size.width,size.height,touchPhysicalScale.current*.17/wpp);
       opticalScale=placement.radius*wpp/.17;
       groupRef.current.scale.setScalar(opticalScale);
       const display = new THREE.Vector3(placement.x/size.width*2-1,1-placement.y/size.height*2,projected.z).unproject(camera);
@@ -97,6 +101,7 @@ export const Loupe: React.FC<LoupeProps> = ({
       gl.domElement.dataset.loupeDisplay=`${placement.x},${placement.y},${placement.radius}`;
       gl.domElement.dataset.loupeVisible=String(placement.visible&&!suspended);
     } else {
+      touchPhysicalScale.current=null;
       groupRef.current.scale.setScalar(physicalScale);
       groupRef.current.visible=!suspended;
       if(marker.current)marker.current.visible=false;
