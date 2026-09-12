@@ -1,0 +1,19 @@
+{
+  "defaultModel": "mamiya-universal",
+  "models": [
+    {
+      "id": "mamiya-universal",
+      "title": "Mamiya",
+      "titleAccent": "Universal",
+      "subtitle": "黑色机身 · 多层镀膜镜头",
+      "eyebrow": "THE CAMERA STUDY",
+      "edition": "HYBRID V2",
+      "caption": "MAMIYA—SEKOR",
+      "captionDetail": "100 mm / f 2.8",
+      "asset": "blender/mamiya_universal/hybrid/v2/browser_preview/runs/20260912T073337Z-1d792c08/mamiya-black-body.glb",
+      "profile": "mamiya",
+      "camera": {"distance": 5.2, "portraitDistance": 6, "home": [1.7, 1.5, 3.2]},
+      "exposure": 1.15
+    }
+  ]
+}

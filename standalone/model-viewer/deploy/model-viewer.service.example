@@ -1,0 +1,21 @@
+[Unit]
+Description=Reusable private 3D model viewer
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Replace these paths and the host IP for the deployment machine.
+WorkingDirectory=/path/to/checkout/standalone/model-viewer
+Environment=PREVIEW_HOST=100.64.0.1
+Environment=PREVIEW_PORT=4180
+Environment=MODEL_ASSET_ROOT=/path/to/shared/generated
+ExecStart=/usr/bin/node server.mjs
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

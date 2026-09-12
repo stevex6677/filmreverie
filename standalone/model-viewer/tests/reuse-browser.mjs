@@ -1,0 +1,35 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import {spawn} from 'node:child_process';
+import {chromium} from 'playwright';
+import {assetRoot,root} from '../catalog.mjs';
+const out=path.join(assetRoot(),'model-viewer/qa',`reuse-${Date.now()}`);fs.mkdirSync(out,{recursive:true});
+const positions=new Float32Array([0,1,0,-1,-1,1,1,-1,1,0,-1,-1]);
+const indices=new Uint16Array([0,1,2,0,2,3,0,3,1,1,3,2]);
+const bin=Buffer.concat([Buffer.from(positions.buffer),Buffer.from(indices.buffer)]);
+const gltf={asset:{version:'2.0'},scene:0,scenes:[{nodes:[0]}],nodes:[{mesh:0,name:'Independent sculpture'}],meshes:[{primitives:[{attributes:{POSITION:0},indices:1,material:0}]}],materials:[{name:'Original red',doubleSided:true,pbrMetallicRoughness:{baseColorFactor:[.6,.08,.04,1],metallicFactor:0,roughnessFactor:.65}}],buffers:[{byteLength:bin.length}],bufferViews:[{buffer:0,byteOffset:0,byteLength:positions.byteLength,target:34962},{buffer:0,byteOffset:positions.byteLength,byteLength:indices.byteLength,target:34963}],accessors:[{bufferView:0,componentType:5126,count:4,type:'VEC3',min:[-1,-1,-1],max:[1,1,1]},{bufferView:1,componentType:5123,count:12,type:'SCALAR'}]};
+const json=Buffer.from(JSON.stringify(gltf));const padded=Buffer.concat([json,Buffer.alloc((4-json.length%4)%4,32)]);
+const header=Buffer.alloc(20);header.writeUInt32LE(0x46546c67,0);header.writeUInt32LE(2,4);header.writeUInt32LE(28+padded.length+bin.length,8);header.writeUInt32LE(padded.length,12);header.writeUInt32LE(0x4e4f534a,16);
+const binHeader=Buffer.alloc(8);binHeader.writeUInt32LE(bin.length,0);binHeader.writeUInt32LE(0x004e4942,4);
+fs.writeFileSync(path.join(out,'sculpture.glb'),Buffer.concat([header,padded,binHeader,bin]));
+fs.writeFileSync(path.join(out,'models.json'),JSON.stringify({defaultModel:'sculpture',models:[{id:'sculpture',title:'Reusable sculpture',asset:'sculpture.glb'},{id:'alternate',title:'Alternate orientation',asset:'sculpture.glb',rotation:[0,.5,0],camera:{home:[-1,1,2]},exposure:.9}]}));
+const host=new URL(process.env.PREVIEW_URL||'http://100.127.56.123:4180').hostname;
+const server=spawn(process.execPath,['server.mjs'],{cwd:root,env:{...process.env,PREVIEW_HOST:host,PREVIEW_PORT:'0',MODEL_ASSET_ROOT:out,MODEL_CONFIG:path.join(out,'models.json')},stdio:['ignore','pipe','pipe']});
+let browser;
+try{
+ const url=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Fixture server timeout')),15000);server.stdout.on('data',chunk=>{const match=chunk.toString().match(/http:\/\/[^\s]+/);if(match){clearTimeout(timer);resolve(match[0]);}});server.once('exit',code=>{clearTimeout(timer);reject(new Error(`Fixture server exited ${code}`));});});
+ browser=await chromium.launch({args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+ const page=await browser.newPage({viewport:{width:1000,height:760}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(url);await page.waitForFunction(()=>window.previewDiagnostics?.().ready);
+ let diag=await page.evaluate(()=>window.previewDiagnostics());assert.equal(diag.modelId,'sculpture');assert.equal(diag.profile,'default');assert.equal(diag.triangles,4);
+ await page.getByLabel('切换模型',{exact:true}).selectOption('alternate');await page.waitForFunction(()=>window.previewDiagnostics?.().modelId==='alternate');
+ assert.equal(await page.locator('#model-title').textContent(),'Alternate orientation');assert(new URL(page.url()).searchParams.get('model')==='alternate');
+ await page.reload();await page.waitForFunction(()=>window.previewDiagnostics?.().modelId==='alternate');
+ await page.waitForFunction(()=>getComputedStyle(document.querySelector('#loading')).opacity==='0');
+ await page.screenshot({path:path.join(out,'alternate.png')});assert.deepEqual(errors,[]);
+ assert.equal((await fetch(url+'/models.json')).status,404);assert.equal((await fetch(url+'/assets/models/missing.glb')).status,404);
+ const publicConfig=await(await fetch(url+'/api/catalog')).json();assert(!JSON.stringify(publicConfig).includes(out));
+ fs.writeFileSync(path.join(out,'verification.json'),JSON.stringify({passed:true,models:2,defaultProfile:true,directLinkAndReload:true,errors},null,2));
+ console.log(JSON.stringify({out,passed:true}));
+}finally{if(browser)await browser.close();server.kill('SIGTERM');}
