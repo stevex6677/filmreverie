@@ -5,7 +5,27 @@
 ## 开始工作前
 
 Agent 请先阅读 [AGENTS.md](AGENTS.md)：文件在本地工作区编辑，代码通过 Mutagen
-同步，应用和检查在对应远程工作区运行，Git 操作始终在本地完成。
+同步。默认在对应远程工作区运行应用和检查；用户明确要求本地启动时，应用必须
+运行在本地 Mac。Git 操作始终在本地完成。
+
+## Local startup and iPad/iPhone access
+
+When the user says **"start the app locally"**, start the application process on
+the **Mac**, in the active local checkout. A localhost link forwarding to a remote
+server does not count as local startup. Necessary local dependencies and startup
+preparation are allowed; builds and tests remain remote unless separately requested.
+
+For local startup, expose the Mac app directly through Tailscale Serve. For remote
+startup, expose its SSH localhost tunnel through Tailscale Serve. Follow
+[AGENTS.md](AGENTS.md) for port/hostname checks and setup.
+
+After either kind of startup, verify and share **both** links using the actual port:
+
+- This Mac: `http://localhost:<port>`
+- iPad/iPhone: `http://macbook:<port>` (or the verified Mac Tailscale hostname)
+
+State whether the app runs locally or remotely. The iPad/iPhone must be connected
+to the same Tailscale network.
 
 ## 已有能力与文档入口
 
