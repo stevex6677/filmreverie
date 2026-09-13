@@ -1,3 +1,4 @@
+import { openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect } from '@playwright/test';
 import { PNG } from 'pngjs';
 import fs from 'node:fs/promises';
@@ -17,11 +18,11 @@ for(const format of ['135','69']) test(`M12 ${format} exposed panel has no phant
   await page.waitForTimeout(600);
   const measurements=[];
   for(const mode of ['negative','positive']){
-    if(mode==='positive')await page.getByTestId('mode-toggle').click();
+    if(mode==='positive'){await openViewingTools(page);await page.getByTestId('mode-toggle').click();}
     const brightnessValues=[];
     for(const brightness of [30,100]){
-      const slider=page.getByTestId('brightness-slider');await slider.focus();await slider.press(brightness===30?'Home':'End');await expect(slider).toHaveValue(brightness===30?'0.3':'1');await slider.blur();await page.waitForTimeout(500);
-      const png=PNG.sync.read(await page.locator('canvas').screenshot({path:`${output}/${format}-${mode}-${brightness}.png`}));
+      await openViewingTools(page);const slider=page.getByTestId('brightness-slider');await slider.focus();await slider.press(brightness===30?'Home':'End');await expect(slider).toHaveValue(brightness===30?'0.3':'1');await slider.blur();await page.waitForTimeout(500);
+      const png=PNG.sync.read(await captureCanvas(page, {path:`${output}/${format}-${mode}-${brightness}.png`}));
       const values:number[]=[];
       // Broad exposed panel patches, rejecting photos, dark borders, tiny text,
       // and panel/chassis boundaries. The obsolete strip shadow lies in this area.

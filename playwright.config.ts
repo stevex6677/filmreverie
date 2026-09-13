@@ -19,6 +19,7 @@ const workers = workerSetting.endsWith("%")
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR || "test-results",
   timeout: 240000,
   expect: {
     timeout: 10000,
@@ -28,8 +29,8 @@ export default defineConfig({
   reporter: [["list"]],
   projects: [
     { name: 'desktop', testIgnore: /m15-.*\.spec\.ts/, use:{channel:'chrome'} },
-    { name: 'mobile-chrome', testMatch: /m15-.*\.spec\.ts/, use: { channel:'chrome', viewport: {width:390,height:844}, hasTouch:true, isMobile:true, deviceScaleFactor:1 } },
-    { name: 'mobile-webkit', testMatch: /m15-.*\.spec\.ts/, testIgnore: /m15-touch-input\.spec\.ts/, use: { browserName:'webkit', channel:undefined, launchOptions:{args:[]}, viewport:{width:390,height:844},hasTouch:true,isMobile:true,deviceScaleFactor:1 } },
+    { name: 'mobile-chrome', testMatch: /m(?:15|16)-.*\.spec\.ts/, use: { channel:'chrome', viewport: {width:390,height:844}, hasTouch:true, isMobile:true, deviceScaleFactor:1 } },
+    { name: 'mobile-webkit', testMatch: /m(?:15|16)-.*\.spec\.ts/, testIgnore: /m15-touch-input\.spec\.ts/, use: { browserName:'webkit', channel:undefined, launchOptions:{args:[]}, viewport:{width:390,height:844},hasTouch:true,isMobile:true,deviceScaleFactor:1 } },
   ],
   use: {
     baseURL,

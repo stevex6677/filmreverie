@@ -1,3 +1,4 @@
+import { viewerKey, openViewingTools, selectOverviewFrame, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -32,8 +33,8 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible({ timeout: 15000 });
 
-    const roomBadge = page.locator("[data-testid=room-badge]");
-    await expect(roomBadge).toHaveText("ROOM");
+    const roomBadge = page.locator("main");
+    await expect(roomBadge).toHaveAttribute("data-room-mode", "room");
 
     const approachBtn = page.locator("[data-testid=approach-table-btn]");
     await expect(approachBtn).toBeVisible();
@@ -46,7 +47,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     }
 
     // Capture initial room view
-    const roomInitialBuffer = await canvas.screenshot();
+    const roomInitialBuffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m2-room-initial.png"), roomInitialBuffer);
     const roomInitialPng = parsePng(roomInitialBuffer);
 
@@ -65,7 +66,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
       await page.mouse.up();
       await page.waitForTimeout(600);
 
-      const roomDraggedBuffer = await canvas.screenshot();
+      const roomDraggedBuffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m2-room-dragged.png"), roomDraggedBuffer);
       const roomDraggedPng = parsePng(roomDraggedBuffer);
 
@@ -75,28 +76,28 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     }
 
     // 3. Selecting the table completes the approach transition
-    await approachBtn.click();
+    await approachBtn.click(); await openViewingTools(page);
 
     // Verify transition into inspect mode completes
     await expect(page.locator("[data-room-mode=inspect]")).toBeAttached({ timeout: 5000 });
     await expect(page.locator("[data-is-transitioning=false]")).toBeAttached({ timeout: 5000 });
-    await expect(roomBadge).toHaveText("INSPECT");
+    await expect(roomBadge).toHaveAttribute("data-room-mode", "inspect");
 
     const returnBtn = page.locator("[data-testid=return-room-btn]");
     await expect(returnBtn).toBeVisible();
 
     await page.waitForTimeout(600);
-    const inspectBuffer = await canvas.screenshot();
+    const inspectBuffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m2-inspect-arrived.png"), inspectBuffer);
 
     // 4. Back / Escape restores room mode and exact prior pose
-    await page.keyboard.press("Escape");
+    await viewerKey(page, "Escape");
     await expect(page.locator("[data-room-mode=room]")).toBeAttached({ timeout: 5000 });
     await expect(page.locator("[data-is-transitioning=false]")).toBeAttached({ timeout: 5000 });
-    await expect(roomBadge).toHaveText("ROOM");
+    await expect(roomBadge).toHaveAttribute("data-room-mode", "room");
 
     await page.waitForTimeout(600);
-    const restoredBuffer = await canvas.screenshot();
+    const restoredBuffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m2-room-restored-1.png"), restoredBuffer);
     const restoredPng = parsePng(restoredBuffer);
 
@@ -110,7 +111,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
 
     // 5. Repeat approach / return twice
     // Cycle 1: Click approach button, click return button
-    await approachBtn.click();
+    await approachBtn.click(); await openViewingTools(page);
     await expect(page.locator("[data-room-mode=inspect]")).toBeAttached();
     await page.waitForTimeout(600);
 
@@ -124,18 +125,19 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     if (box) {
       await page.mouse.click(box.x + 640, box.y + 400);
     } else {
-      await approachBtn.click();
+      await approachBtn.click(); await openViewingTools(page);
     }
     await expect(page.locator("[data-room-mode=inspect]")).toBeAttached({ timeout: 5000 });
     await page.waitForTimeout(600);
 
     // 6. Run full accepted M1 journey in inspect mode
+    await openViewingTools(page);
     const modeToggle = page.locator("#mode-toggle");
     const loupeToggle = page.locator("#loupe-toggle");
     await expect(modeToggle).toBeVisible();
     await expect(loupeToggle).toBeVisible();
 
-    const m1NegBuffer = await canvas.screenshot();
+    const m1NegBuffer = await captureCanvas(page);
     const m1NegPng = parsePng(m1NegBuffer);
 
     // Verify all 5 frames are readable
@@ -151,7 +153,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     await expect(page.locator("[data-testid=mode-badge]")).toHaveText("POSITIVE");
     await page.waitForTimeout(600);
 
-    const m1PosBuffer = await canvas.screenshot();
+    const m1PosBuffer = await captureCanvas(page);
     const m1PosPng = parsePng(m1PosBuffer);
     const pixelDelta = getRegionMeanDifference(m1NegPng, m1PosPng, 640, 400, 30);
     expect(pixelDelta).toBeGreaterThan(20);
@@ -165,15 +167,15 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     await loupeToggle.click();
     await expect(page.locator("[data-testid=loupe-badge]")).toContainText("ACTIVE");
 
-    await page.locator("[data-testid=frame-btn-1]").click();
+    await selectOverviewFrame(page, 1);
     await expect(page.locator("[data-testid=frame-badge]")).toContainText("#1");
     await page.waitForTimeout(500);
 
-    await page.locator("[data-testid=frame-btn-3]").click();
+    await selectOverviewFrame(page, 3);
     await expect(page.locator("[data-testid=frame-badge]")).toContainText("#3");
     await page.waitForTimeout(500);
 
-    await page.locator("[data-testid=frame-btn-5]").click();
+    await selectOverviewFrame(page, 5);
     await expect(page.locator("[data-testid=frame-badge]")).toContainText("#5");
     await page.waitForTimeout(600);
 

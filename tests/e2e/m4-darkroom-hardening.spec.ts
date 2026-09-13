@@ -1,3 +1,4 @@
+import { viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -50,7 +51,7 @@ test.describe("M4 E2E — Darkroom Realism & Production Hardening", () => {
 
     // Capture M4 darkroom overview in room mode (showing safelight, timer, chemical jugs, enlarger, workbench)
     await page.waitForTimeout(600);
-    const roomBuffer = await canvas.screenshot();
+    const roomBuffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m4-darkroom-room-overview.png"), roomBuffer);
     const roomPng = parsePng(roomBuffer);
 
@@ -60,44 +61,44 @@ test.describe("M4 E2E — Darkroom Realism & Production Hardening", () => {
 
     // Approach table with reduced motion -> should instantly transition without long interpolation
     const approachBtn = page.locator("#approach-btn");
-    await approachBtn.click();
+    await approachBtn.click(); await openViewingTools(page);
     await expect(appContainer).toHaveAttribute("data-room-mode", "inspect", { timeout: 3000 });
     await expect(appContainer).toHaveAttribute("data-is-transitioning", "false", { timeout: 3000 });
 
     // 3. Comprehensive keyboard navigation journey
     // Test Escape to return to room
-    await page.keyboard.press("Escape");
+    await viewerKey(page, "Escape");
     await expect(appContainer).toHaveAttribute("data-room-mode", "room", { timeout: 3000 });
     await expect(appContainer).toHaveAttribute("data-is-transitioning", "false", { timeout: 3000 });
 
     // Test Enter to approach table
-    await page.keyboard.press("Enter");
+    await viewerKey(page, "Enter");
     await expect(appContainer).toHaveAttribute("data-room-mode", "inspect", { timeout: 3000 });
     await expect(appContainer).toHaveAttribute("data-is-transitioning", "false", { timeout: 3000 });
 
     // Test number keys 1-5 to navigate frames
     const frameBadge = page.locator("[data-testid=frame-badge]");
     for (let f = 1; f <= 5; f++) {
-      await page.keyboard.press(String(f));
+      await viewerKey(page, String(f));
       await expect(frameBadge).toContainText(`#${f}`);
     }
 
     // Test ArrowLeft and ArrowRight keys
-    await page.keyboard.press("ArrowLeft");
+    await viewerKey(page, "ArrowLeft");
     await expect(frameBadge).toContainText("#4");
-    await page.keyboard.press("ArrowRight");
+    await viewerKey(page, "ArrowRight");
     await expect(frameBadge).toContainText("#5");
 
     // Test m key to toggle film mode
     const modeBadge = page.locator("[data-testid=mode-badge]");
     await expect(modeBadge).toHaveText("NEGATIVE");
-    await page.keyboard.press("m");
+    await viewerKey(page, "m");
     await expect(modeBadge).toHaveText("POSITIVE");
 
     // Test l key to toggle loupe
     const loupeBadge = page.locator("[data-testid=loupe-badge]");
     await expect(loupeBadge).toContainText("RESTING");
-    await page.keyboard.press("l");
+    await viewerKey(page, "l");
     await expect(loupeBadge).toContainText("ACTIVE");
 
     // 4. Desktop viewport handling: resize to 1920x1080 and 1280x800
@@ -110,7 +111,7 @@ test.describe("M4 E2E — Darkroom Realism & Production Hardening", () => {
     await expect(canvas).toBeVisible();
 
     // Capture final inspected state
-    const inspectBuffer = await canvas.screenshot();
+    const inspectBuffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m4-darkroom-inspect-final.png"), inspectBuffer);
 
     // 5. Zero error baseline

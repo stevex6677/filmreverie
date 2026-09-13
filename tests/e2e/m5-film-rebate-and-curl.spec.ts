@@ -1,3 +1,4 @@
+import { openViewingTools, selectOverviewFrame, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -24,12 +25,12 @@ test.describe("M5 E2E — Authentic 35mm Film Substrate, Rebate Print & Transver
     }
 
     // 1. Inspect Mode in Negative Film Mode
-    await page.goto("/?deterministic=true&mode=inspect");
+    await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible({ timeout: 15000 });
     await page.waitForTimeout(600);
 
-    const negBuffer = await canvas.screenshot();
+    const negBuffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m5-film-negative-rebate.png"), negBuffer);
     const negPng = parsePng(negBuffer);
 
@@ -50,7 +51,7 @@ test.describe("M5 E2E — Authentic 35mm Film Substrate, Rebate Print & Transver
     await expect(page.locator("[data-testid=mode-badge]")).toHaveText("POSITIVE");
     await page.waitForTimeout(600);
 
-    const posBuffer = await canvas.screenshot();
+    const posBuffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m5-film-positive-translucent.png"), posBuffer);
     const posPng = parsePng(posBuffer);
 
@@ -72,11 +73,11 @@ test.describe("M5 E2E — Authentic 35mm Film Substrate, Rebate Print & Transver
     // 3. Inspect Frame 3 under 2.5x optical loupe
     const loupeToggle = page.locator("#loupe-toggle");
     await loupeToggle.click();
-    await page.locator("[data-testid=frame-btn-3]").click();
+    await selectOverviewFrame(page, 3);
     await expect(page.locator("[data-testid=frame-badge]")).toContainText("#3");
     await page.waitForTimeout(600);
 
-    const loupeBuffer = await canvas.screenshot();
+    const loupeBuffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m5-film-loupe-detail.png"), loupeBuffer);
     const loupePng = parsePng(loupeBuffer);
 
@@ -85,12 +86,12 @@ test.describe("M5 E2E — Authentic 35mm Film Substrate, Rebate Print & Transver
     expect(loupeStats.stdDev).toBeGreaterThan(8);
 
     // 4. Return to Room Mode and capture transverse curl perspective
-    const returnBtn = page.locator("#return-btn");
+    const returnBtn = page.getByTestId("return-room-btn");
     await returnBtn.click();
     await expect(page.locator(".darkroom-app-container")).toHaveAttribute("data-room-mode", "room");
     await page.waitForTimeout(600);
 
-    const roomBuffer = await canvas.screenshot();
+    const roomBuffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m5-film-curl-profile.png"), roomBuffer);
 
     // 5. Verify zero errors

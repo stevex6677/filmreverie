@@ -1,3 +1,4 @@
+import { openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -8,7 +9,7 @@ const pose = async (page: Page) => (await page.locator('main').getAttribute('dat
 async function light(page: Page, n: number) { const slider=page.getByRole('slider',{name:'Room brightness',exact:true}); await slider.focus(); await slider.press(n===100?'End':'Home'); if(n>0 && n<100){for(let i=0;i<Math.floor(n/10);i++)await slider.press('PageUp');for(let i=0;i<n%10;i++)await slider.press('ArrowRight');} await slider.blur(); await page.waitForTimeout(700); }
 async function turn(page: Page, yaw: number, pitch=0) { const x=yaw>0?200:1050; await page.mouse.move(x,400); await page.mouse.down(); await page.mouse.move(x+yaw/.0035,400-pitch/.0035,{steps:16}); await page.mouse.up(); await page.waitForTimeout(250); }
 async function face(page: Page) { await page.getByRole('button',{name:'Face table',exact:true}).click(); await page.getByRole('button',{name:'Face table',exact:true}).blur(); await page.waitForTimeout(250); }
-async function shot(page: Page, name: string) { fs.mkdirSync(output,{recursive:true}); const buffer=await page.locator('canvas').screenshot(); fs.writeFileSync(path.join(output,`${name}.png`),buffer);return parsePng(buffer); }
+async function shot(page: Page, name: string) { fs.mkdirSync(output,{recursive:true}); const buffer=await captureCanvas(page); fs.writeFileSync(path.join(output,`${name}.png`),buffer);return parsePng(buffer); }
 
 for (const reduced of [false,true]) test(`M13 fixed-eye full turns, six views and restored journeys ${reduced?'reduced':'animated'}`,async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
@@ -78,14 +79,15 @@ test.describe.parallel('M13 photo independence', () => {
 for(const stock of ['ektachrome-e100','ektar-100','portra-160','portra-400','portra-800']) test(`${stock} retains photo and loupe response across room-light endpoints`,async({page})=>{
   await page.goto('/?mode=room&example=1&deterministic=true');await ready(page);
   const measurements:unknown[]=[];
-    await page.getByTestId('film-stock-selector').selectOption(stock);
+    await openViewingTools(page);await page.getByTestId('film-stock-selector').selectOption(stock);
     for(const mode of stock==='ektachrome-e100'?['positive']:['negative','positive'])for(const table of [30,100]){
       const captures:ReturnType<typeof parsePng>[]=[];
       for(const room of [0,100]){
         await light(page,room);await page.getByTestId('approach-table-btn').click();await ready(page);
+        await openViewingTools(page);
         if(await page.locator('main').getAttribute('data-film-mode')!==mode)await page.getByTestId('mode-toggle').click();
         const dim=page.getByTestId('brightness-slider');await dim.press(table===30?'Home':'End');await dim.blur();
-        await page.getByTestId('loupe-toggle').click();await page.mouse.move(640,400);await page.waitForTimeout(350);
+        await openViewingTools(page);await page.getByTestId('loupe-toggle').click();await page.mouse.move(640,400);await page.waitForTimeout(350);
         captures.push(await shot(page,`${stock}-${mode}-table${table}-room${room}`));
         await expect(page.getByTestId('brightness-badge')).toHaveText(`${table}%`);
         await page.getByTestId('return-room-btn').click();await ready(page);

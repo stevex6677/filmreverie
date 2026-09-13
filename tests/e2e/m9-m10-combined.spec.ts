@@ -1,3 +1,4 @@
+import { viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -13,7 +14,7 @@ for (const stock of FILM_STOCKS) {
     page.on("console", m => { if (m.type() === "error") errors.push(m.text()); });
     page.on("requestfailed", r => errors.push(r.url()));
     page.on("response", r => { if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`); });
-    await page.goto("/?deterministic=true&mode=inspect");
+    await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
     await expect(page.locator("canvas")).toBeVisible();
     await page.getByLabel("Film stock", { exact: true }).selectOption(stock.id);
     const measurements: unknown[] = [];
@@ -35,7 +36,7 @@ for (const stock of FILM_STOCKS) {
         await expect(page.locator("main")).toHaveAttribute("data-film-mode", mode);
         await page.waitForTimeout(300);
         const name = `${stock.id}-${mode}-${brightness}`;
-        const source = parsePng(await page.locator("canvas").screenshot({ path: path.join(output, `${name}.png`) }));
+        const source = parsePng(await captureCanvas(page, { path: path.join(output, `${name}.png`) }));
         const photo = getRegionStats(source, 640, 400, 28);
         const rebate = getRegionStats(source, 645, 337, 2);
         const panel = getRegionStats(source, 640, 220, 24);
@@ -51,7 +52,7 @@ for (const stock of FILM_STOCKS) {
         await page.getByTestId("mag-btn-4x").click();
         await page.mouse.move(100, 100); await page.mouse.move(645, 337);
         await page.waitForTimeout(250);
-        const lens = parsePng(await page.locator("canvas").screenshot({ path: path.join(output, `${name}-loupe.png`) }));
+        const lens = parsePng(await captureCanvas(page, { path: path.join(output, `${name}-loupe.png`) }));
         const scale = (3.2 - 0.007) / (3.2 - 0.148);
         const magnified = getRegionStats(lens, Math.round(640 + 5 * scale), Math.round(400 - 63 * scale), 2);
         const differences = ["meanR", "meanG", "meanB"].map(key => Math.abs(rebate[key as "meanR"] - magnified[key as "meanR"]));
@@ -59,7 +60,7 @@ for (const stock of FILM_STOCKS) {
         measurements.push({ mode, brightness, photo, rebate, panel, lens: magnified, differences });
         await page.getByTestId("loupe-toggle").click();
         if (stock.type === "reversal") {
-          await page.keyboard.press("m");
+          await viewerKey(page, "m");
           await expect(page.locator("main")).toHaveAttribute("data-film-mode", "positive");
           await expect(page.getByTestId("mode-toggle")).toHaveCount(0);
         }

@@ -1,3 +1,4 @@
+import { viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect, Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -17,7 +18,7 @@ async function waitForFilm(page: Page) {
   // The canvas element exists before Suspense finishes loading scene assets.
   // Wait for actual photo pixels, not just the DOM surface, before pointer input.
   await expect.poll(async () => {
-    const png = parsePng(await page.locator("canvas").screenshot());
+    const png = parsePng(await captureCanvas(page));
     return [233, 437, 640, 843, 1047].every((x) => {
       const stats = getRegionStats(png, x, 400, 28);
       return stats.meanLum > 15 && stats.meanLum < 235 && stats.stdDev > 5;
@@ -27,7 +28,7 @@ async function waitForFilm(page: Page) {
 async function capture(page: Page, name: string) {
   await page.waitForTimeout(450);
   fs.mkdirSync(candidates, {recursive: true});
-  const buffer = await page.locator("canvas").screenshot({path: path.join(candidates, `${name}.png`)});
+  const buffer = await captureCanvas(page, {path: path.join(candidates, `${name}.png`)});
   return parsePng(buffer);
 }
 function readablePhotos(png: ReturnType<typeof parsePng>) {
@@ -42,7 +43,7 @@ function readablePhotos(png: ReturnType<typeof parsePng>) {
 test("M9: every stock, physical borders, allowed views and keyboard restrictions", async ({page}) => {
   test.setTimeout(600000);
   const errors = observeErrors(page);
-  await page.goto("/?deterministic=true&mode=inspect");
+  await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
   await expect(page.locator("canvas")).toBeVisible();
   await waitForFilm(page);
   const selector = page.getByLabel("Film stock", {exact: true});
@@ -62,7 +63,7 @@ test("M9: every stock, physical borders, allowed views and keyboard restrictions
       await expect(page.getByTestId("mode-toggle")).toHaveCount(0);
       await expect(page.getByTestId("mode-badge")).toHaveText("POSITIVE · E-6");
       await selector.press("Tab");
-      await page.keyboard.press("m");
+      await viewerKey(page, "m");
       await expect(app).toHaveAttribute("data-film-mode", "positive");
       const afterShortcut = await capture(page, "e100-after-mode-shortcut");
       expect(getRegionMeanDifference(initial, afterShortcut, 640, 400, 60)).toBeLessThan(1);
@@ -101,7 +102,7 @@ test("M9: every stock, physical borders, allowed views and keyboard restrictions
 test("M9: macro stock lettering through the scene-capture loupe, rapid changes and room journeys", async ({page}) => {
   test.setTimeout(600000);
   const errors = observeErrors(page);
-  await page.goto("/?deterministic=true&mode=inspect");
+  await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
   const canvas = page.locator("canvas");
   await expect(canvas).toBeVisible();
   await waitForFilm(page);
@@ -178,10 +179,10 @@ test("M9: macro stock lettering through the scene-capture loupe, rapid changes a
   for (let i = 0; i < 2; i++) {
     await page.getByTestId("return-room-btn").click();
     await expect(page.locator("main")).toHaveAttribute("data-is-transitioning", "false");
-    await expect(page.getByTestId("room-badge")).toHaveText("ROOM");
+    await expect(page.locator("main")).toHaveAttribute("data-room-mode", "room");
     await selector.selectOption(i === 0 ? "ektachrome-e100" : "portra-800");
-    await page.getByTestId("approach-table-btn").click();
-    await expect(page.getByTestId("room-badge")).toHaveText("INSPECT");
+    await page.getByTestId("approach-table-btn").click(); await openViewingTools(page);
+    await expect(page.locator("main")).toHaveAttribute("data-room-mode", "inspect");
     await expect(page.getByTestId("brightness-badge")).toHaveText("31%");
     const arrived = await capture(page, `room-return-${i}`);
     // Measure the whole bicycle photo interior. The small central wheel patch

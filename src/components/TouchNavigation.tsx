@@ -36,8 +36,8 @@ export function TouchNavigation({ state, dispatch, blocked }: { state: ViewerSta
       const wpp = 2 * zoom * Math.tan(Math.PI/8) / canvas.clientHeight;
       const tableAt=(x:number,y:number)=>{const r=canvas.getBoundingClientRect();return {x:pan.x+(x-r.left-r.width/2)*wpp,z:pan.z+(y-r.top-r.height/2)*wpp};};
       const view = (z: number, p: {x:number;z:number}) => {
-        const max = Math.max(3.6, fitRollView(s.roll,'roll',0,s.viewportAspect).zoom);
-        const next = Math.max(.32*s.roll.scale, Math.min(max,z));
+        const max = s.focusMode ? fitRollView(s.roll,'frame',s.activeFrameIndex,s.viewportAspect).zoom : Math.max(3.6, fitRollView(s.roll,'roll',0,s.viewportAspect).zoom);
+        const next = Math.max(.12*s.roll.scale, Math.min(max,z));
         const action:ViewerAction={type:'TOUCH_VIEW',zoom:next,x:p.x,z:p.z};
         // Browsers dispatch both contacts before React renders. Accumulate the
         // two updates immediately so neither half of the pinch is dropped.
@@ -46,8 +46,8 @@ export function TouchNavigation({ state, dispatch, blocked }: { state: ViewerSta
       if (intent.type === 'pan') view(zoom, {x:pan.x-intent.dx*wpp,z:pan.z-intent.dy*wpp});
       if (intent.type === 'pinch') {
         const p = tableAt(intent.from.x,intent.from.y);
-        const max = Math.max(3.6,fitRollView(s.roll,'roll',0,s.viewportAspect).zoom);
-        const next = Math.max(.32*s.roll.scale,Math.min(max,zoom*intent.ratio));
+        const max = s.focusMode ? fitRollView(s.roll,'frame',s.activeFrameIndex,s.viewportAspect).zoom : Math.max(3.6,fitRollView(s.roll,'roll',0,s.viewportAspect).zoom);
+        const next = Math.max(.12*s.roll.scale,Math.min(max,zoom*intent.ratio));
         const anchored = anchoredZoom(zoom,next,pan,p);
         const nextWpp=2*next*Math.tan(Math.PI/8)/canvas.clientHeight;
         view(next,{x:anchored.x-(intent.to.x-intent.from.x)*nextWpp,z:anchored.z-(intent.to.y-intent.from.y)*nextWpp});
@@ -57,6 +57,7 @@ export function TouchNavigation({ state, dispatch, blocked }: { state: ViewerSta
         const p=at(intent.x,intent.y); if(p) dispatch({type:'SET_LOUPE_POSITION',x:p.x,y:TABLE_CENTER_Z-p.z});
       }
       if (intent.type === 'tap') {
+        if (s.focusMode) { canvas.dispatchEvent(new CustomEvent('film-reveal-controls', {bubbles:true})); return; }
         const p=at(intent.x,intent.y); if(!p)return;
         const mapped=mapRollPoint(s.roll,{x:p.x,y:TABLE_CENTER_Z-p.z});
         if(mapped.isWithinFrame) dispatch({type:'OPEN_FRAME',frameIndex:mapped.frameIndex});
@@ -64,7 +65,7 @@ export function TouchNavigation({ state, dispatch, blocked }: { state: ViewerSta
       if (intent.type === 'doubleTap') {
         const fit=fitRollView(s.roll,s.inspectionLevel,s.activeFrameIndex,s.viewportAspect);
         if(s.inspectZoom < fit.zoom*.92) dispatch({type:'FIT_VIEW'});
-        else { const p=tableAt(intent.x,intent.y); const next=Math.max(.32*s.roll.scale,fit.zoom/2);view(next,anchoredZoom(zoom,next,pan,p)); }
+        else { const p=tableAt(intent.x,intent.y); const next=Math.max(.12*s.roll.scale,fit.zoom/2);view(next,anchoredZoom(zoom,next,pan,p)); }
       }
     };
     const gesture = new TouchGestures(emit);

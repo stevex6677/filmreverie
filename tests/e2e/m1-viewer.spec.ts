@@ -1,3 +1,4 @@
+import { openViewingTools, selectOverviewFrame, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -30,7 +31,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
       }
     });
 
-    await page.goto("/?deterministic=true");
+    await page.goto("/?deterministic=true"); await openViewingTools(page);
 
     const modeToggle = page.locator("#mode-toggle");
     await expect(modeToggle).toBeVisible({ timeout: 15000 });
@@ -60,7 +61,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
     });
     page.on("requestfailed", (req) => failedRequests.push(req.url()));
 
-    await page.goto("/?deterministic=true");
+    await page.goto("/?deterministic=true"); await openViewingTools(page);
 
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible();
@@ -79,7 +80,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
       fs.mkdirSync(artifactsDir, { recursive: true });
     }
 
-    const negBuffer = await canvas.screenshot();
+    const negBuffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m1-negative-overview.png"), negBuffer);
     const negPng = parsePng(negBuffer);
 
@@ -112,7 +113,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
     await expect(modeToggle).toHaveText("Switch to Negative");
     await page.waitForTimeout(600);
 
-    const posBuffer = await canvas.screenshot();
+    const posBuffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m1-positive-overview.png"), posBuffer);
     const posPng = parsePng(posBuffer);
 
@@ -133,12 +134,11 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
     await expect(loupeToggle).toHaveText("Rest Loupe");
 
     // Move loupe to Frame 1
-    const frame1Btn = page.locator("[data-testid=frame-btn-1]");
-    await frame1Btn.click();
+    await selectOverviewFrame(page, 1);
     await expect(page.locator("[data-testid=frame-badge]")).toContainText("#1");
     await page.waitForTimeout(500);
 
-    const frame1Buffer = await canvas.screenshot();
+    const frame1Buffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m1-loupe-frame1.png"), frame1Buffer);
     const frame1Png = parsePng(frame1Buffer);
     const frame1LensStats = getRegionStats(frame1Png, FRAME_SCREEN_CENTERS[0].x, FRAME_SCREEN_CENTERS[0].y, 30);
@@ -149,12 +149,11 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
     expect(diffOverviewFrame1).toBeGreaterThan(8);
 
     // Move loupe to Frame 3
-    const frame3Btn = page.locator("[data-testid=frame-btn-3]");
-    await frame3Btn.click();
+    await selectOverviewFrame(page, 3);
     await expect(page.locator("[data-testid=frame-badge]")).toContainText("#3");
     await page.waitForTimeout(500);
 
-    const frame3Buffer = await canvas.screenshot();
+    const frame3Buffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m1-loupe-frame3.png"), frame3Buffer);
     const frame3Png = parsePng(frame3Buffer);
     const frame3LensStats = getRegionStats(frame3Png, FRAME_SCREEN_CENTERS[2].x, FRAME_SCREEN_CENTERS[2].y, 30);
@@ -165,12 +164,11 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
     expect(diffOverviewFrame3).toBeGreaterThan(4);
 
     // Move loupe to Frame 5
-    const frame5Btn = page.locator("[data-testid=frame-btn-5]");
-    await frame5Btn.click();
+    await selectOverviewFrame(page, 5);
     await expect(page.locator("[data-testid=frame-badge]")).toContainText("#5");
     await page.waitForTimeout(500);
 
-    const frame5Buffer = await canvas.screenshot();
+    const frame5Buffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m1-loupe-frame5.png"), frame5Buffer);
     const frame5Png = parsePng(frame5Buffer);
     const frame5LensStats = getRegionStats(frame5Png, FRAME_SCREEN_CENTERS[4].x, FRAME_SCREEN_CENTERS[4].y, 30);
@@ -212,14 +210,14 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
     });
     page.on("requestfailed", (req) => failedRequests.push(req.url()));
 
-    await page.goto("/?deterministic=true");
+    await page.goto("/?deterministic=true"); await openViewingTools(page);
 
     const modeToggle = page.locator("#mode-toggle");
     const loupeToggle = page.locator("#loupe-toggle");
     await expect(modeToggle).toBeVisible();
 
     // Reload page
-    await page.reload();
+    await page.reload(); await openViewingTools(page);
     await expect(modeToggle).toBeVisible();
     await expect(page.locator("[data-testid=mode-badge]")).toHaveText("NEGATIVE");
 
@@ -230,7 +228,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
     await loupeToggle.click();
     await expect(page.locator("[data-testid=loupe-badge]")).toContainText("ACTIVE");
 
-    await page.locator("[data-testid=frame-btn-4]").click();
+    await selectOverviewFrame(page, 4);
     await expect(page.locator("[data-testid=frame-badge]")).toContainText("#4");
 
     // Switch back to negative
@@ -254,7 +252,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
       if (msg.type() === "error") consoleErrors.push(msg.text());
     });
 
-    await page.goto("/?deterministic=true");
+    await page.goto("/?deterministic=true"); await openViewingTools(page);
 
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible();
@@ -265,7 +263,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
     // 1. When resting (loupe is off-strip at resting position ~ x: 1150, y: 565 on screen):
     // The loupe lens must transmit neutral light table illumination (R ≈ G ≈ B, zero orange mask, zero dye variance).
     await page.waitForTimeout(500);
-    const restingBuffer = await canvas.screenshot();
+    const restingBuffer = await captureCanvas(page);
     const restingPng = parsePng(restingBuffer);
     const restingLoupeStats = getRegionStats(restingPng, 1150, 565, 20);
 
@@ -283,7 +281,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
       await page.mouse.move(box.x + TABLE_BG_POINT.x, box.y + TABLE_BG_POINT.y);
       await page.waitForTimeout(400);
 
-      const offStripBuffer = await canvas.screenshot();
+      const offStripBuffer = await captureCanvas(page);
       const offStripPng = parsePng(offStripBuffer);
       const offStripLensStats = getRegionStats(offStripPng, TABLE_BG_POINT.x, TABLE_BG_POINT.y, 20);
 
@@ -295,7 +293,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
       await page.mouse.move(box.x + FRAME_SCREEN_CENTERS[2].x, box.y + FRAME_SCREEN_CENTERS[2].y);
       await page.waitForTimeout(400);
 
-      const onStripBuffer = await canvas.screenshot();
+      const onStripBuffer = await captureCanvas(page);
       const onStripPng = parsePng(onStripBuffer);
       const onStripLensStats = getRegionStats(onStripPng, FRAME_SCREEN_CENTERS[2].x, FRAME_SCREEN_CENTERS[2].y, 20);
 

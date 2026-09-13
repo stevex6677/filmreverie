@@ -37,13 +37,36 @@ export function mapRollPoint(roll: RollDefinition, point: { x: number; y: number
   return { ...mapped, frameIndex: strip.offset + mapped.frameIndex, stripIndex: strip.index };
 }
 export type InspectionLevel = "roll" | "strip" | "frame";
+// Framing envelope for the selected image and rebate. This only measures the
+// camera view; Focus continues rendering the original strips and their neighbors.
+export function focusFrameLayout(roll: RollDefinition, index: number): FilmStripLayout {
+  const frame = locateFrame(roll, index);
+  return { ...frame.strip.layout, frameCount: 1, frameNumberOffset: frame.globalIndex };
+}
 export function fitRollView(roll: RollDefinition, level: InspectionLevel, index: number, aspect = 1.5) {
   const frame = locateFrame(roll, index);
   const strips = createRollLayout(roll);
   const dimensions = getStripDimensions(frame.strip.layout);
-  const width = (level === "frame" ? frame.strip.layout.frameWidth * 1.3 : (level === "roll" ? Math.max(...strips.map(s => getStripDimensions(s.layout).width)) : dimensions.width) * 1.12) * roll.scale;
-  const height = level === "roll" ? strips[0].y - strips[strips.length - 1].y + dimensions.height * roll.scale * 1.2 : (level === "frame" ? frame.strip.layout.frameHeight * 1.35 : dimensions.height * 1.3) * roll.scale;
-  return { zoom: Math.max(height, width / Math.max(0.5, aspect)) / (2 * Math.tan(Math.PI / 8)), pan: { x: level === "frame" ? frame.x : 0, z: TABLE_CENTER_Z - (level === "roll" ? 0 : frame.y) } };
+  if (level === "frame") {
+    const outer = getStripDimensions(focusFrameLayout(roll, index));
+    // Reserve visible surround outside the film, as well as space for controls.
+    // This is comfortable framing, not viewport-filling photographic fitting.
+    // Frame the image with its surrounding rebate; strip-end margins must not
+    // make a middle photograph unnecessarily small on a portrait screen.
+    const height = Math.max(outer.height * 1.16, frame.strip.layout.frameWidth * 1.2 / Math.max(.2, aspect)) * roll.scale;
+    return { zoom: height / (2 * Math.tan(Math.PI / 8)), pan: { x: frame.x, z: TABLE_CENTER_Z - frame.y } };
+  }
+  const width = (level === "roll" ? Math.max(...strips.map(s => getStripDimensions(s.layout).width)) : dimensions.width) * 1.12 * roll.scale;
+  const height = level === "roll" ? strips[0].y - strips[strips.length - 1].y + dimensions.height * roll.scale * 1.2 : dimensions.height * 1.3 * roll.scale;
+  return { zoom: Math.max(height, width / Math.max(0.2, aspect)) / (2 * Math.tan(Math.PI / 8)), pan: { x: 0, z: TABLE_CENTER_Z - (level === "roll" ? 0 : frame.y) } };
+}
+export function clampFocusPan(roll: RollDefinition, index: number, zoom: number, aspect: number, x: number, z: number) {
+  const frame = locateFrame(roll, index), outer = getStripDimensions(focusFrameLayout(roll, index));
+  const visibleHeight = 2 * zoom * Math.tan(Math.PI / 8);
+  const dx = Math.max(0, (outer.width * roll.scale - visibleHeight * aspect) / 2);
+  const dz = Math.max(0, (outer.height * roll.scale - visibleHeight) / 2);
+  const centerZ = TABLE_CENTER_Z - frame.y;
+  return { x: Math.max(frame.x - dx, Math.min(frame.x + dx, x)), z: Math.max(centerZ - dz, Math.min(centerZ + dz, z)) };
 }
 export function anchoredZoom(zoom: number, nextZoom: number, pan: { x: number; z: number }, anchor: { x: number; z: number }) {
   const ratio = nextZoom / zoom;

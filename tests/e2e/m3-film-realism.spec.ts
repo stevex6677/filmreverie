@@ -1,3 +1,4 @@
+import { openViewingTools, selectOverviewFrame, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -32,7 +33,7 @@ test.describe("M3 E2E — Realistic Viewing Table, 35mm Film & Loupe Optics", ()
     }
 
     // 1. Load app in deterministic inspect mode
-    await page.goto("/?deterministic=true&mode=inspect");
+    await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible({ timeout: 15000 });
 
@@ -44,7 +45,7 @@ test.describe("M3 E2E — Realistic Viewing Table, 35mm Film & Loupe Optics", ()
     await page.waitForTimeout(600);
 
     // Capture negative overview
-    const negBuffer = await canvas.screenshot();
+    const negBuffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m3-negative-closeup.png"), negBuffer);
     const negPng = parsePng(negBuffer);
 
@@ -78,7 +79,7 @@ test.describe("M3 E2E — Realistic Viewing Table, 35mm Film & Loupe Optics", ()
     await expect(page.locator("[data-testid=mode-badge]")).toHaveText("POSITIVE");
     await page.waitForTimeout(600);
 
-    const posBuffer = await canvas.screenshot();
+    const posBuffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m3-positive-closeup.png"), posBuffer);
     const posPng = parsePng(posBuffer);
 
@@ -99,11 +100,11 @@ test.describe("M3 E2E — Realistic Viewing Table, 35mm Film & Loupe Optics", ()
     await expect(page.locator("[data-testid=loupe-badge]")).toContainText("ACTIVE");
 
     // Click frame 3 to focus loupe on center frame
-    await page.locator("[data-testid=frame-btn-3]").click();
+    await selectOverviewFrame(page, 3);
     await expect(page.locator("[data-testid=frame-badge]")).toContainText("#3");
     await page.waitForTimeout(600);
 
-    const loupeBuffer = await canvas.screenshot();
+    const loupeBuffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m3-loupe-center.png"), loupeBuffer);
     const loupePng = parsePng(loupeBuffer);
 

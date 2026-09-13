@@ -52,29 +52,28 @@ describe("M11 full-roll layout and navigation", () => {
     expect(act(act(initial(), { type: "OPEN_FRAME", frameIndex: 35 }), { type: "NAVIGATE", direction: "right" }).activeFrameIndex).toBe(35);
     expect(act(act(initial(), { type: "OPEN_FRAME", frameIndex: 0 }), { type: "NAVIGATE", direction: "left" }).activeFrameIndex).toBe(0);
   });
-  it("restores overview pose/selection and nests Escape, with a direct room exit", () => {
+  it("M16 restores overview pose, retains the viewed selection and exits directly without a strip mode", () => {
     let state = act(initial(), { type: "SELECT_FRAME", frameIndex: 13 });
     state = act(state, { type: "ZOOM_AT", delta: -.1, x: .2, z: .3 });
     const overview = state;
     state = act(state, { type: "OPEN_FRAME", frameIndex: 28 });
     expect(state.inspectionLevel).toBe("frame");
     state = act(state, { type: "ESCAPE_INSPECTION" });
-    expect(state.inspectionLevel).toBe("strip");
-    state = act(state, { type: "ESCAPE_INSPECTION" });
     expect(state.inspectionLevel).toBe("roll");
-    expect(state.activeFrameIndex).toBe(13);
+    expect(state.activeFrameIndex).toBe(28);
     expect(state.inspectZoom).toBe(overview.inspectZoom);
     expect(state.inspectPan).toEqual(overview.inspectPan);
     expect(act(state, { type: "ESCAPE_INSPECTION" }).roomMode).toBe("room");
     expect(act(act(initial(), { type: "OPEN_FRAME", frameIndex: 30 }), { type: "RETURN_TO_ROOM" }).roomMode).toBe("room");
   });
-  it("uses grid arrows at overview and strip arrows at strip level", () => {
+  it("M16 keeps grid arrows when legacy strip framing is normalized to Overview", () => {
     let state = act(initial(), { type: "SELECT_FRAME", frameIndex: 5 });
     expect(act(state, { type: "NAVIGATE", direction: "right" }).activeFrameIndex).toBe(5);
     state = act(state, { type: "NAVIGATE", direction: "down" });
     expect(state.activeFrameIndex).toBe(11);
     state = act(state, { type: "VIEW_LEVEL", level: "strip", stripIndex: 4 });
-    expect(act(state, { type: "NAVIGATE", direction: "right" }).activeFrameIndex).toBe(30);
+    expect(state.inspectionLevel).toBe('roll');
+    expect(act(state, { type: "NAVIGATE", direction: "right" }).activeFrameIndex).toBe(25);
   });
   it("keeps the selected column when grid arrows reach the first or last row", () => {
     for (const index of [0, 2, 5]) {
@@ -111,7 +110,7 @@ describe("M11 full-roll layout and navigation", () => {
     expect(state.tableBrightness).toBe(.3);
     expect(state.filmMode).toBe("positive");
     expect(state.loupe.magnification).toBe(8);
-    expect(state.loupe.isActive).toBe(true);
+    expect(state.loupe.isActive).toBe(false); // M16 starts Focus with the loupe resting.
     expect(act(state, { type: "ADJUST_TABLE_ZOOM", delta: -.1 }).inspectionLevel).toBe("frame");
   });
   it("keeps failed frame slots navigable and retries without renumbering", () => {

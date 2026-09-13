@@ -137,6 +137,8 @@ Preserve every path component below `<project_name>` when translating a path.
   ```
 - Glances system and GPU monitoring is forwarded to `http://localhost:61209` via `LocalForward 61209 127.0.0.1:61208` in `~/.ssh/config`. Terminal TUI is available via `ssh -t remote glances`.
 - Always provide a clickable localhost URL after starting the dev server and establishing on-demand forwarding (e.g. `http://localhost:5173` or `http://localhost:5178`).
+- When sharing app preview links, also provide the MacBook Tailscale link (for example `http://macbook:5178`) so the user can open it on an iPhone or iPad. This is an explicit user preference. Verify the current MacBook hostname and IP with `tailscale status --json`; do not assume a localhost-only tunnel is reachable from other devices.
+- For phone/iPad access, retain the SSH localhost tunnel and expose it to the tailnet with `tailscale serve --bg --http=<port> http://127.0.0.1:<port>`. Inspect `tailscale serve status` before changing an existing mapping; preserve unrelated services. Verify an HTTP response through the shared hostname. Devices must be connected to the same Tailscale network. The Vite host allowlist must include the verified hostname; use `FILM_PHOTO_ALLOWED_HOSTS` for different names. Do not use Funnel or expose the app publicly.
 
 ## 4. Keep Git local
 

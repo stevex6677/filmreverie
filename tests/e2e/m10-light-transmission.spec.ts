@@ -1,3 +1,4 @@
+import { viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -34,7 +35,7 @@ function collectErrors(page: Page) {
 }
 
 async function capture(page: Page, name: string) {
-  const buffer = await page.locator("canvas").screenshot();
+  const buffer = await captureCanvas(page);
   fs.mkdirSync(output, { recursive: true });
   fs.writeFileSync(path.join(output, `${name}.png`), buffer);
   return parsePng(buffer);
@@ -42,7 +43,7 @@ async function capture(page: Page, name: string) {
 
 test("M10 ordered transmission, local spill, detail and navigation at both dimmer extremes", async ({ page }) => {
   const errors = collectErrors(page);
-  await page.goto("/?deterministic=true&mode=inspect");
+  await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
   await expect(page.locator("canvas")).toBeVisible();
   const measurements: Record<string, unknown> = {};
   for (const mode of ["negative", "positive"]) {
@@ -111,7 +112,7 @@ test("M10 ordered transmission, local spill, detail and navigation at both dimme
 for (const brightness of [30, 100]) {
   test(`M10 macro pan and room return at ${brightness}%`, async ({ page }) => {
     const errors = collectErrors(page);
-    await page.goto("/?deterministic=true&mode=inspect");
+    await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
     await expect(page.locator("canvas")).toBeVisible();
     await page.getByTestId("mode-toggle").click();
     await dim(page, brightness);
@@ -129,11 +130,11 @@ for (const brightness of [30, 100]) {
     const after = await capture(page, `macro-pan-${brightness}`);
     expect(getRegionMeanDifference(before, after, 640, 400, 100)).toBeGreaterThan(2);
     await page.getByTestId("reset-view-btn").click();
-    await page.keyboard.press("Escape");
+    await viewerKey(page, "Escape");
     await expect(page.locator("main")).toHaveAttribute("data-is-transitioning", "false");
-    await expect(page.getByTestId("room-badge")).toHaveText("ROOM");
+    await expect(page.locator("main")).toHaveAttribute("data-room-mode", "room");
     await capture(page, `room-${brightness}`);
-    await page.keyboard.press("Enter");
+    await viewerKey(page, "Enter");
     await expect(page.locator("main")).toHaveAttribute("data-is-transitioning", "false");
     await expect(page.getByTestId("brightness-badge")).toHaveText(`${brightness}%`);
     expect(errors).toEqual([]);
@@ -144,7 +145,7 @@ for (const mode of ["negative", "positive"]) for (const brightness of [30, 100])
 for (const magnifications of [[1.5, 2.5], [4, 8, 10]]) {
 test(`M10 linear HDR loupe: ${mode} ${brightness}% at ${magnifications.join(",")}x`, async ({ page }) => {
   const errors = collectErrors(page);
-  await page.goto("/?deterministic=true&mode=inspect");
+  await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
   await expect(page.locator("canvas")).toBeVisible();
   const comparisons: unknown[] = [];
   if (mode === "positive") await page.getByTestId("mode-toggle").click();
@@ -155,12 +156,12 @@ test(`M10 linear HDR loupe: ${mode} ${brightness}% at ${magnifications.join(",")
       for (const mag of magnifications) {
         // Visible preset buttons plus existing keyboard increments reach endpoints.
         await page.getByTestId("mag-btn-2x").click();
-        await page.keyboard.press("-"); // 1.5x lower limit
-        if (mag === 2.5) await page.keyboard.press("+");
+        await viewerKey(page, "-"); // 1.5x lower limit
+        if (mag === 2.5) await viewerKey(page, "+");
         if (mag === 4 || mag === 8) await page.getByTestId(`mag-btn-${mag}x`).click();
         if (mag === 10) {
           await page.getByTestId("mag-btn-8x").click();
-          await page.keyboard.press("+"); await page.keyboard.press("+");
+          await viewerKey(page, "+"); await viewerKey(page, "+");
         }
         for (const name of ["photo", "rebate", "hole", "panel"] as const) {
           const [x, y] = regions[name];

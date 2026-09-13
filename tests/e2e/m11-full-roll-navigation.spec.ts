@@ -1,3 +1,4 @@
+import { openViewingTools, closeViewingTools, openFrame, captureCanvas } from "./helpers/viewing";
 import { test, expect, Page } from "@playwright/test";
 import fs from "node:fs";
 import { FULL_ROLL_FIXTURE, locateFrame } from "../../src/utils/rollLayout";
@@ -11,7 +12,7 @@ async function ready(page: Page) {
   await page.waitForTimeout(350);
 }
 async function open(page: Page, frame: number) {
-  await page.getByRole("button", { name: `Open frame ${frame}`, exact: true }).click();
+  await openFrame(page, frame);
   await ready(page);
 }
 async function point(page: Page, index: number) {
@@ -35,9 +36,8 @@ test("M11 six strips, 36 photo regions, 29→30→31 loupe journey and overview 
   fs.mkdirSync(dir, { recursive: true });
   await page.goto("/?fixture=36&deterministic=true&mode=inspect"); await ready(page);
   await expect(page.getByText("Development fixture · 36 slots / 5 repeated photographs")).toBeVisible();
-  await page.getByTestId("mode-toggle").click(); await page.waitForTimeout(500);
-  const canvas = page.locator("canvas");
-  const overview = parsePng(await canvas.screenshot({ path: `${dir}/whole-roll-positive.png` }));
+  await openViewingTools(page);await page.getByTestId("mode-toggle").click(); await page.waitForTimeout(500);
+  const overview = parsePng(await captureCanvas(page, { path: `${dir}/whole-roll-positive.png` }));
   for (let i = 0; i < 36; i++) {
     const p = await point(page, i);
     const stats = getRegionStats(overview, Math.round(p.x), Math.round(p.y), 24);
@@ -54,68 +54,52 @@ test("M11 six strips, 36 photo regions, 29→30→31 loupe journey and overview 
   await page.mouse.click(p29.bounds.x + p29.x, p29.bounds.y + p29.y); await ready(page);
   await expect(app(page)).toHaveAttribute("data-selected-frame", "29");
   await expect(app(page)).toHaveAttribute("data-inspection-level", "frame");
-  await page.getByTestId("loupe-toggle").click();
-  let prior = parsePng(await canvas.screenshot({ path: `${dir}/frame-29-loupe.png` }));
+  await openViewingTools(page);await page.getByTestId("loupe-toggle").click();
+  let prior = parsePng(await captureCanvas(page, { path: `${dir}/frame-29-loupe.png` }));
   for (const n of [30, 31]) {
     await page.getByRole("button", { name: "Next", exact: true }).click(); await ready(page);
     await expect(app(page)).toHaveAttribute("data-selected-frame", String(n));
     await expect(app(page)).toHaveAttribute("data-loupe-active", "true");
-    const current = parsePng(await canvas.screenshot({ path: `${dir}/frame-${n}-loupe.png` }));
+    const current = parsePng(await captureCanvas(page, { path: `${dir}/frame-${n}-loupe.png` }));
     expect(getRegionMeanDifference(prior, current, Math.round(current.width / 2), Math.round(current.height / 2), 70)).toBeGreaterThan(6);
     prior = current;
   }
-  await page.getByRole("button", { name: "Whole roll", exact: true }).click(); await ready(page);
+  await closeViewingTools(page); await page.getByRole("button", { name: "← Overview", exact: true }).click(); await ready(page);
   await expect(app(page)).toHaveAttribute("data-inspect-zoom", savedZoom!);
-  await expect(app(page)).toHaveAttribute("data-selected-frame", "1");
+  await expect(app(page)).toHaveAttribute("data-selected-frame", "31");
   await page.screenshot({ path: `${dir}/overview-restored.png` });
   await expect(page.locator(".strip-thumbnails img + span")).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
-test("M11 keyboard, direct strips, endpoints, nested Escape, stock and dimmer", async ({ page }) => {
+test("M11 keyboard and endpoints through M16 Overview/Focus, stock and dimmer", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/?fixture=36&deterministic=true&mode=room"); await ready(page);
   await page.getByTestId("approach-table-btn").click(); await ready(page);
-  await expect(app(page)).toHaveAttribute("data-inspection-level", "roll");
   await page.locator("h1").click();
   await page.keyboard.press("ArrowDown"); await page.keyboard.press("ArrowRight"); await page.keyboard.press("Enter"); await ready(page);
   await expect(app(page)).toHaveAttribute("data-selected-frame", "8");
-  await page.keyboard.press("Escape"); await ready(page); await expect(app(page)).toHaveAttribute("data-inspection-level", "strip");
-  await page.keyboard.press("Escape"); await ready(page); await expect(app(page)).toHaveAttribute("data-inspection-level", "roll");
+  await page.keyboard.press("Escape"); await ready(page);
+  await expect(app(page)).toHaveAttribute("data-inspection-level", "roll");
   await page.locator("h1").click();
-  await page.keyboard.press("ArrowUp");
-  await expect(app(page)).toHaveAttribute("data-selected-frame", "2");
-  await page.keyboard.press("ArrowUp");
-  await expect(app(page)).toHaveAttribute("data-selected-frame", "2");
+  await page.keyboard.press("ArrowUp"); await expect(app(page)).toHaveAttribute("data-selected-frame", "2");
+  await page.keyboard.press("ArrowUp"); await expect(app(page)).toHaveAttribute("data-selected-frame", "2");
   for (let i = 0; i < 5; i++) await page.keyboard.press("ArrowDown");
   await expect(app(page)).toHaveAttribute("data-selected-frame", "32");
-  await page.keyboard.press("ArrowDown");
-  await expect(app(page)).toHaveAttribute("data-selected-frame", "32");
-  await open(page, 6);
-  await page.getByRole("button", { name: "Open frame 6", exact: true }).focus();
-  await page.keyboard.press("ArrowRight"); await ready(page);
+  await page.keyboard.press("ArrowDown"); await expect(app(page)).toHaveAttribute("data-selected-frame", "32");
+  await open(page, 6);await page.keyboard.press("ArrowRight");await ready(page);
   await expect(app(page)).toHaveAttribute("data-selected-frame", "7");
-  await expect(page.getByRole("button", { name: "Open frame 7", exact: true })).toBeFocused();
-  await page.getByRole("button", { name: "Next", exact: true }).focus();
-  await page.keyboard.press("ArrowRight"); await ready(page);
+  await page.getByRole("button", {name:"Next",exact:true}).focus();await page.keyboard.press("ArrowRight");await ready(page);
   await expect(app(page)).toHaveAttribute("data-selected-frame", "8");
-  await page.getByRole("button", { name: "Strip 5", exact: true }).click(); await ready(page);
-  await expect(page.getByRole("button", { name: "Strip 5", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "Next", exact: true }).click(); await ready(page);
-  await expect(page.getByRole("button", { name: "Strip 6", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
-  await open(page, 1); await expect(page.getByRole("button", { name: "Previous", exact: true })).toBeDisabled();
-  await open(page, 36); await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
-  await expect(page.locator(".strip-thumbnails img")).toHaveCount(6);
-  await page.getByTestId("film-stock-selector").selectOption("ektachrome-e100");
-  await page.getByTestId("brightness-slider").focus(); await page.keyboard.press("Home");
-  await page.locator("h1").click(); await page.keyboard.press("m");
-  await expect(app(page)).toHaveAttribute("data-film-mode", "positive");
-  await page.keyboard.press("ArrowLeft"); await ready(page);
-  await expect(app(page)).toHaveAttribute("data-selected-frame", "35");
+  await open(page, 1);await expect(page.getByRole("button",{name:"Previous",exact:true})).toBeDisabled();
+  await open(page,36);await expect(page.getByRole("button",{name:"Next",exact:true})).toBeDisabled();
+  await openViewingTools(page);await page.getByTestId("film-stock-selector").selectOption("ektachrome-e100");
+  await page.getByTestId("brightness-slider").press("Home");
   await expect(page.getByTestId("brightness-value")).toHaveText("30%");
-  await page.getByTestId("return-room-btn").click(); await ready(page);
-  await expect(app(page)).toHaveAttribute("data-room-mode", "room");
+  await closeViewingTools(page);await page.keyboard.press("m");await expect(app(page)).toHaveAttribute("data-film-mode","positive");
+  await page.keyboard.press("ArrowLeft");await ready(page);await expect(app(page)).toHaveAttribute("data-selected-frame","35");
+  await page.getByRole("button",{name:"← Overview",exact:true}).click();await ready(page);
+  await page.getByTestId("return-room-btn").click();await ready(page);await expect(app(page)).toHaveAttribute("data-room-mode","room");
   expect(errors).toEqual([]);
 });
 
@@ -124,21 +108,21 @@ test("M11 failed photograph keeps slots usable and recovers through visible retr
   let failures = 0;
   await page.route("**/frame-01-harbor.jpg", route => { failures++; return route.abort("failed"); });
   await page.goto("/?fixture=36&deterministic=true"); await ready(page);
-  await expect(page.getByRole("alert")).toContainText("1, 6, 11, 16, 21, 26, 31, 36");
+  await expect(page.getByRole("alert")).toContainText("Some photographs could not load");
   await open(page, 29);
   const p = await point(page, 28);
-  expect(getRegionStats(parsePng(await page.locator("canvas").screenshot()), Math.round(p.x), Math.round(p.y), 50).stdDev).toBeGreaterThan(5);
+  expect(getRegionStats(parsePng(await captureCanvas(page)), Math.round(p.x), Math.round(p.y), 50).stdDev).toBeGreaterThan(5);
   await page.unroute("**/frame-01-harbor.jpg");
   await page.getByRole("button", { name: "Retry photographs" }).click(); await ready(page);
   await expect(page.getByRole("alert")).toHaveCount(0);
   await open(page, 31);
   const recovered = await point(page, 30);
-  expect(getRegionStats(parsePng(await page.locator("canvas").screenshot()), Math.round(recovered.x), Math.round(recovered.y), 60).stdDev).toBeGreaterThan(5);
+  expect(getRegionStats(parsePng(await captureCanvas(page)), Math.round(recovered.x), Math.round(recovered.y), 60).stdDev).toBeGreaterThan(5);
   expect(failures).toBeGreaterThan(0); expect(errors).toEqual([]);
 });
 
 async function brightness(page: Page, value: number) {
-  const slider = page.getByTestId("brightness-slider");
+  await openViewingTools(page); const slider = page.getByTestId("brightness-slider");
   await slider.focus();
   await page.keyboard.press(value === 100 ? "End" : "Home");
   if (value === 60) {
@@ -162,19 +146,18 @@ test("M11 combined stocks, first/last strips and transmitted loupe brightness", 
   const photoRequests: string[] = [];
   page.on("request", r => { if (r.url().includes("/assets/photos/")) photoRequests.push(r.url()); });
   await page.goto("/?fixture=36&deterministic=true"); await ready(page);
-  const canvas = page.locator("canvas");
   const sourceCounts = () => new Set(photoRequests).size;
   const samples: Record<string, unknown> = {};
   const borders: number[] = [];
   for (const stock of ["portra-400", "ektar-100", "portra-160", "portra-800", "ektachrome-e100"]) {
-    await page.getByTestId("film-stock-selector").selectOption(stock);
+    await openViewingTools(page);await page.getByTestId("film-stock-selector").selectOption(stock);
     const modes = stock === "ektachrome-e100" ? ["positive"] : ["negative", "positive"];
     for (const mode of modes) {
-      if (await app(page).getAttribute("data-film-mode") !== mode) await page.getByTestId("mode-toggle").click();
+      await openViewingTools(page);if (await app(page).getAttribute("data-film-mode") !== mode) await page.getByTestId("mode-toggle").click();
       const values: number[][] = [];
       for (const value of [30, 60, 100]) {
         await brightness(page, value);
-        const png = parsePng(await canvas.screenshot());
+        const png = parsePng(await captureCanvas(page));
         const regions: number[] = [];
         for (const index of [0, 30]) {
           const p = await point(page, index);
@@ -200,20 +183,20 @@ test("M11 combined stocks, first/last strips and transmitted loupe brightness", 
       samples[`${stock}-${mode}`] = values;
     }
     await open(page, 31);
-    await page.getByTestId("loupe-toggle").click();
+    await openViewingTools(page);await page.getByTestId("loupe-toggle").click();
     const lensValues: number[] = [];
     for (const value of [30, 60, 100]) {
       await brightness(page, value);
-      const png = parsePng(await canvas.screenshot());
+      const png = parsePng(await captureCanvas(page));
       lensValues.push(getRegionStats(png, Math.round(png.width / 2), Math.round(png.height / 2), 50).meanLum);
     }
     expect(lensValues[1]).toBeGreaterThan(lensValues[0] + 2);
     expect(lensValues[2]).toBeGreaterThan(lensValues[1] + 2);
     samples[`${stock}-loupe`] = lensValues;
-    await page.getByTestId("loupe-toggle").click();
-    await page.getByRole("button", { name: "Whole roll", exact: true }).click(); await ready(page);
+    await openViewingTools(page);await page.getByTestId("loupe-toggle").click();
+    await closeViewingTools(page); await page.getByRole("button", { name: "← Overview", exact: true }).click(); await ready(page);
     await expect(app(page)).toHaveAttribute("data-film-stock", stock);
-    await expect(page.getByTestId("brightness-value")).toHaveText("100%");
+    await openViewingTools(page);await expect(page.getByTestId("brightness-value")).toHaveText("100%");
   }
   expect(Math.max(...borders) - Math.min(...borders)).toBeGreaterThan(15);
   // Five detail + five overview URLs are shared by the 36 slots; navigation must not request detail again.

@@ -1,3 +1,4 @@
+import { viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -19,13 +20,13 @@ test.describe("M7 E2E — Deep Macro Zoom (1000%) & Light Table Dimmer Calibrati
     page.on("requestfailed", (req) => failedRequests.push(req.url()));
 
     // 1. Load production app directly into table inspect mode
-    await page.goto("/?deterministic=true&mode=inspect");
+    await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
 
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible({ timeout: 15000 });
 
-    const roomBadge = page.locator("[data-testid=room-badge]");
-    await expect(roomBadge).toHaveText("INSPECT");
+    const roomBadge = page.locator("main");
+    await expect(roomBadge).toHaveAttribute("data-room-mode", "inspect");
 
     const zoomBadge = page.locator("[data-testid=zoom-badge]");
     await expect(zoomBadge).toBeVisible();
@@ -48,22 +49,18 @@ test.describe("M7 E2E — Deep Macro Zoom (1000%) & Light Table Dimmer Calibrati
 
     // 2. Capture baseline 100% brightness
     await page.waitForTimeout(500);
-    const bright100Buffer = await canvas.screenshot();
+    const bright100Buffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m7-brightness-100.png"), bright100Buffer);
     const bright100Png = parsePng(bright100Buffer);
     // Sample light table diffuser above film strip
     const stats100 = getRegionStats(bright100Png, 640, 310, 40);
 
     // 3. Test Dimmer: Dim to 50%
-    await slider.evaluate((el: HTMLInputElement) => {
-      el.value = "0.50";
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-    });
+    await slider.fill("0.5");
     await page.waitForTimeout(400);
     await expect(brightnessBadge).toHaveText("50%");
 
-    const bright50Buffer = await canvas.screenshot();
+    const bright50Buffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m7-brightness-50.png"), bright50Buffer);
     const bright50Png = parsePng(bright50Buffer);
     const stats50 = getRegionStats(bright50Png, 640, 310, 40);
@@ -74,15 +71,11 @@ test.describe("M7 E2E — Deep Macro Zoom (1000%) & Light Table Dimmer Calibrati
     expect(diff50to100).toBeGreaterThan(10);
 
     // 4. Test Dimmer: Adjust to 75%
-    await slider.evaluate((el: HTMLInputElement) => {
-      el.value = "0.75";
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-    });
+    await slider.fill("0.75");
     await page.waitForTimeout(400);
     await expect(brightnessBadge).toHaveText("75%");
 
-    const bright75Buffer = await canvas.screenshot();
+    const bright75Buffer = await captureCanvas(page);
     const bright75Png = parsePng(bright75Buffer);
     const stats75 = getRegionStats(bright75Png, 640, 310, 40);
 
@@ -90,15 +83,15 @@ test.describe("M7 E2E — Deep Macro Zoom (1000%) & Light Table Dimmer Calibrati
     expect(stats75.meanLum).toBeLessThan(stats100.meanLum);
 
     // 5. Test Hotkey 'B' Cycling: from 75% -> 50% -> 30% -> 100%
-    await page.keyboard.press("b");
+    await viewerKey(page, "b");
     await page.waitForTimeout(300);
     await expect(brightnessBadge).toHaveText("50%");
 
-    await page.keyboard.press("b");
+    await viewerKey(page, "b");
     await page.waitForTimeout(300);
     await expect(brightnessBadge).toHaveText("30%");
 
-    await page.keyboard.press("b");
+    await viewerKey(page, "b");
     await page.waitForTimeout(300);
     await expect(brightnessBadge).toHaveText("100%");
 
@@ -130,7 +123,7 @@ test.describe("M7 E2E — Deep Macro Zoom (1000%) & Light Table Dimmer Calibrati
 
       // Capture 1000% macro close-up screenshot
       await page.waitForTimeout(400);
-      const zoom1000Buffer = await canvas.screenshot();
+      const zoom1000Buffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m7-macro-zoom-1000.png"), zoom1000Buffer);
       const zoom1000Png = parsePng(zoom1000Buffer);
 
@@ -149,7 +142,7 @@ test.describe("M7 E2E — Deep Macro Zoom (1000%) & Light Table Dimmer Calibrati
       await page.mouse.up({ button: "right" });
       await page.waitForTimeout(400);
 
-      const zoom1000PannedBuffer = await canvas.screenshot();
+      const zoom1000PannedBuffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m7-macro-zoom-1000-panned.png"), zoom1000PannedBuffer);
       const zoom1000PannedPng = parsePng(zoom1000PannedBuffer);
 
@@ -161,7 +154,7 @@ test.describe("M7 E2E — Deep Macro Zoom (1000%) & Light Table Dimmer Calibrati
       await page.waitForTimeout(400);
       await expect(zoomBadge).toHaveText("100%");
       await expect(brightnessBadge).toHaveText("100%");
-      await expect(resetBtn).not.toBeVisible();
+      await expect(resetBtn).toBeVisible(); // M16 keeps Fit roll available.
     }
 
     // Baseline validation: zero unhandled errors
