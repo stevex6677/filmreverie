@@ -2,7 +2,7 @@
   "schema_version": 1,
   "main_checkout": {
     "Darwin": "/Users/zhangzimou/Projects/film_photo",
-    "Linux": "/root/projects/film_photo"
+    "Linux": "/workspace/film_photo"
   },
   "assets_directory": "ignored_assets",
   "generated_directory": "ignored_generated"

@@ -15,13 +15,13 @@ checkout, after confirming `film-photo` is connected and conflict-free:
 
 ```sh
 mutagen sync flush film-photo
-ssh remote "cd /root/projects/film_photo && PLAYWRIGHT_WORKERS=4 npm run validate:m12"
+ssh remote "cd /workspace/film_photo && PLAYWRIGHT_WORKERS=4 npm run validate:m12"
 ```
 
 For an already current production build, use the test runner directly:
 
 ```sh
-ssh remote "cd /root/projects/film_photo && npm run test:e2e -- --workers=6"
+ssh remote "cd /workspace/film_photo && npm run test:e2e -- --workers=6"
 ```
 
 Use `PLAYWRIGHT_WORKERS=1` for a serial diagnostic run. `100%` means one worker

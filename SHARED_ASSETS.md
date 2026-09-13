@@ -70,7 +70,7 @@ model binaries into the module directory to make a new model discoverable.
 Use the existing **film-photo** Mutagen session:
 
 - Mac: `/Users/zhangzimou/Projects/film_photo`
-- Linux: `/root/projects/film_photo`
+- Linux: `/workspace/film_photo`
 
 Both shared directories are included by its current ignore rules. Do not add
 overlapping sync sessions or worktree symlinks to these roots. Flush `film-photo`
