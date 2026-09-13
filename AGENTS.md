@@ -103,11 +103,14 @@ Preserve every path component below `<project_name>` when translating a path.
 
 ## 3. Run commands remotely
 
-- Run builds, tests, package-manager commands, scripts, development servers, and
-  application runtimes on the remote server through `ssh remote "<command>"`.
-- Remote execution is the default. If the user explicitly requests starting the
-  app locally, local application startup is allowed and must follow the same
-  Tailscale access rules below. Keep builds, tests, and heavy tooling remote.
+- By default, run builds, tests, package-manager commands, scripts, development
+  servers, and application runtimes remotely through `ssh remote "<command>"`.
+- When the user says "start the app locally" (or equivalent), you MUST start
+  the application process on the local Mac in the active checkout. A remote
+  server exposed through localhost/SSH does not satisfy this request. This
+  explicit instruction overrides the remote startup default; do not silently
+  fall back to remote execution. Necessary local startup preparation is allowed.
+  Keep builds, tests, and other heavy tooling remote unless separately requested.
 - Before a remote command that depends on local edits, flush the exact Mutagen
   session for the active checkout. Examples:
 
@@ -128,17 +131,31 @@ Preserve every path component below `<project_name>` when translating a path.
   ssh remote "cd /workspace/worktrees/codex/<worktree_id>/film_photo && <command>"
   ```
 
-### App startup and Web Access (Vast.ai)
+### App startup and Web Access (local Mac or Vast.ai)
 
-- Run application dev servers inside the remote container (e.g. `npm run dev` or `npm run preview`).
-- Expose app ports on-demand via SSH port forwarding only when needed (e.g. when you or the user wants to preview or test the web application):
+- For default/remote startup, run the application inside the remote container
+  (e.g. `npm run dev` or `npm run preview`). For explicitly requested local
+  startup, run the dev server on the Mac (e.g. `npm run dev`). Verify the local
+  process and working directory, and check port ownership so an existing SSH
+  tunnel is not mistaken for the requested local app. If a port is occupied,
+  use another available port and share its actual URLs; preserve unrelated services.
+- For remote startup only, expose app ports on-demand via SSH port forwarding:
   ```bash
   ssh -N -L <port>:127.0.0.1:<port> remote
   ```
 - Glances system and GPU monitoring is forwarded to `http://localhost:61209` via `LocalForward 61209 127.0.0.1:61208` in `~/.ssh/config`. Terminal TUI is available via `ssh -t remote glances`.
-- Always provide a clickable localhost URL after starting the dev server and establishing on-demand forwarding (e.g. `http://localhost:5173` or `http://localhost:5178`).
+- Always provide both a clickable localhost URL and a verified phone/iPad URL
+  after either local or remote startup (e.g. `http://localhost:5178` and
+  `http://macbook:5178`). State where the application process is running.
 - When sharing app preview links, also provide the MacBook Tailscale link (for example `http://macbook:5178`) so the user can open it on an iPhone or iPad. This is an explicit user preference. Verify the current MacBook hostname and IP with `tailscale status --json`; do not assume a localhost-only tunnel is reachable from other devices.
-- For phone/iPad access, retain the SSH localhost tunnel and expose it to the tailnet with `tailscale serve --bg --http=<port> http://127.0.0.1:<port>`. Inspect `tailscale serve status` before changing an existing mapping; preserve unrelated services. Verify an HTTP response through the shared hostname. Devices must be connected to the same Tailscale network. The Vite host allowlist must include the verified hostname; use `FILM_PHOTO_ALLOWED_HOSTS` for different names. Do not use Funnel or expose the app publicly.
+- For phone/iPad access, use `tailscale serve --bg --http=<port> http://127.0.0.1:<port>`.
+  For local startup, its target is the local Mac app directly; no SSH tunnel is
+  needed. For remote startup, its target is the SSH localhost tunnel. Inspect
+  `tailscale serve status` before changing a mapping; preserve unrelated services.
+  Verify HTTP responses through both localhost and the shared hostname. Devices
+  must be connected to the same Tailscale network. The Vite host allowlist must
+  include the verified hostname; use `FILM_PHOTO_ALLOWED_HOSTS` for different names.
+  Do not use Funnel or expose the app publicly.
 
 ## 4. Keep Git local
 
@@ -152,8 +169,9 @@ Preserve every path component below `<project_name>` when translating a path.
 
 ## 5. Dependencies and generated data
 
-- Install dependencies only on the remote server and in the remote checkout that
-  corresponds to the active local checkout.
+- Install dependencies in the corresponding remote checkout by default. An
+  explicit local app startup request also permits installing the dependencies
+  needed to start that app in the active local checkout.
 - Mutagen ignores `.git`, `node_modules`, `.DS_Store`, `__pycache__`, and
   `.pytest_cache` in agent worktree sessions.
 - Do not rely on local dependency or generated-data state when validating remote
