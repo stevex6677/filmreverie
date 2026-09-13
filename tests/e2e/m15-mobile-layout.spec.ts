@@ -1,0 +1,45 @@
+import {test,expect,Page} from '@playwright/test';
+import {PNG} from 'pngjs';
+import {getRegionStats,getRegionMeanDifference} from './helpers/pixelAnalysis';
+const ready=async(page:Page)=>{await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:45000});await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});};
+test('M15 phone and tablet layouts keep usable film, controls, modal ownership and framing through rotation',async({page},info)=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+  await page.goto('/?fixture=36&mode=inspect&deterministic=true');await ready(page);
+  await page.getByRole('button',{name:'Choose frame',exact:true}).tap();await page.getByRole('button',{name:'Open frame 7',exact:true}).tap();await ready(page);
+  for(const [width,height] of [[375,667],[390,844],[667,375],[844,390],[820,1180],[1180,820],[540,820]]) {
+    await page.setViewportSize({width,height});await ready(page);
+    const canvas=await page.locator('canvas').boundingBox();expect(canvas).not.toBeNull();expect(canvas!.height).toBeGreaterThan(180);
+    expect(canvas!.x).toBeGreaterThanOrEqual(0);expect(canvas!.x+canvas!.width).toBeLessThanOrEqual(width+1);
+    expect(canvas!.y).toBeGreaterThanOrEqual((await page.locator('.mobile-header').boundingBox())!.height);
+    expect(canvas!.y+canvas!.height).toBeLessThanOrEqual((await page.locator('.mobile-footer').boundingBox())!.y+1);
+    for(const name of ['Previous','Next','Choose frame','Fit','Tools']) {
+      const b=await page.getByRole('button',{name,exact:true}).boundingBox();expect(b).not.toBeNull();expect(b!.width).toBeGreaterThanOrEqual(44);expect(b!.height).toBeGreaterThanOrEqual(44);expect(b!.x).toBeGreaterThanOrEqual(0);expect(b!.y+b!.height).toBeLessThanOrEqual(height+1);
+    }
+    const image=PNG.sync.read(await page.locator('canvas').screenshot());expect(getRegionStats(image,image.width/2|0,image.height/2|0,70).stdDev).toBeGreaterThan(4);
+    await page.screenshot({path:info.outputPath(`layout-${width}x${height}.png`)});
+    const zoom=await page.locator('main').getAttribute('data-inspect-zoom');
+    await page.getByRole('button',{name:'Tools',exact:true}).tap();await expect(page.getByRole('dialog',{name:'Viewing tools'})).toBeVisible();
+    await page.keyboard.press('ArrowRight');await expect(page.locator('main')).toHaveAttribute('data-selected-frame','7');
+    await page.getByRole('button',{name:'Close',exact:true}).tap();expect(await page.locator('main').getAttribute('data-inspect-zoom')).toBe(zoom);
+    await page.getByRole('button',{name:'Focus',exact:true}).tap();await page.getByRole('button',{name:'Exit focus',exact:true}).tap();expect(await page.locator('main').getAttribute('data-inspect-zoom')).toBe(zoom);
+  }
+  await page.getByRole('button',{name:'Tools',exact:true}).tap();await page.getByRole('button',{name:'Switch to Positive',exact:true}).tap();await page.getByRole('button',{name:'Close',exact:true}).tap();await page.waitForTimeout(700);
+  const positive=PNG.sync.read(await page.locator('canvas').screenshot());await page.getByRole('button',{name:'Tools',exact:true}).tap();await page.getByRole('button',{name:'Switch to Negative',exact:true}).tap();await page.getByRole('button',{name:'Close',exact:true}).tap();await page.waitForTimeout(700);
+  const negative=PNG.sync.read(await page.locator('canvas').screenshot());expect(getRegionMeanDifference(positive,negative,positive.width/2|0,positive.height/2|0,70)).toBeGreaterThan(15);
+  expect(errors).toEqual([]);
+});
+test('M15 mobile import appends, reorders, crops, saves, reloads and cancels edits',async({page},info)=>{
+  await page.goto('/?mode=room&example=1&deterministic=true');await ready(page);
+  await page.getByRole('button',{name:'Open roll library',exact:true}).tap();await page.getByRole('button',{name:'New roll',exact:true}).tap();
+  const image=(name:string,seed:number)=>{const p=new PNG({width:600,height:400});for(let y=0;y<400;y++)for(let x=0;x<600;x++){const i=(y*600+x)*4;p.data[i]=x%100+seed*35;p.data[i+1]=y%200;p.data[i+2]=180;p.data[i+3]=255;}return {name,mimeType:'image/png',buffer:PNG.sync.write(p)};};
+  await page.getByLabel('Choose photographs',{exact:true}).setInputFiles(image('first.png',1));await expect(page.getByText('Processed 1 / 1',{exact:true})).toBeVisible();
+  await page.getByLabel('Choose photographs',{exact:true}).setInputFiles(image('second.png',2));await expect(page.getByText('2 photographs selected',{exact:false})).toBeVisible();
+  await page.getByRole('button',{name:'Continue to roll details'}).tap();await page.getByLabel('Roll name',{exact:true}).fill('Phone contact sheet');await page.getByRole('radio',{name:'120',exact:true}).check();await page.getByLabel('Film format',{exact:true}).selectOption('66');
+  await page.getByRole('button',{name:'Review photographs',exact:true}).tap();await page.getByRole('button',{name:'Select frame 2',exact:true}).tap();await page.getByRole('button',{name:'Move frame 2 earlier',exact:true}).tap();
+  await page.getByLabel('Horizontal crop position').fill('0.6');await page.getByRole('button',{name:'Show final crop'}).tap();
+  await page.screenshot({path:info.outputPath('mobile-crop-review.png')});await page.getByRole('button',{name:'Save and open',exact:true}).tap();await expect(page.getByRole('dialog')).not.toBeVisible();await ready(page);
+  const id=await page.locator('main').getAttribute('data-roll-id');await page.reload();await expect(page.locator('main')).toHaveAttribute('data-roll-id',id!);await ready(page);
+  await page.getByRole('button',{name:'Tools',exact:true}).tap();await page.getByRole('button',{name:'Rolls',exact:true}).tap();await page.getByRole('button',{name:'Actions for Phone contact sheet'}).tap();await page.getByRole('menuitem',{name:'Edit Phone contact sheet'}).tap();
+  await page.getByRole('button',{name:'Review photographs',exact:true}).tap();await expect(page.getByLabel('Horizontal crop position')).toHaveValue('0.6');await page.getByLabel('Horizontal crop position').fill('-0.6');await page.getByRole('button',{name:'Cancel edits',exact:true}).tap();
+  await page.getByRole('button',{name:'Actions for Phone contact sheet'}).tap();await page.getByRole('menuitem',{name:'Edit Phone contact sheet'}).tap();await page.getByRole('button',{name:'Review photographs',exact:true}).tap();await expect(page.getByLabel('Horizontal crop position')).toHaveValue('0.6');
+});

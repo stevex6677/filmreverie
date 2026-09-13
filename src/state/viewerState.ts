@@ -28,6 +28,8 @@ export interface LoupeState {
 }
 
 export interface ViewerState {
+  touchInput: boolean;
+  touchPointer: boolean;
   roll: RollDefinition;
   inspectionLevel: InspectionLevel;
   viewportAspect: number;
@@ -58,6 +60,8 @@ export interface ViewerState {
 const defaultFrameCenter = getFrameCenter(0, DEFAULT_LAYOUT);
 
 export const INITIAL_VIEWER_STATE: ViewerState = {
+  touchInput: false,
+  touchPointer: false,
   roll: BASELINE_ROLL,
   inspectionLevel: "roll",
   viewportAspect: 1.5,
@@ -111,6 +115,10 @@ export function createInitialViewerState(initialRoomMode: RoomMode = "inspect", 
 }
 
 export type ViewerAction =
+  | { type: "INPUT_TOUCH"; active: boolean }
+  | { type: "TOUCH_POINTER"; active: boolean }
+  | { type: "FIT_VIEW" }
+  | { type: "TOUCH_VIEW"; zoom: number; x: number; z: number }
   | { type: "TOGGLE_FOCUS" }
   | { type: "FACE_TABLE" }
   | { type: "LOOK_ROOM"; yaw: number; pitch: number }
@@ -152,10 +160,26 @@ export type ViewerAction =
   | { type: "RESET" };
 
 export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerState {
-  const multi = state.roll !== BASELINE_ROLL;
-  const safeZoom = (zoom: number) => multi ? Math.max(0.32 * state.roll.scale, Math.min(3.6, zoom)) : clampInspectZoom(zoom);
+  const multi = state.roll !== BASELINE_ROLL || state.touchInput;
+  const maxZoom = state.touchInput ? Math.max(3.6, fitRollView(state.roll, "roll", 0, state.viewportAspect).zoom) : 3.6;
+  const safeZoom = (zoom: number) => multi ? Math.max(0.32 * state.roll.scale, Math.min(maxZoom, zoom)) : clampInspectZoom(zoom);
   const safePan = (x: number, z: number) => multi ? clampRollPan(state.roll, x, z) : clampInspectPan(x, z);
   switch (action.type) {
+    case "TOUCH_POINTER": return state.touchPointer===action.active?state:{...state,touchPointer:action.active};
+    case "INPUT_TOUCH": {
+      if(state.touchInput===action.active)return state;
+      const fit=fitRollView(state.roll,state.inspectionLevel,state.activeFrameIndex,state.viewportAspect);
+      return { ...state, touchInput: action.active, ...(action.active&&state.roll===BASELINE_ROLL&&state.inspectionLevel==='roll'?{inspectZoom:fit.zoom}:{} ) };
+    }
+    case "FIT_VIEW": {
+      if (state.roomMode !== "inspect" || state.transitionKind === "journey") return state;
+      const fit = fitRollView(state.roll, state.inspectionLevel, state.activeFrameIndex, state.viewportAspect);
+      return { ...state, inspectZoom: fit.zoom, inspectPan: fit.pan, isTransitioning: false, transitionKind: null };
+    }
+    case "TOUCH_VIEW": {
+      if (state.roomMode !== "inspect" || state.transitionKind === "journey" || ![action.zoom, action.x, action.z].every(Number.isFinite)) return state;
+      return { ...state, touchInput: true, inspectZoom: safeZoom(action.zoom), inspectPan: safePan(action.x, action.z), isTransitioning: false, transitionKind: null };
+    }
     case "TOGGLE_FOCUS": return state.roomMode === "inspect" ? { ...state, focusMode: !state.focusMode } : state;
     case "SET_ROOM_BRIGHTNESS": {
       if (!Number.isFinite(action.brightness)) return state;
@@ -170,6 +194,10 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       return viewerReducer(state, { type: "UPDATE_ROOM_POSE", pose: { yaw: state.savedRoomPose.yaw + action.yaw, pitch: state.savedRoomPose.pitch + action.pitch } });
     case "LOAD_ROLL": {
       let next = createInitialViewerState("inspect", action.roll);
+      next.touchInput = state.touchInput;
+      next.touchPointer = state.touchPointer;
+      next.viewportAspect = state.viewportAspect;
+      next.inspectZoom = fitRollView(action.roll, "roll", 0, state.viewportAspect).zoom;
       next = viewerReducer(next, { type: "SET_FILM_STOCK", stockId: action.stockId ?? DEFAULT_FILM_STOCK_ID });
       const v = action.view;
       if (v) {
@@ -190,14 +218,15 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
     case "CAMERA_MOTION": {
       if (state.cameraMoving === action.moving) return state;
       const center = locateFrame(state.roll, state.activeFrameIndex);
-      return { ...state, cameraMoving: action.moving, loupe: !action.moving && multi ? { ...state.loupe, worldX: center.x, worldY: center.y, frameIndex: state.activeFrameIndex, u: .5, v: .5, isOverFrame: true } : state.loupe };
+      return { ...state, cameraMoving: action.moving, loupe: !action.moving && multi && !state.touchInput ? { ...state.loupe, worldX: center.x, worldY: center.y, frameIndex: state.activeFrameIndex, u: .5, v: .5, isOverFrame: true } : state.loupe };
     }
     case "ASSET_STATUS": return { ...state, assetFailures: action.failures, assetsLoading: action.loading, detailStatus: action.detailStatus ?? "" };
     case "RETRY_ASSETS": return { ...state, assetRetry: state.assetRetry + 1 };
     case "VIEWPORT": {
       if (Math.abs(state.viewportAspect - action.aspect) < 0.001) return state;
       const fit = fitRollView(state.roll, state.inspectionLevel, state.activeFrameIndex, action.aspect);
-      return { ...state, viewportAspect: action.aspect, ...(multi ? { inspectZoom: fit.zoom, inspectPan: fit.pan, savedOverview: null } : {}) };
+      const prior = fitRollView(state.roll, state.inspectionLevel, state.activeFrameIndex, state.viewportAspect);
+      return { ...state, viewportAspect: action.aspect, ...(multi ? { inspectZoom: fit.zoom * state.inspectZoom / prior.zoom, inspectPan: state.inspectPan } : {}) };
     }
     case "OPEN_FRAME": {
       if (state.isTransitioning && state.transitionKind !== "inspection") return state;

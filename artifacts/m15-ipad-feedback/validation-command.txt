@@ -1,0 +1,17 @@
+Base revision: 66cb870
+Local authoritative worktree: /Users/zhangzimou/.codex/worktrees/5de95a8d-70dd-42f4-b72e-a8f17b2560d6/film_photo
+Remote execution directory: /root/worktrees/codex/5de95a8d-70dd-42f4-b72e-a8f17b2560d6/film_photo
+Flushed codex-worktrees-5de95a8d-70dd-42f4-b72e-a8f17b2560d6 before remote execution.
+
+Remote commands:
+npm run build
+npm run test:integration
+PLAYWRIGHT_PORT=5195 npx playwright test --project=mobile-chrome --project=mobile-webkit
+
+Results: build passed, 172 integration tests passed, all 7 mobile browser tests passed in 2.1 minutes. No failures/skips/retries.
+After that run, the WebKit film-stock select appearance was corrected (CSS only). Final CSS verification:
+npm run build
+PLAYWRIGHT_PORT=5195 npx playwright test m15-live-tools --project=mobile-chrome --project=mobile-webkit --output=test-results/ipad-final
+Results: final build passed; 2/2 browser tests passed in 47.6 seconds, with no failures/skips/retries.
+
+The prior 67-browser cumulative gate belongs to 66cb870. This follow-up uses focused mobile regression coverage; it does not claim a new full desktop cumulative run.

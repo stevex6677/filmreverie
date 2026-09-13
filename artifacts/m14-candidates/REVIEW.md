@@ -1,6 +1,6 @@
 # M14 film browsing and roll review
 
-Status: **Awaiting human review**. Implementation and cumulative validation are complete; human acceptance is pending. M13 was explicitly accepted on 2026-09-11 and its implementation is merged into master at `d0fee21`.
+Status: **Completed and accepted**. On 2026-09-11 the user explicitly requested marking M14 and all earlier milestones complete and proceeding to M15. Implementation `c48a03a` is merged at `12e3c4f`. Validation below is historical evidence for the identified revisions, not a newly executed full gate. M13 was explicitly accepted on 2026-09-11 and its implementation is merged into master at `d0fee21`.
 
 Source checkout: `/Users/zhangzimou/.codex/worktrees/41ad/film_photo`, branch `codex/m13-room-exploration`, based on `d0fee21`. Execution checkout: `root@209.151.144.140:/root/worktrees/codex/41ad/film_photo`. The connected, conflict-free Mutagen session is `codex-worktrees-41ad`; it was flushed before remote builds and tests. Source changes are local; builds, tests and scripts run remotely. No binary evidence is staged or committed.
 
@@ -37,4 +37,4 @@ The final `npm run validate:m14` run passed: production build, all 153 integrati
 
 During development, strict selectors were corrected to distinguish duplicate filenames from issue badges and dialog stock controls from the background viewer. Step buttons received explicit accessible names. Browser interaction caught an overlapping Focus button, which now participates in the header layout, and a Retry detail action covered by the footer, which now uses the unobstructed loading-status area. The first detail run exposed the repository's intentionally derivative-only read path; lazy original access resolved it. Preliminary cumulative runs were interrupted during static review to require actual flight completion after retargeting and to finish saved-frame removal with atomic cleanup. A later run identified the two panel-background tests still using the old single-page import setup; their setup now follows the wizard and their pixel assertions are unchanged. The final review also added overview-level Focus navigation, so hiding the map cannot strand a user without Previous/Next. No retries or weakened required assertions conceal these corrections.
 
-M14 is Awaiting human review. Binary captures remain local review artifacts; no accepted historical screenshot baselines are changed.
+M14 is accepted by explicit user instruction on 2026-09-11. Binary captures remain local review artifacts; no historical screenshot baselines were changed by this status update.
