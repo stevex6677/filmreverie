@@ -36,7 +36,13 @@ export default defineConfig({
     viewport: { width: 1280, height: 800 },
     headless: true,
     launchOptions: {
-      args: ["--use-gl=angle", "--enable-webgl", "--ignore-gpu-blocklist"],
+      args: [
+        "--use-gl=angle",
+        ...(process.platform === "linux" ? ["--use-angle=vulkan"] : []),
+        "--enable-webgl",
+        "--ignore-gpu-blocklist",
+        "--enable-gpu-rasterization",
+      ],
     },
     video: "on",
   },
