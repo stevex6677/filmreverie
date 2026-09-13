@@ -1,3 +1,4 @@
+import { openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -19,13 +20,13 @@ test.describe("M8 E2E — Continuous Light Table Dimmer & Physical Optical Loupe
     page.on("requestfailed", (req) => failedRequests.push(req.url()));
 
     // 1. Load production application directly into table inspection mode
-    await page.goto("/?deterministic=true&mode=inspect");
+    await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
 
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible({ timeout: 15000 });
 
-    const roomBadge = page.locator("[data-testid=room-badge]");
-    await expect(roomBadge).toHaveText("INSPECT");
+    const roomBadge = page.locator("main");
+    await expect(roomBadge).toHaveAttribute("data-room-mode", "inspect");
 
     const brightnessBadge = page.locator("[data-testid=brightness-badge]");
     await expect(brightnessBadge).toBeVisible();
@@ -44,7 +45,7 @@ test.describe("M8 E2E — Continuous Light Table Dimmer & Physical Optical Loupe
 
     // 2. Test Continuous Brightness Dimmer (30% to 100%)
     await page.waitForTimeout(500);
-    const bright100Buffer = await canvas.screenshot();
+    const bright100Buffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m8-brightness-100.png"), bright100Buffer);
     const bright100Png = parsePng(bright100Buffer);
     const stats100 = getRegionStats(bright100Png, 640, 220, 30);
@@ -58,7 +59,7 @@ test.describe("M8 E2E — Continuous Light Table Dimmer & Physical Optical Loupe
     await page.waitForTimeout(400);
     await expect(brightnessBadge).toHaveText("40%");
 
-    const bright40Buffer = await canvas.screenshot();
+    const bright40Buffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m8-brightness-40.png"), bright40Buffer);
     const bright40Png = parsePng(bright40Buffer);
     const stats40 = getRegionStats(bright40Png, 640, 220, 30);
@@ -99,7 +100,7 @@ test.describe("M8 E2E — Continuous Light Table Dimmer & Physical Optical Loupe
       // A. Move Loupe over Frame 3 (bicycle photograph)
       await page.mouse.move(box.x + 640, box.y + 400);
       await page.waitForTimeout(400);
-      const photoBuffer = await canvas.screenshot();
+      const photoBuffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m8-loupe-photo.png"), photoBuffer);
       const photoPng = parsePng(photoBuffer);
 
@@ -111,7 +112,7 @@ test.describe("M8 E2E — Continuous Light Table Dimmer & Physical Optical Loupe
       // B. Move Loupe over Sprocket Hole (perforation showing glowing table underneath)
       await page.mouse.move(box.x + 640, box.y + 350);
       await page.waitForTimeout(400);
-      const sprocketBuffer = await canvas.screenshot();
+      const sprocketBuffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m8-loupe-sprocket.png"), sprocketBuffer);
       const sprocketPng = parsePng(sprocketBuffer);
 
@@ -122,7 +123,7 @@ test.describe("M8 E2E — Continuous Light Table Dimmer & Physical Optical Loupe
       // C. Move Loupe over Film Rebate Border (edge marking & frame numbers)
       await page.mouse.move(box.x + 640, box.y + 336);
       await page.waitForTimeout(400);
-      const rebateBuffer = await canvas.screenshot();
+      const rebateBuffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m8-loupe-rebate.png"), rebateBuffer);
       const rebatePng = parsePng(rebateBuffer);
 
@@ -132,7 +133,7 @@ test.describe("M8 E2E — Continuous Light Table Dimmer & Physical Optical Loupe
       // D. Move Loupe off-strip onto light table acrylic surface
       await page.mouse.move(box.x + 640, box.y + 200);
       await page.waitForTimeout(400);
-      const tableBuffer = await canvas.screenshot();
+      const tableBuffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m8-loupe-table.png"), tableBuffer);
       const tablePng = parsePng(tableBuffer);
 

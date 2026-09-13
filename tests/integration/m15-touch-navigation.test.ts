@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TouchGestures, GestureIntent } from '../../src/utils/touchGestures';
 import { createInitialViewerState, viewerReducer } from '../../src/state/viewerState';
-import { FULL_ROLL_FIXTURE, fitRollView, anchoredZoom } from '../../src/utils/rollLayout';
+import { FULL_ROLL_FIXTURE, fitRollView, anchoredZoom, clampFocusPan } from '../../src/utils/rollLayout';
 import { touchLoupePlacement } from '../../src/utils/touchLoupe';
 const p=(id:number,x:number,y=100)=>({id,x,y});
 afterEach(()=>vi.useRealTimers());
@@ -37,12 +37,12 @@ describe('M15 touch gestures and shared viewer',()=>{
   });
   it('direct touch interrupts inspection travel but retains guarded room journeys',()=>{
     let s=viewerReducer(createInitialViewerState('inspect',FULL_ROLL_FIXTURE),{type:'INPUT_TOUCH',active:true});
-    s=viewerReducer(s,{type:'OPEN_FRAME',frameIndex:8});s=viewerReducer(s,{type:'TOUCH_VIEW',zoom:.3,x:.2,z:.1});expect(s.isTransitioning).toBe(false);expect(s.activeFrameIndex).toBe(8);expect(s.inspectPan).toEqual({x:.2,z:.1});
+    s=viewerReducer(s,{type:'OPEN_FRAME',frameIndex:8});s=viewerReducer(s,{type:'TOUCH_VIEW',zoom:.3,x:.2,z:.1});expect(s.isTransitioning).toBe(false);expect(s.activeFrameIndex).toBe(8);expect(s.inspectPan).toEqual(clampFocusPan(s.roll,8,.3,s.viewportAspect,.2,.1));
     s=viewerReducer(s,{type:'RETURN_TO_ROOM'});expect(viewerReducer(s,{type:'TOUCH_VIEW',zoom:.2,x:0,z:0})).toBe(s);
   });
   it('rotation preserves magnification relative to Fit and preserves pinned loupe and crop detail position',()=>{
     let s=viewerReducer(createInitialViewerState('inspect',FULL_ROLL_FIXTURE),{type:'INPUT_TOUCH',active:true});s=viewerReducer(s,{type:'OPEN_FRAME',frameIndex:6});s=viewerReducer(s,{type:'SET_TRANSITIONING',isTransitioning:false});s=viewerReducer(s,{type:'TOUCH_VIEW',zoom:s.inspectZoom/2,x:.3,z:.1});s=viewerReducer(s,{type:'SET_LOUPE_POSITION',x:.4,y:.2});
-    const old=s,ratio=s.inspectZoom/fitRollView(s.roll,'frame',6,s.viewportAspect).zoom;s=viewerReducer(s,{type:'VIEWPORT',aspect:.65});expect(s.inspectZoom/fitRollView(s.roll,'frame',6,.65).zoom).toBeCloseTo(ratio);expect(s.inspectPan).toEqual(old.inspectPan);expect(s.loupe).toEqual(old.loupe);
+    const old=s,ratio=s.inspectZoom/fitRollView(s.roll,'frame',6,s.viewportAspect).zoom;s=viewerReducer(s,{type:'VIEWPORT',aspect:.65});expect(s.inspectZoom/fitRollView(s.roll,'frame',6,.65).zoom).toBeCloseTo(ratio);expect(s.inspectPan).toEqual(clampFocusPan(s.roll,6,s.inspectZoom,.65,old.inspectPan.x,old.inspectPan.z));expect(s.loupe).toEqual(old.loupe);
     s=viewerReducer(s,{type:'CAMERA_MOTION',moving:true});s=viewerReducer(s,{type:'CAMERA_MOTION',moving:false});expect(s.loupe).toEqual(old.loupe);
     s=viewerReducer(s,{type:'FIT_VIEW'});expect(s.inspectZoom).toBe(fitRollView(s.roll,'frame',6,.65).zoom);
   });

@@ -5,7 +5,6 @@ import { useThree } from "@react-three/fiber";
 import { getFilmStock } from "../data/filmStocks";
 import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { DEFAULT_LAYOUT, getFrameCenter } from "../utils/loupeMapping";
 import { TABLE_SURFACE_Y, TABLE_CENTER_Z } from "../utils/cameraBounds";
 import { ViewerAction, ViewerState } from "../state/viewerState";
 import { LightTable } from "./LightTable";
@@ -64,13 +63,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       dispatch({ type: "APPROACH_TABLE" });
       dispatch({ type: "SELECT_FRAME", frameIndex: index });
     } else {
-      if (multi) { dispatch({ type: "OPEN_FRAME", frameIndex: index }); return; }
-      dispatch({ type: "SELECT_FRAME", frameIndex: index });
-      // When zoomed in, also center the table view on the selected photo frame
-      if (state.inspectZoom < 2.8) {
-        const frameCenter = getFrameCenter(index, DEFAULT_LAYOUT);
-        dispatch({ type: "SET_TABLE_PAN", x: frameCenter.x, z: TABLE_CENTER_Z });
-      }
+      if (!state.focusMode && !state.loupe.isActive) dispatch({ type: "OPEN_FRAME", frameIndex: index });
     }
   };
 
@@ -105,8 +98,8 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         inspectPan={state.inspectPan}
         isLoupeActive={state.loupe.isActive}
         onUpdateRoomPose={(pose) => dispatch({ type: "UPDATE_ROOM_POSE", pose })}
-        onCameraMotion={multi ? moving => dispatch({ type: "CAMERA_MOTION", moving }) : undefined}
-        onZoomAt={multi ? (delta, x, z) => dispatch({ type: "ZOOM_AT", delta, x, z }) : undefined}
+        onCameraMotion={moving => dispatch({ type: "CAMERA_MOTION", moving })}
+        onZoomAt={(delta, x, z) => dispatch({ type: "ZOOM_AT", delta, x, z })}
         onAdjustInspectZoom={(delta) => dispatch({ type: "ADJUST_TABLE_ZOOM", delta })}
         onAdjustInspectPan={(dx, dz) => dispatch({ type: "ADJUST_TABLE_PAN", dx, dz })}
         onTransitionComplete={() => dispatch({ type: "SET_TRANSITIONING", isTransitioning: false })}
@@ -137,7 +130,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         </group>)}
 
         {/* Magnifying Loupe */}
-        <Loupe
+        {(!state.focusMode || state.loupe.isActive) && <Loupe
           touchInput={state.touchPointer}
           physicalScale={state.roll.scale}
           suspended={state.isTransitioning || state.cameraMoving}
@@ -159,7 +152,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
               dispatch({ type: "APPROACH_TABLE" });
             }
           }}
-        />
+        />}
       </group>
     </>
   );

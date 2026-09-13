@@ -6,7 +6,10 @@ import { readFileSync } from "node:fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const host = process.env.FILM_PHOTO_HOST || "127.0.0.1";
-const allowedHosts = process.env.FILM_PHOTO_ALLOWED_HOSTS?.split(',');
+const allowedHosts = process.env.FILM_PHOTO_ALLOWED_HOSTS?.split(',') ?? [
+  "macbook",
+  "macbook.tail2b1388.ts.net",
+];
 const https = process.env.FILM_PHOTO_TLS_CERT && process.env.FILM_PHOTO_TLS_KEY
   ? {cert:readFileSync(process.env.FILM_PHOTO_TLS_CERT),key:readFileSync(process.env.FILM_PHOTO_TLS_KEY)} : undefined;
 

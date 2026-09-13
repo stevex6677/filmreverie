@@ -1,3 +1,4 @@
+import { viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -27,13 +28,13 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
     page.on("requestfailed", (req) => failedRequests.push(req.url()));
 
     // 1. Load production app directly into table inspection mode
-    await page.goto("/?deterministic=true&mode=inspect");
+    await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
 
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible({ timeout: 15000 });
 
-    const roomBadge = page.locator("[data-testid=room-badge]");
-    await expect(roomBadge).toHaveText("INSPECT");
+    const roomBadge = page.locator("main");
+    await expect(roomBadge).toHaveAttribute("data-room-mode", "inspect");
 
     const zoomBadge = page.locator("[data-testid=zoom-badge]");
     await expect(zoomBadge).toBeVisible();
@@ -49,7 +50,7 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
 
     // Capture initial table overview
     await page.waitForTimeout(500);
-    const overviewBuffer = await canvas.screenshot();
+    const overviewBuffer = await captureCanvas(page);
     fs.writeFileSync(path.join(artifactsDir, "m6-table-overview.png"), overviewBuffer);
     const overviewPng = parsePng(overviewBuffer);
 
@@ -73,7 +74,7 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
       await expect(resetBtn).toBeVisible();
 
       // Capture zoomed-in screenshot
-      const zoomedBuffer = await canvas.screenshot();
+      const zoomedBuffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m6-table-zoomed-in.png"), zoomedBuffer);
       const zoomedPng = parsePng(zoomedBuffer);
 
@@ -89,7 +90,7 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
       await page.waitForTimeout(400);
 
       // Capture panned screenshot
-      const pannedBuffer = await canvas.screenshot();
+      const pannedBuffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m6-table-panned.png"), pannedBuffer);
       const pannedPng = parsePng(pannedBuffer);
 
@@ -100,7 +101,7 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
       await resetBtn.click();
       await page.waitForTimeout(400);
       await expect(zoomBadge).toHaveText("100%");
-      await expect(resetBtn).not.toBeVisible();
+      await expect(resetBtn).toBeVisible(); // M16 keeps Fit roll available.
 
       // 5. Test Configurable Loupe Magnification
       // Activate loupe
@@ -117,7 +118,7 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
       const magControls = page.locator("[data-testid=magnification-controls]");
       await expect(magControls).toBeVisible();
 
-      const loupe25Buffer = await canvas.screenshot();
+      const loupe25Buffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m6-loupe-2.5x.png"), loupe25Buffer);
       const loupe25Png = parsePng(loupe25Buffer);
 
@@ -128,7 +129,7 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
       await page.waitForTimeout(400);
       await expect(loupeBadge).toHaveText("ACTIVE (4×)");
 
-      const loupe4Buffer = await canvas.screenshot();
+      const loupe4Buffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m6-loupe-4x.png"), loupe4Buffer);
 
       // Switch to 8x preset
@@ -138,7 +139,7 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
       await page.waitForTimeout(400);
       await expect(loupeBadge).toHaveText("ACTIVE (8×)");
 
-      const loupe8Buffer = await canvas.screenshot();
+      const loupe8Buffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m6-loupe-8x.png"), loupe8Buffer);
       const loupe8Png = parsePng(loupe8Buffer);
 
@@ -159,7 +160,7 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
       await expect(loupeBadge).toHaveText("ACTIVE (2×)");
 
       // Test '+' shortcut to increase magnification
-      await page.keyboard.press("+");
+      await viewerKey(page, "+");
       await page.waitForTimeout(200);
       await expect(loupeBadge).toHaveText("ACTIVE (3×)");
 
@@ -172,13 +173,13 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
       const returnBtn = page.locator("[data-testid=return-room-btn]");
       await returnBtn.click();
       await page.waitForTimeout(600);
-      await expect(roomBadge).toHaveText("ROOM");
+      await expect(roomBadge).toHaveAttribute("data-room-mode", "room");
 
       const approachBtn = page.locator("[data-testid=approach-table-btn]");
       await expect(approachBtn).toBeVisible();
-      await approachBtn.click();
+      await approachBtn.click(); await openViewingTools(page);
       await page.waitForTimeout(600);
-      await expect(roomBadge).toHaveText("INSPECT");
+      await expect(roomBadge).toHaveAttribute("data-room-mode", "inspect");
       await expect(zoomBadge).toHaveText("100%");
     }
 

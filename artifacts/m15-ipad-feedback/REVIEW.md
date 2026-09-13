@@ -1,5 +1,7 @@
 # iPad review fixes — 2026-09-12
 
+Latest acceptance (2026-09-13 UTC): the user explicitly requested that all milestones preceding M16 be marked done. M15, including this review revision, is completed and accepted. This supersedes historical pending approval below and does not claim additional physical-device testing.
+
 The user reported that Lights/Viewing tools dimmed and froze the scene, settings appeared only after closing the panel, and the touch loupe stayed the same size while the film zoomed. The user also requested removal of Zoom +/-.
 
 - Lights/Viewing tools now has a transparent backdrop and keeps scene rendering active. Scene gestures remain blocked while the modal owns input. Library/frame-chooser dialogs and hidden pages still pause rendering.

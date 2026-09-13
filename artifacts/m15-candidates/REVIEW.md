@@ -1,5 +1,7 @@
 # M15 iPhone and iPad touch experience
 
+Latest acceptance (2026-09-13 UTC): the user explicitly requested that all milestones preceding M16 be marked done. M15, including this review revision, is completed and accepted. This supersedes historical pending approval below and does not claim additional physical-device testing.
+
 Status: Awaiting human review. Implementation and the full automated gate passed. Physical iPhone/iPad Safari review, performance profiling and human acceptance remain pending. M1–M14 were explicitly accepted by the user on 2026-09-11.
 
 2026-09-12 iPad follow-up: the user reported dimmed/frozen tools previews and fixed-size touch loupe behavior. These were revised, and Zoom +/- was removed from Viewing tools. The full gate below is historical evidence for `66cb870`; see `../m15-ipad-feedback/` for the follow-up revision and focused verification. Tools now render live without a dimming backdrop; import and frame-chooser dialogs still pause rendering.

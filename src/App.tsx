@@ -24,6 +24,7 @@ import { ViewingTableScene } from "./components/ViewingTableScene";
 import { Controls } from "./components/Controls";
 import { MobileControls, MobileSheet } from "./components/MobileControls";
 import { useMobileLayout } from "./utils/useMobileLayout";
+import { TableControls } from "./components/TableControls";
 
 function LoadingFallback() {
   return (
@@ -86,6 +87,7 @@ export function App() {
   );
 
   const roll = state.roll;
+  useEffect(()=>setSheet(null),[state.roomMode]);
   useEffect(()=>{if(mobile)dispatch({type:'INPUT_TOUCH',active:true});else setSheet(null);},[mobile]);
   useEffect(() => { document.title = roll.imported ? `${roll.label} — Darkroom Film Viewer` : "Darkroom Film Viewer — Roll 01"; }, [roll]);
   const [libraryOpen, setLibraryOpen] = useState(false), [libraryError, setLibraryError] = useState("");
@@ -167,7 +169,8 @@ export function App() {
   // Keyboard shortcut support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (libraryOpen || sheet) return;
+      if (libraryOpen || sheet==='frames') return;
+      if(sheet==='tools' && e.key==='Escape'){setSheet(null);return;}
       // Ignore when typing in input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
         return;
@@ -175,11 +178,11 @@ export function App() {
 
       if ((e.target instanceof HTMLElement && e.target.isContentEditable) ||
           (e.target instanceof HTMLButtonElement && ["Enter", " "].includes(e.key))) return;
-      if (roll !== BASELINE_ROLL && state.roomMode === "inspect") {
+      if (state.roomMode === "inspect") {
         const directions = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" } as const;
         if (e.key in directions) { e.preventDefault(); dispatch({ type: "NAVIGATE", direction: directions[e.key as keyof typeof directions] }); return; }
         if (e.key === "Enter") { e.preventDefault(); dispatch({ type: "OPEN_FRAME", frameIndex: state.activeFrameIndex }); return; }
-        if (/^[1-9]$/.test(e.key)) return;
+        if (/^[1-9]$/.test(e.key)) { dispatch({type:state.focusMode?'OPEN_FRAME':'SELECT_FRAME',frameIndex:Number(e.key)-1}); return; }
       }
       if (state.roomMode === "room") {
         if (e.target instanceof HTMLElement && e.target.closest('button, input, select, textarea, [role="dialog"], [contenteditable="true"]')) return;
@@ -209,7 +212,7 @@ export function App() {
             frameIndex: Math.min(4, state.activeFrameIndex + 1),
           });
         } else if (e.key === "0") {
-          dispatch({ type: "RESET_TABLE_VIEW" });
+          dispatch({ type: state.focusMode ? "FIT_VIEW" : "RESET_TABLE_VIEW" });
         } else if (e.key === "+" || e.key === "=" || e.key === "]") {
           dispatch({ type: "ADJUST_LOUPE_MAGNIFICATION", delta: 1.0 });
         } else if (e.key === "-" || e.key === "_" || e.key === "[") {
@@ -226,14 +229,15 @@ export function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.roomMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, roll, libraryOpen, sheet]);
+  }, [state.roomMode, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, roll, libraryOpen, sheet]);
 
   const localError = new URLSearchParams(window.location.search).get("roll") === "local" ? validateRoll(LOCAL_ROLL) : null;
   if (localError) return <main className="darkroom-error-fallback"><div className="error-card" role="alert"><h2>Local roll unavailable</h2><p>{localError}</p><a href="/?example=1">Open the five-photo example</a></div></main>;
 
   return (
     <main
-      className={`darkroom-app-container ${roll !== BASELINE_ROLL ? "full-roll" : ""} ${mobile ? "mobile-layout" : ""}`}
+      className={`darkroom-app-container ${roll !== BASELINE_ROLL ? "full-roll" : ""} ${mobile?'mobile-layout':''} ${state.roomMode==='inspect'?'table-layout':''}`}
+      data-table-mode={state.focusMode?'focus':'overview'}
       data-roll-id={roll.rollId}
       data-film-format={roll.format ?? "135"}
       data-inspection-level={state.inspectionLevel}
@@ -273,7 +277,7 @@ export function App() {
         </div>
       ) : (
         <Suspense fallback={<LoadingFallback />}>
-          <div className="canvas-wrapper">
+          <div className="canvas-wrapper" tabIndex={0} aria-label="Film viewer">
             <Canvas shadows key={canvasVersion}
               onCreated={({gl})=>{gl.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();setContextLost(true);});gl.domElement.addEventListener('webglcontextrestored',()=>setContextLost(false));}}
               frameloop={libraryOpen || sheet === 'frames' || hidden || contextLost ? "never" : "always"}
@@ -289,7 +293,7 @@ export function App() {
               }}
             >
               <ViewingTableScene
-                inputBlocked={libraryOpen || !!sheet || hidden || contextLost}
+                inputBlocked={libraryOpen || sheet==='frames' || (state.roomMode==='room' && !!sheet) || hidden || contextLost}
                 state={state}
                 dispatch={dispatch}
                 isDeterministic={isDeterministic}
@@ -301,7 +305,7 @@ export function App() {
       )}
 
       {contextLost&&<div className="context-recovery" role="alert"><p>The graphics view was interrupted. Your rolls are saved.</p><button onClick={()=>{setContextLost(false);setCanvasVersion(v=>v+1);}}>Restore view</button></div>}
-      {mobile ? <MobileControls state={state} dispatch={dispatch} onOpenLibrary={()=>setLibraryOpen(true)} sheet={sheet} setSheet={setSheet}/> : <Controls state={state} dispatch={dispatch} onOpenLibrary={() => setLibraryOpen(true)} />}
+      {state.roomMode==='inspect'?<TableControls state={state} dispatch={dispatch} onOpenLibrary={()=>setLibraryOpen(true)} sheet={sheet} setSheet={setSheet}/>:mobile ? <MobileControls state={state} dispatch={dispatch} onOpenLibrary={()=>setLibraryOpen(true)} sheet={sheet} setSheet={setSheet}/> : <Controls state={state} dispatch={dispatch} onOpenLibrary={() => setLibraryOpen(true)} />}
       {libraryError && <div className="library-notice" role="alert">{libraryError}<button onClick={() => setLibraryOpen(true)}>Open library</button></div>}
       {libraryOpen && <RollLibrary activeId={roll.rollId} onClose={() => setLibraryOpen(false)} onOpen={openSaved} onExample={openExample} onRemoved={id => { if (id === roll.rollId) openExample(); }} />}
     </main>
