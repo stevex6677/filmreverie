@@ -34,3 +34,19 @@ Agent 请先阅读 [AGENTS.md](AGENTS.md)：文件在本地工作区编辑，代
 
 代码和这些文档已纳入 Git；其他分支或工作区需要包含相关提交。模型二进制资源
 不随 Git 克隆分发，需要按 [SHARED_ASSETS.md](SHARED_ASSETS.md) 使用共享目录。
+
+## Playwright video recording
+
+Routine tests default to `PLAYWRIGHT_VIDEO=off`; screenshots and pixel/interaction
+assertions still run. Existing optional video exports are produced only when
+recording is enabled. Enable recording for selected motion reviews or debugging:
+
+```sh
+# Run in the mapped remote checkout after flushing its Mutagen session.
+# Use the normal artifact/output directory overrides for the current run.
+PLAYWRIGHT_VIDEO=on npm run test:e2e -- m16-table-view --project=mobile-chrome
+```
+
+The only supported values are `off` (default) and `on`. Keep video scoped to the
+tests being reviewed; inspect it before claiming a motion review. Old recordings
+remain historical artifacts and do not indicate that a new run recorded video.
