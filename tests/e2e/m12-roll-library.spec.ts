@@ -19,6 +19,16 @@ async function start(page:Page,name:string,format='135',files=[photo('scan2.png'
 }
 async function save(page:Page){await review(page);await page.getByRole('button',{name:'Save and open',exact:true}).click();await expect(page.getByRole('dialog')).not.toBeVisible();await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:30000});}
 async function dbRolls(page:Page){return page.evaluate(async()=>new Promise<any[]>((resolve,reject)=>{const req=indexedDB.open('darkroom-rolls');req.onsuccess=()=>{const db=req.result;const r=db.transaction('rolls').objectStore('rolls').getAll();r.onsuccess=()=>{db.close();resolve(r.result);};r.onerror=()=>reject(r.error);};}));}
+async function expectThumbnailCaptionSeparated(page:Page) {
+  // Rotated crop images extend beyond their clipping viewport by design.
+  // Check the visible viewport and its clipping, rather than the hidden image extent.
+  const bounds=await page.locator('.strip-thumbnails button').first().evaluate(button=>{
+    const crop=button.querySelector('.strip-thumbnail-crop')!,img=crop.querySelector('img')!;
+    const rect=crop.getBoundingClientRect();
+    return {bottom:rect.bottom,height:rect.height,caption:button.querySelector('span')!.getBoundingClientRect().top,overflow:getComputedStyle(crop).overflow,loaded:img.complete&&img.naturalWidth>0};
+  });
+  expect(bounds.loaded).toBe(true);expect(bounds.height).toBeGreaterThan(20);expect(bounds.overflow).toBe('hidden');expect(bounds.bottom).toBeLessThanOrEqual(bounds.caption);
+}
 test.beforeEach(async({page})=>{await fs.mkdir(OUT,{recursive:true});await page.goto('/?mode=inspect&reduced_motion=true');});
 test('M12 real import, editing, duplicate handling, switching and persistent Trash',async({page})=>{
   const requests:string[]=[];page.on('request',r=>{if(r.method()!=='GET'||r.postData())requests.push(r.url());});
@@ -28,9 +38,9 @@ test('M12 real import, editing, duplicate handling, switching and persistent Tra
   await page.screenshot({path:`${OUT}/import-review.png`});await save(page);expect(requests).toEqual([]);
   const first=(await dbRolls(page))[0];expect(first.frameIds).toHaveLength(3);
   await page.getByLabel('Open frame 2',{exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');
-  const thumbnailBounds=await page.locator('.strip-thumbnails button').first().evaluate(button=>({photo:button.querySelector('img')!.getBoundingClientRect().bottom,caption:button.querySelector('span')!.getBoundingClientRect().top}));expect(thumbnailBounds.photo).toBeLessThanOrEqual(thumbnailBounds.caption);
+  await expectThumbnailCaptionSeparated(page);await page.screenshot({path:`${OUT}/rotated-thumbnail-caption.png`});
   await page.setViewportSize({width:1280,height:720});
-  const compactBounds=await page.locator('.strip-thumbnails button').first().evaluate(button=>({photo:button.querySelector('img')!.getBoundingClientRect().bottom,caption:button.querySelector('span')!.getBoundingClientRect().top}));expect(compactBounds.photo).toBeLessThanOrEqual(compactBounds.caption);
+  await expectThumbnailCaptionSeparated(page);
   await page.setViewportSize({width:1280,height:800});
   await page.keyboard.press('b');await expect.poll(async()=>(await dbRolls(page))[0].view?.frameId).toBe(first.frameIds[1]);const before=await page.locator('main').getAttribute('data-selected-frame');
   await page.reload();await expect(page.locator('main')).toHaveAttribute('data-roll-id',first.id);await expect(page.locator('main')).toHaveAttribute('data-selected-frame',before!);await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true');

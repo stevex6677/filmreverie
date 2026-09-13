@@ -13,8 +13,10 @@ import { FilmStrip } from "./FilmStrip";
 import { Loupe } from "./Loupe";
 import { DarkroomRoom } from "./DarkroomRoom";
 import { CameraRig } from "./CameraRig";
+import { TouchNavigation } from "./TouchNavigation";
 
 interface ViewingTableSceneProps {
+  inputBlocked?: boolean;
   state: ViewerState;
   dispatch: React.Dispatch<ViewerAction>;
   isDeterministic?: boolean;
@@ -22,6 +24,7 @@ interface ViewingTableSceneProps {
 }
 
 export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
+  inputBlocked = false,
   state,
   dispatch,
   isDeterministic = false,
@@ -46,6 +49,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   const isPositive = state.filmMode === "positive";
 
   const handlePointerMove = (point: THREE.Vector3) => {
+    if (state.touchPointer || inputBlocked) return;
     if (state.roomMode === "inspect" && state.loupe.isActive && !state.isTransitioning && !state.cameraMoving) {
       const local = tableGroupRef.current
         ? tableGroupRef.current.worldToLocal(point.clone())
@@ -84,11 +88,14 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
 
   return (
     <>
+      <TouchNavigation state={state} dispatch={dispatch} blocked={inputBlocked} />
       {/* Darkroom Atmosphere Scene Background */}
       <color attach="background" args={["#13151b"]} />
 
       {/* Dynamic Camera Rig with Orbit and Smooth Transitions */}
       <CameraRig
+        touchInput={state.touchInput}
+        inputBlocked={inputBlocked}
         roomMode={state.roomMode}
         inspectionTransition={state.transitionKind === "inspection"}
         stripIndex={Math.floor(state.activeFrameIndex/state.roll.framesPerStrip)}
@@ -131,6 +138,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
 
         {/* Magnifying Loupe */}
         <Loupe
+          touchInput={state.touchPointer}
           physicalScale={state.roll.scale}
           suspended={state.isTransitioning || state.cameraMoving}
           isActive={state.roomMode === "inspect" && state.loupe.isActive}
@@ -156,4 +164,3 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
     </>
   );
 };
-

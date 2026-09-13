@@ -32,9 +32,63 @@ html, body, #root {
 }
 
 .canvas-wrapper canvas {
+  touch-action: none;
   width: 100% !important;
   height: 100% !important;
   display: block;
+}
+
+/* The canvas occupies the measured space between the mobile bars, including
+   Safari's changing viewport. Temporary sheets never resize it. */
+.mobile-layout { height: var(--visible-height, 100dvh); top: var(--visible-top, 0px); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "heading" "scene" "navigation"; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+.darkroom-app-container.mobile-layout { grid-template-columns: minmax(0,1fr); }
+.darkroom-app-container.mobile-layout .canvas-wrapper { grid-area: scene; position: relative; inset: auto; width:100%; height:100%; min-width: 0; min-height: 0; }
+.mobile-header { grid-area: heading; display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #14171b; z-index: 10; border-bottom: 1px solid #303337; }
+.mobile-header > div { min-width: 0; flex: 1; }
+.mobile-header > button { flex: 0 0 auto; white-space: nowrap; }
+.mobile-header h1 { font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.mobile-eyebrow { color: #c4a570; font-size: .625rem; letter-spacing: .15em; }
+.mobile-layout button, .mobile-layout select, .mobile-layout input:not([type=radio]):not([type=checkbox]) { min-height: 44px; }
+.mobile-layout button { min-width: 44px; font: inherit; font-size: .875rem; border: 1px solid #40434a; border-radius: 8px; padding: 8px 12px; color: #e8e8e5; background: #25292e; }
+.mobile-layout button:disabled { opacity: .4; }
+.mobile-layout button[aria-pressed=true], .mobile-layout button[aria-current=true] { border-color: #d3ac70; background: #483c2b; }
+.mobile-layout button:focus-visible { outline: 2px solid #efcb8f; outline-offset: 2px; }
+.mobile-layout .primary { background: #e4c391; color: #211b13; border-color: #e4c391; }
+.mobile-footer { grid-area: navigation; z-index: 10; position: relative; display: grid; gap: 6px; padding: 8px 12px; background: #14171b; border-top: 1px solid #303337; }
+.mobile-sequence, .mobile-secondary { display: flex; gap: 8px; }
+.mobile-sequence > *, .mobile-secondary > * { flex: 1; min-width: 0; }
+.mobile-footer > p { position: absolute; bottom: calc(100% + 4px); left: 12px; right: 12px; max-height: 70px; overflow: auto; background: #14171bed; padding: 6px 8px; border-radius: 6px; font-size: .75rem; line-height: 1.4; }
+.mobile-footer > .touch-hint { pointer-events: none; }
+.mobile-footer > p:not(:last-child) { display: none; }
+.mobile-layout[data-focus-mode=true] .mobile-secondary { visibility: hidden; }
+.mobile-sheet { color: #e8e8e5; background: #171a1e; border: 1px solid #494b4e; border-radius: 18px 18px 0 0; padding: 16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); width: 100%; max-width: 100%; max-height: min(85dvh, var(--visible-height, 85dvh)); margin: auto 0 0; overscroll-behavior: contain; overflow-y: auto; }
+.mobile-sheet::backdrop { background: #0009; }
+.mobile-sheet:not(.frame-sheet)::backdrop { background: transparent; }
+.mobile-sheet > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.mobile-sheet h2 { font-size: 1.2rem; }
+.mobile-tool-content { display: grid; gap: 20px; }
+.mobile-tool-content label { display: grid; gap: 8px; font-size: .9rem; }
+.mobile-tool-content select { appearance: none; color-scheme: dark; width: 100%; background: #25292e; color: #fff; padding: 8px 32px 8px 8px; border: 1px solid #494b4e; border-radius: 6px; font-size: 1rem; background-image: linear-gradient(45deg,transparent 50%,#fff 50%),linear-gradient(135deg,#fff 50%,transparent 50%); background-position: calc(100% - 18px) 50%,calc(100% - 12px) 50%; background-size: 6px 6px; background-repeat: no-repeat; }
+.mobile-tool-content fieldset { border: 0; min-width: 0; }
+.mobile-tool-content legend { margin-bottom: 8px; }
+.mobile-frame-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.mobile-frame-grid button { padding: 5px; }
+.mobile-frame-grid button > div { position: relative; overflow: hidden; }
+.mobile-frame-grid img { position: absolute; max-width: none; }
+.mobile-frame-grid span { display: block; padding: 8px 0 3px; }
+.context-recovery { position: absolute; z-index: 30; top: 30%; left: 10%; right: 10%; padding: 20px; background: #222; color: white; border: 1px solid #aa8b60; border-radius: 12px; }
+
+@media (min-width: 760px) {
+  .mobile-header, .mobile-footer { padding-left: 24px; padding-right: 24px; }
+  .mobile-footer { grid-template-columns: 1fr 1fr; gap: 20px; }
+  .mobile-sheet { left: auto; right: env(safe-area-inset-right); top: env(safe-area-inset-top); bottom: env(safe-area-inset-bottom); margin: 12px; max-height: calc(var(--visible-height,100dvh) - 24px); width: 340px; border-radius: 14px; }
+  .mobile-sheet.frame-sheet { width: min(520px,70vw); }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .mobile-header { padding-top: 2px; padding-bottom: 2px; }
+  .mobile-footer { grid-template-columns: 1fr 1fr; padding-top: 3px; padding-bottom: 3px; }
+  .mobile-eyebrow { display: none; }
+  .mobile-sheet { width: min(380px,70vw); left: auto; margin: 0; border-radius: 12px 0 0 12px; max-height: var(--visible-height,100dvh); height: var(--visible-height,100dvh); }
 }
 
 /* UI Controls Overlay */
@@ -716,3 +770,36 @@ button:disabled { opacity: .4; cursor: default; }
 .library-dialog h2[data-step-title] { margin:16px 0 12px; }
 .review-summary { margin:8px 0 12px; }
 .detail-status { top:116px; bottom:auto; background:#172019ed; padding:8px; border-radius:4px; }
+
+.mobile-layout .library-dialog { max-height: calc(var(--visible-height,100dvh) - 32px); overflow-y:auto; overscroll-behavior:contain; }
+.mobile-layout .library-dialog input, .mobile-layout .library-dialog select { font-size:16px; }
+.mobile-layout .library-dialog h1 { font-size:28px; }
+.mobile-layout .library-dialog .import-footer { gap:8px; flex-wrap:nowrap; }
+.mobile-layout .library-dialog .import-footer > div { min-width:0; justify-content:flex-end; }
+@media(max-width:759px) {
+  .mobile-layout .library-dialog { position:fixed; inset:var(--visible-top,0) 0 auto; margin:0; width:100%; max-width:100%; height:var(--visible-height,100dvh); max-height:var(--visible-height,100dvh); border-radius:0; border:0; padding:16px max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left)); }
+  .mobile-layout .library-header-actions { gap:6px; }
+  .mobile-layout .library-dialog header { flex-wrap:nowrap; align-items:start; gap:8px; }
+  .mobile-layout .library-eyebrow { display:none; }
+  .mobile-layout .library-dialog .import-footer { bottom:-16px; padding:12px 0 max(12px,env(safe-area-inset-bottom)); }
+  .mobile-layout .import-footer button { padding:8px; font-size:.8rem; }
+  .mobile-layout .photo-drop { padding:18px 12px; margin:18px 0; }
+  .mobile-layout .photo-drop input { max-width:100%; width:100%; }
+  .mobile-layout .import-steps { gap:4px; justify-content:space-between; }
+  .mobile-layout .import-steps button { padding:6px; font-size:.75rem; flex:1; }
+  .mobile-layout .library-cards { grid-template-columns:1fr; }
+  .mobile-layout .library-details { grid-template-columns:1fr; display:grid; }
+  .mobile-layout .review-layout { display:flex; flex-direction:column; gap:16px; }
+  .mobile-layout .review-layout > div { width:100%; min-width:0; }
+  .mobile-layout .draft-photos { display:flex; overflow-x:auto; padding:4px 0 8px; overscroll-behavior:contain; gap:8px; }
+  .mobile-layout .draft-photos li { width:104px; flex:0 0 104px; }
+  .mobile-layout .selected-review { position:static; }
+  .mobile-layout .selected-review h3 { overflow-wrap:anywhere; font-size:.875rem; }
+  .mobile-layout .crop-stage { --crop-edge:min(300px,38dvh); padding:10px; height:calc(var(--crop-edge) + 20px); }
+  .mobile-layout .crop-position-controls label { flex-wrap:wrap; width:100%; }
+  .mobile-layout .crop-position-controls input { width:100%; }
+  .mobile-layout .draft-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .mobile-layout .draft-actions button { overflow-wrap:break-word; }
+  .mobile-layout .draft-actions button:last-child { grid-column:1/-1; }
+  .mobile-layout .library-toolbar { gap:8px; }
+}
