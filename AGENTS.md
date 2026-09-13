@@ -176,6 +176,14 @@ Preserve every path component below `<project_name>` when translating a path.
 
 ## 7. Verification checklist
 
+- Playwright video recording is off by default. Keep routine checks focused on
+  assertions and screenshots. Set `PLAYWRIGHT_VIDEO=on` only for selected
+  interaction reviews or diagnostic runs; see the README for usage.
+- If video is enabled for a motion review, inspect the recording and report
+  what was observed. Saving a video alone is not evidence of a motion review.
+  If available tools cannot inspect it, disclose that limitation and use
+  screenshots and interaction assertions without claiming video review.
+
 Before reporting an implementation complete:
 
 1. Confirm the active local checkout and which agent owns its worktree layout.

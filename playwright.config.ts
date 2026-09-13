@@ -6,6 +6,13 @@ process.env.REVIEW_ARTIFACTS_DIR ??= "artifacts/m9-m10-candidates/regressions";
 const port = Number(process.env.PLAYWRIGHT_PORT || 5178);
 const baseURL = `http://127.0.0.1:${port}`;
 
+// Routine checks use assertions and screenshots. Record only selected review
+// or diagnostic runs, e.g. PLAYWRIGHT_VIDEO=on npm run test:e2e -- m16-table-view.
+const video = process.env.PLAYWRIGHT_VIDEO ?? "off";
+if (video !== "off" && video !== "on") {
+  throw new Error("PLAYWRIGHT_VIDEO must be off or on.");
+}
+
 // Chrome's software WebGL renderer uses multiple CPU threads per worker.
 // Four browsers are a starting point on the 64-logical-CPU remote host;
 // override for the available capacity, including through npm run validate:mN.
@@ -45,7 +52,7 @@ export default defineConfig({
         "--enable-gpu-rasterization",
       ],
     },
-    video: "on",
+    video,
   },
   webServer: {
     command: `npm run preview -- --host 127.0.0.1 --port ${port}`,
