@@ -59,7 +59,16 @@ local:  <codex worktree root>/<worktree_id>/<project_name>
 remote: /workspace/worktrees/codex/<worktree_id>/<project_name>
 ```
 
-Preserve every path component below `<project_name>` when translating a path.
+Orca places named worktrees inside each project directory:
+
+```text
+local:  /Users/zhangzimou/orca/workspaces/<project_name>/<worktree_name>
+remote: /workspace/worktrees/orca/<project_name>/<worktree_name>
+```
+
+Preserve every path component below the mapped repository root when translating
+a path. For Orca, the repository root includes both `<project_name>` and
+`<worktree_name>`; do not omit or swap either component.
 
 ### Main checkout
 
@@ -101,6 +110,22 @@ Preserve every path component below `<project_name>` when translating a path.
   its root is not mapped, report that a new per-root session is required before
   running remote commands.
 
+### Orca worktrees
+
+- Local worktree root: `/Users/zhangzimou/orca/workspaces`
+- Remote worktree root: `/workspace/worktrees/orca`
+- Use `orca-worktrees` as the Mutagen session name when configuring this root
+  mapping. Verify that the session exists and its endpoints match before use.
+- Example repository mapping:
+  `/Users/zhangzimou/orca/workspaces/film_photo/<worktree_name>` maps to
+  `/workspace/worktrees/orca/film_photo/<worktree_name>`.
+- The project directory groups worktrees; run commands from the named worktree
+  repository, not from `/workspace/worktrees/orca/film_photo`.
+- Before running remote commands, check `mutagen sync list --long`. If this
+  root is not mapped, set up the root session first. One root session covers
+  all projects and named worktrees beneath it; do not create overlapping
+  per-worktree sessions.
+
 ## 3. Run commands remotely
 
 - By default, run builds, tests, package-manager commands, scripts, development
@@ -119,6 +144,7 @@ Preserve every path component below `<project_name>` when translating a path.
   mutagen sync flush antigravity-worktrees
   mutagen sync flush cursor-worktrees
   mutagen sync flush codex-worktrees-<worktree_id>
+  mutagen sync flush orca-worktrees
   ```
 
 - Verify session endpoints, status, and conflicts with
@@ -129,6 +155,7 @@ Preserve every path component below `<project_name>` when translating a path.
 
   ```bash
   ssh remote "cd /workspace/worktrees/codex/<worktree_id>/film_photo && <command>"
+  ssh remote "cd /workspace/worktrees/orca/film_photo/<worktree_name> && <command>"
   ```
 
 ### App startup and Web Access (local Mac or Vast.ai)
