@@ -1,4 +1,4 @@
-import { FilmStripLayout, getStripDimensions } from "../utils/loupeMapping";
+import { FilmStripLayout, getFrameBounds, getStripDimensions } from "../utils/loupeMapping";
 import * as THREE from "three";
 import { DISPLAY_FRAGMENT, FILM_TRANSMISSION_GLSL, illuminationUniforms } from "./tableIllumination";
 
@@ -56,12 +56,17 @@ export function createFilmShaderMaterial(texture: THREE.Texture, isPositive: boo
 
 export function createRebateMaterial(texture: THREE.Texture, brightness = 1, isPositive = false, negativeStock = true, base = new THREE.Color("rgb(217,119,36)"), baseOpacity = .88, layout?: FilmStripLayout) {
   const size = layout ? getStripDimensions(layout) : undefined;
+  const gates = Array.from({ length: layout?.frameCount || 1 }, (_, i) => {
+    if (!layout || !size) return new THREE.Vector2();
+    const bounds = getFrameBounds(i, layout);
+    return new THREE.Vector2(bounds.minX / size.width + .5, bounds.maxX / size.width + .5);
+  });
   return new THREE.ShaderMaterial({
     vertexShader: FilmVertexShader,
-    uniforms: { uTexture: { value: texture }, uModeTransition: { value: isPositive && negativeStock ? 1 : 0 }, uRebateBase: { value: base.clone() }, uBaseOpacity: { value: baseOpacity },
+    uniforms: { uGates: { value: gates }, uTexture: { value: texture }, uModeTransition: { value: isPositive && negativeStock ? 1 : 0 }, uRebateBase: { value: base.clone() }, uBaseOpacity: { value: baseOpacity },
       uRailFraction: { value: layout && size ? layout.marginY / size.height : 0 },
       uGateInset: { value: size ? new THREE.Vector2((.55 / 36 * .05) / size.width, (.55 / 36 * .05) / size.height) : new THREE.Vector2() },
-      uGateLayout: { value: layout && size ? new THREE.Vector4(layout.marginX / size.width, layout.frameWidth / size.width, (layout.frameWidth + layout.gap) / size.width, layout.frameCount) : new THREE.Vector4() }, ...illuminationUniforms(brightness) },
+      ...illuminationUniforms(brightness) },
     fragmentShader: `
       uniform sampler2D uTexture;
       uniform float uTableOutput;
@@ -70,19 +75,18 @@ export function createRebateMaterial(texture: THREE.Texture, brightness = 1, isP
       uniform vec3 uRebateBase;
       uniform float uBaseOpacity;
       uniform float uRailFraction;
-      uniform vec4 uGateLayout;
+      uniform vec2 uGates[${gates.length}];
       uniform vec2 uGateInset;
       varying vec2 vUv;
       void main() {
         vec4 rebate;
         if (uRailFraction > 0.0) {
           if (vUv.y > uRailFraction && vUv.y < 1.0 - uRailFraction) {
-            float frame = floor((vUv.x - uGateLayout.x) / uGateLayout.z);
-            float within = vUv.x - uGateLayout.x - frame * uGateLayout.z;
-            // A 0.05mm overlap keeps the independently curved photo mesh
-            // under the aperture edge, avoiding subpixel leaks of the white table.
-            if (frame >= 0.0 && frame < uGateLayout.w && within > uGateInset.x && within < uGateLayout.y - uGateInset.x
-              && vUv.y > uRailFraction + uGateInset.y && vUv.y < 1.0 - uRailFraction - uGateInset.y) discard;
+            // Individual apertures support mixed widths; retain the seam overlap.
+            for (int i = 0; i < ${gates.length}; i++) {
+              if (vUv.x > uGates[i].x + uGateInset.x && vUv.x < uGates[i].y - uGateInset.x
+                && vUv.y > uRailFraction + uGateInset.y && vUv.y < 1.0 - uRailFraction - uGateInset.y) discard;
+            }
             rebate = vec4(uRebateBase, uBaseOpacity);
           } else {
             float railV = vUv.y < uRailFraction

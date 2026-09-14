@@ -1,6 +1,6 @@
 import { draw120Rebate } from "./film120Rebate";
 import * as THREE from "three";
-import { DEFAULT_LAYOUT, FilmStripLayout, getFrameCenter, getStripDimensions } from "./loupeMapping";
+import { DEFAULT_LAYOUT, FilmStripLayout, getFrameWidth, getFrameCenter, getStripDimensions } from "./loupeMapping";
 import { DEFAULT_FILM_STOCK_ID, FilmStockProfile, getFilmStock } from "../data/filmStocks";
 
 export interface RebateColors {
@@ -54,8 +54,8 @@ function paintRebate(ctx: CanvasRenderingContext2D, stock: FilmStockProfile, lay
 
   for (let i = 0; i < layout.frameCount; i++) {
     const center = getFrameCenter(i, layout);
-    const left = (center.x + stripWidth / 2 - layout.frameWidth / 2) * scaleX;
-    const frameWidth = layout.frameWidth * scaleX;
+    const left = (center.x + stripWidth / 2 - getFrameWidth(i, layout) / 2) * scaleX;
+    const frameWidth = getFrameWidth(i, layout) * scaleX;
     const midpoint = left + frameWidth / 2;
     ctx.clearRect(left, py, frameWidth, ph);
     // No artificial dark stroke around the image gate.

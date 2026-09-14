@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { IDBFactory } from 'fake-indexeddb';
 import { RollRepository, RollBundle, openRollDatabase } from '../../src/storage/rollRepository';
-import { imageHeader, naturalFiles, processPhotos, releaseDraft } from '../../src/storage/importPhotos';
+import { IMPORT_LIMITS, imageHeader, naturalFiles, processPhotos, releaseDraft } from '../../src/storage/importPhotos';
 import { FILM_FORMATS, formatLayout } from '../../src/data/filmFormats';
 import { createRuntimeRoll } from '../../src/storage/rollRuntime';
 import { createRollLayout, locateFrame, mapRollPoint } from '../../src/utils/rollLayout';
@@ -63,7 +63,7 @@ it('processes real image bytes through an explicit canvas adapter, commits the d
     await repo.save({ roll:{ ...bundle().roll,id:'processed',frameIds:selected.map(p=>p.id),coverId:selected[0].id },frames:selected.map(p=>p.frame!),blobs:selected.flatMap(p=>p.blobs) });
     expect((await repo.read('processed')).frames[0].width).toBe(120);expect(await selected[0].blobs[0].blob.arrayBuffer()).toEqual(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));releaseDraft(photos);
     const signal=new AbortController();await expect(processPhotos(files.slice(1),'cancelled',signal.signal,()=>signal.abort())).rejects.toThrow();expect(await repo.list()).toHaveLength(1);
-    await expect(processPhotos(Array.from({length:73},()=>files[0]),'too-many',new AbortController().signal,()=>{})).rejects.toThrow('72');
+    await expect(processPhotos(Array.from({length:IMPORT_LIMITS.files+1},()=>files[0]),'too-many',new AbortController().signal,()=>{})).rejects.toThrow(String(IMPORT_LIMITS.files));
   } finally { vi.unstubAllGlobals(); }
 });
 

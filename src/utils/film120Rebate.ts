@@ -7,7 +7,7 @@ import { FilmStripLayout, getStripDimensions } from './loupeMapping';
 export function film120Marks(layout: FilmStripLayout, stock: FilmStockProfile) {
   const unit = .55 / 36;
   const length = getStripDimensions(layout).width / unit;
-  const offset = (layout.frameNumberOffset ?? 0) * (layout.frameWidth + layout.gap) / unit;
+  const offset = (layout.filmLengthOffset ?? (layout.frameNumberOffset ?? 0) * (layout.frameWidth + layout.gap)) / unit;
   const marks: { x: number; rail: 'top' | 'bottom'; text?: string; arrow?: boolean }[] = [];
   const label = stock.id === 'ektachrome-e100' ? 'KODAK E100' : stock.rebate.label;
   for (let n = Math.floor(offset / 45.5) - 1; n * 45.5 < offset + length; n++) {
