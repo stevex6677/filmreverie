@@ -13,6 +13,8 @@ import { Loupe } from "./Loupe";
 import { DarkroomRoom } from "./DarkroomRoom";
 import { CameraRig } from "./CameraRig";
 import { TouchNavigation } from "./TouchNavigation";
+import { LoupeNavigation } from './LoupeNavigation';
+import { loupeInspectionView } from '../utils/loupeView';
 
 interface ViewingTableSceneProps {
   inputBlocked?: boolean;
@@ -34,28 +36,20 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   const { size, gl } = useThree();
   const multi = state.roll !== BASELINE_ROLL;
   const strips = useMemo(() => createRollLayout(state.roll), [state.roll]);
-  const gate=strips[Math.floor(state.activeFrameIndex/state.roll.framesPerStrip)].layout;
-  const projected=gate.frameWidth*state.roll.scale/(2*state.inspectZoom*Math.tan(Math.PI/8))*size.height*gl.getPixelRatio();
-  const selected=state.roll.frames[state.activeFrameIndex];
+  const view = state.loupe.inspecting ? loupeInspectionView(state.loupe.worldX, state.loupe.worldY, state.loupe.scale, size.width / size.height) : { zoom: state.inspectZoom, pan: state.inspectPan };
+  const priority = state.loupe.isActive ? state.loupe.frameIndex : state.activeFrameIndex;
+  const gate=strips[Math.floor(priority/state.roll.framesPerStrip)].layout;
+  const projected=gate.frameWidth*state.roll.scale/(2*view.zoom*Math.tan(Math.PI/8))*size.height*gl.getPixelRatio();
+  const selected=state.roll.frames[priority];
   const sourcePixels=photoSourceDemand(projected,selected.aspectRatio,gate.frameWidth/gate.frameHeight,selected.rotation??0);
   const demand=state.roomMode === "inspect" && !state.isTransitioning && !state.cameraMoving ? sourcePixels*(state.loupe.isActive?state.loupe.magnification:1) : 0;
-  const { textures, failed, settled, bytes, loadedCount, detailStatus } = useRollTextures(state.roll, state.activeFrameIndex, state.assetRetry, demand, gl.capabilities.maxTextureSize);
+  const { textures, failed, settled, bytes, loadedCount, detailStatus } = useRollTextures(state.roll, priority, state.assetRetry, demand, gl.capabilities.maxTextureSize);
   useEffect(()=>{gl.domElement.dataset.textureIds=JSON.stringify(textures.map(t=>t.uuid));gl.domElement.dataset.textureBytes=String(bytes);gl.domElement.dataset.textureCount=String(loadedCount);gl.domElement.dataset.detailStatus=detailStatus;gl.domElement.dataset.textureEdge=String(Math.max(textures[state.activeFrameIndex]?.image?.width||0,textures[state.activeFrameIndex]?.image?.height||0));},[bytes,loadedCount,detailStatus,textures,state.activeFrameIndex,gl]);
   useEffect(() => { dispatch({ type: "ASSET_STATUS", failures: failed, loading: !settled, detailStatus }); }, [failed, settled, detailStatus, dispatch]);
   useEffect(() => { dispatch({ type: "VIEWPORT", aspect: size.width / size.height }); }, [size.width, size.height, dispatch]);
 
   const activeTexture = textures[state.loupe.frameIndex] || textures[0];
   const isPositive = state.filmMode === "positive";
-
-  const handlePointerMove = (point: THREE.Vector3) => {
-    if (state.touchPointer || inputBlocked) return;
-    if (state.roomMode === "inspect" && state.loupe.isActive && !state.isTransitioning && !state.cameraMoving) {
-      const local = tableGroupRef.current
-        ? tableGroupRef.current.worldToLocal(point.clone())
-        : point;
-      dispatch({ type: "SET_LOUPE_POSITION", x: local.x, y: local.y });
-    }
-  };
 
   const handleFrameSelect = (index: number) => {
     if (state.isTransitioning && state.transitionKind !== "inspection") return;
@@ -67,20 +61,16 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
     }
   };
 
-  const handleTableClick = (point: THREE.Vector3) => {
+  const handleTableClick = () => {
     if (state.isTransitioning) return;
     if (state.roomMode === "room") {
       dispatch({ type: "APPROACH_TABLE" });
-    } else if (state.loupe.isActive) {
-      const local = tableGroupRef.current
-        ? tableGroupRef.current.worldToLocal(point.clone())
-        : point;
-      dispatch({ type: "SET_LOUPE_POSITION", x: local.x, y: local.y });
     }
   };
 
   return (
     <>
+      <LoupeNavigation state={state} dispatch={dispatch} blocked={inputBlocked} />
       <TouchNavigation state={state} dispatch={dispatch} blocked={inputBlocked} />
       {/* Darkroom Atmosphere Scene Background */}
       <color attach="background" args={["#13151b"]} />
@@ -90,12 +80,13 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         touchInput={state.touchInput}
         inputBlocked={inputBlocked}
         roomMode={state.roomMode}
-        inspectionTransition={state.transitionKind === "inspection"}
+        inspectionTransition={state.transitionKind === "inspection" || state.transitionKind === 'loupe'}
         stripIndex={Math.floor(state.activeFrameIndex/state.roll.framesPerStrip)}
         isTransitioning={state.isTransitioning}
         savedRoomPose={state.savedRoomPose}
-        inspectZoom={state.inspectZoom}
-        inspectPan={state.inspectPan}
+        inspectZoom={view.zoom}
+        inspectPan={view.pan}
+        loupeInspection={state.loupe.inspecting || state.transitionKind === 'loupe'}
         isLoupeActive={state.loupe.isActive}
         onUpdateRoomPose={(pose) => dispatch({ type: "UPDATE_ROOM_POSE", pose })}
         onCameraMotion={moving => dispatch({ type: "CAMERA_MOTION", moving })}
@@ -119,21 +110,21 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         {/* Light Table Base & Diffuser */}
         <LightTable
           brightness={state.tableBrightness}
-          onPointerMove={handlePointerMove}
           onClick={handleTableClick}
         />
 
         {strips.map(strip => <group key={strip.index} position={[0, strip.y, multi ? 0.003 : 0]} scale={strip.scale}>
           <FilmStrip frames={strip.frames} stock={getFilmStock(state.filmStockId)} textures={textures.slice(strip.offset, strip.offset + strip.frames.length)}
             isPositive={isPositive} layout={strip.layout} brightness={state.tableBrightness}
-            onSelectFrame={index => handleFrameSelect(strip.offset + index)} onPointerMove={handlePointerMove} />
+            onSelectFrame={index => handleFrameSelect(strip.offset + index)} />
         </group>)}
 
         {/* Magnifying Loupe */}
-        {(!state.focusMode || state.loupe.isActive) && <Loupe
+        <Loupe
           touchInput={state.touchPointer}
-          physicalScale={state.roll.scale}
-          suspended={state.isTransitioning || state.cameraMoving}
+          physicalScale={state.loupe.scale}
+          suspended={false}
+          opticalEffects={state.loupe.opticalEffects}
           isActive={state.roomMode === "inspect" && state.loupe.isActive}
           targetX={state.loupe.worldX}
           targetY={state.loupe.worldY}
@@ -144,15 +135,15 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
           isPositive={isPositive}
           magnification={state.loupe.magnification}
           brightness={state.tableBrightness}
-          isDeterministic={isDeterministic}
+          isDeterministic={isDeterministic || isReducedMotion || state.loupe.inspecting}
           onClick={() => {
             if (state.roomMode === "inspect") {
-              dispatch({ type: "TOGGLE_LOUPE" });
+              dispatch({ type: state.loupe.isActive ? 'INSPECT_LOUPE' : 'TOGGLE_LOUPE' });
             } else {
               dispatch({ type: "APPROACH_TABLE" });
             }
           }}
-        />}
+        />
       </group>
     </>
   );

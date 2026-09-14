@@ -91,7 +91,7 @@ describe("M8 Integration — Continuous Light Table Dimmer & Physical Optical Lo
 
     it("preserves optical magnification controls and bounds", () => {
       let state = INITIAL_VIEWER_STATE;
-      expect(state.loupe.magnification).toBe(2.5);
+      expect(state.loupe.magnification).toBe(4);
 
       state = viewerReducer(state, { type: "SET_LOUPE_MAGNIFICATION", magnification: 4.0 });
       expect(state.loupe.magnification).toBe(4.0);

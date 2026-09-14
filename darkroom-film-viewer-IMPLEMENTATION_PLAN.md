@@ -12,6 +12,8 @@ M15 extends the web experience to iPhone and iPad with touch-specific navigation
 
 M16 redesigns table viewing around Overview and Focus, with distinct desktop, iPad and phone interactions. Focus presents the selected image and its film border at a comfortable scale with visible space around them, rather than maximizing the image to the viewport. M16 is implemented in the main checkout and Awaiting human review. Its latest production build and 177 integration tests passed; 77/78 browser tests passed, with one intermittent loupe failure that passed twice in isolated rechecks. Human acceptance remains pending.
 
+M17 implements the agreed three-state physical loupe: Inactivated → Activated → Inspection. The user authorized implementation on 2026-09-14 and explicitly disabled scroll/pinch zoom in Inspection while retaining movement. The production build, 184 integration tests and 24 M16/M17 browser tests passed; status is Awaiting human review. Review notes: `artifacts/m17-candidates/REVIEW.md`. This is the current milestone.
+
 ## Confirmed decisions
 
 - Stack: React, TypeScript, Vite, Three.js, React Three Fiber, and Drei.
@@ -100,7 +102,7 @@ Vitest is used for integration tests. Playwright is used for E2E tests in real d
 
 ## Progress protocol
 
-M1–M15 are complete and explicitly accepted. M16 is the active assignment as of 2026-09-13 UTC. Work on M16, update subtasks and evidence before stopping, and preserve unfinished checkboxes. Multiple coherent commits are allowed. M16 retains its own human-review gate.
+M1–M15 are complete and explicitly accepted. M17 is the active assignment as of 2026-09-14. Work on M17, update subtasks and evidence before stopping, and preserve unfinished checkboxes. Multiple coherent commits are allowed. M16 retains its own human-review gate.
 
 M16 implementation is now explicitly authorized. Prior M15 acceptance is recorded above; do not restart its review or treat historical missing measurements as a blocker to this assignment.
 
@@ -108,7 +110,7 @@ M13 is **Accepted** as of 2026-09-11, including the reversed drag interaction. I
 
 ## Progress TODO
 
-M14 is **Completed and accepted**, including crop positioning and the film-edge revisions. Its implementation is merged at `12e3c4f`. Side-by-side comparison and ratings remain deferred. M15 is **Completed and accepted** by the latest user instruction. Physical measurements were not collected and are not implied by that acceptance. M16 is the active implementation and review assignment. Keep milestone IDs stable and record partial progress, validation, and commit evidence before stopping.
+M14 is **Completed and accepted**, including crop positioning and the film-edge revisions. Its implementation is merged at `12e3c4f`. Side-by-side comparison and ratings remain deferred. M15 is **Completed and accepted** by the latest user instruction. Physical measurements were not collected and are not implied by that acceptance. M17 is the active implementation assignment; M16 retains its recorded review status. Keep milestone IDs stable and record partial progress, validation, and commit evidence before stopping.
 
 - [x] **M1 — Working five-photo film viewer**
   - **Status:** Accepted.
@@ -535,6 +537,18 @@ M14 is **Completed and accepted**, including crop positioning and the film-edge 
     - After automated validation, update this checklist and set **Awaiting human review**. Keep M16 unchecked until the required physical evidence and explicit user acceptance are recorded. Automated evidence: `artifacts/m16-candidates/REVIEW.md`; physical-device review Pending. Human approval: Pending.
   - **Completion:** All four subtasks meet their acceptance criteria; the image and film border retain intentional surrounding space at default Focus framing; all three input/layout families are usable; cumulative validation passes; and the user accepts the experience.
   - **Evidence:** Pending. **Human approval:** Pending. The conversation mockup illustrates layout direction only; it is not application implementation or a regression baseline.
+
+- [ ] **M17 — Physical loupe: Inactivated, Activated, Inspection**
+  - **Status:** Implemented; Awaiting human review. Authorized on 2026-09-14. Production build, 184 integration tests and 24 M16/M17 browser tests passed with no failures/skips/retries. M16's historical evidence and pending review remain recorded above.
+  - **Agreed design:** Inactivated rests at the table edge. Tap the object or the visible Loupe control to activate it in the current view. The loupe keeps a fixed physical size relative to the film through activation, parking, camera zoom and viewport changes. Activated can be dragged without snapping its center under the finger and magnifies the entire scene beneath it, including film borders, perforations and bare table. Tap the lens or Inspect to approach it with a continuous camera movement. Inspection fills most of the screen with the eyepiece, retaining a recognizable physical rim; portrait phones may crop the outer housing. Click/tap again in Inspection, the Pull back button, or Escape restores the previous table framing while retaining the inspected location. Drags and multi-contact gestures do not trigger pull-back. Put away returns Activated to Inactivated.
+  - **Explicit correction:** In Inspection, wheel scrolling and two-finger pinch MUST NOT zoom the camera or alter optical power. One-pointer drag and two-finger translation can still move across the table. Optical magnification changes only through explicit controls/keyboard shortcuts.
+  - **Inputs:** Desktop, iPad and iPhone share tap-to-inspect and drag-to-move. Suppress taps after dragging or adding a second contact. Escape pulls back before putting away, before leaving Focus. Enter inspects an active loupe. Provide visible touch/keyboard controls with safe-area-aware layouts; support mixed mouse/touch input, cancellation, resize, reduced motion and reversal during approach.
+  - **Appearance:** Replace stacked smooth cylinders/gold trim/hard shadow with a tapered matte housing, real grip ribs, recessed glass, retaining bevels, translucent skirt and soft contact grounding. Optical effects toggle controls peripheral softness, distortion, color separation and optical vignetting; preserve clear central detail and the housing when disabled. Remember the preference and chosen magnification.
+  - [x] **M17.1 — State and camera:** Explicit transitions, view restoration, interruption, input zoom locks and responsive camera approach.
+  - [x] **M17.2 — Interaction and controls:** Desktop/touch dragging, gesture ownership, accessible entry/exit and magnification/effects controls.
+  - [x] **M17.3 — Physical appearance and optics:** Grounded dimensional loupe, scene capture at all locations, source-detail priority beneath the loupe and optional imperfections.
+  - [x] **M17.4 — Validation and review:** Integration coverage and browser journeys at desktop, iPad and iPhone sizes, wheel/pinch lock with movement, tap/drag cancellation, effects, return and reduced motion. Review real rendered screenshots; preserve prior optical/film behavior except explicitly superseded hover-to-follow and touch-offset interactions. Record actual checks and limits; physical-device review remains separate from browser emulation.
+  - **Evidence:** `artifacts/m17-candidates/REVIEW.md`; screenshots in shared `ignored_generated/m17-loupe/runs/20260914-ui-design-final/`. Automated implementation/review package complete. Physical iPhone/iPad review and human acceptance: Pending. No generated binaries are committed.
 
 ## M9/M10 independence and integration contract
 
