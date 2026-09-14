@@ -1,21 +1,21 @@
 import { useRef, useState } from 'react';
 import { DraftPhoto } from '../storage/importPhotos';
-import { FILM_FORMATS, FilmFormat } from '../data/filmFormats';
+import { FilmFormat, FrameSizing, frameAspect, rollFormatLabel } from '../data/filmFormats';
 import { CropPosition, photoCropOffset, photoCropPreview, photoCropScale } from '../utils/photoFraming';
-export function CropInspector({photo,format,disabled=false,onChange}:{photo:DraftPhoto;format:FilmFormat;disabled?:boolean;onChange:(position:CropPosition)=>void}) {
+export function CropInspector({photo,format,sizing='fixed',disabled=false,onChange}:{photo:DraftPhoto;format:FilmFormat;sizing?:FrameSizing;disabled?:boolean;onChange:(position:CropPosition)=>void}) {
   const [final,setFinal]=useState(false),[dragging,setDragging]=useState(false);
   const drag=useRef<{id:number;x:number;y:number;width:number;height:number;position:CropPosition}|null>(null);
   const frame=photo.frame;
   if(!frame)return <div className="crop-unavailable">{photo.error||'Preview unavailable'}</div>;
-  const aspect=frame.width/frame.height,oriented=frame.rotation%180?1/aspect:aspect,gate=FILM_FORMATS[format],gateAspect=gate.width/gate.height;
+  const aspect=frame.width/frame.height,oriented=frame.rotation%180?1/aspect:aspect,gateAspect=frameAspect(format,sizing,frame);
   const crop=photoCropScale(aspect,gateAspect,frame.rotation),position=frame.cropPosition??{x:0,y:0};
   const offset=photoCropOffset(aspect,gateAspect,frame.rotation,position);
-  const movable=crop.x<1||crop.y<1;
+  const movable=sizing!=='free'&&(crop.x<1-1e-10||crop.y<1-1e-10);
   const preview=photoCropPreview(aspect,final?gateAspect:oriented,frame.rotation,final?position:undefined);
   if(!final){preview.left=`${50-offset.x*100}%`;preview.top=`${50-offset.y*100}%`;}
   const change=(x:number,y:number)=>onChange({x:Math.max(-1,Math.min(1,x)),y:Math.max(-1,Math.min(1,y))});
   return <section className="crop-inspector" aria-label="Crop inspector">
-    <div className="crop-heading"><span>{final?'Final photograph':'Full composition · shaded edges are excluded'}</span><button aria-pressed={final} onClick={()=>setFinal(!final)}>{final?'Show full composition':'Show final crop'}</button></div>
+    <div className="crop-heading"><span>{sizing==='free'?'Full composition · no cropping':final?'Final photograph':'Full composition · shaded edges are excluded'}</span>{sizing!=='free'&&<button aria-pressed={final} onClick={()=>setFinal(!final)}>{final?'Show full composition':'Show final crop'}</button>}</div>
     <div className="crop-stage">
       <div aria-label="Drag photograph to recompose" className={`crop-composition ${final?'crop-final':'crop-full'} ${movable&&!disabled?'crop-movable':''} ${dragging?'is-dragging':''}`} style={{aspectRatio:final?gateAspect:oriented,width:`min(100%, ${final?gateAspect:oriented} * var(--crop-edge))`}}
         onPointerDown={e=>{if(disabled||!movable||e.button!==0)return;if(drag.current){drag.current=null;setDragging(false);return;}e.preventDefault();const rect=e.currentTarget.getBoundingClientRect();drag.current={id:e.pointerId,x:e.clientX,y:e.clientY,width:rect.width/(final?crop.x:1),height:rect.height/(final?crop.y:1),position};e.currentTarget.setPointerCapture(e.pointerId);setDragging(true);}}
@@ -27,7 +27,7 @@ export function CropInspector({photo,format,disabled=false,onChange}:{photo:Draf
         {!final&&<div data-testid="crop-gate" className="crop-gate" style={{width:`${crop.x*100}%`,height:`${crop.y*100}%`}}/>}
       </div>
     </div>
-    <p>{gate.label} · Originals stay unchanged</p>
+    <p>{rollFormatLabel(format,sizing)} · Originals stay unchanged</p>
     {movable?<><p>Aspect mismatch: edges will be cropped.</p><p>Drag the photograph to recompose within the crop.</p><div className="crop-position-controls">
       {crop.x<1&&<label>Horizontal position<input aria-label="Horizontal crop position" type="range" min="-1" max="1" step="0.01" value={position.x} disabled={disabled} onChange={e=>change(Number(e.target.value),position.y)}/></label>}
       {crop.y<1&&<label>Vertical position<input aria-label="Vertical crop position" type="range" min="-1" max="1" step="0.01" value={position.y} disabled={disabled} onChange={e=>change(position.x,Number(e.target.value))}/></label>}

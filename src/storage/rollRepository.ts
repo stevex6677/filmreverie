@@ -1,5 +1,5 @@
 import { FilmStockId, isFilmStockId } from '../data/filmStocks';
-import { FilmFormat, isFilmFormat } from '../data/filmFormats';
+import { FilmFormat, FrameSizing, filmLengthUsage, isFilmFormat } from '../data/filmFormats';
 export interface SavedView {
   frameId: string; level: 'roll' | 'strip' | 'frame'; mode: 'negative' | 'positive'; brightness: number; magnification: number;
   zoom: number; pan: { x: number; z: number }; overview: { zoom: number; pan: { x: number; z: number }; frameIndex: number } | null;
@@ -10,6 +10,7 @@ export interface StoredFrame {
   originalKey: string; viewingKey: string; thumbnailKey: string;
 }
 export interface StoredRoll {
+  sizing?: FrameSizing;
   id: string; name: string; stockId: FilmStockId; format: FilmFormat; frameIds: string[]; coverId: string;
   createdAt: number; updatedAt: number; trashedAt: number | null; view?: SavedView;
 }
@@ -44,8 +45,12 @@ const complete = (tx: IDBTransaction) => new Promise<void>((resolve, reject) => 
 export function validateBundle(bundle: RollBundle) {
   const { roll, frames } = bundle;
   if (!roll.name.trim() || roll.name.length > 120 || !isFilmStockId(roll.stockId) || !isFilmFormat(roll.format)) throw new Error('Enter a name, stock and valid film format.');
-  if (!frames.length || frames.length > 72 || new Set(roll.frameIds).size !== frames.length || roll.frameIds.length !== frames.length || !roll.frameIds.includes(roll.coverId)) throw new Error('Invalid frame membership or cover.');
+  if (!frames.length || new Set(roll.frameIds).size !== frames.length || roll.frameIds.length !== frames.length || !roll.frameIds.includes(roll.coverId)) throw new Error('Invalid frame membership or cover.');
   for (const frame of frames) if (frame.rollId !== roll.id || !roll.frameIds.includes(frame.id) || ![0,90,180,270].includes(frame.rotation)) throw new Error('Invalid frame metadata.');
+  if (roll.sizing !== undefined && !['fixed','free'].includes(roll.sizing)) throw new Error('Invalid frame sizing.');
+  for (const frame of frames) if (![frame.width, frame.height].every(n => Number.isFinite(n) && n > 0)) throw new Error('Invalid image dimensions.');
+  const length = filmLengthUsage(roll.format, roll.sizing ?? 'fixed', frames);
+  if (length.exceeded) throw new Error(`Roll exceeds its film length by ${Math.ceil(length.used - length.capacity)} mm. Remove photographs or change the frame size before saving.`);
   for (const frame of frames) if (frame.cropPosition && [frame.cropPosition.x, frame.cropPosition.y].some(n => !Number.isFinite(n) || Math.abs(n) > 1)) throw new Error('Invalid crop position.');
 }
 export class RollRepository {

@@ -1,4 +1,4 @@
-import { BASELINE_ROLL, RollDefinition, InspectionLevel, locateFrame, mapRollPoint, fitRollView, clampRollPan, clampFocusPan, anchoredZoom } from "../utils/rollLayout";
+import { createRollLayout, BASELINE_ROLL, RollDefinition, InspectionLevel, locateFrame, mapRollPoint, fitRollView, clampRollPan, clampFocusPan, anchoredZoom } from "../utils/rollLayout";
 import { DEFAULT_FILM_STOCK_ID, FilmStockId, getFilmStock, isFilmStockId } from "../data/filmStocks";
 import { DEFAULT_LAYOUT, getFrameCenter } from "../utils/loupeMapping";
 import {
@@ -246,7 +246,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       if (state.isTransitioning && state.transitionKind !== "inspection") return state;
       if (action.level === "frame") return viewerReducer(state, { type: "OPEN_FRAME", frameIndex: state.activeFrameIndex });
       if (state.focusMode && action.level === "roll") return viewerReducer(state, { type: "SHOW_OVERVIEW" });
-      const index = action.stripIndex === undefined ? state.activeFrameIndex : action.stripIndex * state.roll.framesPerStrip;
+      const index = action.stripIndex === undefined ? state.activeFrameIndex : (createRollLayout(state.roll)[action.stripIndex]?.offset ?? state.activeFrameIndex);
       const selected = viewerReducer(state, { type: "SELECT_FRAME", frameIndex: index });
       const fit = fitRollView(state.roll, action.level, selected.activeFrameIndex, state.viewportAspect);
       return { ...selected, focusMode: false, inspectionLevel: "roll", inspectZoom: fit.zoom, inspectPan: fit.pan, isTransitioning: true, transitionKind: "inspection", savedOverview: null };
@@ -255,16 +255,18 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       if ((state.isTransitioning && state.transitionKind !== "inspection") || state.roomMode !== "inspect") return state;
       const delta = action.direction === "left" || action.direction === "up" ? -1 : 1;
       if (state.inspectionLevel === "strip") {
-        const strip = Math.max(0, Math.min(Math.ceil(state.roll.frames.length / state.roll.framesPerStrip) - 1, Math.floor(state.activeFrameIndex / state.roll.framesPerStrip) + delta));
+        const strip = Math.max(0, Math.min(createRollLayout(state.roll).length - 1, locateFrame(state.roll, state.activeFrameIndex).strip.index + delta));
         return viewerReducer(state, { type: "VIEW_LEVEL", level: "strip", stripIndex: strip });
       }
       let index = state.activeFrameIndex + delta;
       if (state.inspectionLevel === "roll") {
         if (action.direction === "up" || action.direction === "down") {
-          index = state.activeFrameIndex + delta * state.roll.framesPerStrip;
-          if (index < 0 || index >= state.roll.frames.length) return state;
+          const current = locateFrame(state.roll, state.activeFrameIndex);
+          const next = createRollLayout(state.roll)[current.strip.index + delta];
+          if (!next) return state;
+          index = next.offset + Math.min(current.localIndex, next.frames.length - 1);
         }
-        else if (Math.floor(Math.max(0, index) / state.roll.framesPerStrip) !== Math.floor(state.activeFrameIndex / state.roll.framesPerStrip)) return state;
+        else if (locateFrame(state.roll, index).strip.index !== locateFrame(state.roll, state.activeFrameIndex).strip.index) return state;
       }
       return viewerReducer(state, { type: state.inspectionLevel === "frame" ? "OPEN_FRAME" : "SELECT_FRAME", frameIndex: index });
     }
