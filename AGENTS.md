@@ -158,6 +158,16 @@ a path. For Orca, the repository root includes both `<project_name>` and
   ssh remote "cd /workspace/worktrees/orca/film_photo/<worktree_name> && <command>"
   ```
 
+### SSH Connection Multiplexing (ControlMaster)
+
+To minimize connection overhead when executing remote commands across agents and worktrees:
+- `Host remote` and `Host vast` in `~/.ssh/config` use OpenSSH `ControlMaster` (`ControlMaster auto`, `ControlPath ~/.ssh/sockets/%r@%h:%p`, `ControlPersist 10m`).
+- Local socket directory `~/.ssh/sockets` is maintained on the Mac.
+- **Stale Socket Recovery:** If an `ssh remote` command hangs or fails with `Control socket connect(...): Connection refused` (e.g. after laptop sleep or Vast.ai instance reboot), agents MUST clear stale sockets before retrying:
+  ```bash
+  ssh -O exit remote 2>/dev/null || rm -f ~/.ssh/sockets/*
+  ```
+
 ### App startup and Web Access (local Mac or Vast.ai)
 
 - For default/remote startup, run the application inside the remote container
@@ -170,7 +180,7 @@ a path. For Orca, the repository root includes both `<project_name>` and
   ```bash
   ssh -N -L <port>:127.0.0.1:<port> remote
   ```
-- Glances system and GPU monitoring is forwarded to `http://localhost:61209` via `LocalForward 61209 127.0.0.1:61208` in `~/.ssh/config`. Terminal TUI is available via `ssh -t remote glances`.
+- The custom GPU Dashboard is forwarded to `http://localhost:61209` via the background tunnel on `Host gpu-dashboard` (`LocalForward 61209 127.0.0.1:61208`). Real-time GPU & process metrics are accessible at `http://localhost:61209`.
 - Always provide both a clickable localhost URL and a verified phone/iPad URL
   after either local or remote startup (e.g. `http://localhost:5178` and
   `http://macbook:5178`). State where the application process is running.
@@ -235,5 +245,6 @@ Before reporting an implementation complete:
 2. Translate it using the canonical mapping above.
 3. Confirm the matching Mutagen session is connected and has no conflict.
 4. Flush that session.
-5. Run the relevant checks in the mapped remote checkout.
-6. Review the local Git diff and summarize the files changed and checks run.
+5. If remote SSH fails or hangs with socket errors, clear stale master sockets (`ssh -O exit remote 2>/dev/null || rm -f ~/.ssh/sockets/*`).
+6. Run the relevant checks in the mapped remote checkout.
+7. Review the local Git diff and summarize the files changed and checks run.
