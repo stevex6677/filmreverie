@@ -1,6 +1,7 @@
 import { createRollLayout, BASELINE_ROLL, RollDefinition, InspectionLevel, locateFrame, mapRollPoint, fitRollView, clampRollPan, clampFocusPan, anchoredZoom } from "../utils/rollLayout";
 import { DEFAULT_FILM_STOCK_ID, FilmStockId, getFilmStock, isFilmStockId } from "../data/filmStocks";
 import { DEFAULT_LAYOUT, getFrameCenter } from "../utils/loupeMapping";
+import { clampLoupePosition } from '../utils/loupeView';
 import {
   DEFAULT_ROOM_POSE,
   RoomCameraPose,
@@ -18,6 +19,9 @@ export type RoomMode = "inspect" | "room";
 
 export interface LoupeState {
   isActive: boolean;
+  inspecting: boolean;
+  opticalEffects: boolean;
+  scale: number;
   worldX: number;
   worldY: number;
   frameIndex: number;
@@ -40,7 +44,7 @@ export interface ViewerState {
   loupe: LoupeState;
   activeFrameIndex: number;
   cameraMoving: boolean;
-  transitionKind: "journey" | "inspection" | null;
+  transitionKind: "journey" | "inspection" | "loupe" | null;
   settledFrameIndex: number;
   focusMode: boolean;
   isTransitioning: boolean;
@@ -71,13 +75,16 @@ export const INITIAL_VIEWER_STATE: ViewerState = {
   filmStockId: DEFAULT_FILM_STOCK_ID,
   loupe: {
     isActive: false,
+    inspecting: false,
+    opticalEffects: true,
+    scale: 1,
     worldX: defaultFrameCenter.x,
     worldY: defaultFrameCenter.y,
     frameIndex: 0,
     u: 0.5,
     v: 0.5,
     isOverFrame: true,
-    magnification: 2.5,
+    magnification: 4,
   },
   activeFrameIndex: 0,
   cameraMoving: false,
@@ -103,7 +110,7 @@ export function createInitialViewerState(initialRoomMode: RoomMode = "inspect", 
     ...INITIAL_VIEWER_STATE,
     roomMode: initialRoomMode,
     roll,
-    loupe: { ...INITIAL_VIEWER_STATE.loupe, worldX: locateFrame(roll, 0).x, worldY: locateFrame(roll, 0).y },
+    loupe: { ...INITIAL_VIEWER_STATE.loupe, scale: roll.scale, worldX: locateFrame(roll, 0).x, worldY: locateFrame(roll, 0).y },
     savedRoomPose: { ...DEFAULT_ROOM_POSE },
     inspectZoom: roll === BASELINE_ROLL ? DEFAULT_INSPECT_DISTANCE : fitRollView(roll, "roll", 0).zoom,
     inspectPan: { x: 0, z: TABLE_CENTER_Z },
@@ -115,6 +122,10 @@ export function createInitialViewerState(initialRoomMode: RoomMode = "inspect", 
 }
 
 export type ViewerAction =
+  | { type: "INSPECT_LOUPE" }
+  | { type: "PULL_BACK_LOUPE" }
+  | { type: "SET_LOUPE_EFFECTS"; enabled: boolean }
+  | { type: "MOVE_LOUPE"; dx: number; dy: number }
   | { type: "INPUT_TOUCH"; active: boolean }
   | { type: "TOUCH_POINTER"; active: boolean }
   | { type: "FIT_VIEW" }
@@ -161,11 +172,29 @@ export type ViewerAction =
   | { type: "RESET" };
 
 export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerState {
+  // Inspection owns the camera. Neither wheel, pinch, reset nor frame shortcuts
+  // can change its distance (or the table pose to which Pull back returns).
+  if ((state.loupe.inspecting || state.transitionKind === 'loupe') && [
+    'ZOOM_AT', 'SET_TABLE_ZOOM', 'ADJUST_TABLE_ZOOM', 'TOUCH_VIEW',
+    'SET_TABLE_PAN', 'ADJUST_TABLE_PAN', 'FIT_VIEW', 'RESET_TABLE_VIEW',
+    'OPEN_FRAME', 'SELECT_FRAME', 'NAVIGATE', 'VIEW_LEVEL', 'TOGGLE_FOCUS', 'SHOW_OVERVIEW',
+  ].includes(action.type)) return state;
   const multi = state.roll !== BASELINE_ROLL || state.touchInput;
   const maxZoom = state.focusMode ? fitRollView(state.roll, "frame", state.activeFrameIndex, state.viewportAspect).zoom : Math.max(3.6, fitRollView(state.roll, "roll", 0, state.viewportAspect).zoom);
   const safeZoom = (zoom: number) => state.focusMode || multi ? Math.max(0.12 * state.roll.scale, Math.min(maxZoom, zoom)) : clampInspectZoom(zoom);
   const safePan = (x: number, z: number, zoom = state.inspectZoom) => state.focusMode ? clampFocusPan(state.roll, state.activeFrameIndex, zoom, state.viewportAspect, x, z) : multi ? clampRollPan(state.roll, x, z) : clampInspectPan(x, z);
   switch (action.type) {
+    case "INSPECT_LOUPE":
+      if (!state.loupe.isActive || state.loupe.inspecting || state.roomMode !== 'inspect' || state.isTransitioning) return state;
+      return { ...state, loupe: { ...state.loupe, inspecting: true }, isTransitioning: true, transitionKind: 'loupe' };
+    case "PULL_BACK_LOUPE":
+      if (!state.loupe.inspecting) return state;
+      return { ...state, loupe: { ...state.loupe, inspecting: false }, isTransitioning: true, transitionKind: 'loupe' };
+    case "SET_LOUPE_EFFECTS":
+      return { ...state, loupe: { ...state.loupe, opticalEffects: action.enabled } };
+    case "MOVE_LOUPE":
+      if (!state.loupe.isActive || state.isTransitioning || ![action.dx, action.dy].every(Number.isFinite)) return state;
+      return viewerReducer(state, { type: 'SET_LOUPE_POSITION', x: state.loupe.worldX + action.dx, y: state.loupe.worldY + action.dy });
     case "TOUCH_POINTER": return state.touchPointer===action.active?state:{...state,touchPointer:action.active};
     case "INPUT_TOUCH": {
       if(state.touchInput===action.active)return state;
@@ -200,6 +229,8 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       return viewerReducer(state, { type: "UPDATE_ROOM_POSE", pose: { yaw: state.savedRoomPose.yaw + action.yaw, pitch: state.savedRoomPose.pitch + action.pitch } });
     case "LOAD_ROLL": {
       let next = createInitialViewerState("inspect", action.roll);
+      next.loupe.opticalEffects = state.loupe.opticalEffects;
+      next.loupe.magnification = state.loupe.magnification;
       next.touchInput = state.touchInput;
       next.touchPointer = state.touchPointer;
       next.viewportAspect = state.viewportAspect;
@@ -212,7 +243,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
         next = viewerReducer(next, { type: "VIEW_LEVEL", level: ["roll", "strip", "frame"].includes(v.level) ? v.level : "roll" });
         next = viewerReducer(next, { type: "SET_FILM_MODE", mode: v.mode });
         next = viewerReducer(next, { type: "SET_TABLE_BRIGHTNESS", brightness: Number.isFinite(v.brightness) ? v.brightness : 1 });
-        next = viewerReducer(next, { type: "SET_LOUPE_MAGNIFICATION", magnification: Number.isFinite(v.magnification) ? v.magnification : 2.5 });
+        next = viewerReducer(next, { type: "SET_LOUPE_MAGNIFICATION", magnification: Number.isFinite(v.magnification) ? v.magnification : 4 });
         if (Number.isFinite(v.zoom) && Number.isFinite(v.pan?.x) && Number.isFinite(v.pan?.z)) {
           next = viewerReducer(next, { type: "SET_TABLE_ZOOM", zoom: v.zoom });
           next = viewerReducer(next, { type: "SET_TABLE_PAN", ...v.pan });
@@ -223,8 +254,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
     }
     case "CAMERA_MOTION": {
       if (state.cameraMoving === action.moving) return state;
-      const center = locateFrame(state.roll, state.activeFrameIndex);
-      return { ...state, cameraMoving: action.moving, loupe: !action.moving && multi && !state.touchInput ? { ...state.loupe, worldX: center.x, worldY: center.y, frameIndex: state.activeFrameIndex, u: .5, v: .5, isOverFrame: true } : state.loupe };
+      return { ...state, cameraMoving: action.moving };
     }
     case "ASSET_STATUS": return { ...state, assetFailures: action.failures, assetsLoading: action.loading, detailStatus: action.detailStatus ?? "" };
     case "RETRY_ASSETS": return { ...state, assetRetry: state.assetRetry + 1 };
@@ -271,6 +301,8 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       return viewerReducer(state, { type: state.inspectionLevel === "frame" ? "OPEN_FRAME" : "SELECT_FRAME", frameIndex: index });
     }
     case "ESCAPE_INSPECTION":
+      if (state.loupe.inspecting) return viewerReducer(state, { type: 'PULL_BACK_LOUPE' });
+      if (state.loupe.isActive) return viewerReducer(state, { type: 'SET_LOUPE_ACTIVE', active: false });
       return viewerReducer(state, state.focusMode ? { type: "SHOW_OVERVIEW" } : { type: "RETURN_TO_ROOM" });
     case "ZOOM_AT": {
       const zoom = safeZoom(state.inspectZoom + action.delta);
@@ -301,23 +333,20 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
         filmMode: state.filmMode === "negative" ? "positive" : "negative",
       };
 
-    case "SET_LOUPE_ACTIVE":
-      return {
-        ...state,
-        loupe: {
-          ...state.loupe,
-          isActive: action.active,
-        },
-      };
-
+    case "SET_LOUPE_ACTIVE": {
+      if (state.roomMode !== 'inspect' || state.transitionKind === 'journey') return state;
+      if (state.loupe.inspecting) return viewerReducer(state, { type: 'PULL_BACK_LOUPE' });
+      if (state.transitionKind === 'loupe' || state.loupe.isActive === action.active) return state;
+      const halfHeight = state.inspectZoom * Math.tan(Math.PI / 8);
+      const visible = Math.abs(state.loupe.worldX - state.inspectPan.x) < halfHeight * state.viewportAspect * .65 && Math.abs(TABLE_CENTER_Z - state.loupe.worldY - state.inspectPan.z) < halfHeight * .65;
+      const center = visible ? { x: state.loupe.worldX, y: state.loupe.worldY } : clampLoupePosition(state.inspectPan.x, TABLE_CENTER_Z - state.inspectPan.z);
+      const next = viewerReducer(state, { type: 'SET_LOUPE_POSITION', ...center });
+      // Pickup changes placement, never physical size. The loupe uses the same
+      // scene scale as the film, independent of camera zoom and viewport shape.
+      return { ...next, loupe: { ...next.loupe, isActive: action.active, inspecting: false } };
+    }
     case "TOGGLE_LOUPE":
-      return {
-        ...state,
-        loupe: {
-          ...state.loupe,
-          isActive: !state.loupe.isActive,
-        },
-      };
+      return viewerReducer(state, { type: 'SET_LOUPE_ACTIVE', active: !state.loupe.isActive });
 
     case "SELECT_FRAME": {
       const clampedIndex = locateFrame(state.roll, action.frameIndex).globalIndex;
@@ -338,14 +367,16 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
     }
 
     case "SET_LOUPE_POSITION": {
-      const mapped = mapRollPoint(state.roll, { x: action.x, y: action.y });
+      if (![action.x, action.y].every(Number.isFinite)) return state;
+      const point = clampLoupePosition(action.x, action.y);
+      const mapped = mapRollPoint(state.roll, point);
       return {
         ...state,
         activeFrameIndex: multi || state.focusMode ? state.activeFrameIndex : mapped.frameIndex,
         loupe: {
           ...state.loupe,
-          worldX: action.x,
-          worldY: action.y,
+          worldX: point.x,
+          worldY: point.y,
           frameIndex: mapped.frameIndex,
           u: mapped.clampedU,
           v: mapped.clampedV,
@@ -386,6 +417,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
         loupe: {
           ...state.loupe,
           isActive: false, // Rest loupe when returning to room
+          inspecting: false,
         },
       };
 

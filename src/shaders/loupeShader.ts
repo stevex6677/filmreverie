@@ -21,6 +21,7 @@ export const LoupeFragmentShader = `
   uniform float uUseSceneCapture;
   uniform float uTableOutput;
   uniform float uSurfaceReflection;
+  uniform float uOpticalEffects;
   varying vec2 vUv;
   ${FILM_TRANSMISSION_GLSL}
 
@@ -33,24 +34,28 @@ export const LoupeFragmentShader = `
     }
 
     // Optical barrel distortion
-    vec2 distP = p * (1.0 + 0.035 * r * r);
+    vec2 distP = p * (1.0 + uOpticalEffects * 0.018 * r * r);
 
     // Subtle edge vignette
-    float vignette = smoothstep(1.0, 0.86, r);
+    float vignette = 1.0 - uOpticalEffects * 0.42 * smoothstep(0.78, 1.0, r);
 
     // Subtle lens reflection arc (multi-coated optical glass)
     vec2 refLight = normalize(vec2(-0.7, 0.7));
-    float highlight = pow(max(0.0, dot(p, refLight)), 6.0) * 0.10 * smoothstep(0.4, 0.9, r);
+    float highlight = pow(max(0.0, dot(p, refLight)), 12.0) * 0.025 * smoothstep(0.8, 1.0, r);
 
     // Branch 1: Real-time physical scene capture (magnifies whatever is underneath in 3D)
     if (uUseSceneCapture > 0.5) {
       vec2 lensUv = distP * 0.5 + 0.5;
-      vec2 chromOffset = distP * 0.0025 * r * r;
+      vec2 chromOffset = distP * 0.002 * r * r * uOpticalEffects;
 
       float rCh = texture2D(uTexture, clamp(lensUv + chromOffset, vec2(0.001), vec2(0.999))).r;
       float gCh = texture2D(uTexture, clamp(lensUv, vec2(0.001), vec2(0.999))).g;
       float bCh = texture2D(uTexture, clamp(lensUv - chromOffset, vec2(0.001), vec2(0.999))).b;
       vec3 sceneColor = vec3(rCh, gCh, bCh);
+      vec2 blur = vec2(0.0025) * smoothstep(0.65, 1.0, r) * uOpticalEffects;
+      vec3 peripheral = (texture2D(uTexture, clamp(lensUv + blur, vec2(.001), vec2(.999))).rgb
+        + texture2D(uTexture, clamp(lensUv - blur, vec2(.001), vec2(.999))).rgb) * 0.5;
+      sceneColor = mix(sceneColor, peripheral, 0.32 * smoothstep(.65,1.0,r) * uOpticalEffects);
 
       vec3 finalColor = sceneColor * vignette + vec3(0.025) * (1.0 - vignette) + vec3(highlight);
       gl_FragColor = vec4(finalColor, 1.0);
@@ -65,7 +70,7 @@ export const LoupeFragmentShader = `
 
     // Active View: Magnified photographic frame with authentic negative/positive response
     vec2 baseUv = uCenterUv + (distP * 0.5) / uMagnification;
-    vec2 chromOffset = (distP * 0.0025 * r * r);
+    vec2 chromOffset = (distP * 0.002 * r * r * uOpticalEffects);
     float rChannel = texture2D(uTexture, clamp(baseUv + chromOffset, vec2(0.001), vec2(0.999))).r;
     float gChannel = texture2D(uTexture, clamp(baseUv, vec2(0.001), vec2(0.999))).g;
     float bChannel = texture2D(uTexture, clamp(baseUv - chromOffset, vec2(0.001), vec2(0.999))).b;
@@ -104,6 +109,7 @@ export function createLoupeShaderMaterial(
       uExposure: { value: FILM_EXPOSURE },
       ...illuminationUniforms(brightness),
       uUseSceneCapture: { value: 0.0 },
+      uOpticalEffects: { value: 1.0 },
     },
   });
 }
