@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, Dispatch } from 'react';
 import { ViewerAction, ViewerState } from '../state/viewerState';
 import { FILM_STOCKS, getFilmStock, isFilmStockId } from '../data/filmStocks';
-import { createRollLayout, fitRollView } from '../utils/rollLayout';
+import { focusFrameLayout, fitRollView } from '../utils/rollLayout';
 import { photoCropPreview } from '../utils/photoFraming';
 import { MobileSheet } from './MobileControls';
 import { DEFAULT_INSPECT_DISTANCE } from '../utils/cameraBounds';
@@ -11,7 +11,7 @@ export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet}:{sta
   const [quiet,setQuiet]=useState(false);
   const stock=getFilmStock(state.filmStockId), blocked=state.transitionKind==='journey';
   const focus=state.focusMode, number=state.activeFrameIndex+1;
-  const strips=createRollLayout(state.roll);
+
   const frame=state.roll.frames[state.activeFrameIndex];
   const defaultZoom=fitRollView(state.roll,'frame',state.activeFrameIndex,state.viewportAspect).zoom;
   const detailZoom=focus && state.inspectZoom<defaultZoom*.92;
@@ -70,7 +70,7 @@ export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet}:{sta
     {sheet&&<dialog ref={panel} className={`table-panel ${sheet==='frames'?'table-frame-panel':''}`} aria-label={sheet==='tools'?'Viewing tools':'Choose frame'} onCancel={event=>{event.preventDefault();setSheet(null);}} onKeyDown={event=>{event.stopPropagation();if(event.key==='Escape')setSheet(null);}}>
       <header><div><span className="table-eyebrow">{sheet==='tools'?'ADJUST':'CURRENT ROLL'}</span><h2>{sheet==='tools'?'Viewing tools':'Your photographs'}</h2></div><button onClick={()=>setSheet(null)}>Close</button></header>
       {sheet==='frames'?<div className="table-frame-grid" role="group" aria-label="Frame map">{state.roll.frames.map((photo,index)=>{
-        const layout=strips[Math.floor(index/state.roll.framesPerStrip)].layout;
+        const layout=focusFrameLayout(state.roll,index);
         return <button key={photo.id} aria-label={`Open frame ${index+1}`} aria-current={index===state.activeFrameIndex?'true':undefined} data-testid={`frame-btn-${index+1}`} onClick={()=>{dispatch({type:'OPEN_FRAME',frameIndex:index});setSheet(null);}}>
           <div style={{aspectRatio:layout.frameWidth/layout.frameHeight}}><img src={photo.thumbnailSrc??photo.src} alt={photo.alt} loading="lazy" style={photoCropPreview(photo.aspectRatio,layout.frameWidth/layout.frameHeight,photo.rotation??0,photo.cropPosition)}/></div><span>{String(index+1).padStart(2,'0')}</span>
         </button>;

@@ -1,3 +1,4 @@
+import { IMPORT_LIMITS } from '../../src/storage/importPhotos';
 import { openViewingTools, openFrame, captureCanvas } from "./helpers/viewing";
 import {test,expect,Page} from '@playwright/test';
 import {PNG} from 'pngjs';
@@ -44,7 +45,7 @@ test('M14 higher resolution detail is visible and retains the viewing texture on
 });
 test('M14 rejected and cancelled append keep the existing draft intact',async({page})=>{
   await begin(page);await add(page,[chart('first.png'),chart('second.png',1)]);await details(page,'Keep this draft');await review(page);await page.getByRole('button',{name:'Select frame 2',exact:true}).click();await page.getByLabel('Rotate frame 2',{exact:true}).click();await page.getByRole('button',{name:'Photographs',exact:true}).click();
-  await page.getByLabel('Choose photographs',{exact:true}).setInputFiles(Array.from({length:71},(_,i)=>chart(`too-many-${i}.png`,i,30,20)));await expect(page.getByRole('alert')).toContainText('72');await expect(page.getByText('2 photographs selected',{exact:false})).toBeVisible();
+  await page.getByLabel('Choose photographs',{exact:true}).setInputFiles(Array.from({length:IMPORT_LIMITS.files-1},(_,i)=>chart(`too-many-${i}.png`,i,30,20)));await expect(page.getByRole('alert')).toContainText(String(IMPORT_LIMITS.files));await expect(page.getByText('2 photographs selected',{exact:false})).toBeVisible();
   await page.evaluate(()=>{const decode=window.createImageBitmap;window.createImageBitmap=(...args:any[])=>new Promise((resolve,reject)=>setTimeout(()=>Reflect.apply(decode,window,args).then(resolve,reject),500));});
   await page.getByLabel('Choose photographs',{exact:true}).setInputFiles(Array.from({length:10},(_,i)=>chart(`cancel-${i}.png`,i,100,80)));await page.getByRole('button',{name:'Cancel processing',exact:true}).first().click();await expect(page.getByText('Processing cancelled. Your earlier photographs are retained.',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Roll details',exact:true}).click();await expect(page.getByLabel('Roll name',{exact:true})).toHaveValue('Keep this draft');await review(page);await expect(page.locator('.draft-photos li')).toHaveCount(2);await save(page);const b=await bundle(page);expect(b.frames.find((f:any)=>f.filename==='second.png').rotation).toBe(90);expect(b.blobs).toBe(6);
 });
