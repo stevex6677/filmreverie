@@ -70,3 +70,33 @@ PLAYWRIGHT_VIDEO=on npm run test:e2e -- m16-table-view --project=mobile-chrome
 The only supported values are `off` (default) and `on`. Keep video scoped to the
 tests being reviewed; inspect it before claiming a motion review. Old recordings
 remain historical artifacts and do not indicate that a new run recorded video.
+
+## Roll sizes and capacity
+
+Choose **35mm** or **120** when creating a roll. 35mm starts with a 36 × 24 mm
+frame; 120 starts in **Free** mode. The optional frame-size selector offers the
+existing 120 presets (6×4.5, 6×6, 6×7, 6×9). Fixed sizes crop to fill the frame,
+with crop positioning in Review. Free keeps each rotated image's full aspect
+ratio at a shared height: 24 mm for 35mm and 56 mm for 120.
+
+Capacity starts with a nominal usable span, excluding leaders: **1,404 mm for
+35mm** (36 × 39 mm advances) and **728 mm for 120**. Both receive **25% extra
+allowance** for special cases, giving hard limits of **1,755 mm** (45 standard
+35mm frames) and **910 mm** for 120 (for example, 15 frames at 6×6). The meter
+shows a nonblocking notice beyond the nominal span; 40 standard 35mm images
+can be saved without an override. These are application limits, not claims about
+physical film length. Each image
+uses its frame width plus 3 mm of spacing. Free width is height × oriented
+aspect ratio. The live meter updates after size changes, rotation, and removal;
+overfull drafts remain editable, but cannot be saved. Storage validates the same
+limit atomically. Existing rolls without a sizing field retain their fixed format
+and remain readable, including older overfull rolls; saving an overfull edit
+requires reducing its length.
+
+Free rolls wrap into strips by length (230 mm image span), keeping each image
+whole. A wider single image gets its own strip. The complete layout scales to
+fit the light table, with camera space reserved for controls. Navigation, crop
+previews, rebate apertures and loupe hit testing use each frame's actual width.
+The import processing guard is derived from the maximum number of 3 mm advances,
+so the old 72-image cap no longer rejects valid narrow-image rolls. File-size
+and memory safeguards still apply.

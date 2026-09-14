@@ -3,6 +3,8 @@ export interface FilmStripLayout {
   perforated?: boolean;
   frameNumberOffset?: number;
   frameWidth: number;
+  frameWidths?: readonly number[];
+  filmLengthOffset?: number;
   frameHeight: number;
   gap: number;
   marginX: number;
@@ -42,9 +44,13 @@ export interface PerforationPosition {
   perforationIndex: number;
 }
 
+export function getFrameWidth(index: number, layout: FilmStripLayout) {
+  return layout.frameWidths?.[index] ?? layout.frameWidth;
+}
+
 export function getStripDimensions(layout: FilmStripLayout = DEFAULT_LAYOUT) {
   const width =
-    layout.frameCount * layout.frameWidth +
+    Array.from({ length: layout.frameCount }, (_, i) => getFrameWidth(i, layout)).reduce((a, b) => a + b, 0) +
     (layout.frameCount - 1) * layout.gap +
     2 * layout.marginX;
   const height = layout.frameHeight + 2 * layout.marginY;
@@ -60,6 +66,15 @@ export function getPerforationPositions(layout: FilmStripLayout = DEFAULT_LAYOUT
   const top: PerforationPosition[] = [];
   const bottom: PerforationPosition[] = [];
 
+  if (layout.frameWidths) {
+    const { width } = getStripDimensions(layout);
+    const step = (DEFAULT_LAYOUT.frameWidth + DEFAULT_LAYOUT.gap) / PERFORATIONS_PER_FRAME;
+    for (let x = -width / 2 + step / 2, k = 0; x < width / 2 - SPROCKET_WIDTH / 2; x += step, k++) {
+      top.push({ x, y: height / 2 - layout.marginY / 2, frameIndex: 0, perforationIndex: k });
+      bottom.push({ x, y: -height / 2 + layout.marginY / 2, frameIndex: 0, perforationIndex: k });
+    }
+    return { top, bottom };
+  }
   const topY = height / 2 - layout.marginY / 2;
   const bottomY = -height / 2 + layout.marginY / 2;
   const frameSpan = layout.frameWidth + layout.gap;
@@ -82,17 +97,13 @@ export function getPerforationPositions(layout: FilmStripLayout = DEFAULT_LAYOUT
 export function getFrameCenter(frameIndex: number, layout: FilmStripLayout = DEFAULT_LAYOUT) {
   const clampedIndex = Math.max(0, Math.min(layout.frameCount - 1, Math.floor(frameIndex)));
   const { width } = getStripDimensions(layout);
-  const startX = -width / 2 + layout.marginX + layout.frameWidth / 2;
-  const stepX = layout.frameWidth + layout.gap;
-  return {
-    x: startX + clampedIndex * stepX,
-    y: 0,
-  };
+  const before = Array.from({ length: clampedIndex }, (_, i) => getFrameWidth(i, layout) + layout.gap).reduce((a, b) => a + b, 0);
+  return { x: -width / 2 + layout.marginX + before + getFrameWidth(clampedIndex, layout) / 2, y: 0 };
 }
 
 export function getFrameBounds(frameIndex: number, layout: FilmStripLayout = DEFAULT_LAYOUT) {
   const center = getFrameCenter(frameIndex, layout);
-  const halfW = layout.frameWidth / 2;
+  const halfW = getFrameWidth(frameIndex, layout) / 2;
   const halfH = layout.frameHeight / 2;
   return {
     minX: center.x - halfW,
@@ -130,7 +141,7 @@ export function mapWorldPointToFrame(
   let bestDist = Infinity;
   for (let i = 0; i < layout.frameCount; i++) {
     const center = getFrameCenter(i, layout);
-    const dist = Math.abs(point.x - center.x);
+    const dist = Math.max(0, Math.abs(point.x - center.x) - getFrameWidth(i, layout) / 2);
     if (dist < bestDist) {
       bestDist = dist;
       bestIndex = i;
@@ -138,7 +149,7 @@ export function mapWorldPointToFrame(
   }
 
   const bounds = getFrameBounds(bestIndex, layout);
-  const localU = (point.x - bounds.minX) / layout.frameWidth;
+  const localU = (point.x - bounds.minX) / getFrameWidth(bestIndex, layout);
   const localV = (point.y - bounds.minY) / layout.frameHeight;
 
   const isWithinFrame =

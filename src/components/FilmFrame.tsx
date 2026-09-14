@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { updateTableIllumination } from "../shaders/tableIllumination";
 import { createFilmShaderMaterial } from "../shaders/filmShader";
 import { photoCropScale, photoCropOffset } from "../utils/photoFraming";
-import { FilmStripLayout, getFilmCurlZ, getFrameCenter } from "../utils/loupeMapping";
+import { FilmStripLayout, getFilmCurlZ, getFrameWidth, getFrameCenter } from "../utils/loupeMapping";
 
 interface FilmFrameProps {
   index: number;
@@ -38,17 +38,18 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
   ), [texture, isPositive, negativeMask]);
   useEffect(() => () => material.dispose(), [material]);
 
+  const frameWidth = getFrameWidth(index, layout);
   const rotation = photo?.rotation ?? 0;
-  const crop = photoCropScale(photo?.aspectRatio ?? layout.frameWidth / layout.frameHeight, layout.frameWidth / layout.frameHeight, rotation);
+  const crop = photoCropScale(photo?.aspectRatio ?? frameWidth / layout.frameHeight, frameWidth / layout.frameHeight, rotation);
   material.uniforms.uPhotoCrop.value.set(crop.x, crop.y);
-  const offset = photoCropOffset(photo?.aspectRatio ?? layout.frameWidth / layout.frameHeight, layout.frameWidth / layout.frameHeight, rotation, photo?.cropPosition);
+  const offset = photoCropOffset(photo?.aspectRatio ?? frameWidth / layout.frameHeight, frameWidth / layout.frameHeight, rotation, photo?.cropPosition);
   material.uniforms.uPhotoOffset.value.set(offset.x, -offset.y);
   material.uniforms.uPhotoRotation.value = rotation * Math.PI / 180;
   updateTableIllumination(material, brightness);
 
   // Curved plane geometry with 16 Y-segments matching the substrate transverse curl
   const frameGeometry = useMemo(() => {
-    const geo = new THREE.PlaneGeometry(layout.frameWidth, layout.frameHeight, 1, 16);
+    const geo = new THREE.PlaneGeometry(frameWidth, layout.frameHeight, 1, 16);
     const pos = geo.attributes.position;
     const stripHeight = layout.frameHeight + 2 * layout.marginY;
     for (let i = 0; i < pos.count; i++) {
@@ -58,7 +59,7 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
     pos.needsUpdate = true;
     geo.computeVertexNormals();
     return geo;
-  }, [layout.frameWidth, layout.frameHeight, layout.marginY]);
+  }, [frameWidth, layout.frameHeight, layout.marginY]);
 
   useEffect(() => () => frameGeometry.dispose(), [frameGeometry]);
 

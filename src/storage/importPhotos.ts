@@ -1,6 +1,8 @@
 import { BlobRecord, StoredFrame } from './rollRepository';
 import { normalizeNativeImage } from './nativeImage';
-export const IMPORT_LIMITS = { files: 72, bytes: 40 * 1024 * 1024, pixels: 40_000_000, batchBytes: 300 * 1024 * 1024, viewingEdge: 2048, thumbnailEdge: 256, concurrency: 1 };
+import { FILM_LENGTH_MM, FRAME_GAP_MM } from '../data/filmFormats';
+// Even zero-width frames cannot fit more advances than this. Actual capacity is measured after sizing.
+export const IMPORT_LIMITS = { files: Math.ceil(FILM_LENGTH_MM['135'] / FRAME_GAP_MM), bytes: 40 * 1024 * 1024, pixels: 40_000_000, batchBytes: 300 * 1024 * 1024, viewingEdge: 2048, thumbnailEdge: 256, concurrency: 1 };
 export interface DraftPhoto { id: string; filename: string; frame?: StoredFrame; blobs: BlobRecord[]; preview?: string; reviewPreview?: string; error?: string; notice?: string; duplicate: boolean; keepDuplicate: boolean }
 export function naturalFiles(files: readonly File[]) { return files.map((file, index) => ({ file, index })).sort((a,b) => a.file.name.localeCompare(b.file.name, undefined, { numeric: true }) || a.index - b.index).map(x => x.file); }
 export function imageHeader(bytes: Uint8Array): { mime: string; width: number; height: number } {
@@ -31,7 +33,7 @@ async function derivative(bitmap: ImageBitmap, edge: number) {
 }
 export async function processPhotos(files: readonly File[], rollId: string, signal: AbortSignal, progress: (done: number, total: number) => void, existing: readonly DraftPhoto[] = []): Promise<DraftPhoto[]> {
   if(!crypto.subtle)throw new Error('Photo import needs a secure connection. Open the HTTPS preview address and try again.');
-  if (!files.length || files.length + existing.length > IMPORT_LIMITS.files) throw new Error('Choose between 1 and 72 photographs per import.');
+  if (!files.length || files.length + existing.length > IMPORT_LIMITS.files) throw new Error(`Choose between 1 and ${IMPORT_LIMITS.files} photographs per draft; the final limit depends on film length.`);
   if (files.reduce((sum,f) => sum + f.size,0) + existing.reduce((sum,p)=>sum+(p.blobs.find(b=>b.key===p.frame?.originalKey)?.blob.size??0),0) > IMPORT_LIMITS.batchBytes) throw new Error('This draft would exceed 300 MB. Choose a smaller batch.');
   const photos: DraftPhoto[] = [], hashes = new Set<string>(existing.flatMap(p=>p.frame?[p.frame.hash]:[]));
   try {

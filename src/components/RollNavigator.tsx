@@ -1,6 +1,7 @@
 import { Dispatch, useEffect, useRef } from "react";
 import { ViewerAction, ViewerState } from "../state/viewerState";
-import { createRollLayout } from "../utils/rollLayout";
+import { createRollLayout, locateFrame } from "../utils/rollLayout";
+import { getFrameWidth } from "../utils/loupeMapping";
 import { photoCropPreview } from "../utils/photoFraming";
 
 export function RollNavigator({ state, dispatch }: { state: ViewerState; dispatch: Dispatch<ViewerAction> }) {
@@ -15,7 +16,7 @@ export function RollNavigator({ state, dispatch }: { state: ViewerState; dispatc
     }
   }, [state.activeFrameIndex, state.isTransitioning]);
   const strips = createRollLayout(state.roll);
-  const stripIndex = Math.floor(state.activeFrameIndex / state.roll.framesPerStrip);
+  const stripIndex = locateFrame(state.roll, state.activeFrameIndex).strip.index;
   const strip = strips[stripIndex];
   const open = (frameIndex: number) => dispatch({ type: "OPEN_FRAME", frameIndex });
   const navigate = (direction: "left" | "right") => state.focusMode && state.inspectionLevel === "roll" ? open(state.activeFrameIndex + (direction === "left" ? -1 : 1)) : dispatch({type:"NAVIGATE",direction});
@@ -43,7 +44,7 @@ export function RollNavigator({ state, dispatch }: { state: ViewerState; dispatc
     {state.inspectionLevel !== "roll" && <nav ref={thumbsRef} className="strip-thumbnails" aria-label="Current strip photographs">
       {strip.frames.map((frame, index) => <button key={frame.id} aria-label={`View frame ${frame.order}`} aria-pressed={state.activeFrameIndex === strip.offset + index}
         disabled={blocked} onClick={() => open(strip.offset + index)}>
-        <div className="strip-thumbnail-crop" style={{aspectRatio:strip.layout.frameWidth/strip.layout.frameHeight,width:`min(100%, calc(var(--thumbnail-height) * ${strip.layout.frameWidth/strip.layout.frameHeight}))`}}><img style={photoCropPreview(frame.aspectRatio,strip.layout.frameWidth/strip.layout.frameHeight,frame.rotation??0,frame.cropPosition)} src={frame.thumbnailSrc ?? frame.src} alt={frame.alt} /></div><span>Frame {frame.order}{state.activeFrameIndex === strip.offset + index ? " · Selected" : ""}</span>
+        <div className="strip-thumbnail-crop" style={{aspectRatio:getFrameWidth(index,strip.layout)/strip.layout.frameHeight,width:`min(100%, calc(var(--thumbnail-height) * ${getFrameWidth(index,strip.layout)/strip.layout.frameHeight}))`}}><img style={photoCropPreview(frame.aspectRatio,getFrameWidth(index,strip.layout)/strip.layout.frameHeight,frame.rotation??0,frame.cropPosition)} src={frame.thumbnailSrc ?? frame.src} alt={frame.alt} /></div><span>Frame {frame.order}{state.activeFrameIndex === strip.offset + index ? " · Selected" : ""}</span>
       </button>)}
     </nav>}
   </>;

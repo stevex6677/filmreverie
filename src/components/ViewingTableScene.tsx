@@ -1,5 +1,5 @@
 import { photoSourceDemand } from "../utils/photoFraming";
-import { BASELINE_ROLL, createRollLayout } from "../utils/rollLayout";
+import { BASELINE_ROLL, createRollLayout, focusFrameLayout, locateFrame } from "../utils/rollLayout";
 import { useRollTextures } from "../utils/useRollTextures";
 import { useThree } from "@react-three/fiber";
 import { getFilmStock } from "../data/filmStocks";
@@ -38,7 +38,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   const strips = useMemo(() => createRollLayout(state.roll), [state.roll]);
   const view = state.loupe.inspecting ? loupeInspectionView(state.loupe.worldX, state.loupe.worldY, state.loupe.scale, size.width / size.height) : { zoom: state.inspectZoom, pan: state.inspectPan };
   const priority = state.loupe.isActive ? state.loupe.frameIndex : state.activeFrameIndex;
-  const gate=strips[Math.floor(priority/state.roll.framesPerStrip)].layout;
+  const gate=focusFrameLayout(state.roll,priority);
   const projected=gate.frameWidth*state.roll.scale/(2*view.zoom*Math.tan(Math.PI/8))*size.height*gl.getPixelRatio();
   const selected=state.roll.frames[priority];
   const sourcePixels=photoSourceDemand(projected,selected.aspectRatio,gate.frameWidth/gate.frameHeight,selected.rotation??0);
@@ -81,7 +81,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         inputBlocked={inputBlocked}
         roomMode={state.roomMode}
         inspectionTransition={state.transitionKind === "inspection" || state.transitionKind === 'loupe'}
-        stripIndex={Math.floor(state.activeFrameIndex/state.roll.framesPerStrip)}
+        stripIndex={locateFrame(state.roll,state.activeFrameIndex).strip.index}
         isTransitioning={state.isTransitioning}
         savedRoomPose={state.savedRoomPose}
         inspectZoom={view.zoom}
