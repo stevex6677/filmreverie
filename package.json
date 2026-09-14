@@ -25,6 +25,7 @@
     "validate:m11": "npm run build && npm run test:integration && npm run test:e2e",
     "validate:m14": "npm run build && npm run test:integration && npm run test:e2e",
     "validate:m15": "npm run build && npm run test:integration && npm run test:e2e",
+    "validate:m17": "npm run build && npm run test:integration && npm run test:e2e -- m17-loupe-states m16-table-view",
     "validate:m16": "npm run build && npm run test:integration && npm run test:e2e",
     "validate:m13": "npm run build && npm run test:integration && npm run test:e2e"
   },

@@ -83,8 +83,19 @@ export function App() {
   const [state, dispatch] = useReducer(
     viewerReducer,
     undefined,
-    () => createInitialViewerState(initialRoomMode, initialRoll)
+    () => {
+      const initial = createInitialViewerState(initialRoomMode, initialRoll);
+      try {
+        const preference = JSON.parse(localStorage.getItem('darkroom-loupe-preferences') ?? 'null');
+        if (preference && typeof preference.opticalEffects === 'boolean') initial.loupe.opticalEffects = preference.opticalEffects;
+        if (preference && Number.isFinite(preference.magnification) && preference.magnification >= 1.5 && preference.magnification <= 10) initial.loupe.magnification = preference.magnification;
+      } catch { /* The loupe works when storage is unavailable. */ }
+      return initial;
+    }
   );
+  useEffect(() => {
+    try { localStorage.setItem('darkroom-loupe-preferences', JSON.stringify({ opticalEffects: state.loupe.opticalEffects, magnification: state.loupe.magnification })); } catch { /* Optional preference. */ }
+  }, [state.loupe.opticalEffects, state.loupe.magnification]);
 
   const roll = state.roll;
   useEffect(()=>setSheet(null),[state.roomMode]);
@@ -179,9 +190,14 @@ export function App() {
       if ((e.target instanceof HTMLElement && e.target.isContentEditable) ||
           (e.target instanceof HTMLButtonElement && ["Enter", " "].includes(e.key))) return;
       if (state.roomMode === "inspect") {
+        if (state.loupe.isActive && e.key.startsWith('Arrow')) {
+          e.preventDefault();
+          const step = state.loupe.scale * (e.shiftKey ? .04 : .01) / (state.loupe.inspecting ? state.loupe.magnification : 1);
+          dispatch({type:'MOVE_LOUPE',dx:e.key==='ArrowRight'?step:e.key==='ArrowLeft'?-step:0,dy:e.key==='ArrowUp'?step:e.key==='ArrowDown'?-step:0});return;
+        }
         const directions = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" } as const;
         if (e.key in directions) { e.preventDefault(); dispatch({ type: "NAVIGATE", direction: directions[e.key as keyof typeof directions] }); return; }
-        if (e.key === "Enter") { e.preventDefault(); dispatch({ type: "OPEN_FRAME", frameIndex: state.activeFrameIndex }); return; }
+        if (e.key === "Enter") { e.preventDefault(); dispatch(state.loupe.isActive ? {type:'INSPECT_LOUPE'} : { type: "OPEN_FRAME", frameIndex: state.activeFrameIndex }); return; }
         if (/^[1-9]$/.test(e.key)) { dispatch({type:state.focusMode?'OPEN_FRAME':'SELECT_FRAME',frameIndex:Number(e.key)-1}); return; }
       }
       if (state.roomMode === "room") {
@@ -229,7 +245,7 @@ export function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.roomMode, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, roll, libraryOpen, sheet]);
+  }, [state.roomMode, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, state.loupe, roll, libraryOpen, sheet]);
 
   const localError = new URLSearchParams(window.location.search).get("roll") === "local" ? validateRoll(LOCAL_ROLL) : null;
   if (localError) return <main className="darkroom-error-fallback"><div className="error-card" role="alert"><h2>Local roll unavailable</h2><p>{localError}</p><a href="/?example=1">Open the five-photo example</a></div></main>;
@@ -254,6 +270,8 @@ export function App() {
       data-film-mode={state.filmMode}
       data-film-stock={state.filmStockId}
       data-loupe-active={state.loupe.isActive ? "true" : "false"}
+      data-loupe-state={state.loupe.inspecting ? 'inspection' : state.loupe.isActive ? 'activated' : 'inactivated'}
+      data-loupe-effects={String(state.loupe.opticalEffects)}
       data-active-frame={state.loupe.frameIndex + 1}
       data-reduced-motion={isReducedMotion ? "true" : "false"}
     >
