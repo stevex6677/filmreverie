@@ -11,9 +11,9 @@ export class InspectionMotion {
   private lift = 0;
   done = true;
   constructor(position: Point3) { this.position=[...position];this.start=[...position];this.end=[...position]; }
-  retarget(end: Point3, stripDistance: number) {
+  retarget(end: Point3, stripDistance: number, duration?: number) {
     this.start=[...this.position];this.initialVelocity=[...this.velocity];this.end=[...end];this.elapsed=0;
-    this.duration=stripDistance>1?.85:stripDistance===1?.55:.4;
+    this.duration=duration ?? (stripDistance>1?.85:stripDistance===1?.55:.4);
     this.lift=stripDistance>1?Math.min(.45,Math.hypot(end[0]-this.start[0],end[2]-this.start[2])*.2):0;
     this.done=false;
   }

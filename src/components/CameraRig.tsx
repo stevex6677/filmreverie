@@ -26,6 +26,7 @@ interface CameraRigProps {
   inspectZoom?: number;
   inspectPan?: { x: number; z: number };
   isLoupeActive?: boolean;
+  loupeInspection?: boolean;
   onUpdateRoomPose: (pose: Partial<RoomCameraPose>) => void;
   onCameraMotion?: (moving: boolean) => void;
   onZoomAt?: (delta: number, x: number, z: number) => void;
@@ -47,6 +48,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   inspectZoom = DEFAULT_INSPECT_DISTANCE,
   inspectPan = { x: 0, z: TABLE_CENTER_Z },
   isLoupeActive = false,
+  loupeInspection = false,
   onUpdateRoomPose,
   onCameraMotion,
   onZoomAt,
@@ -99,6 +101,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   useEffect(() => {
     const canvas = gl.domElement;
     const handleWheel = (e: WheelEvent) => {
+      if (loupeInspection) { e.preventDefault(); return; }
       if (inputBlocked || roomMode !== "inspect" || isTransitioning) return;
       e.preventDefault();
       if (onAdjustInspectZoom) {
@@ -117,7 +120,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
 
     canvas.addEventListener("wheel", handleWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", handleWheel);
-  }, [gl, roomMode, isTransitioning, inspectZoom, onAdjustInspectZoom, onZoomAt, camera, inputBlocked]);
+  }, [gl, roomMode, isTransitioning, inspectZoom, onAdjustInspectZoom, onZoomAt, camera, inputBlocked, loupeInspection]);
 
   // Pointer drag for fixed-eye room look or table pan
   useEffect(() => {
@@ -130,7 +133,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     };
 
     const handlePointerDown = (e: PointerEvent) => {
-      if (inputBlocked || e.pointerType === 'touch' || e.pointerType === 'pen' || isTransitioning) return;
+      if (inputBlocked || loupeInspection || e.pointerType === 'touch' || e.pointerType === 'pen' || isTransitioning) return;
 
       if (roomMode === "room") {
         // Look around from the standing eye with primary button
@@ -151,7 +154,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
         const isPanButton =
           e.button === 2 ||
           e.button === 1 ||
-          (e.button === 0 && (isSpacePressedRef.current || !isLoupeActive));
+          e.button === 0;
 
         if (isPanButton) {
           isPanningTableRef.current = true;
@@ -254,6 +257,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     savedRoomPose,
     inspectZoom,
     isLoupeActive,
+    loupeInspection,
     onUpdateRoomPose,
     onAdjustInspectPan,
     inputBlocked,
@@ -270,14 +274,14 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     desired.position.copy(targetPos.current);
     desired.up.set(...(inspecting ? INSPECT_CAMERA_UP : ROOM_CAMERA_UP));
     desired.lookAt(...(inspecting ? [inspectPan.x, TABLE_SURFACE_Y, inspectPan.z] as [number, number, number] : roomLookTarget(savedRoomPose)));
-    const immediate = isDeterministic || isReducedMotion || (!inspecting && !isTransitioning) || (touchInput && !isTransitioning);
+    const immediate = isDeterministic || isReducedMotion || (!inspecting && !isTransitioning) || ((touchInput || loupeInspection) && !isTransitioning);
     const moving = !immediate && (camera.position.distanceTo(targetPos.current) > .001 || camera.quaternion.angleTo(desired.quaternion) > .001 || isPanningTableRef.current);
     if (moving !== wasMovingRef.current) { wasMovingRef.current = moving; onCameraMotion?.(moving); }
     if (inspecting && inspectionTransition && !immediate) {
       const key=targetPos.current.toArray().join(',');
       if (key !== lastTarget.current) {
         if (!flight.current) flight.current=new InspectionMotion(camera.position.toArray() as Point3);
-        flight.current.retarget(targetPos.current.toArray() as Point3,Math.abs(stripIndex-lastStrip.current));
+        flight.current.retarget(targetPos.current.toArray() as Point3,Math.abs(stripIndex-lastStrip.current),loupeInspection ? .5 : undefined);
         lastTarget.current=key;lastStrip.current=stripIndex;
       }
       camera.position.set(...flight.current!.step(delta));
@@ -293,10 +297,13 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       camera.quaternion.slerp(desired.quaternion, alpha);
     }
     const perspective = camera as THREE.PerspectiveCamera;
+    perspective.near = inspecting ? Math.min(.04, inspectZoom * .025) : .04;
     const desiredFov = inspecting ? 45 : ROOM_CAMERA_FOV;
     perspective.fov = immediate ? desiredFov : THREE.MathUtils.lerp(perspective.fov, desiredFov, 1 - Math.exp(-delta * 7));
     perspective.updateProjectionMatrix();
     camera.up.copy(desired.up);
+    // Loupe projection runs before the renderer, so refresh the view matrix now.
+    camera.updateMatrixWorld();
     // Camera telemetry exposes the real rendered pose for regression checks.
     gl.domElement.dataset.cameraFov = String(perspective.fov);
     gl.domElement.dataset.cameraPosition = camera.position.toArray().join(",");
@@ -307,6 +314,6 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       perspective.fov = desiredFov; perspective.updateProjectionMatrix();
       onTransitionComplete();
     }
-  });
+  }, -2); // Update the camera before loupe capture/projection and the main render.
   return null;
 };

@@ -19,10 +19,10 @@ import {
 
 describe("M6 Integration — Table Inspection Navigation & Loupe Magnification", () => {
   describe("Initial State & Defaults", () => {
-    it("initializes with default table zoom, centered pan, and 2.5x loupe magnification", () => {
+    it("initializes with default table zoom, centered pan, and the M17 default 4x loupe magnification", () => {
       expect(INITIAL_VIEWER_STATE.inspectZoom).toBe(DEFAULT_INSPECT_DISTANCE);
       expect(INITIAL_VIEWER_STATE.inspectPan).toEqual({ x: 0, z: TABLE_CENTER_Z });
-      expect(INITIAL_VIEWER_STATE.loupe.magnification).toBe(2.5);
+      expect(INITIAL_VIEWER_STATE.loupe.magnification).toBe(4);
     });
 
     it("createInitialViewerState initializes clean navigation state in both room and inspect modes", () => {
@@ -149,13 +149,13 @@ describe("M6 Integration — Table Inspection Navigation & Loupe Magnification",
 
     it("adjusts magnification incrementally with delta", () => {
       let state = INITIAL_VIEWER_STATE;
-      expect(state.loupe.magnification).toBe(2.5);
+      expect(state.loupe.magnification).toBe(4);
 
       state = viewerReducer(state, { type: "ADJUST_LOUPE_MAGNIFICATION", delta: 1.0 });
-      expect(state.loupe.magnification).toBe(3.5);
+      expect(state.loupe.magnification).toBe(5);
 
       state = viewerReducer(state, { type: "ADJUST_LOUPE_MAGNIFICATION", delta: -1.0 });
-      expect(state.loupe.magnification).toBe(2.5);
+      expect(state.loupe.magnification).toBe(4);
     });
 
     it("clamps magnification between 1.5x and 10x bounds", () => {
@@ -189,7 +189,7 @@ describe("M6 Integration — Table Inspection Navigation & Loupe Magnification",
 
       state = viewerReducer(state, { type: "RESET" });
       expect(state.inspectZoom).toBe(DEFAULT_INSPECT_DISTANCE);
-      expect(state.loupe.magnification).toBe(2.5);
+      expect(state.loupe.magnification).toBe(4);
     });
   });
 });
