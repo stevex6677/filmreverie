@@ -1,8 +1,0 @@
-
-Running 1 test using 1 worker
-
-  ✓  1 tests/e2e/m11-full-roll-navigation.spec.ts:131:1 › M11 combined stocks, first/last strips and transmitted loupe brightness (7.1m)
-
-  Slow test file: tests/e2e/m11-full-roll-navigation.spec.ts (7.1m)
-  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
-  1 passed (7.2m)

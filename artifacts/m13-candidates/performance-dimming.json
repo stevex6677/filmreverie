@@ -1,6 +1,0 @@
-{
-  "median": 83.30000000000018,
-  "p95": 83.40000000000055,
-  "samples": 79,
-  "interaction": "Four real pointer sweeps of the room brightness slider; 1280×800, Chrome/SwiftShader as in performance-after.json."
-}
