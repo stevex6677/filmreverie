@@ -16,6 +16,8 @@ AGENTS.md
 *.glb
 *.jpg
 *.jpeg
+!/public/assets/photos/*.jpg
+!/public/assets/photos/*.thumb.jpg
 *.heic
 *.HEIC
 *.mp4
