@@ -1,6 +1,6 @@
-import { RollLibrary, rollRepository } from "./components/RollLibrary";
+import { RollEditor } from "./components/RollEditor";
 import { createRuntimeRoll } from "./storage/rollRuntime";
-import { SavedView, storageMessage } from "./storage/rollRepository";
+import { SavedView, StoredRoll, rollRepository, storageMessage } from "./storage/rollRepository";
 import { BASELINE_ROLL, FULL_ROLL_FIXTURE, LOCAL_ROLL, validateRoll } from "./utils/rollLayout";
 import { useReducer, useEffect, useMemo, useState, useRef, Suspense } from "react";
 import * as THREE from "three";
@@ -25,6 +25,8 @@ import { Controls } from "./components/Controls";
 import { MobileControls, MobileSheet } from "./components/MobileControls";
 import { useMobileLayout } from "./utils/useMobileLayout";
 import { TableControls } from "./components/TableControls";
+import { useFilmShelf } from './utils/useFilmShelf';
+import { ShelfRollCard } from './components/ShelfRollCard';
 
 function LoadingFallback() {
   return (
@@ -101,13 +103,30 @@ export function App() {
   useEffect(()=>setSheet(null),[state.roomMode]);
   useEffect(()=>{if(mobile)dispatch({type:'INPUT_TOUCH',active:true});else setSheet(null);},[mobile]);
   useEffect(() => { document.title = roll.imported ? `${roll.label} — Darkroom Film Viewer` : "Darkroom Film Viewer — Roll 01"; }, [roll]);
-  const [libraryOpen, setLibraryOpen] = useState(false), [libraryError, setLibraryError] = useState("");
+  const [editorOpen, setEditorOpen] = useState(false), [libraryError, setLibraryError] = useState("");
+  const [editingRollId, setEditingRollId] = useState<string | undefined>();
+  const [deletedRoll, setDeletedRoll] = useState<StoredRoll | null>(null);
+  const shelfPortal = useRef<HTMLDivElement>(null);
+  const shelfVisible = state.roomMode === 'room' && !editorOpen && !sheet && !hidden && !contextLost;
+  const shelf = useFilmShelf(rollRepository, shelfVisible);
+  useEffect(() => { if (!state.shelfFocused && shelf.trash) shelf.changeTrash(false); }, [state.shelfFocused, shelf.trash]);
+  const tableRollAvailable = !shelf.allRolls.some(r => r.id === roll.rollId && r.trashedAt !== null);
+  const openShelf = () => {
+    void saveView().catch(error => setLibraryError(storageMessage(error)));
+    shelf.close(); shelf.retry(); setSheet(null); dispatch({ type: 'APPROACH_SHELF' });
+  };
+  const openEditor = (id?: string) => { openShelf(); shelf.changeTrash(false); setEditingRollId(id); setEditorOpen(true); };
+  const deleteRoll = async (removed: StoredRoll) => {
+    await rollRepository.trash(removed.id); shelf.close(); setDeletedRoll(removed);
+    if (removed.id === roll.rollId) { try { localStorage.removeItem('darkroom-active-roll'); } catch { /* Optional preference. */ } }
+  };
+  const restoreRoll = async (id: string) => { await rollRepository.trash(id, false); shelf.close(); setDeletedRoll(null); };
   const ownedRuntime = useRef<ReturnType<typeof createRuntimeRoll> | null>(null), switchRequest = useRef(0);
   const stateRef = useRef(state); stateRef.current = state;
   const saveView = async () => {
     const current = stateRef.current;
     if (!current.roll.imported || current.roomMode !== "inspect" || current.cameraMoving || current.isTransitioning || current.assetsLoading) return;
-    const view: SavedView = { frameId: current.roll.frames[current.activeFrameIndex].id, level: current.inspectionLevel, mode: current.filmMode, brightness: current.tableBrightness, magnification: current.loupe.magnification, zoom: current.inspectZoom, pan: current.inspectPan, overview: current.savedOverview };
+    const view: SavedView = { filmScale: current.roll.scale, frameId: current.roll.frames[current.activeFrameIndex].id, level: current.inspectionLevel, mode: current.filmMode, brightness: current.tableBrightness, magnification: current.loupe.magnification, zoom: current.inspectZoom, pan: current.inspectPan, overview: current.savedOverview };
     await rollRepository.update(current.roll.rollId, r => ({ ...r, stockId: current.filmStockId, view }));
   };
   const openSaved = async (id: string) => {
@@ -121,18 +140,11 @@ export function App() {
       await Promise.all(runtime.definition.frames.map(frame => new Promise<void>((resolve,reject) => { const img = new Image(); img.onload = () => resolve(); img.onerror = () => reject(new Error("Stored preview could not be loaded.")); img.src = frame.thumbnailSrc!; })));
       if (request !== switchRequest.current) { runtime.dispose(); return; }
       const previous = ownedRuntime.current; ownedRuntime.current = runtime;
-      dispatch({ type: "LOAD_ROLL", roll: runtime.definition, stockId: bundle.roll.stockId, view: bundle.roll.view });
+      dispatch({ type: "LOAD_ROLL", roll: runtime.definition, stockId: bundle.roll.stockId, view: runtime.view });
       previous?.dispose(); setLibraryError("");
       const url = new URL(location.href); for (const key of ["fixture", "roll", "example"]) url.searchParams.delete(key); history.replaceState({}, "", url);
       try { localStorage.setItem("darkroom-active-roll", id); } catch { /* IndexedDB remains authoritative. */ }
     } catch (error) { runtime.dispose(); throw error; }
-  };
-  const openExample = () => {
-    void saveView().catch(error => setLibraryError(storageMessage(error)));
-    ++switchRequest.current; ownedRuntime.current?.dispose(); ownedRuntime.current = null;
-    dispatch({ type: "LOAD_ROLL", roll: BASELINE_ROLL });
-    const url = new URL(location.href); for (const key of ["fixture", "roll", "example"]) url.searchParams.delete(key); history.replaceState({}, "", url);
-    try { localStorage.removeItem("darkroom-active-roll"); } catch { /* Storage may be disabled. */ }
   };
   useEffect(() => {
     let id: string | null = null; try { id = localStorage.getItem("darkroom-active-roll"); } catch { /* Library reports availability when opened. */ }
@@ -180,7 +192,7 @@ export function App() {
   // Keyboard shortcut support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (libraryOpen || sheet==='frames') return;
+      if (editorOpen || sheet==='frames') return;
       if(sheet==='tools' && e.key==='Escape'){setSheet(null);return;}
       // Ignore when typing in input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
@@ -201,11 +213,12 @@ export function App() {
         if (/^[1-9]$/.test(e.key)) { dispatch({type:state.focusMode?'OPEN_FRAME':'SELECT_FRAME',frameIndex:Number(e.key)-1}); return; }
       }
       if (state.roomMode === "room") {
+        if (state.shelfFocused && e.key === "Escape") { e.preventDefault(); shelf.close(); dispatch({ type: "RETURN_TO_ROOM" }); return; }
         if (e.target instanceof HTMLElement && e.target.closest('button, input, select, textarea, [role="dialog"], [contenteditable="true"]')) return;
         const look: Record<string, [number, number]> = { ArrowLeft: [.12, 0], ArrowRight: [-.12, 0], ArrowUp: [0, -.1], ArrowDown: [0, .1] };
         if (look[e.key]) { e.preventDefault(); dispatch({ type: "LOOK_ROOM", yaw: look[e.key][0], pitch: look[e.key][1] }); return; }
         if (e.key === "0") { dispatch({ type: "FACE_TABLE" }); return; }
-        if ((e.key === "Enter" || e.key === " ") && !state.isTransitioning) {
+        if ((e.key === "Enter" || e.key === " ") && (!state.isTransitioning || state.transitionKind === 'shelf')) {
           dispatch({ type: "APPROACH_TABLE" });
         }
       } else {
@@ -245,10 +258,10 @@ export function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.roomMode, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, state.loupe, roll, libraryOpen, sheet]);
+  }, [state.roomMode, state.shelfFocused, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, state.loupe, roll, editorOpen, sheet]);
 
   const localError = new URLSearchParams(window.location.search).get("roll") === "local" ? validateRoll(LOCAL_ROLL) : null;
-  if (localError) return <main className="darkroom-error-fallback"><div className="error-card" role="alert"><h2>Local roll unavailable</h2><p>{localError}</p><a href="/?example=1">Open the five-photo example</a></div></main>;
+  if (localError) return <main className="darkroom-error-fallback"><div className="error-card" role="alert"><h2>Local roll unavailable</h2><p>{localError}</p><a href="/?mode=room">Return to shelf</a></div></main>;
 
   return (
     <main
@@ -261,6 +274,9 @@ export function App() {
       data-assets-ready={!state.assetsLoading}
       data-inspect-zoom={state.inspectZoom}
       data-inspect-pan={`${state.inspectPan.x},${state.inspectPan.z}`}
+      data-shelf-trash={shelf.trash}
+      data-table-roll-available={tableRollAvailable}
+      data-shelf-focused={state.shelfFocused}
       data-room-mode={state.roomMode}
       data-room-pose={`${state.savedRoomPose.yaw},${state.savedRoomPose.pitch}`}
       data-room-brightness={state.roomBrightness}
@@ -298,7 +314,7 @@ export function App() {
           <div className="canvas-wrapper" tabIndex={0} aria-label="Film viewer">
             <Canvas shadows key={canvasVersion}
               onCreated={({gl})=>{gl.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();setContextLost(true);});gl.domElement.addEventListener('webglcontextrestored',()=>setContextLost(false));}}
-              frameloop={libraryOpen || sheet === 'frames' || hidden || contextLost ? "never" : "always"}
+              frameloop={editorOpen || sheet === 'frames' || hidden || contextLost ? "never" : "always"}
               camera={initialCamera}
               dpr={[1, Math.min(typeof window !== "undefined" ? window.devicePixelRatio : 1, 1.5)]}
               gl={{
@@ -311,7 +327,11 @@ export function App() {
               }}
             >
               <ViewingTableScene
-                inputBlocked={libraryOpen || sheet==='frames' || (state.roomMode==='room' && !!sheet) || hidden || contextLost}
+                onEditShelfRoll={openEditor}
+                showRoll={tableRollAvailable}
+                shelf={shelf}
+                shelfPortal={shelfPortal}
+                inputBlocked={editorOpen || sheet==='frames' || (state.roomMode==='room' && !!sheet) || hidden || contextLost}
                 state={state}
                 dispatch={dispatch}
                 isDeterministic={isDeterministic}
@@ -323,9 +343,20 @@ export function App() {
       )}
 
       {contextLost&&<div className="context-recovery" role="alert"><p>The graphics view was interrupted. Your rolls are saved.</p><button onClick={()=>{setContextLost(false);setCanvasVersion(v=>v+1);}}>Restore view</button></div>}
-      {state.roomMode==='inspect'?<TableControls state={state} dispatch={dispatch} onOpenLibrary={()=>setLibraryOpen(true)} sheet={sheet} setSheet={setSheet}/>:mobile ? <MobileControls state={state} dispatch={dispatch} onOpenLibrary={()=>setLibraryOpen(true)} sheet={sheet} setSheet={setSheet}/> : <Controls state={state} dispatch={dispatch} onOpenLibrary={() => setLibraryOpen(true)} />}
-      {libraryError && <div className="library-notice" role="alert">{libraryError}<button onClick={() => setLibraryOpen(true)}>Open library</button></div>}
-      {libraryOpen && <RollLibrary activeId={roll.rollId} onClose={() => setLibraryOpen(false)} onOpen={openSaved} onExample={openExample} onRemoved={id => { if (id === roll.rollId) openExample(); }} />}
+      <div ref={shelfPortal} className="shelf-overlay" aria-label="Saved-roll shelf" style={{ display: shelfVisible ? undefined : 'none' }} />
+      {shelfVisible && <div className="shelf-toolbar" aria-label="Shelf controls">
+        {state.shelfFocused && <button onClick={() => { shelf.close(); dispatch({ type: "RETURN_TO_ROOM" }); }}>← Back to room</button>}
+        <div><span className="shelf-eyebrow">{shelf.trash ? "TRASH" : "YOUR COLLECTION"}</span><span>{shelf.trash ? `${shelf.trashCount} deleted rolls` : `${shelf.savedCount} saved ${shelf.savedCount === 1 ? "roll" : "rolls"}`}</span></div>
+        {shelf.pages > 1 && <nav aria-label="Shelf pages"><button aria-label="Previous shelf page" disabled={shelf.page === 0} onClick={() => shelf.changePage(shelf.page - 1)}>‹</button><span aria-live="polite">{shelf.page + 1} / {shelf.pages}</span><button aria-label="Next shelf page" disabled={shelf.page + 1 === shelf.pages} onClick={() => shelf.changePage(shelf.page + 1)}>›</button></nav>}
+        <button className="shelf-add" onClick={() => openEditor()}>New roll</button>
+        {state.shelfFocused && <button onClick={() => shelf.changeTrash(!shelf.trash)}>{shelf.trash ? "Saved rolls" : `Trash (${shelf.trashCount})`}</button>}
+        {deletedRoll && <div className="shelf-deleted-notice" role="status"><span>{deletedRoll.name} moved to Trash</span><button onClick={() => { void restoreRoll(deletedRoll.id).catch(error => setLibraryError(storageMessage(error))); }}>Undo</button><button aria-label="Dismiss deletion notice" onClick={() => setDeletedRoll(null)}>×</button></div>}
+        {shelf.error && <p role="alert">{shelf.error}<button onClick={shelf.retry}>Retry</button></p>}
+      </div>}
+      {shelfVisible && shelf.selectedRoll && shelf.selection && <ShelfRollCard key={shelf.selectedRoll.id} shelf={shelf} roll={shelf.selectedRoll} repository={rollRepository} activeId={tableRollAvailable ? roll.rollId : ""} onOpen={openSaved} onEdit={openEditor} onDelete={deleteRoll} onRestore={restoreRoll} />}
+      {!tableRollAvailable ? <div className="empty-table-controls"><button onClick={openShelf}>Rolls</button><span>No roll on the light table</span>{state.roomMode === 'inspect' && <button onClick={() => openEditor()}>New roll</button>}</div> : state.roomMode==='inspect'?<TableControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} sheet={sheet} setSheet={setSheet}/>:mobile ? <MobileControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} sheet={sheet} setSheet={setSheet}/> : <Controls state={state} dispatch={dispatch} onOpenLibrary={openShelf} />}
+      {libraryError && <div className="library-notice" role="alert">{libraryError}<button onClick={() => { setLibraryError(""); openShelf(); }}>Open shelf</button></div>}
+      {editorOpen && <RollEditor onDelete={deleteRoll} editId={editingRollId} onClose={() => { setEditorOpen(false); setEditingRollId(undefined); }} onOpen={openSaved} />}
     </main>
   );
 }

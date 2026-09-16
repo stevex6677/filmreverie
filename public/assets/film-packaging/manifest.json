@@ -1,0 +1,790 @@
+{
+  "version": 1,
+  "accessed": "2026-09-15",
+  "sourceRoot": "ignored_assets",
+  "method": "Original photographs mapped onto box front/top and curved cartridge labels with perspective-correct GPU UVs. Unseen box faces use plain cardboard; no invented text. Stored source bytes are unchanged.",
+  "limitations": [
+    "Visible panels retain photographic lighting. Hidden panels and cartridge reverse are simplified.",
+    "Multipack packaging is an illustration of stock; each compartment always represents one saved roll."
+  ],
+  "rights": "Third-party product imagery; source provenance recorded, no ownership or license grant asserted.",
+  "entries": [
+    {
+      "id": "ektachrome-e100-135",
+      "stockId": "ektachrome-e100",
+      "format": "135",
+      "box": {
+        "stock": "ektachrome-e100",
+        "format": "135",
+        "role": "box",
+        "source": "https://kodak.photosys.com/products/ektachrome-e100-35mm-is-back-35mm-135-36exp-iso-100",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/Kodak_E100_35_754a9a12-e978-4b07-b876-1e3798ed4fb4.jpg?v=1734728890",
+        "file": "ektachrome-e100-135.jpg",
+        "width": 1000,
+        "height": 1000,
+        "sha256": "c592b045cc5b7ec1d18cca58abc38cd08d67b250dab218ec0312639ff839cd10",
+        "sourcePath": "film-packaging/kodak-20260915/ektachrome-e100-135.jpg",
+        "asset": "/assets/film-packaging/ektachrome-e100-135.jpg"
+      },
+      "front": [
+        [
+          0.145,
+          0.351
+        ],
+        [
+          0.869,
+          0.35
+        ],
+        [
+          0.867,
+          0.798
+        ],
+        [
+          0.146,
+          0.798
+        ]
+      ],
+      "top": [
+        [
+          0.195,
+          0.242
+        ],
+        [
+          0.835,
+          0.241
+        ],
+        [
+          0.864,
+          0.345
+        ],
+        [
+          0.153,
+          0.345
+        ]
+      ],
+      "edition": "Kodak Professional product photography; format-specific editions as pictured",
+      "multipack": false,
+      "cartridge": {
+        "stock": "ektachrome-e100",
+        "format": "135",
+        "role": "cartridge",
+        "source": "https://www.macodirect.de/film/farbdiafilm/kodak-ektachrome-e100-135-36",
+        "imageUrl": "https://www.macodirect.de/media/image/d1/b1/31/KEC1011_0025c3eee8884769.jpg",
+        "file": "ektachrome-e100-135-cartridge-maco.jpg",
+        "width": 1240,
+        "height": 1000,
+        "sha256": "731e8a548fc4a1dd438e0ffc86ccef54326a52f6628384358b00e4ded04a6088",
+        "sourcePath": "film-packaging/kodak-20260915/ektachrome-e100-135-cartridge-maco.jpg",
+        "asset": "/assets/film-packaging/ektachrome-e100-135-cartridge-maco.jpg"
+      },
+      "cartridgePanel": [
+        [
+          0.337,
+          0.288
+        ],
+        [
+          0.604,
+          0.288
+        ],
+        [
+          0.598,
+          0.798
+        ],
+        [
+          0.335,
+          0.798
+        ]
+      ],
+      "sizeMm": [
+        60,
+        40,
+        38
+      ],
+      "dimensionBasis": "Nominal retail carton envelope; see README dimension audit. Same dimensions for saved and gray blocks."
+    },
+    {
+      "id": "ektar-100-135",
+      "stockId": "ektar-100",
+      "format": "135",
+      "box": {
+        "stock": "ektar-100",
+        "format": "135",
+        "role": "box",
+        "source": "https://kodak.photosys.com/products/ektar-100-36exp-135",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/Kodak_Ektar100_35_dba4d328-9913-4fe3-8ebd-ef00ed69b958.jpg?v=1734728882",
+        "file": "ektar-100-135.jpg",
+        "width": 1000,
+        "height": 1000,
+        "sha256": "c8b04117f1e54e397c6f531439c90829b2d87d209bb1865d9700ab905e1f6e37",
+        "sourcePath": "film-packaging/kodak-20260915/ektar-100-135.jpg",
+        "asset": "/assets/film-packaging/ektar-100-135.jpg"
+      },
+      "front": [
+        [
+          0.136,
+          0.346
+        ],
+        [
+          0.866,
+          0.346
+        ],
+        [
+          0.865,
+          0.793
+        ],
+        [
+          0.138,
+          0.793
+        ]
+      ],
+      "top": [
+        [
+          0.188,
+          0.232
+        ],
+        [
+          0.831,
+          0.232
+        ],
+        [
+          0.857,
+          0.338
+        ],
+        [
+          0.149,
+          0.338
+        ]
+      ],
+      "edition": "Kodak Professional product photography; format-specific editions as pictured",
+      "multipack": false,
+      "cartridge": {
+        "stock": "ektar-100",
+        "format": "135",
+        "role": "cartridge",
+        "source": "https://kodak.photosys.com/products/ektar-100-36exp-135",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/Ektar35roll_475affe0-13ae-4502-9791-4e2956de8351.jpg?v=1734728882",
+        "file": "ektar-100-135-cartridge.jpg",
+        "width": 2000,
+        "height": 2000,
+        "sha256": "ce30bc11b819df0c913999c870f26731c856ee2188dca791bbb32b8f6b661379",
+        "sourcePath": "film-packaging/kodak-20260915/ektar-100-135-cartridge.jpg",
+        "asset": "/assets/film-packaging/ektar-100-135-cartridge.jpg"
+      },
+      "cartridgePanel": [
+        [
+          0.185,
+          0.233
+        ],
+        [
+          0.693,
+          0.219
+        ],
+        [
+          0.691,
+          0.9
+        ],
+        [
+          0.186,
+          0.861
+        ]
+      ],
+      "sizeMm": [
+        60,
+        40,
+        38
+      ],
+      "dimensionBasis": "Nominal retail carton envelope; see README dimension audit. Same dimensions for saved and gray blocks."
+    },
+    {
+      "id": "portra-160-135",
+      "stockId": "portra-160",
+      "format": "135",
+      "box": {
+        "stock": "portra-160",
+        "format": "135",
+        "role": "box",
+        "source": "https://kodak.photosys.com/products/portra-160-36exp-135",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/Kodak_Portra160_35ProPack_909113a2-2ce8-40bc-bad2-dd75ea942aaa.jpg?v=1734728869",
+        "file": "portra-160-135.jpg",
+        "width": 1000,
+        "height": 1000,
+        "sha256": "ccfc8f1c56b5dde0407af8baa18860985c14239586435ce40ae1aa687d72a503",
+        "sourcePath": "film-packaging/kodak-20260915/portra-160-135.jpg",
+        "asset": "/assets/film-packaging/portra-160-135.jpg"
+      },
+      "front": [
+        [
+          0.044,
+          0.425
+        ],
+        [
+          0.971,
+          0.425
+        ],
+        [
+          0.964,
+          0.688
+        ],
+        [
+          0.051,
+          0.688
+        ]
+      ],
+      "top": [
+        [
+          0.077,
+          0.382
+        ],
+        [
+          0.942,
+          0.382
+        ],
+        [
+          0.964,
+          0.422
+        ],
+        [
+          0.05,
+          0.422
+        ]
+      ],
+      "edition": "Kodak Professional product photography; format-specific editions as pictured",
+      "multipack": false,
+      "cartridge": {
+        "stock": "portra-160",
+        "format": "135",
+        "role": "cartridge",
+        "source": "https://kodak.photosys.com/products/portra-160-36exp-135",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/kodak-portra-160-135-36_c6088bac-9e6c-4e09-98d9-b8fbae44e5e5.jpg?v=1734728869",
+        "file": "portra-160-135-cartridge.jpg",
+        "width": 900,
+        "height": 959,
+        "sha256": "398d16e4b0eb43b01bba7db2a248a8048cc197eb89aca3527d776e8503d9eb68",
+        "sourcePath": "film-packaging/kodak-20260915/portra-160-135-cartridge.jpg",
+        "asset": "/assets/film-packaging/portra-160-135-cartridge.jpg"
+      },
+      "cartridgePanel": [
+        [
+          0.094,
+          0.221
+        ],
+        [
+          0.5,
+          0.221
+        ],
+        [
+          0.505,
+          0.786
+        ],
+        [
+          0.096,
+          0.781
+        ]
+      ],
+      "sizeMm": [
+        60,
+        40,
+        38
+      ],
+      "dimensionBasis": "Nominal single-roll carton envelope; authored compact artwork adaptation, not a photographed retail edition.",
+      "singleRollArtwork": "/assets/film-packaging/portra-160-135-single.svg"
+    },
+    {
+      "id": "portra-400-135",
+      "stockId": "portra-400",
+      "format": "135",
+      "box": {
+        "stock": "portra-400",
+        "format": "135",
+        "role": "box",
+        "source": "https://kodak.photosys.com/products/portra-400-36exp-135-pro-pack-5-rolls",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/Kodak_Portra400_35ProPack_62e5a347-9f63-4f33-a606-19a56255f3af.jpg?v=1738104939",
+        "file": "portra-400-135.jpg",
+        "width": 1000,
+        "height": 1000,
+        "sha256": "fc804fd0d907b9ec02c85e3470bc47324ae506671a71fd80d011a9a68801ebac",
+        "sourcePath": "film-packaging/kodak-20260915/portra-400-135.jpg",
+        "asset": "/assets/film-packaging/portra-400-135.jpg"
+      },
+      "front": [
+        [
+          0.045,
+          0.426
+        ],
+        [
+          0.967,
+          0.426
+        ],
+        [
+          0.958,
+          0.682
+        ],
+        [
+          0.052,
+          0.682
+        ]
+      ],
+      "top": [
+        [
+          0.077,
+          0.38
+        ],
+        [
+          0.941,
+          0.38
+        ],
+        [
+          0.962,
+          0.422
+        ],
+        [
+          0.05,
+          0.422
+        ]
+      ],
+      "edition": "Kodak Professional product photography; format-specific editions as pictured",
+      "multipack": false,
+      "cartridge": {
+        "stock": "portra-400",
+        "format": "135",
+        "role": "cartridge",
+        "source": "https://kodak.photosys.com/products/portra-400-36exp-135-pro-pack-5-rolls",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/kodak-portra-400-135-36_2_1e59fc4d-23e4-4aba-ae58-4366d6e30c87.png?v=1738104939",
+        "file": "portra-400-135-cartridge.png",
+        "width": 500,
+        "height": 500,
+        "sha256": "66e8ff386745ea152729705e7110ca81f202a230069a40d94ab16ea4a7cf396c",
+        "sourcePath": "film-packaging/kodak-20260915/portra-400-135-cartridge.png",
+        "asset": "/assets/film-packaging/portra-400-135-cartridge.png"
+      },
+      "cartridgePanel": [
+        [
+          0.1,
+          0.171
+        ],
+        [
+          0.567,
+          0.171
+        ],
+        [
+          0.563,
+          0.896
+        ],
+        [
+          0.099,
+          0.896
+        ]
+      ],
+      "sizeMm": [
+        60,
+        40,
+        38
+      ],
+      "dimensionBasis": "Nominal single-roll carton envelope; authored compact artwork adaptation, not a photographed retail edition.",
+      "singleRollArtwork": "/assets/film-packaging/portra-400-135-single.svg"
+    },
+    {
+      "id": "portra-800-135",
+      "stockId": "portra-800",
+      "format": "135",
+      "box": {
+        "stock": "portra-800",
+        "format": "135",
+        "role": "box",
+        "source": "https://kodak.photosys.com/products/portra-800-36exp-135-pro-pack-5-rolls",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/Kodak_Portra800_35_03b4dd90-85f4-4d09-8198-5e94132839f2.jpg?v=1738109104",
+        "file": "portra-800-135.jpg",
+        "width": 1000,
+        "height": 1000,
+        "sha256": "94650f506ac1e5ab278d88834860d4b1022c0553a15a2d33dfb1c3ad72690f64",
+        "sourcePath": "film-packaging/kodak-20260915/portra-800-135.jpg",
+        "asset": "/assets/film-packaging/portra-800-135.jpg"
+      },
+      "front": [
+        [
+          0.134,
+          0.346
+        ],
+        [
+          0.865,
+          0.345
+        ],
+        [
+          0.864,
+          0.798
+        ],
+        [
+          0.135,
+          0.798
+        ]
+      ],
+      "top": [
+        [
+          0.187,
+          0.23
+        ],
+        [
+          0.828,
+          0.23
+        ],
+        [
+          0.86,
+          0.337
+        ],
+        [
+          0.15,
+          0.337
+        ]
+      ],
+      "edition": "Kodak Professional product photography; format-specific editions as pictured",
+      "multipack": false,
+      "cartridge": {
+        "stock": "portra-800",
+        "format": "135",
+        "role": "cartridge",
+        "source": "https://kodak.photosys.com/products/portra-800-36exp-135-pro-pack-5-rolls",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/Kodak_Portra_800_b83548ec-6b5e-42ef-bdf3-b07f09d2f80b.jpg?v=1738109104",
+        "file": "portra-800-135-cartridge.jpg",
+        "width": 2000,
+        "height": 2000,
+        "sha256": "afd55ffba67c9b57e08676d989fc8bcc3df406cce7100ae2610e7a3a1558d616",
+        "sourcePath": "film-packaging/kodak-20260915/portra-800-135-cartridge.jpg",
+        "asset": "/assets/film-packaging/portra-800-135-cartridge.jpg"
+      },
+      "cartridgePanel": [
+        [
+          0.161,
+          0.216
+        ],
+        [
+          0.68,
+          0.216
+        ],
+        [
+          0.678,
+          0.9
+        ],
+        [
+          0.162,
+          0.893
+        ]
+      ],
+      "sizeMm": [
+        60,
+        40,
+        38
+      ],
+      "dimensionBasis": "Nominal retail carton envelope; see README dimension audit. Same dimensions for saved and gray blocks."
+    },
+    {
+      "id": "ektachrome-e100-120",
+      "stockId": "ektachrome-e100",
+      "format": "120",
+      "box": {
+        "stock": "ektachrome-e100",
+        "format": "120",
+        "role": "box",
+        "source": "https://kodak.photosys.com/products/ektachrome-e100-now-available-in-120-medium-format-color-reversal-film-135-36exp-iso-100",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/8731299_160776d6-423a-4929-82b3-47d9eae454e0.jpg?v=1735603178",
+        "file": "ektachrome-e100-120.jpg",
+        "width": 1000,
+        "height": 1000,
+        "sha256": "5bf7d1ba85d7d4c1adb5ba8790f1236e2cdf5c0b8afe492aeafa069a902ce3ba",
+        "sourcePath": "film-packaging/kodak-20260915/ektachrome-e100-120.jpg",
+        "asset": "/assets/film-packaging/ektachrome-e100-120.jpg"
+      },
+      "front": [
+        [
+          0.157,
+          0.3184
+        ],
+        [
+          0.923,
+          0.228
+        ],
+        [
+          0.922,
+          0.6648
+        ],
+        [
+          0.16,
+          0.7912
+        ]
+      ],
+      "top": [
+        [
+          0.077,
+          0.2952
+        ],
+        [
+          0.855,
+          0.1976
+        ],
+        [
+          0.92,
+          0.2248
+        ],
+        [
+          0.157,
+          0.3144
+        ]
+      ],
+      "edition": "Kodak Professional product photography; format-specific editions as pictured",
+      "multipack": true,
+      "sizeMm": [
+        135,
+        79,
+        28
+      ],
+      "dimensionBasis": "Nominal retail carton envelope; see README dimension audit. Same dimensions for saved and gray blocks."
+    },
+    {
+      "id": "ektar-100-120",
+      "stockId": "ektar-100",
+      "format": "120",
+      "box": {
+        "stock": "ektar-100",
+        "format": "120",
+        "role": "box",
+        "source": "https://kodak.photosys.com/products/ektar-100-120-pro-pack-5-rolls",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/EKTAR_100_120_IMG_3190_c36bf88c-867d-4e1d-a6fc-3cceb4bc13a8.jpg?v=1738107494",
+        "file": "ektar-100-120.jpg",
+        "width": 2871,
+        "height": 2172,
+        "sha256": "cf34d719188539ea86940f89444bec9309826a3bb0423489f961a4427d0ba2cb",
+        "sourcePath": "film-packaging/kodak-20260915/ektar-100-120.jpg",
+        "asset": "/assets/film-packaging/ektar-100-120.jpg"
+      },
+      "front": [
+        [
+          0.139,
+          0.253
+        ],
+        [
+          0.96,
+          0.103
+        ],
+        [
+          0.952,
+          0.753
+        ],
+        [
+          0.139,
+          0.933
+        ]
+      ],
+      "top": [
+        [
+          0.044,
+          0.196
+        ],
+        [
+          0.885,
+          0.045
+        ],
+        [
+          0.958,
+          0.098
+        ],
+        [
+          0.141,
+          0.246
+        ]
+      ],
+      "edition": "Kodak Professional product photography; format-specific editions as pictured",
+      "multipack": true,
+      "sizeMm": [
+        135,
+        79,
+        28
+      ],
+      "dimensionBasis": "Nominal retail carton envelope; see README dimension audit. Same dimensions for saved and gray blocks."
+    },
+    {
+      "id": "portra-160-120",
+      "stockId": "portra-160",
+      "format": "120",
+      "box": {
+        "stock": "portra-160",
+        "format": "120",
+        "role": "box",
+        "source": "https://kodak.photosys.com/products/portra-160-120-pro-pack-5-rolls",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/Portra160120pro_e36fd716-8c8c-479c-a2f5-60d47809aa23.jpg?v=1738108011",
+        "file": "portra-160-120.jpg",
+        "width": 1000,
+        "height": 1000,
+        "sha256": "f8aca455fe15fb47f4780751b1dbe6f03d7888567a0016c34bca639669cef665",
+        "sourcePath": "film-packaging/kodak-20260915/portra-160-120.jpg",
+        "asset": "/assets/film-packaging/portra-160-120.jpg"
+      },
+      "front": [
+        [
+          0.139,
+          0.389
+        ],
+        [
+          0.992,
+          0.096
+        ],
+        [
+          0.979,
+          0.568
+        ],
+        [
+          0.193,
+          0.937
+        ]
+      ],
+      "top": [
+        [
+          0.008,
+          0.329
+        ],
+        [
+          0.85,
+          0.028
+        ],
+        [
+          0.987,
+          0.092
+        ],
+        [
+          0.137,
+          0.384
+        ]
+      ],
+      "edition": "Kodak Professional product photography; format-specific editions as pictured",
+      "multipack": true,
+      "sizeMm": [
+        135,
+        79,
+        28
+      ],
+      "dimensionBasis": "Nominal retail carton envelope; see README dimension audit. Same dimensions for saved and gray blocks."
+    },
+    {
+      "id": "portra-400-120",
+      "stockId": "portra-400",
+      "format": "120",
+      "box": {
+        "stock": "portra-400",
+        "format": "120",
+        "role": "box",
+        "source": "https://kodak.photosys.com/products/portra-400-120-pro-pack-5-rolls",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/Kodak_8331506_120_Professional_Portra_400_742299_4571c7c6-621d-49a7-a40c-5512e886b858.jpg?v=1738108507",
+        "file": "portra-400-120.jpg",
+        "width": 2000,
+        "height": 2000,
+        "sha256": "5675b5da427518c56d7a0802867bac0d48e5ad3a68508158430e6e46070068ca",
+        "sourcePath": "film-packaging/kodak-20260915/portra-400-120.jpg",
+        "asset": "/assets/film-packaging/portra-400-120.jpg"
+      },
+      "front": [
+        [
+          0.135,
+          0.388
+        ],
+        [
+          0.995,
+          0.096
+        ],
+        [
+          0.982,
+          0.571
+        ],
+        [
+          0.195,
+          0.938
+        ]
+      ],
+      "top": [
+        [
+          0.008,
+          0.329
+        ],
+        [
+          0.85,
+          0.06
+        ],
+        [
+          0.989,
+          0.092
+        ],
+        [
+          0.135,
+          0.382
+        ]
+      ],
+      "edition": "Kodak Professional product photography; format-specific editions as pictured",
+      "multipack": true,
+      "sizeMm": [
+        135,
+        79,
+        28
+      ],
+      "dimensionBasis": "Nominal retail carton envelope; see README dimension audit. Same dimensions for saved and gray blocks."
+    },
+    {
+      "id": "portra-800-120",
+      "stockId": "portra-800",
+      "format": "120",
+      "box": {
+        "stock": "portra-800",
+        "format": "120",
+        "role": "box",
+        "source": "https://kodak.photosys.com/products/portra-800-120-pro-pack-5-rolls",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/8127946_793f5253-c0d8-4680-9257-a2c3447f5047.jpg?v=1734383941",
+        "file": "portra-800-120.jpg",
+        "width": 1000,
+        "height": 1000,
+        "sha256": "48573339a3def965876381a4ee040567b860e2e01c182d10ec6c4cb186283a53",
+        "sourcePath": "film-packaging/kodak-20260915/portra-800-120.jpg",
+        "asset": "/assets/film-packaging/portra-800-120.jpg"
+      },
+      "front": [
+        [
+          0.135,
+          0.333
+        ],
+        [
+          0.944,
+          0.213
+        ],
+        [
+          0.908,
+          0.625
+        ],
+        [
+          0.148,
+          0.816
+        ]
+      ],
+      "top": [
+        [
+          0.055,
+          0.277
+        ],
+        [
+          0.861,
+          0.155
+        ],
+        [
+          0.94,
+          0.208
+        ],
+        [
+          0.135,
+          0.328
+        ]
+      ],
+      "edition": "Kodak Professional product photography; format-specific editions as pictured",
+      "multipack": true,
+      "sizeMm": [
+        135,
+        79,
+        28
+      ],
+      "dimensionBasis": "Nominal retail carton envelope; see README dimension audit. Same dimensions for saved and gray blocks."
+    }
+  ]
+}

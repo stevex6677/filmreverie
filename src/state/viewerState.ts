@@ -6,7 +6,6 @@ import {
   DEFAULT_ROOM_POSE,
   RoomCameraPose,
   clampRoomPose,
-  DEFAULT_INSPECT_DISTANCE,
   DEFAULT_TABLE_BRIGHTNESS,
   TABLE_CENTER_Z,
   clampInspectZoom,
@@ -39,12 +38,13 @@ export interface ViewerState {
   viewportAspect: number;
   savedOverview: { zoom: number; pan: { x: number; z: number }; frameIndex: number } | null;
   roomMode: RoomMode;
+  shelfFocused: boolean;
   filmMode: FilmMode;
   filmStockId: FilmStockId;
   loupe: LoupeState;
   activeFrameIndex: number;
   cameraMoving: boolean;
-  transitionKind: "journey" | "inspection" | "loupe" | null;
+  transitionKind: "journey" | "shelf" | "inspection" | "loupe" | null;
   settledFrameIndex: number;
   focusMode: boolean;
   isTransitioning: boolean;
@@ -71,6 +71,7 @@ export const INITIAL_VIEWER_STATE: ViewerState = {
   viewportAspect: 1.5,
   savedOverview: null,
   roomMode: "inspect",
+  shelfFocused: false,
   filmMode: "negative",
   filmStockId: DEFAULT_FILM_STOCK_ID,
   loupe: {
@@ -93,7 +94,7 @@ export const INITIAL_VIEWER_STATE: ViewerState = {
   focusMode: false,
   isTransitioning: false,
   savedRoomPose: { ...DEFAULT_ROOM_POSE },
-  inspectZoom: DEFAULT_INSPECT_DISTANCE,
+  inspectZoom: fitRollView(BASELINE_ROLL, "roll", 0).zoom,
   inspectPan: { x: 0, z: TABLE_CENTER_Z },
   tableBrightness: DEFAULT_TABLE_BRIGHTNESS,
   roomBrightness: .45,
@@ -112,7 +113,7 @@ export function createInitialViewerState(initialRoomMode: RoomMode = "inspect", 
     roll,
     loupe: { ...INITIAL_VIEWER_STATE.loupe, scale: roll.scale, worldX: locateFrame(roll, 0).x, worldY: locateFrame(roll, 0).y },
     savedRoomPose: { ...DEFAULT_ROOM_POSE },
-    inspectZoom: roll === BASELINE_ROLL ? DEFAULT_INSPECT_DISTANCE : fitRollView(roll, "roll", 0).zoom,
+    inspectZoom: fitRollView(roll, "roll", 0).zoom,
     inspectPan: { x: 0, z: TABLE_CENTER_Z },
     tableBrightness: DEFAULT_TABLE_BRIGHTNESS,
   roomBrightness: .45,
@@ -154,6 +155,7 @@ export type ViewerAction =
   | { type: "SELECT_FRAME"; frameIndex: number }
   | { type: "SET_LOUPE_POSITION"; x: number; y: number }
   | { type: "SET_ROOM_MODE"; mode: RoomMode }
+  | { type: "APPROACH_SHELF" }
   | { type: "APPROACH_TABLE" }
   | { type: "RETURN_TO_ROOM" }
   | { type: "SET_TRANSITIONING"; isTransitioning: boolean }
@@ -224,11 +226,13 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
     case "TOGGLE_ROOM_LIGHTS":
       return { ...state, roomBrightness: state.roomBrightness > 0 ? 0 : state.lastRoomBrightness };
     case "FACE_TABLE":
-      return state.roomMode === "room" && !state.isTransitioning ? { ...state, savedRoomPose: { ...DEFAULT_ROOM_POSE } } : state;
+      if (state.shelfFocused) return viewerReducer(state, { type: "RETURN_TO_ROOM" });
+      return state.roomMode === "room" && (!state.isTransitioning || state.transitionKind === 'shelf') ? { ...state, savedRoomPose: { ...DEFAULT_ROOM_POSE } } : state;
     case "LOOK_ROOM":
       return viewerReducer(state, { type: "UPDATE_ROOM_POSE", pose: { yaw: state.savedRoomPose.yaw + action.yaw, pitch: state.savedRoomPose.pitch + action.pitch } });
     case "LOAD_ROLL": {
       let next = createInitialViewerState("inspect", action.roll);
+      next.savedRoomPose = state.savedRoomPose;
       next.loupe.opticalEffects = state.loupe.opticalEffects;
       next.loupe.magnification = state.loupe.magnification;
       next.touchInput = state.touchInput;
@@ -385,14 +389,19 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       };
     }
 
+    case "APPROACH_SHELF":
+      if (state.roomMode === "room" && state.shelfFocused) return state;
+      return { ...state, roomMode: "room", shelfFocused: true, focusMode: false, loupe: { ...state.loupe, isActive: false, inspecting: false }, isTransitioning: true, transitionKind: "shelf" };
+
     case "APPROACH_TABLE":
       // Guard against competing transitions or already inspecting
-      if (state.roomMode === "inspect" || state.isTransitioning) {
+      if (state.roomMode === "inspect" || (state.isTransitioning && state.transitionKind !== 'shelf')) {
         return state;
       }
       return {
         ...state,
         roomMode: "inspect",
+        shelfFocused: false,
         focusMode: false,
         inspectionLevel: "roll",
         ...(multi ? { inspectZoom: fitRollView(state.roll, "roll", state.activeFrameIndex, state.viewportAspect).zoom, inspectPan: { x: 0, z: TABLE_CENTER_Z }, savedOverview: null } : {}),
@@ -401,6 +410,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       };
 
     case "RETURN_TO_ROOM":
+      if (state.roomMode === "room" && state.shelfFocused) return { ...state, shelfFocused: false, isTransitioning: true, transitionKind: "shelf" };
       // Guard against competing transitions or already in room
       if (state.roomMode === "room" || state.isTransitioning) {
         return state;
@@ -412,7 +422,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
         inspectionLevel: "roll",
         isTransitioning: true,
         transitionKind: "journey",
-        inspectZoom: DEFAULT_INSPECT_DISTANCE,
+        inspectZoom: fitRollView(state.roll, "roll", state.activeFrameIndex, state.viewportAspect).zoom,
         inspectPan: { x: 0, z: TABLE_CENTER_Z },
         loupe: {
           ...state.loupe,
@@ -425,6 +435,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       return {
         ...state,
         roomMode: action.mode,
+        shelfFocused: false,
       };
 
     case "SET_TRANSITIONING":
@@ -436,7 +447,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       };
 
     case "UPDATE_ROOM_POSE": {
-      if (state.roomMode !== "room" || state.isTransitioning) {
+      if (state.roomMode !== "room" || state.shelfFocused || (state.isTransitioning && state.transitionKind !== 'shelf')) {
         return state;
       }
       const updated = {
@@ -483,7 +494,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       if (multi) return viewerReducer({ ...state, savedOverview: null }, { type: "VIEW_LEVEL", level: "roll" });
       return {
         ...state,
-        inspectZoom: DEFAULT_INSPECT_DISTANCE,
+        inspectZoom: fitRollView(state.roll, "roll", state.activeFrameIndex, state.viewportAspect).zoom,
         inspectPan: { x: 0, z: TABLE_CENTER_Z },
       };
 

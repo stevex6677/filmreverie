@@ -1,8 +1,11 @@
+import { BASELINE_ROLL } from '../../src/utils/rollLayout';
+import { DEFAULT_LAYOUT } from '../../src/utils/loupeMapping';
 import { test, expect, Page } from '@playwright/test';
 import { getPerforationPositions } from '../../src/utils/loupeMapping';
 import { PNG } from 'pngjs';
 import { captureCanvas } from './helpers/viewing';
 import { getRegionMeanDifference, getRegionStats } from './helpers/pixelAnalysis';
+const MIN_MOVEMENT = .001 * BASELINE_ROLL.scale; // Same native-film movement threshold after physical scale conversion.
 const ready=async(page:Page)=>{await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:30000});await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});};
 const display=async(page:Page)=>(await page.locator('canvas').getAttribute('data-loupe-display'))!.split(',').map(Number);
 const sample=async(page:Page)=>(await page.locator('canvas').getAttribute('data-loupe-sample'))!.split(',').map(Number);
@@ -49,7 +52,7 @@ test('M17 drag versus tap, smooth eye approach, optical effects and exact pull b
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await open(page);const original=await pose(page),before=await sample(page);const [x,y]=await display(page);
   await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x+34,y-15,{steps:8});await page.mouse.up();await page.waitForTimeout(350);
-  await expect(page.locator('main')).toHaveAttribute('data-loupe-state','activated');const moved=await sample(page);expect(Math.hypot(moved[0]-before[0],moved[1]-before[1])).toBeGreaterThan(.001);
+  await expect(page.locator('main')).toHaveAttribute('data-loupe-state','activated');const moved=await sample(page);expect(Math.hypot(moved[0]-before[0],moved[1]-before[1])).toBeGreaterThan(MIN_MOVEMENT);
   const [cx,cy]=await display(page);await page.mouse.click(cx,cy);
   await expect(page.locator('main')).toHaveAttribute('data-loupe-state','inspection');
   await page.waitForTimeout(80);const intermediate=await pose(page);
@@ -65,7 +68,7 @@ test('M17 drag versus tap, smooth eye approach, optical effects and exact pull b
   await page.screenshot({path:info.outputPath('inspection-effects-off-8x.png')});
   await page.mouse.move(lx,ly);if(browserName==='webkit'){await page.locator('canvas').dispatchEvent('wheel',{deltaY:-600,cancelable:true});await page.locator('canvas').dispatchEvent('wheel',{deltaY:600,cancelable:true});}else{await page.mouse.wheel(0,-600);await page.mouse.wheel(0,600);}await page.waitForTimeout(200);expect(await pose(page)).toEqual(close);
   await page.mouse.down();await page.mouse.move(lx+60,ly+25,{steps:8});await page.mouse.up();await page.waitForTimeout(150);
-  const shifted=await sample(page);expect(Math.hypot(shifted[0]-moved[0],shifted[1]-moved[1])).toBeGreaterThan(.001);expect((await pose(page))[1]).toBe(close[1]);
+  const shifted=await sample(page);expect(Math.hypot(shifted[0]-moved[0],shifted[1]-moved[1])).toBeGreaterThan(MIN_MOVEMENT);expect((await pose(page))[1]).toBe(close[1]);
   await expect(page.locator('main')).toHaveAttribute('data-loupe-state','inspection');
   const [backX,backY]=await display(page);await page.mouse.click(backX,backY);await ready(page);
   await expect(page.locator('main')).toHaveAttribute('data-loupe-state','activated');expect(await pose(page)).toEqual(original);expect(await sample(page)).toEqual(shifted);
@@ -79,14 +82,14 @@ test('M17 touch drag preserves grab point; pinch cannot inspect or zoom the eye;
   await page.setViewportSize({width:820,height:1180});await open(page);const touch=await contacts(page,browserName),original=await pose(page);
   const [x,y,r]=await display(page),before=await sample(page);
   await touch('start',[{id:1,x:x+r*.65,y}]);await touch('move',[{id:1,x:x+r*.65+28,y:y+20}]);await touch('end',[]);
-  await expect(page.locator('main')).toHaveAttribute('data-loupe-state','activated');const after=await sample(page);expect(Math.hypot(after[0]-before[0],after[1]-before[1])).toBeGreaterThan(.001);
+  await expect(page.locator('main')).toHaveAttribute('data-loupe-state','activated');const after=await sample(page);expect(Math.hypot(after[0]-before[0],after[1]-before[1])).toBeGreaterThan(MIN_MOVEMENT);
   const [cx,cy]=await display(page);await touch('start',[{id:1,x:cx,y:cy},{id:2,x:cx+50,y:cy}]);await touch('end',[]);await expect(page.locator('main')).toHaveAttribute('data-loupe-state','activated');
   await page.getByTestId('inspect-loupe').click();await ready(page);const eye=await pose(page),power=await page.locator('canvas').getAttribute('data-loupe-magnification');
   await touch('start',[{id:1,x:330,y:500},{id:2,x:490,y:500}]);
   for(let i=1;i<=6;i++)await touch('move',[{id:1,x:330-i*10,y:500},{id:2,x:490+i*10,y:500}]);
   await touch('end',[]);expect((await pose(page))[1]).toBe(eye[1]);expect(await page.locator('canvas').getAttribute('data-loupe-magnification')).toBe(power);
   const stationary=await sample(page);await touch('start',[{id:1,x:330,y:500},{id:2,x:490,y:500}]);await touch('move',[{id:1,x:350,y:525},{id:2,x:510,y:525}]);await touch('end',[]);
-  const translated=await sample(page);expect(Math.hypot(translated[0]-stationary[0],translated[1]-stationary[1])).toBeGreaterThan(.001);expect((await pose(page))[1]).toBe(eye[1]);
+  const translated=await sample(page);expect(Math.hypot(translated[0]-stationary[0],translated[1]-stationary[1])).toBeGreaterThan(MIN_MOVEMENT);expect((await pose(page))[1]).toBe(eye[1]);
   await expect(page.locator('main')).toHaveAttribute('data-loupe-state','inspection');
   const [backX,backY]=await display(page);await touch('start',[{id:1,x:backX,y:backY}]);await touch('end',[]);await ready(page);
   await expect(page.locator('main')).toHaveAttribute('data-loupe-state','activated');expect(await pose(page)).toEqual(original);expect(await sample(page)).toEqual(translated);
@@ -117,7 +120,7 @@ test('M17 scene optics inspect photographs, perforations and bare table with tra
     // Project the desired translation on the eyepiece plane, retaining the grab point.
     const scale=Number(await canvas.getAttribute('data-loupe-scale'));
     const wpp=2*(zoom-.008-.19*scale)*Math.tan(Math.PI/8)/800;
-    if(Math.hypot(x-sx,y-sy)>.001){await page.mouse.move(cx,cy);await page.mouse.down();await page.mouse.move(cx+(x-sx)/wpp,cy-(y-sy)/wpp,{steps:12});await page.mouse.up();await page.waitForTimeout(100);}
+    if(Math.hypot(x-sx,y-sy)>MIN_MOVEMENT){await page.mouse.move(cx,cy);await page.mouse.down();await page.mouse.move(cx+(x-sx)/wpp,cy-(y-sy)/wpp,{steps:12});await page.mouse.up();await page.waitForTimeout(100);}
     const point=await sample(page);expect(point[0]).toBeCloseTo(x,2);expect(point[1]).toBeCloseTo(y,2);
     await page.getByTestId('inspect-loupe').click();await ready(page);await page.screenshot({path:info.outputPath(`scene-${x}-${y}.png`)});
     return PNG.sync.read(await captureCanvas(page));
@@ -125,10 +128,10 @@ test('M17 scene optics inspect photographs, perforations and bare table with tra
   const photo=await place(0,0);expect(getRegionStats(photo,640,400,160).stdDev).toBeGreaterThan(3);
   await page.locator('.canvas-wrapper').focus();await page.keyboard.press('m');await page.waitForTimeout(200);const positive=PNG.sync.read(await captureCanvas(page));expect(getRegionMeanDifference(photo,positive,640,400,160)).toBeGreaterThan(15);
   await page.getByTestId('inspect-loupe').click();await ready(page);
-  const hole=getPerforationPositions().top.find(p=>p.frameIndex===2&&p.perforationIndex===4)!;
-  const perforation=await place(hole.x+.011,hole.y);expect(getRegionStats(perforation,640,400,200).stdDev).toBeGreaterThan(8);
+  const hole=getPerforationPositions({...DEFAULT_LAYOUT,...BASELINE_ROLL.layout}).top.find(p=>p.frameIndex===2&&p.perforationIndex===4)!;
+  const perforation=await place((hole.x+.011)*BASELINE_ROLL.scale,hole.y*BASELINE_ROLL.scale);expect(getRegionStats(perforation,640,400,200).stdDev).toBeGreaterThan(8);
   await page.getByTestId('inspect-loupe').click();await ready(page);
-  const table=await place(0,.55),stats=getRegionStats(table,640,400,80);expect(stats.meanLum).toBeGreaterThan(160);expect(Math.abs(stats.meanR-stats.meanB)).toBeLessThan(12);
+  const table=await place(0,.55*BASELINE_ROLL.scale),stats=getRegionStats(table,640,400,80);expect(stats.meanLum).toBeGreaterThan(160);expect(Math.abs(stats.meanR-stats.meanB)).toBeLessThan(12);
   await page.locator('.canvas-wrapper').focus();await page.keyboard.press('b');await page.keyboard.press('b');await page.keyboard.press('b');await page.waitForTimeout(150);
   expect(getRegionStats(PNG.sync.read(await captureCanvas(page)),640,400,80).meanLum).toBeLessThan(stats.meanLum-15);
   expect(await canvas.getAttribute('data-loupe-visible')).toBe('true');

@@ -16,3 +16,4 @@ AGENTS.md
 *.glb
 *.jpg
 *.jpeg
+/public/assets/film-packaging/*.png

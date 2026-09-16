@@ -1,3 +1,4 @@
+import { fitRollView } from '../../src/utils/rollLayout';
 import { describe, it, expect } from "vitest";
 import {
   INITIAL_VIEWER_STATE,
@@ -114,7 +115,7 @@ describe("M7 Integration — Deep Macro Zoom (1000%) & Light Table Dimmer Calibr
   });
 
   describe("Lifecycle & Reset Interactions", () => {
-    it("RESET_TABLE_VIEW restores 100% zoom and center pan without resetting dimmer calibration", () => {
+    it("RESET_TABLE_VIEW fits the physical roll and centers pan without resetting dimmer calibration", () => {
       let state = INITIAL_VIEWER_STATE;
       state = viewerReducer(state, { type: "SET_TABLE_ZOOM", zoom: 0.32 }); // 1000%
       state = viewerReducer(state, { type: "SET_TABLE_PAN", x: 0.8, z: TABLE_CENTER_Z - 0.1 });
@@ -124,7 +125,7 @@ describe("M7 Integration — Deep Macro Zoom (1000%) & Light Table Dimmer Calibr
       expect(state.tableBrightness).toBe(0.75);
 
       state = viewerReducer(state, { type: "RESET_TABLE_VIEW" });
-      expect(state.inspectZoom).toBe(DEFAULT_INSPECT_DISTANCE);
+      expect(state.inspectZoom).toBe(fitRollView(state.roll, "roll", state.activeFrameIndex, state.viewportAspect).zoom);
       expect(state.inspectPan).toEqual({ x: 0, z: TABLE_CENTER_Z });
       // User's preferred dimmer brightness remains calibrated at 75%
       expect(state.tableBrightness).toBe(0.75);

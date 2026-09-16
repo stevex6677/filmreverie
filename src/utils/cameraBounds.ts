@@ -18,14 +18,16 @@ export const TABLE_SURFACE_Y = -0.72; // Illuminated table surface resting flat 
 export const TABLE_CENTER_Z = -0.10;  // Centered front-to-back on workbench top
 
 // Room envelope and immobile standing eye, shared by geometry and camera.
-export const ROOM_ENVELOPE = { width: 7.6, front: -1.1, back: 6.8, floor: -1.7, ceiling: 3.15 };
+export const ROOM_ENVELOPE = { width: 7.6, front: -1.4, back: 6.8, floor: -1.7, ceiling: 3.15 };
 export const DEFAULT_CAMERA_BOUNDS: CameraBounds = {
   minYaw: -Infinity, maxYaw: Infinity,
   minPitch: -85 * Math.PI / 180, maxPitch: 85 * Math.PI / 180,
   minDistance: 3.5, maxDistance: 3.5,
 };
-export const DEFAULT_ROOM_POSE: RoomCameraPose = { yaw: .18, pitch: .28, distance: 3.5 };
-export const ROOM_CAMERA_FOV = 60;
+// Aim above the table so the taller, physically scaled cabinet remains visible.
+// ROOM_EYE stays at the existing standing position; only its heading changes.
+export const DEFAULT_ROOM_POSE: RoomCameraPose = { yaw: .18, pitch: -.16, distance: 3.5 };
+export const ROOM_CAMERA_FOV = 64;
 export const ROOM_EYE: [number, number, number] = [
   3.5 * Math.cos(.28) * Math.sin(.18),
   -.78 + 3.5 * Math.sin(.28),

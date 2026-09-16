@@ -4,6 +4,9 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
 import { assetPath, generatedPath } from "./shared-assets.js";
+import { preparePackaging } from './prepare-packaging.js';
+
+preparePackaging();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

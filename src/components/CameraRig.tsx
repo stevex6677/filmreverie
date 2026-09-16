@@ -1,3 +1,4 @@
+import { SHELF_CAMERA, SHELF_ORIGIN, shelfFov } from '../data/physicalScale';
 import { InspectionMotion, Point3 } from "../utils/inspectionMotion";
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
@@ -16,6 +17,8 @@ import {
 import { RoomMode } from "../state/viewerState";
 
 interface CameraRigProps {
+  shelfTransition?: boolean;
+  shelfFocused?: boolean;
   touchInput?: boolean;
   inputBlocked?: boolean;
   roomMode: RoomMode;
@@ -38,6 +41,8 @@ interface CameraRigProps {
 }
 
 export const CameraRig: React.FC<CameraRigProps> = ({
+  shelfTransition = false,
+  shelfFocused = false,
   touchInput = false,
   inputBlocked = false,
   roomMode,
@@ -58,7 +63,8 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   isDeterministic = false,
   isReducedMotion = false,
 }) => {
-  const { camera, gl } = useThree();
+  const { camera, gl, size } = useThree();
+  const captureOwner = useRef<HTMLElement | null>(null);
   const isDraggingRoomRef = useRef(false);
   const isPanningTableRef = useRef(false);
   const isSpacePressedRef = useRef(false);
@@ -73,6 +79,8 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   const flight = useRef<InspectionMotion | null>(null);
   const lastTarget = useRef("");
   const lastStrip = useRef(stripIndex);
+  const shelfFlight = useRef<{ key: string; elapsed: number; position: THREE.Vector3; rotation: THREE.Quaternion; fov: number } | null>(null);
+  const navigationBlocked = isTransitioning && !shelfTransition;
 
   // Spacebar tracking for table pan
   useEffect(() => {
@@ -132,8 +140,10 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       }
     };
 
+    const accepts = (target: EventTarget | null) => target === canvas || (target instanceof Element && !!target.closest('.shelf-approach-target'));
     const handlePointerDown = (e: PointerEvent) => {
-      if (inputBlocked || loupeInspection || e.pointerType === 'touch' || e.pointerType === 'pen' || isTransitioning) return;
+      if (!accepts(e.target)) return;
+      if (inputBlocked || loupeInspection || e.pointerType === 'touch' || e.pointerType === 'pen' || navigationBlocked) return;
 
       if (roomMode === "room") {
         // Look around from the standing eye with primary button
@@ -147,7 +157,8 @@ export const CameraRig: React.FC<CameraRigProps> = ({
           pitch: savedRoomPose.pitch,
         };
         try {
-          canvas.setPointerCapture(e.pointerId);
+          captureOwner.current = e.target as HTMLElement;
+          captureOwner.current.setPointerCapture(e.pointerId);
         } catch {}
       } else if (roomMode === "inspect") {
         // Pan table on right-click (button 2), middle-click (button 1), Space+left-click, or left-click when loupe is not active
@@ -161,14 +172,15 @@ export const CameraRig: React.FC<CameraRigProps> = ({
           maxDragDistRef.current = 0;
           panStartRef.current = { x: e.clientX, y: e.clientY };
           try {
-            canvas.setPointerCapture(e.pointerId);
+            captureOwner.current = e.target as HTMLElement;
+            captureOwner.current.setPointerCapture(e.pointerId);
           } catch {}
         }
       }
     };
 
     const handlePointerMove = (e: PointerEvent) => {
-      if (inputBlocked || e.pointerType === 'touch' || e.pointerType === 'pen' || isTransitioning) return;
+      if (inputBlocked || e.pointerType === 'touch' || e.pointerType === 'pen' || navigationBlocked) return;
 
       if (roomMode === "room" && isDraggingRoomRef.current) {
         const dx = e.clientX - dragStartRef.current.x;
@@ -205,21 +217,24 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     };
 
     const handlePointerUp = (e: PointerEvent) => {
+      // Browsers can coalesce the last move; include the release position.
+      if (isDraggingRoomRef.current || isPanningTableRef.current) handlePointerMove(e);
       if (isDraggingRoomRef.current) {
         isDraggingRoomRef.current = false;
         try {
-          canvas.releasePointerCapture(e.pointerId);
+          captureOwner.current?.releasePointerCapture(e.pointerId);
         } catch {}
       }
       if (isPanningTableRef.current) {
         isPanningTableRef.current = false;
         try {
-          canvas.releasePointerCapture(e.pointerId);
+          captureOwner.current?.releasePointerCapture(e.pointerId);
         } catch {}
       }
     };
 
     const handleClickCapture = (e: MouseEvent) => {
+      if (!accepts(e.target)) return;
       // If user was dragging (> 6px movement), suppress mesh click
       if (maxDragDistRef.current > 6) {
         e.stopPropagation();
@@ -229,31 +244,40 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       }
     };
 
+    // Keep canvas listener ordering (the loupe gets first refusal). Only the
+    // cabinet overlay needs a document listener because it sits above the canvas.
+    const shelfDown = (e: PointerEvent) => { if (e.target !== canvas) handlePointerDown(e); };
+    const shelfClick = (e: MouseEvent) => { if (e.target !== canvas) handleClickCapture(e); };
     const cancelInput = () => { isDraggingRoomRef.current = false; isPanningTableRef.current = false; isSpacePressedRef.current = false; };
-    if (isTransitioning || inputBlocked) cancelInput();
+    if (navigationBlocked || inputBlocked) cancelInput();
     window.addEventListener("blur", cancelInput);
     window.addEventListener("pointercancel", cancelInput);
-    canvas.addEventListener("lostpointercapture", cancelInput);
+    document.addEventListener("lostpointercapture", cancelInput, true);
     canvas.addEventListener("contextmenu", handleContextMenu);
     canvas.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("pointerdown", shelfDown, true);
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
     canvas.addEventListener("click", handleClickCapture, true);
+    document.addEventListener("click", shelfClick, true);
 
     return () => {
       window.removeEventListener("blur", cancelInput);
       window.removeEventListener("pointercancel", cancelInput);
-      canvas.removeEventListener("lostpointercapture", cancelInput);
+      document.removeEventListener("lostpointercapture", cancelInput, true);
       canvas.removeEventListener("contextmenu", handleContextMenu);
       canvas.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("pointerdown", shelfDown, true);
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
       canvas.removeEventListener("click", handleClickCapture, true);
+      document.removeEventListener("click", shelfClick, true);
     };
   }, [
     gl,
     roomMode,
     isTransitioning,
+    navigationBlocked,
     savedRoomPose,
     inspectZoom,
     isLoupeActive,
@@ -267,17 +291,31 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   // journeys move it; quaternion interpolation remains stable across the yaw seam.
   useFrame((_, delta) => {
     const inspecting = roomMode === "inspect";
+    const perspective = camera as THREE.PerspectiveCamera;
     targetPos.current.set(...(inspecting
       ? [inspectPan.x, TABLE_SURFACE_Y + inspectZoom, inspectPan.z] as [number, number, number]
-      : ROOM_EYE));
+      : shelfFocused ? SHELF_CAMERA : ROOM_EYE));
     const desired = desiredCamera.current;
     desired.position.copy(targetPos.current);
     desired.up.set(...(inspecting ? INSPECT_CAMERA_UP : ROOM_CAMERA_UP));
-    desired.lookAt(...(inspecting ? [inspectPan.x, TABLE_SURFACE_Y, inspectPan.z] as [number, number, number] : roomLookTarget(savedRoomPose)));
+    desired.lookAt(...(inspecting ? [inspectPan.x, TABLE_SURFACE_Y, inspectPan.z] as [number, number, number] : shelfFocused ? SHELF_ORIGIN : roomLookTarget(savedRoomPose)));
     const immediate = isDeterministic || isReducedMotion || (!inspecting && !isTransitioning) || ((touchInput || loupeInspection) && !isTransitioning);
     const moving = !immediate && (camera.position.distanceTo(targetPos.current) > .001 || camera.quaternion.angleTo(desired.quaternion) > .001 || isPanningTableRef.current);
     if (moving !== wasMovingRef.current) { wasMovingRef.current = moving; onCameraMotion?.(moving); }
-    if (inspecting && inspectionTransition && !immediate) {
+    // A finite shelf flight avoids waiting for an exponential tail to settle.
+    // Reversals start at the rendered pose, and look input can change its target.
+    let shelfProgress: number | null = null;
+    if (!shelfTransition || immediate) shelfFlight.current = null;
+    if (shelfTransition && !immediate) {
+      const key = shelfFocused ? 'shelf' : 'room';
+      if (shelfFlight.current?.key !== key) shelfFlight.current = { key, elapsed: 0, position: camera.position.clone(), rotation: camera.quaternion.clone(), fov: perspective.fov };
+      const motion = shelfFlight.current;
+      motion.elapsed = Math.min(.42, motion.elapsed + delta);
+      shelfProgress = 1 - Math.pow(1 - motion.elapsed / .42, 3);
+      camera.position.lerpVectors(motion.position, targetPos.current, shelfProgress);
+      camera.quaternion.slerpQuaternions(motion.rotation, desired.quaternion, shelfProgress);
+      flight.current = null; lastTarget.current = ''; lastStrip.current = stripIndex;
+    } else if (inspecting && inspectionTransition && !immediate) {
       const key=targetPos.current.toArray().join(',');
       if (key !== lastTarget.current) {
         if (!flight.current) flight.current=new InspectionMotion(camera.position.toArray() as Point3);
@@ -296,10 +334,15 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       camera.position.lerp(targetPos.current, alpha);
       camera.quaternion.slerp(desired.quaternion, alpha);
     }
-    const perspective = camera as THREE.PerspectiveCamera;
     perspective.near = inspecting ? Math.min(.04, inspectZoom * .025) : .04;
-    const desiredFov = inspecting ? 45 : ROOM_CAMERA_FOV;
-    perspective.fov = immediate ? desiredFov : THREE.MathUtils.lerp(perspective.fov, desiredFov, 1 - Math.exp(-delta * 7));
+    // Keep the entire cabinet reachable on a portrait screen from the same
+    // standing eye. Widen the lens, never move the viewer through the room.
+    const roomFov = 2 * Math.atan(Math.tan(ROOM_CAMERA_FOV * Math.PI / 360) * Math.max(1, 1.6 / (size.width / size.height))) * 180 / Math.PI;
+    const cabinetFov = shelfFov(size.width / size.height);
+    const desiredFov = inspecting ? 45 : shelfFocused ? cabinetFov : roomFov;
+    perspective.fov = immediate ? desiredFov : shelfProgress !== null
+      ? THREE.MathUtils.lerp(shelfFlight.current!.fov, desiredFov, shelfProgress)
+      : THREE.MathUtils.lerp(perspective.fov, desiredFov, 1 - Math.exp(-delta * 7));
     perspective.updateProjectionMatrix();
     camera.up.copy(desired.up);
     // Loupe projection runs before the renderer, so refresh the view matrix now.

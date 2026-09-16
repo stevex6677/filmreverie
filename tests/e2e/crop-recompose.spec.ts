@@ -33,10 +33,10 @@ test('crop drag follows the image and persists through save, reload, cancellatio
   isRed(PNG.sync.read(await captureCanvas(page, {path:`${output}/film.png`})));
   await page.reload();await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true');await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');await page.waitForTimeout(700);
   isRed(PNG.sync.read(await captureCanvas(page)));
-  const edit=async()=>{await closeViewingTools(page);if(await page.locator('main').getAttribute('data-focus-mode')==='true'){await page.getByRole('button',{name:'← Overview',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');}await page.getByRole('button',{name:'Rolls',exact:true}).click();await page.locator('[data-menu-id]').click();await page.getByRole('menuitem',{name:'Edit Recompose',exact:true}).click();await page.getByRole('button',{name:'Review photographs',exact:true}).click();};
+  const edit=async()=>{await closeViewingTools(page);if(await page.locator('main').getAttribute('data-focus-mode')==='true'){await page.getByRole('button',{name:'← Overview',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');}await page.getByRole('button',{name:'Rolls',exact:true}).click();await page.getByRole('button',{name:'Show saved roll Recompose',exact:true}).click();};
   await edit();await expect(page.getByLabel('Horizontal crop position')).toHaveValue('-1');
   await page.getByRole('button',{name:'Center crop',exact:true}).click();await expect(page.getByLabel('Horizontal crop position')).toHaveValue('0');
-  await page.getByRole('button',{name:'Cancel edits',exact:true}).click();await page.getByRole('button',{name:'Close',exact:true}).click();
+  await page.getByRole('button',{name:'Cancel edits',exact:true}).click();
   await edit();await expect(page.getByLabel('Horizontal crop position')).toHaveValue('-1');
   await page.getByRole('button',{name:'Rotate frame 1',exact:true}).click();await expect(page.getByLabel('Vertical crop position')).toHaveValue('-1');
   await page.getByRole('button',{name:'Show final crop',exact:true}).click();isRed(PNG.sync.read(await surface.screenshot()));

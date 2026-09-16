@@ -24,8 +24,8 @@ describe('M16 Overview and Focus',()=>{
       const roll={...BASELINE_ROLL,layout:formatLayout(format)};
       const layout=focusFrameLayout(roll,2),outer=getStripDimensions(layout),view=fitRollView(roll,'frame',2,aspect);
       const height=2*view.zoom*Math.tan(Math.PI/8),width=height*aspect;
-      expect(layout.frameWidth/width).toBeLessThanOrEqual(.84);expect(outer.height/height).toBeLessThanOrEqual(.87);
-      expect(layout.frameWidth/width>.83||outer.height/height>.85).toBe(true);
+      expect(layout.frameWidth*roll.scale/width).toBeLessThanOrEqual(.84);expect(outer.height*roll.scale/height).toBeLessThanOrEqual(.87);
+      expect(layout.frameWidth*roll.scale/width>.83||outer.height*roll.scale/height>.85).toBe(true);
       expect(layout.marginX).toBeGreaterThan(0);expect(layout.marginY).toBeGreaterThan(0);expect(layout.frameNumberOffset).toBe(2);
     }
   });

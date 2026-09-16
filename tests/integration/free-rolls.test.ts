@@ -1,9 +1,10 @@
+import { mm } from '../../src/data/physicalScale';
 import { describe, it, expect } from 'vitest';
 import { IDBFactory } from 'fake-indexeddb';
 import { FILM_UNIT, filmLengthUsage, frameAspect, FilmFormat, FrameSizing } from '../../src/data/filmFormats';
 import { createRuntimeRoll } from '../../src/storage/rollRuntime';
 import { RollBundle, RollRepository, validateBundle } from '../../src/storage/rollRepository';
-import { createRollLayout, fitRollView, focusFrameLayout, locateFrame, mapRollPoint } from '../../src/utils/rollLayout';
+import { createRollLayout, lightTableSize, fitRollView, focusFrameLayout, locateFrame, mapRollPoint } from '../../src/utils/rollLayout';
 import { getFrameBounds, getStripDimensions } from '../../src/utils/loupeMapping';
 import { photoCropScale } from '../../src/utils/photoFraming';
 import { createInitialViewerState, viewerReducer } from '../../src/state/viewerState';
@@ -87,8 +88,8 @@ describe('Film length and variable-width rolls',()=>{
       expect(selected.activeFrameIndex).toBe(strips[1].offset);
     }finally{runtime.dispose();}
   });
-  it('fits an exceptionally wide valid image without splitting or cropping it',()=>{
+  it('widens the table for an exceptionally wide valid image without shrinking or cropping it',()=>{
     const runtime=createRuntimeRoll(bundle([50]));
-    try{const strips=createRollLayout(runtime.definition);expect(strips).toHaveLength(1);expect(getStripDimensions(strips[0].layout).width*runtime.definition.scale).toBeCloseTo(3);expect(focusFrameLayout(runtime.definition,0).frameWidth/strips[0].layout.frameHeight).toBeCloseTo(50);}finally{runtime.dispose();}
+    try{const strips=createRollLayout(runtime.definition);expect(strips).toHaveLength(1);expect(focusFrameLayout(runtime.definition,0).frameWidth*runtime.definition.scale).toBeCloseTo(mm(1200));expect(lightTableSize(runtime.definition).width).toBeGreaterThan(getStripDimensions(strips[0].layout).width*runtime.definition.scale+.3);expect(focusFrameLayout(runtime.definition,0).frameWidth/strips[0].layout.frameHeight).toBeCloseTo(50);}finally{runtime.dispose();}
   });
 });

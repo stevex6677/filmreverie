@@ -18,6 +18,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
   const currentFrame = state.roll.frames[state.loupe.frameIndex] || state.roll.frames[0];
   const isPositive = state.filmMode === "positive";
   const isRoomMode = state.roomMode === "room";
+  const navigationBlocked = state.isTransitioning && state.transitionKind !== 'shelf';
 
   return (
     <div className={`darkroom-controls ${state.focusMode && !isRoomMode ? "focus-mode" : ""}`} data-testid="controls-panel">
@@ -43,7 +44,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
             </select>
           </div>
           {isRoomMode && <>
-            <button className="btn" disabled={state.isTransitioning} onClick={() => dispatch({ type: "FACE_TABLE" })}>Face table</button>
+            <button className="btn" disabled={navigationBlocked} onClick={() => dispatch({ type: "FACE_TABLE" })}>Face table</button>
             <div className="room-light-control">
               <button className="btn" role="switch" aria-checked={state.roomBrightness > 0} onClick={() => dispatch({ type: "TOGGLE_ROOM_LIGHTS" })}>Room lights</button>
               <input aria-label="Room brightness" type="range" min="0" max="100" step="1" value={Math.round(state.roomBrightness * 100)} onChange={e => dispatch({ type: "SET_ROOM_BRIGHTNESS", brightness: Number(e.target.value) / 100 })} />
@@ -56,7 +57,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
               id="approach-btn"
               data-testid="approach-table-btn"
               className="btn btn-approach"
-              disabled={state.isTransitioning}
+              disabled={navigationBlocked}
               onClick={() => dispatch({ type: "APPROACH_TABLE" })}
               title="Approach illuminated light table to inspect film (Click table or press Enter)"
             >
@@ -215,7 +216,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
           {isRoomMode ? (
             <div className="status-item room-hint-wrapper">
               <span className="room-nav-hint">
-                Drag or use arrow keys to look • 0 faces table • Enter approaches
+                {state.shelfFocused ? 'Click a roll to edit • Drag or press Escape to return to room' : 'Drag or use arrow keys to look • 0 faces table • Enter approaches'}
               </span>
             </div>
           ) : (
