@@ -165,7 +165,7 @@ test(`M10 linear HDR loupe: ${mode} ${brightness}% at ${magnifications.join(",")
         }
         for (const name of ["photo", "rebate", "hole", "panel"] as const) {
           const [x, y] = regions[name];
-          // Move from outside the lens to avoid the lens intercepting the pointer.
+          // Drag the M17 physical loupe to each sampled surface point.
           await dragLoupeTo(page, x, y, name === "photo" ? .006 : name === "rebate" ? .007 : .001);
           await page.waitForTimeout(180);
           const lens = await capture(page, `loupe-${mode}-${brightness}-${mag}-${name}`);

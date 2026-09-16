@@ -109,9 +109,14 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
       await loupeToggle.click();
       await page.waitForTimeout(300);
 
+      await expect(loupeBadge).toHaveText("ACTIVE (4×)"); // M17 default.
+      // Keep the original 2.5× versus 8× optical comparison with explicit inputs.
+      await page.getByTestId('mag-btn-2x').click();
+      await viewerKey(page, '-'); // Lower bound is 1.5×.
+      await viewerKey(page, '+');
       await expect(loupeBadge).toHaveText("ACTIVE (2.5×)");
 
-      // Hover over Frame 3 (bicycle)
+      // Drag the physical loupe over Frame 3 (bicycle)
       await dragLoupeTo(page, FRAME_SCREEN_CENTERS[2].x, FRAME_SCREEN_CENTERS[2].y);
       await page.waitForTimeout(400);
 
