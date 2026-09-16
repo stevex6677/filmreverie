@@ -14,8 +14,7 @@ export function UpdateNotice({ beforeUpdate }: { beforeUpdate: () => Promise<voi
   };
   return <aside className="update-notice" aria-label="App update" onKeyDown={e => e.stopPropagation()}>
     <div className="update-notice-row">
-      <p role="status">Update Available</p>
-      <button disabled={busy} onClick={() => void install()}>{busy ? 'Updating…' : 'Update now'}</button>
+      <button disabled={busy} onClick={() => void install()}>{busy ? 'Updating…' : 'Update Available'}</button>
     </div>
     {error && <p className="update-error" role="alert">{error}</p>}
   </aside>;

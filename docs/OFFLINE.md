@@ -58,7 +58,7 @@ Browser emulation is not evidence of physical Safari/Home Screen behavior.
 
 A new worker downloads and SHA-256 verifies a complete release into a separate
 cache. The existing app keeps its own cache until the update is ready and the
-user chooses **Update now** in the **Update Available** notice. The notice
+user presses the single **Update Available** button. The notice
 occupies its own row above the viewer, reserving space for all existing controls
 on desktop, tablet and phone. It disappears after the update. The app checks for
 new releases every minute while visible, on returning to the app and on reconnect.

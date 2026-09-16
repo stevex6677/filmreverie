@@ -122,19 +122,19 @@ test('M18 update download is atomic and activation protects drafts, other tabs a
     server.release('m18-update-candidate');server.fail('/assets/film-stocks/portra-800.json');
     await panel(page);await page.getByRole('button',{name:'Retry offline preparation'}).click();
     await expect(page.locator('.offline-panel')).toContainText('Download incomplete',{timeout:60000});
-    await offlineReady(page);await expect(page.getByRole('button',{name:'Update now'})).toHaveCount(0);
+    await offlineReady(page);await expect(page.getByRole('button',{name:'Update Available'})).toHaveCount(0);
     server.fail('');await page.getByRole('button',{name:'Retry offline preparation'}).click();
     await expect(page.locator('.update-notice')).toContainText('Update Available',{timeout:60000});
     await library(page);await page.getByRole('button',{name:'New roll',exact:true}).click();
     // A modal makes the update control inert; invoke its actual click handler to
     // verify the underlying guard also rejects programmatic activation.
-    await page.getByRole('button',{name:'Update now'}).evaluate((el:HTMLButtonElement)=>el.click());
+    await page.getByRole('button',{name:'Update Available'}).evaluate((el:HTMLButtonElement)=>el.click());
     await expect(page.locator('.update-notice [role="alert"]')).toContainText('Save or cancel');
     await expect(page.getByLabel('Choose photographs',{exact:true})).toBeVisible();
     await page.getByRole('button',{name:'Cancel draft'}).click();await page.getByRole('button',{name:'Close',exact:true}).click();
     const other=await context.newPage();await other.goto(server.url+entry);await ready(other);
-    await page.getByRole('button',{name:'Update now'}).click();await expect(page.locator('.update-notice [role="alert"]')).toContainText('Close other');await other.close();
-    await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.getByRole('button',{name:'Update now'}).click()]);await ready(page);await offlineReady(page);
+    await page.getByRole('button',{name:'Update Available'}).click();await expect(page.locator('.update-notice [role="alert"]')).toContainText('Close other');await other.close();
+    await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.getByRole('button',{name:'Update Available'}).click()]);await ready(page);await offlineReady(page);
     await expect.poll(()=>page.evaluate(async()=>caches.keys())).toEqual(['darkroom-app-m18-update-candidate']);
     await expect(page.locator('main')).toHaveAttribute('data-roll-id',id);expect(await dbRolls(page)).toHaveLength(1);
   }finally{await server.stop();}
@@ -191,7 +191,7 @@ test('M18 update notice reserves space above every viewing mode and appears with
     server.release('m18-layout-update');
     // A reconnect checks for a new version in the already-open application.
     await page.evaluate(()=>window.dispatchEvent(new Event('online')));
-    await expect(page.getByRole('button',{name:'Update now',exact:true})).toBeVisible({timeout:60000});
+    await expect(page.getByRole('button',{name:'Update Available',exact:true})).toBeVisible({timeout:60000});
     const clearOfControls=async()=>{
       await expect.poll(()=>page.evaluate(()=>{
         const notice=document.querySelector('.update-notice')!.getBoundingClientRect();
@@ -202,7 +202,7 @@ test('M18 update notice reserves space above every viewing mode and appears with
         }).map(el=>el.textContent?.trim().slice(0,80)||el.tagName);
         return {overlaps,above:notice.bottom<=main.top+.5,contained:main.bottom<=innerHeight+.5};
       })).toEqual({overlaps:[],above:true,contained:true});
-      await expect(page.getByRole('button',{name:'Update now',exact:true})).toBeInViewport();
+      await expect(page.getByRole('button',{name:'Update Available',exact:true})).toBeInViewport();
     };
     const sizes=info.project.name==='desktop'?[[1280,800],[768,1024]]:[[390,844],[844,390],[320,568]];
     for(const [width,height] of sizes){
@@ -218,7 +218,7 @@ test('M18 update notice reserves space above every viewing mode and appears with
       await page.screenshot({path:info.outputPath(`update-room-${width}x${height}.png`)});
       await page.getByTestId('approach-table-btn').click();await ready(page);
     }
-    await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.getByRole('button',{name:'Update now',exact:true}).click()]);
+    await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.getByRole('button',{name:'Update Available',exact:true}).click()]);
     await ready(page);await offlineReady(page);await expect(page.locator('.update-notice')).toHaveCount(0);
     const restored=await page.locator('main').boundingBox();expect(restored!.y).toBe(0);expect(restored!.height).toBe(page.viewportSize()!.height);
   }finally{await server.stop();}
