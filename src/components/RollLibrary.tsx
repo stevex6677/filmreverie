@@ -1,3 +1,5 @@
+import { exportRolls, importRolls } from '../storage/rollArchive';
+import { blockUpdate } from '../offline/client';
 import { photoCropPreview } from '../utils/photoFraming';
 import { useEffect, useRef, useState } from 'react';
 import { FILM_STOCKS, DEFAULT_FILM_STOCK_ID, FilmStockId, getFilmStock } from '../data/filmStocks';
@@ -14,6 +16,14 @@ export function RollLibrary({onClose,onOpen,onExample,activeId,onRemoved}:Props)
   const [draft,setDraft]=useState<DraftPhoto[]|null>(null),[editing,setEditing]=useState<StoredRoll|null>(null),[rollId,setRollId]=useState(''),[step,setStep]=useState<Step>('photos'),[selected,setSelected]=useState('');
   const [name,setName]=useState(''),[stock,setStock]=useState<FilmStockId>(DEFAULT_FILM_STOCK_ID),[format,setFormat]=useState<FilmFormat>('135'),[sizing,setSizing]=useState<FrameSizing>('fixed'),[cover,setCover]=useState('');
   const [trash,setTrash]=useState(false),[usage,setUsage]=useState(''),[menu,setMenu]=useState<string|null>(null),[covers,setCovers]=useState<Record<string,{url:string;rotation:number}>>({});
+  const [archiveNotice,setArchiveNotice]=useState('');
+  useEffect(()=>{blockUpdate('library',true);return()=>blockUpdate('library',false);},[]);
+  const backup=(ids:string[])=>void run(async()=>{
+    const blob=await exportRolls(rollRepository,ids),url=URL.createObjectURL(blob);
+    const link=document.createElement('a');link.href=url;link.download=`darkroom-${new Date().toISOString().slice(0,10)}.darkroom`;link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);setMenu(null);setArchiveNotice('Backup prepared. Keep the downloaded .darkroom file for recovery or importing at another address.');
+  });
+  const restore=(file:File)=>void run(async()=>{const ids=await importRolls(rollRepository,file);await refresh();setArchiveNotice(`Imported ${ids.length} ${ids.length===1?'roll':'rolls'} as separate copies. Existing rolls are unchanged. Rolls from Trash remain in Trash.`);});
   const drag=useRef<number|null>(null);
   const refresh=async()=>{setRolls(await rollRepository.list());const estimate=await navigator.storage?.estimate?.();if(estimate?.usage!==undefined)setUsage(`${(estimate.usage/1048576).toFixed(1)} MB used by this site`);};
   const run=async(fn:()=>Promise<void>)=>{setError('');setBusy(true);try{await fn();}catch(e){setError(storageMessage(e));}finally{setBusy(false);setLoading(false);}};
@@ -49,6 +59,9 @@ export function RollLibrary({onClose,onOpen,onExample,activeId,onRemoved}:Props)
     {progress&&draft&&(step==='photos'||busy)&&<p role="status">{progress}</p>}
     {draft?.some(p=>p.notice)&&<p role="status">{draft.filter(p=>p.notice).map(p=>`${p.filename}: ${p.notice}`).join(' ')}</p>}
     {draft===null?<>
+      <div className="archive-actions"><button disabled={busy||!rolls.length} onClick={()=>backup(rolls.map(r=>r.id))}>Export all rolls</button><label>Import backup<input aria-label="Import backup" type="file" accept=".darkroom,application/vnd.darkroom.rolls" disabled={busy} onChange={e=>{const file=e.target.files?.[0];if(file)restore(file);e.target.value='';}}/></label></div>
+      <p>Backups include originals, edits and saved views, including Trash. Importing always creates separate copies. Up to 512 MB per backup; use a roll’s Actions menu for individual exports.</p>
+      {archiveNotice&&<p role="status">{archiveNotice}</p>}
       <div className="library-toolbar"><p>{trash?'Removed rolls can always be restored.':`${visible.length} ${visible.length===1?'roll':'rolls'} in your archive`}</p><button disabled={busy} onClick={()=>setTrash(!trash)}>{trash?'Back to rolls':'Trash'}</button><button disabled={busy} onClick={()=>{onExample();onClose();}}>Open built-in example</button></div>
       {loading?<p role="status" className="library-empty">Opening your archive…</p>:!visible.length&&<div className="library-empty"><h2>{trash?'Nothing in Trash':'A home for your photographs'}</h2><p>{trash?'Removed rolls stay here until you restore them.':'Bring your scans to the light table. Start with a few photographs or an entire roll.'}</p></div>}
       <div className="library-cards">{visible.map(r=><article key={r.id} data-roll-id={r.id}>
@@ -56,9 +69,9 @@ export function RollLibrary({onClose,onOpen,onExample,activeId,onRemoved}:Props)
           <div className="roll-cover">{covers[r.id]?.url?<img style={{transform:`rotate(${covers[r.id].rotation}deg)`,maxWidth:covers[r.id].rotation%180?'150px':undefined}} src={covers[r.id].url} alt={`Cover of ${r.name}`}/>:<span>Cover unavailable</span>}</div><h2>{r.name}</h2><p>{rollFormatLabel(r.format,r.sizing)} · {r.frameIds.length} frames</p><p>{getFilmStock(r.stockId).displayName}</p>
         </button>
         <div className="roll-card-footer">{activeId===r.id?<span className="current-roll">Currently open</span>:<span/>}{trash?<button disabled={busy} onClick={()=>void run(async()=>{await rollRepository.trash(r.id,false);await refresh();})}>Restore {r.name}</button>:<button data-menu-id={r.id} aria-label={`Actions for ${r.name}`} aria-haspopup="menu" aria-expanded={menu===r.id} disabled={busy} onClick={()=>setMenu(menu===r.id?null:r.id)}>•••</button>}</div>
-        {menu===r.id&&<div role="menu" className="roll-menu" aria-label={`Actions for ${r.name}`} onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();closeMenu();}if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const items=Array.from(e.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]'));items[(items.indexOf(document.activeElement as HTMLElement)+(e.key==='ArrowDown'?1:items.length-1))%items.length]?.focus();}if(e.key==='Tab')setMenu(null);}}><button role="menuitem" onClick={()=>edit(r.id)}>Edit {r.name}</button><button role="menuitem" onClick={()=>void run(async()=>{setMenu(null);await rollRepository.trash(r.id);onRemoved(r.id);await refresh();})}>Move {r.name} to Trash</button></div>}
+        {menu===r.id&&<div role="menu" className="roll-menu" aria-label={`Actions for ${r.name}`} onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();closeMenu();}if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const items=Array.from(e.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]'));items[(items.indexOf(document.activeElement as HTMLElement)+(e.key==='ArrowDown'?1:items.length-1))%items.length]?.focus();}if(e.key==='Tab')setMenu(null);}}><button role="menuitem" onClick={()=>backup([r.id])}>Export {r.name}</button><button role="menuitem" onClick={()=>edit(r.id)}>Edit {r.name}</button><button role="menuitem" onClick={()=>void run(async()=>{setMenu(null);await rollRepository.trash(r.id);onRemoved(r.id);await refresh();})}>Move {r.name} to Trash</button></div>}
       </article>)}</div>
-      <footer className="storage-footer"><details><summary>Stored in this browser{usage?` · ${usage}`:''}</summary><p>Clearing site data removes your rolls. Keep your originals. Photographs stay on this device and are never uploaded.</p></details></footer>
+      <footer className="storage-footer"><details><summary>Stored in this browser{usage?` · ${usage}`:''}</summary><p>Clearing site data removes your rolls. Export backups before changing the protocol, hostname or port; each address has a separate library. Keep the old library until you verify your imported copies. Photographs stay on this device and are never uploaded.</p></details></footer>
     </>:<>
       <nav className="import-steps" aria-label="Import progress">{(['photos','details','review'] as Step[]).filter(s=>!editing||s!=='photos').map((s,i)=><button key={s} aria-label={s==='photos'?'Photographs':s==='details'?'Roll details':'Review'} aria-current={step===s?'step':undefined} disabled={busy||(s!=='photos'&&!draft.length)||(s==='review'&&!name.trim())} onClick={()=>go(s)}><span>{i+1}</span>{s==='photos'?'Photographs':s==='details'?'Roll details':'Review'}</button>)}</nav>
       <h2 tabIndex={-1} data-step-title>{step==='photos'?'Choose your photographs':step==='details'?'Give this roll an identity':'Review every frame'}</h2>

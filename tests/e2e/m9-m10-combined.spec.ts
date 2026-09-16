@@ -1,4 +1,4 @@
-import { viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
+import { placeLoupeAtScreenPoint, viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -50,11 +50,10 @@ for (const stock of FILM_STOCKS) {
         previousPhoto = photo.meanLum; previousRebate = rebate.meanLum; previousPanel = panel.meanLum;
         await page.getByTestId("loupe-toggle").click();
         await page.getByTestId("mag-btn-4x").click();
-        await page.mouse.move(100, 100); await page.mouse.move(645, 337);
+        const center = await placeLoupeAtScreenPoint(page, 645, 337, .007);
         await page.waitForTimeout(250);
         const lens = parsePng(await captureCanvas(page, { path: path.join(output, `${name}-loupe.png`) }));
-        const scale = (3.2 - 0.007) / (3.2 - 0.148);
-        const magnified = getRegionStats(lens, Math.round(640 + 5 * scale), Math.round(400 - 63 * scale), 2);
+        const magnified = getRegionStats(lens, center.x, center.y, 2);
         const differences = ["meanR", "meanG", "meanB"].map(key => Math.abs(rebate[key as "meanR"] - magnified[key as "meanR"]));
         expect(Math.max(...differences)).toBeLessThan(16);
         measurements.push({ mode, brightness, photo, rebate, panel, lens: magnified, differences });

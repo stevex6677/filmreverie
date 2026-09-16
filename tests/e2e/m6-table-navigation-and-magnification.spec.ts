@@ -1,4 +1,4 @@
-import { viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
+import { placeLoupeAtScreenPoint, viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -111,8 +111,8 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
 
       await expect(loupeBadge).toHaveText("ACTIVE (2.5×)");
 
-      // Hover over Frame 3 (bicycle)
-      await page.mouse.move(box.x + FRAME_SCREEN_CENTERS[2].x, box.y + FRAME_SCREEN_CENTERS[2].y, { steps: 8 });
+      // Drag the physical loupe over Frame 3 (bicycle)
+      await placeLoupeAtScreenPoint(page, box.x + FRAME_SCREEN_CENTERS[2].x, box.y + FRAME_SCREEN_CENTERS[2].y);
       await page.waitForTimeout(400);
 
       const magControls = page.locator("[data-testid=magnification-controls]");

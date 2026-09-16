@@ -1,3 +1,4 @@
+import { OfflinePanel } from "./components/OfflinePanel";
 import { RollLibrary, rollRepository } from "./components/RollLibrary";
 import { createRuntimeRoll } from "./storage/rollRuntime";
 import { SavedView, storageMessage } from "./storage/rollRepository";
@@ -332,6 +333,10 @@ export function App() {
         </Suspense>
       )}
 
+      <OfflinePanel beforeUpdate={async () => {
+        if (stateRef.current.cameraMoving || stateRef.current.isTransitioning || stateRef.current.assetsLoading) throw new Error("Wait for the photograph to finish opening before updating.");
+        await saveView();
+      }} />
       {contextLost&&<div className="context-recovery" role="alert"><p>The graphics view was interrupted. Your rolls are saved.</p><button onClick={()=>{setContextLost(false);setCanvasVersion(v=>v+1);}}>Restore view</button></div>}
       {state.roomMode==='inspect'?<TableControls state={state} dispatch={dispatch} onOpenLibrary={()=>setLibraryOpen(true)} sheet={sheet} setSheet={setSheet}/>:mobile ? <MobileControls state={state} dispatch={dispatch} onOpenLibrary={()=>setLibraryOpen(true)} sheet={sheet} setSheet={setSheet}/> : <Controls state={state} dispatch={dispatch} onOpenLibrary={() => setLibraryOpen(true)} />}
       {libraryError && <div className="library-notice" role="alert">{libraryError}<button onClick={() => setLibraryOpen(true)}>Open library</button></div>}

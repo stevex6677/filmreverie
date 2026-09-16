@@ -105,3 +105,11 @@ restores the browsing angle and framing. Camera roll remains locked.
 
 Regression coverage: `npm run test:integration -- m18-table-angle` and
 `npm run test:e2e -- m18-table-angle` (desktop, touch Chrome, and WebKit).
+
+## Offline app and roll backups (M18)
+
+Production offline preparation, safe updates, and portable browser-local roll backups
+are described in [docs/OFFLINE.md](docs/OFFLINE.md). Export from the exact old
+address before importing at a new HTTPS origin. `npm run validate:m18` runs the
+production build, integration tests, and cumulative browser regression suite.
+Physical iPhone/iPad Safari and Home Screen review remains a separate acceptance gate.
