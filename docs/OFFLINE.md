@@ -2,7 +2,7 @@
 
 Use the production app. Development/HMR deliberately does not install a worker.
 Opening a secure production address online automatically downloads the app.
-There is no persistent offline badge. **Rolls → Offline & storage** contains
+There is no persistent offline badge. **Rolls → Backups & offline → Offline & storage** contains
 download details, recovery and storage options. Completed preparation means the
 active worker has the HTML, JS/CSS, stock resources, installation
 icons, and all built-in photo thumbnails and full viewing images. Imported rolls
@@ -35,7 +35,7 @@ libraries. Adding HTTPS does not transfer or delete the old library.
    Damaged, truncated or unsupported backups are rejected before writing.
 4. Open the imported rolls and verify photos, frame order, crop and saved views.
    Check Trash separately. Keep both the old library and backup until verified.
-5. In **Rolls → Offline & storage**, confirm that the app and built-in photographs
+5. In **Rolls → Backups & offline → Offline & storage**, confirm that the app and built-in photographs
    have downloaded at the new origin before disconnecting.
 
 Backup exports also work at the old insecure HTTP address. New photo import and
@@ -49,7 +49,7 @@ checks, not encryption; keep the files as private as the original photographs.
 Open the private HTTPS address in Safari while connected to the tailnet. Safari's
 Share menu → **Add to Home Screen** is optional. Open the installed app online,
 import the backup there if its library is separate, and confirm the downloads
-in **Rolls → Offline & storage**.
+in **Rolls → Backups & offline → Offline & storage**.
 Then test a full relaunch with Wi-Fi/cellular disabled and the server stopped.
 Verify actual photos, Focus/Overview, source detail, loupe, brightness and gestures.
 Browser emulation is not evidence of physical Safari/Home Screen behavior.
@@ -69,7 +69,7 @@ uses the browser's normal worker lifecycle. Activation only cleans Darkroom app
 caches; it never changes or deletes IndexedDB photos.
 
 If preparation is interrupted,
-**Rolls → Offline & storage → Retry offline preparation** can retry the
+**Rolls → Backups & offline → Offline & storage → Retry offline preparation** can retry the
 installation or repair missing entries for the active release. Repairs verify
 content hashes and will not mix assets from another release. If a release is no
 longer on the server, its missing cache entries cannot be repaired: reconnect and

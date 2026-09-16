@@ -1,6 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 import { PNG } from 'pngjs';
 import fs from 'node:fs/promises';
+import { openRoll } from './helpers/shelf';
 import { offlineServer } from './helpers/offlineServer';
 import { openFrame, openViewingTools, closeViewingTools, captureCanvas } from './helpers/viewing';
 import { getRegionStats } from './helpers/pixelAnalysis';
@@ -27,11 +28,18 @@ async function panel(page:Page) {
   await library(page);
   if(await page.locator('.offline-panel').getAttribute('open')===null)await page.locator('.offline-panel summary').click();
 }
-async function library(page:Page) {
-  if(await page.getByRole('dialog',{name:'Roll library',exact:true}).count())return;
+async function shelf(page:Page) {
+  const tools=page.getByRole('dialog',{name:'Backups and offline',exact:true});
+  if(await tools.count())await tools.getByRole('button',{name:'Close',exact:true}).click();
   await closeViewingTools(page);
   if(await page.locator('main').getAttribute('data-focus-mode')==='true')await page.getByRole('button',{name:'← Overview',exact:true}).click();
-  await page.getByRole('button',{name:'Rolls',exact:true}).click();
+  if(await page.locator('main').getAttribute('data-shelf-focused')!=='true')await page.getByRole('button',{name:'Rolls',exact:true}).click();
+  await ready(page);
+}
+async function library(page:Page) {
+  if(await page.getByRole('dialog',{name:'Backups and offline',exact:true}).count())return;
+  await shelf(page);
+  await page.getByRole('button',{name:'Backups & offline',exact:true}).click();
 }
 function photo(width=600,height=400) {
   const p=new PNG({width,height});
@@ -39,13 +47,13 @@ function photo(width=600,height=400) {
   return {name:'offline-source.png',mimeType:'image/png',buffer:PNG.sync.write(p)};
 }
 async function createRoll(page:Page,name='Offline roll',source=photo()) {
-  await library(page);await page.getByRole('button',{name:'New roll',exact:true}).click();
+  await shelf(page);await page.getByRole('button',{name:'New roll',exact:true}).click();
   await page.getByLabel('Choose photographs',{exact:true}).setInputFiles(source);
   await expect(page.getByText('Processed 1 / 1',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Continue to roll details'}).click();await page.getByLabel('Roll name',{exact:true}).fill(name);
   await page.getByRole('button',{name:'Review photographs'}).click();await page.getByRole('button',{name:'Save and open'}).click();await expect(page.getByRole('dialog',{name:'Review roll'})).toHaveCount(0);await expect(page.locator('main')).not.toHaveAttribute('data-roll-id','roll-01');await ready(page);
 }
-async function dbRolls(page:Page) { return page.evaluate(()=>new Promise<any[]>((resolve,reject)=>{const q=indexedDB.open('darkroom-rolls');q.onerror=()=>reject(q.error);q.onsuccess=()=>{const db=q.result;if(!db.objectStoreNames.contains('rolls')){db.close();resolve([]);return;}const r=db.transaction('rolls').objectStore('rolls').getAll();r.onsuccess=()=>{db.close();resolve(r.result);};};})); }
+async function dbRolls(page:Page) { return page.evaluate(()=>new Promise<any[]>((resolve,reject)=>{const q=indexedDB.open('darkroom-rolls');q.onerror=()=>reject(q.error);q.onsuccess=()=>{const db=q.result;if(!db.objectStoreNames.contains('rolls')){db.close();resolve([]);return;}const r=db.transaction('rolls').objectStore('rolls').getAll();r.onsuccess=()=>{db.close();resolve(r.result.filter((roll:any)=>roll.id!=='roll-01'));};};})); }
 async function reloadApp(page:Page) {
   // Navigate through the page, avoiding WebKit's automation-only reload path.
   await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.evaluate(()=>location.reload())]);
@@ -125,13 +133,13 @@ test('M18 update download is atomic and activation protects drafts, other tabs a
     await offlineReady(page);await expect(page.getByRole('button',{name:'Update Available'})).toHaveCount(0);
     server.fail('');await page.getByRole('button',{name:'Retry offline preparation'}).click();
     await expect(page.locator('.update-notice')).toContainText('Update Available',{timeout:60000});
-    await library(page);await page.getByRole('button',{name:'New roll',exact:true}).click();
+    await shelf(page);await page.getByRole('button',{name:'New roll',exact:true}).click();
     // A modal makes the update control inert; invoke its actual click handler to
     // verify the underlying guard also rejects programmatic activation.
     await page.getByRole('button',{name:'Update Available'}).evaluate((el:HTMLButtonElement)=>el.click());
     await expect(page.locator('.update-notice [role="alert"]')).toContainText('Save or cancel');
     await expect(page.getByLabel('Choose photographs',{exact:true})).toBeVisible();
-    await page.getByRole('button',{name:'Cancel draft'}).click();await page.getByRole('button',{name:'Close',exact:true}).click();
+    await page.getByRole('button',{name:'Cancel draft'}).click();
     const other=await context.newPage();await other.goto(server.url+entry);await ready(other);
     await page.getByRole('button',{name:'Update Available'}).click();await expect(page.locator('.update-notice [role="alert"]')).toContainText('Close other');await other.close();
     await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.getByRole('button',{name:'Update Available'}).click()]);await ready(page);await offlineReady(page);
@@ -155,8 +163,8 @@ test('M18 storage denial is explained and failed backup imports preserve the lib
 test('M18 backup migrates HTTP to an independent HTTPS origin and leaves the old library intact',async({page,context},info)=>{
   const old=await offlineServer(),secure=await offlineServer(true);
   try {
-    await page.goto(old.url+entry);await ready(page);await createRoll(page,'Migrated roll');await library(page);
-    const download=page.waitForEvent('download');await page.getByRole('button',{name:'Export all rolls'}).click();const file=await download;const archive=info.outputPath('migration.darkroom');await file.saveAs(archive);await page.close();
+    await page.goto(old.url+entry);await ready(page);await createRoll(page,'Migrated roll');await library(page);await page.getByLabel('Roll to export').selectOption({label:'Migrated roll'});
+    const download=page.waitForEvent('download');await page.getByRole('button',{name:'Export selected roll'}).click();const file=await download;const archive=info.outputPath('migration.darkroom');await file.saveAs(archive);await page.close();
     // A non-loopback HTTP origin has no SubtleCrypto or service worker. Seed
     // its library through the backup UI, then export there before moving HTTPS.
     const legacy=await context.newPage(),legacyUrl=old.url.replace('127.0.0.1','old-darkroom.test');
@@ -164,15 +172,15 @@ test('M18 backup migrates HTTP to an independent HTTPS origin and leaves the old
     await legacy.goto(legacyUrl+entry);await ready(legacy);expect(await legacy.evaluate(()=>window.isSecureContext)).toBe(false);
     await panel(legacy);await expect(legacy.locator('.offline-panel')).toContainText('Server: reachable');
     await library(legacy);await legacy.getByLabel('Import backup',{exact:true}).setInputFiles(archive);await expect(legacy.getByText('Imported 1 roll as separate copies.',{exact:false})).toBeVisible();
-    const legacyDownload=legacy.waitForEvent('download');await legacy.getByRole('button',{name:'Export all rolls'}).click();await(await legacyDownload).saveAs(archive);
+    await legacy.getByLabel('Roll to export').selectOption({label:'Migrated roll'});const legacyDownload=legacy.waitForEvent('download');await legacy.getByRole('button',{name:'Export selected roll'}).click();await(await legacyDownload).saveAs(archive);
     const source=(await dbRolls(legacy))[0];
     // Migrate by navigating the same tab; old-origin storage survives without
     // keeping two software-rendered WebGL scenes resident on the test host.
     const target=legacy;await target.goto(secure.url+entry);await ready(target);await library(target);
-    await expect(target.getByText('A home for your photographs',{exact:true})).toBeVisible();
+    expect(await dbRolls(target)).toEqual([]);
     await target.getByLabel('Import backup',{exact:true}).setInputFiles(archive);await expect(target.getByText('Imported 1 roll as separate copies.',{exact:false})).toBeVisible();
-    await target.getByRole('button',{name:'Open Migrated roll',exact:true}).click();
-    await expect(target.getByRole('dialog',{name:'Roll library',exact:true})).toHaveCount(0);
+    await shelf(target);await openRoll(target,'Migrated roll');
+    await expect(target.getByRole('dialog',{name:'Backups and offline',exact:true})).toHaveCount(0);
     await expect(target.locator('main')).not.toHaveAttribute('data-roll-id','roll-01');await rendered(target);
     const copy=(await dbRolls(target))[0];expect(copy.id).not.toBe(source.id);expect(copy.name).toBe(source.name);expect(copy.frameIds).toHaveLength(1);
     await target.screenshot({path:info.outputPath('migrated-https-library.png')});

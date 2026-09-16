@@ -8,6 +8,8 @@ import {
   INSPECT_CAMERA_UP,
   ROOM_CAMERA_TARGET,
   ROOM_CAMERA_UP,
+  ROOM_EYE,
+  roomLookTarget,
   TABLE_SURFACE_Y,
   TABLE_CENTER_Z,
   clampRoomPose,
@@ -50,7 +52,7 @@ describe("M2 Integration — Camera Bounds, State Transitions & Pose Restoration
     });
 
     it("computes plausible 3D Cartesian coordinates from spherical pose", () => {
-      const [x, y, z] = sphericalToCartesian(DEFAULT_ROOM_POSE, [0, 0, 0]);
+      const [x, y, z] = sphericalToCartesian({ ...DEFAULT_ROOM_POSE, pitch: .28 }, [0, 0, 0]);
       expect(typeof x).toBe("number");
       expect(typeof y).toBe("number");
       expect(typeof z).toBe("number");
@@ -59,14 +61,15 @@ describe("M2 Integration — Camera Bounds, State Transitions & Pose Restoration
       expect(z).toBeGreaterThan(3.0); // comfortable distance from table
     });
 
-    it("defines ROOM_CAMERA_TARGET for natural eye-level room overview framing", () => {
+    it("keeps the room eye above the workbench while the default heading includes the taller cabinet", () => {
       expect(ROOM_CAMERA_TARGET[0]).toBe(0);
       expect(ROOM_CAMERA_TARGET[1]).toBeLessThan(0); // workbench level to frame flat table & legs
       expect(ROOM_CAMERA_TARGET[2]).toBe(TABLE_CENTER_Z);
-      const [rx, ry, rz] = sphericalToCartesian(DEFAULT_ROOM_POSE, ROOM_CAMERA_TARGET);
+      const [rx, ry, rz] = ROOM_EYE;
       expect(rx).toBeGreaterThan(0.4);
       expect(ry).toBeGreaterThan(0.0); // eye-level viewing elevation
       expect(rz).toBeGreaterThan(3.0);
+      expect(roomLookTarget(DEFAULT_ROOM_POSE)[1]).toBeGreaterThan(ry);
     });
 
     it("defines flat horizontal table placement with mathematically perpendicular inspect camera pose", () => {

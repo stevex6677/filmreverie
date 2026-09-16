@@ -1,16 +1,18 @@
+import { FILM_RENDER_SCALE } from '../data/physicalScale';
+import { formatLayout } from '../data/filmFormats';
 import localRoll from "../data/localRoll.json" with { type: "json" };
 import { RollFrame, ROLL_FRAMES } from "../data/rollManifest";
 import { DEFAULT_LAYOUT, FilmStripLayout, getFrameWidth, getFrameCenter, getStripDimensions, mapWorldPointToFrame } from "./loupeMapping";
 import { TABLE_CENTER_Z } from "./cameraBounds";
 
 export interface RollDefinition { frameWidths?: readonly number[]; stripLength?: number; retainResources?: () => () => void; format?: import("../data/filmFormats").FilmFormat; layout?: Omit<FilmStripLayout, "frameCount">; imported?: boolean; rollId: string; label: string; frames: readonly RollFrame[]; framesPerStrip: number; scale: number; fixture: boolean }
-export const BASELINE_ROLL: RollDefinition = { rollId: "roll-01", label: "Roll 01 · five photographs", frames: ROLL_FRAMES, framesPerStrip: 5, scale: 1, fixture: false };
+export const BASELINE_ROLL: RollDefinition = { rollId: "roll-01", label: "Roll 01 · five photographs", frames: ROLL_FRAMES, framesPerStrip: 5, scale: FILM_RENDER_SCALE, layout: formatLayout('135'), fixture: false };
 export const FULL_ROLL_FIXTURE: RollDefinition = {
   rollId: "development-36", label: "Development fixture · 36 slots / 5 repeated photographs",
   frames: Array.from({ length: 36 }, (_, i) => ({ ...ROLL_FRAMES[i % ROLL_FRAMES.length], id: `fixture-slot-${i + 1}`, order: i + 1 })),
-  framesPerStrip: 6, scale: 0.42, fixture: true,
+  framesPerStrip: 6, scale: FILM_RENDER_SCALE, layout: formatLayout('135'), fixture: true,
 };
-export const LOCAL_ROLL: RollDefinition = { ...localRoll, frames: localRoll.frames as RollFrame[], framesPerStrip: 6, scale: 0.42, fixture: false };
+export const LOCAL_ROLL: RollDefinition = { ...localRoll, frames: localRoll.frames as RollFrame[], framesPerStrip: 6, scale: FILM_RENDER_SCALE, layout: formatLayout('135'), fixture: false };
 
 export interface PlacedStrip { index: number; offset: number; y: number; scale: number; layout: FilmStripLayout; frames: readonly RollFrame[] }
 export function createRollLayout(roll: RollDefinition): PlacedStrip[] {
@@ -42,6 +44,16 @@ export function locateFrame(roll: RollDefinition, index: number) {
   const localIndex = globalIndex - strip.offset;
   const center = getFrameCenter(localIndex, strip.layout);
   return { globalIndex, strip, localIndex, x: center.x * strip.scale, y: strip.y + center.y * strip.scale };
+}
+
+// Ordinary rolls fit the existing panel. Very wide free-format negatives need
+// a wider panel instead of silently reducing the physical size of the film.
+export function lightTableSize(roll: RollDefinition) {
+  const strips = createRollLayout(roll);
+  return {
+    width: Math.max(3.6, ...strips.map(strip => getStripDimensions(strip.layout).width * strip.scale + .4)),
+    height: Math.max(1.8, ...strips.map(strip => Math.abs(strip.y) * 2 + getStripDimensions(strip.layout).height * strip.scale + .2)),
+  };
 }
 export function mapRollPoint(roll: RollDefinition, point: { x: number; y: number }) {
   const strips = createRollLayout(roll);

@@ -1,6 +1,8 @@
 import { FilmStockId, isFilmStockId } from '../data/filmStocks';
 import { FilmFormat, FrameSizing, filmLengthUsage, isFilmFormat } from '../data/filmFormats';
+import { reconcileShelfSlots } from '../utils/shelfLayout';
 export interface SavedView {
+  filmScale?: number;
   frameId: string; level: 'roll' | 'strip' | 'frame'; mode: 'negative' | 'positive'; brightness: number; magnification: number;
   zoom: number; pan: { x: number; z: number }; overview: { zoom: number; pan: { x: number; z: number }; frameIndex: number } | null;
 }
@@ -10,6 +12,7 @@ export interface StoredFrame {
   originalKey: string; viewingKey: string; thumbnailKey: string;
 }
 export interface StoredRoll {
+  shelfSlot?: number;
   sizing?: FrameSizing;
   id: string; name: string; stockId: FilmStockId; format: FilmFormat; frameIds: string[]; coverId: string;
   createdAt: number; updatedAt: number; trashedAt: number | null; view?: SavedView;
@@ -54,7 +57,21 @@ export function validateBundle(bundle: RollBundle) {
   for (const frame of frames) if (frame.cropPosition && [frame.cropPosition.x, frame.cropPosition.y].some(n => !Number.isFinite(n) || Math.abs(n) > 1)) throw new Error('Invalid crop position.');
 }
 export class RollRepository {
+  private listeners = new Set<() => void>();
+  subscribe(listener: () => void) { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; }
+  private changed() { this.listeners.forEach(listener => listener()); }
   constructor(private factory?: IDBFactory, private name = DB_NAME) {}
+  async shelf(): Promise<StoredRoll[]> {
+    const db = await openRollDatabase(this.factory, this.name);
+    try {
+      const tx = db.transaction('rolls', 'readwrite'), done = complete(tx), store = tx.objectStore('rolls');
+      const existing = await result<StoredRoll[]>(store.getAll());
+      const assigned = reconcileShelfSlots(existing);
+      for (const roll of assigned) if (existing.find(r => r.id === roll.id)?.shelfSlot !== roll.shelfSlot) store.put(roll);
+      await done;
+      return assigned.filter(roll => roll.trashedAt === null);
+    } finally { db.close(); }
+  }
   async list(): Promise<StoredRoll[]> { const db = await openRollDatabase(this.factory, this.name); try { return await result(db.transaction('rolls').objectStore('rolls').getAll()); } finally { db.close(); } }
   async read(id: string, includeOriginals = false): Promise<RollBundle> {
     const db = await openRollDatabase(this.factory, this.name);
@@ -74,7 +91,7 @@ export class RollRepository {
     const db=await openRollDatabase(this.factory,this.name);
     try { const tx=db.transaction(['frames','blobs']);const frame=await result<StoredFrame|undefined>(tx.objectStore('frames').get(frameId));if(!frame)throw new Error('Original unavailable.');const record=await result<StoredImageRecord|undefined>(tx.objectStore('blobs').get(frame.originalKey));if(!record)throw new Error('Original unavailable.');return imageRecord(record).blob; } finally { db.close(); }
   }
-  async thumbnail(id: string, frameId: string): Promise<{ blob: Blob; rotation: number }> {
+  async thumbnail(id: string, frameId: string): Promise<{ blob: Blob; rotation: number; frame: StoredFrame }> {
     const db = await openRollDatabase(this.factory, this.name);
     try {
       const tx = db.transaction(['frames','blobs']);
@@ -82,10 +99,10 @@ export class RollRepository {
       if (!frame || frame.rollId !== id) throw new Error('Cover unavailable.');
       const record = await result<StoredImageRecord>(tx.objectStore('blobs').get(frame.thumbnailKey));
       if (!record) throw new Error('Cover unavailable.');
-      return { blob: imageRecord(record).blob, rotation: frame.rotation };
+      return { blob: imageRecord(record).blob, rotation: frame.rotation, frame };
     } finally { db.close(); }
   }
-  async save(bundle: RollBundle, signal?: AbortSignal) {
+  async save(bundle: RollBundle, signal?: AbortSignal, options: { insertFirstIfMissing?: boolean } = {}) {
     validateBundle(bundle); signal?.throwIfAborted();
     // WebKit's Blob serialization can fail and leave the transaction unsettled.
     // Plain binary records avoid that path in every browser. Existing Blob
@@ -99,33 +116,58 @@ export class RollRepository {
     try {
       signal?.throwIfAborted();
       const tx = db.transaction([...STORES], 'readwrite'), done = complete(tx);
+      let writeFailure: unknown;
       const abort = () => { try { tx.abort(); } catch { /* Already committed. */ } };
       signal?.addEventListener('abort', abort, { once: true });
       try {
-        const prior=tx.objectStore('rolls').get(bundle.roll.id);
-        prior.onsuccess=()=>{
-          const removed=(prior.result as StoredRoll|undefined)?.frameIds.filter(id=>!bundle.roll.frameIds.includes(id))??[];
-          for(const id of removed){const old=tx.objectStore('frames').get(id);old.onsuccess=()=>{const frame=old.result as StoredFrame|undefined;if(frame){for(const key of [frame.originalKey,frame.viewingKey,frame.thumbnailKey])tx.objectStore('blobs').delete(key);tx.objectStore('frames').delete(id);}};}
+        const all = tx.objectStore('rolls').getAll();
+        all.onsuccess = () => {
+          try {
+            const existing = all.result as StoredRoll[];
+            const prior = existing.find(r => r.id === bundle.roll.id);
+            // Seeding is atomic across tabs and never overwrites edits or Trash.
+            if (options.insertFirstIfMissing && prior) return;
+            const removed = prior?.frameIds.filter(id => !bundle.roll.frameIds.includes(id)) ?? [];
+            for (const id of removed) {
+              const old = tx.objectStore('frames').get(id);
+              old.onsuccess = () => { const frame = old.result as StoredFrame | undefined; if (frame) { for (const key of [frame.originalKey, frame.viewingKey, frame.thumbnailKey]) tx.objectStore('blobs').delete(key); tx.objectStore('frames').delete(id); } };
+            }
+            const others = options.insertFirstIfMissing
+              ? reconcileShelfSlots(existing).map(r => r.trashedAt === null ? { ...r, shelfSlot: r.shelfSlot! + 1 } : r)
+              : existing.filter(r => r.id !== bundle.roll.id);
+            const saved = { ...bundle.roll, shelfSlot: options.insertFirstIfMissing ? 0 : prior?.shelfSlot, name: bundle.roll.name.trim(), updatedAt: Date.now() };
+            for (const roll of reconcileShelfSlots([...others, saved])) {
+              if (roll.id === saved.id || existing.find(r => r.id === roll.id)?.shelfSlot !== roll.shelfSlot) tx.objectStore('rolls').put(roll);
+            }
+            for (const frame of bundle.frames) tx.objectStore('frames').put(frame);
+            for (const record of images) tx.objectStore('blobs').put(record);
+            // Validate retained originals and newly written derivatives atomically.
+            for (const frame of bundle.frames) for (const key of [frame.originalKey, frame.viewingKey, frame.thumbnailKey]) {
+              const check = tx.objectStore('blobs').count(key);
+              check.onsuccess = () => { if (check.result !== 1) abort(); };
+            }
+          } catch (error) { writeFailure = error; abort(); }
         };
-        tx.objectStore('rolls').put({ ...bundle.roll, name: bundle.roll.name.trim(), updatedAt: Date.now() });
-        for (const frame of bundle.frames) tx.objectStore('frames').put(frame);
-        for (const record of images) tx.objectStore('blobs').put(record);
-        // Verify every referenced asset within the same transaction, including retained originals during edits.
-        for (const frame of bundle.frames) for (const key of [frame.originalKey, frame.viewingKey, frame.thumbnailKey]) {
-          const check = tx.objectStore('blobs').count(key);
-          check.onsuccess = () => { if (check.result !== 1) abort(); };
-        }
         await done;
-      } catch (error) { abort(); await done.catch(() => {}); throw error; } finally { signal?.removeEventListener('abort', abort); }
+        this.changed();
+      } catch (error) { abort(); await done.catch(() => {}); throw writeFailure ?? error; } finally { signal?.removeEventListener('abort', abort); }
     } finally { db.close(); }
   }
   async update(id: string, change: (roll: StoredRoll) => StoredRoll) {
     const db = await openRollDatabase(this.factory, this.name);
     try {
       const tx = db.transaction('rolls', 'readwrite'), done = complete(tx), store = tx.objectStore('rolls');
-      const request = store.get(id);
-      request.onsuccess = () => { if (request.result) store.put(change(request.result)); else tx.abort(); };
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const existing = request.result as StoredRoll[], current = existing.find(r => r.id === id);
+        if (!current) { tx.abort(); return; }
+        const updated = change(current);
+        for (const roll of reconcileShelfSlots(existing.map(r => r.id === id ? updated : r))) {
+          if (roll.id === id || existing.find(r => r.id === roll.id)?.shelfSlot !== roll.shelfSlot) store.put(roll);
+        }
+      };
       await done;
+      this.changed();
     } finally { db.close(); }
   }
   // Archive imports are one transaction and only add records. Even an ID
@@ -152,6 +194,7 @@ export class RollRepository {
           }
         }
         await done;
+        this.changed();
       } catch (error) { try { tx.abort(); } catch { /* Already aborted. */ } await done.catch(() => {}); throw error; }
     } finally { db.close(); }
   }
@@ -161,3 +204,5 @@ export function storageMessage(error: unknown) {
   if (error instanceof DOMException && error.name === 'QuotaExceededError') return 'Browser storage is full. Free space in browser settings and retry; this roll was not saved.';
   return error instanceof Error ? error.message : 'Browser storage is unavailable. Enable site storage and retry.';
 }
+
+export const rollRepository = new RollRepository();

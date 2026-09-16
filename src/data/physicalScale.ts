@@ -1,0 +1,43 @@
+// Shared world scale for negatives, cartridges, cartons and framed prints.
+// Camera fitting changes the view; it must never change an object's dimensions.
+export const WORLD_UNITS_PER_MM = .0036;
+export const mm = (millimeters: number) => millimeters * WORLD_UNITS_PER_MM;
+export const FILM_MODEL_UNIT = .55 / 36;
+export const FILM_RENDER_SCALE = WORLD_UNITS_PER_MM / FILM_MODEL_UNIT;
+
+// The photo opening is one-third taller than the 79 mm 120 carton.
+// Preserve the opening's proportions and the existing slim wood/mat borders.
+const COVER_OPENING_HEIGHT = 79 * 4 / 3;
+const COVER_OPENING_WIDTH = COVER_OPENING_HEIGHT * (137 * 2 / 3 - 10) / (111.6 * 2 / 3 - 10);
+export const COVER_FRAME_MM = { width: COVER_OPENING_WIDTH + 10, height: COVER_OPENING_HEIGHT + 10, depth: 6, woodBorder: 2, matBorder: 3,
+  openingWidth: COVER_OPENING_WIDTH, openingHeight: COVER_OPENING_HEIGHT };
+export const CARTRIDGE_MM = { diameter: 25, capDiameter: 26.5, bodyHeight: 41, height: 47 };
+export const SHELF_CELL_MM = { width: 310, height: 135, depth: 85 };
+export const SHELF_OBJECT_GAP_MM = 12;
+export const SHELF_FILM_YAW = -Math.PI / 18; // 10°: show the carton side and curved label.
+export const SHELF_FRAME_YAW = SHELF_FILM_YAW; // All shelf objects face the same direction.
+export const rotatedWidth = (width: number, depth: number, yaw: number) => width * Math.cos(yaw) + depth * Math.abs(Math.sin(yaw));
+export const SHELF_WIDTH = mm(SHELF_CELL_MM.width * 4 + 18);
+export const SHELF_HEIGHT = mm(SHELF_CELL_MM.height * 4 + 18);
+export const SHELF_FLOOR = mm(-SHELF_CELL_MM.height / 2 + 5);
+export const SHELF_ORIGIN: [number, number, number] = [0, -.69 + SHELF_HEIGHT / 2, -1.18];
+export const SHELF_CAMERA_DISTANCE = 3.8;
+export const SHELF_CAMERA: [number, number, number] = [0, SHELF_ORIGIN[1], SHELF_ORIGIN[2] + SHELF_CAMERA_DISTANCE];
+export function shelfFov(aspect: number) {
+  return 2 * Math.atan(Math.max(SHELF_HEIGHT * 1.4, SHELF_WIDTH * 1.10 / aspect) / (2 * SHELF_CAMERA_DISTANCE)) * 180 / Math.PI;
+}
+
+// Objects are arranged side by side without changing either one's scale.
+export function shelfArrangement(boxWidthMm: number, small: boolean, owned: boolean, boxDepthMm = 38) {
+  const boxWidth = rotatedWidth(boxWidthMm, boxDepthMm, SHELF_FILM_YAW);
+  const frameWidth = owned ? rotatedWidth(COVER_FRAME_MM.width, COVER_FRAME_MM.depth + .6, SHELF_FRAME_YAW) : 0;
+  const cartridgeSpan = small ? CARTRIDGE_MM.capDiameter + SHELF_OBJECT_GAP_MM : 0;
+  const span = cartridgeSpan + boxWidth + (owned ? SHELF_OBJECT_GAP_MM + frameWidth : 0);
+  const boxX = -span / 2 + cartridgeSpan + boxWidth / 2;
+  return {
+    filmX: mm(small ? -span / 2 + CARTRIDGE_MM.capDiameter / 2 : boxX),
+    boxX: mm(boxX),
+    companionX: mm(owned ? span / 2 - frameWidth / 2 : boxX),
+    span: mm(span),
+  };
+}

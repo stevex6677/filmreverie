@@ -16,6 +16,7 @@ AGENTS.md
 *.glb
 *.jpg
 *.jpeg
+/public/assets/film-packaging/*.png
 !/public/assets/photos/*.jpg
 !/public/assets/photos/*.thumb.jpg
 *.heic
@@ -37,4 +38,3 @@ blender/**/component_studies/previews/
 blender/**/component_studies/renders/
 blender/**/previews_refined/
 blender/**/*.png
-

@@ -10,7 +10,7 @@ export function OfflinePanel() {
       <p role="status">{state.phase === 'ready' ? 'The app and built-in photographs are downloaded. Saved rolls stay in this browser.' : state.message || 'Keep this page open until the downloads finish.'}</p>
       {state.message && state.phase === 'ready' && <p role="status">{state.message}</p>}
       <p>Server: {state.server === 'reachable' ? 'reachable' : state.server === 'unreachable' ? 'unavailable' : 'checking'}. {state.server === 'unreachable' && state.phase === 'ready' ? 'You can keep viewing saved photographs.' : ''}</p>
-      <p>Files stored only on a server or in iCloud must be downloaded before going offline. Clearing site data removes saved rolls. Export backups in Your rolls.</p>
+      <p>Files stored only on a server or in iCloud must be downloaded before going offline. Clearing site data removes saved rolls. Export backups from the shelf’s Backups & offline controls.</p>
       {['ready','incomplete','preparing'].includes(state.phase) && <button disabled={busy} onClick={() => void perform(retryOffline)}>Retry offline preparation</button>}
       <button disabled={busy} onClick={() => void perform(async () => {
         if (!navigator.storage?.persist) { setStorage('This browser does not support a persistent-storage request. Keep exported backups.'); return; }

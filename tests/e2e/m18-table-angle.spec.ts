@@ -18,6 +18,9 @@ async function drag(page: Page, touch: boolean, browserName: string, dx: number,
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await cdp.detach();
   } else if (touch) {
+    // Synthetic WebKit events bypass the native input/frame boundary after
+    // clicking Adjust view. Let the canvas commit its new input mode first.
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
     for (let i = 0; i <= 9; i++) {
       await page.locator('canvas').dispatchEvent(i === 0 ? 'pointerdown' : i === 9 ? 'pointerup' : 'pointermove', {
         pointerId: 1, pointerType: 'touch', button: 0, buttons: i === 9 ? 0 : 1,

@@ -4,12 +4,13 @@ import { ROOM_ENVELOPE } from "../utils/cameraBounds";
 import { getTableIllumination } from "../shaders/tableIllumination";
 
 interface DarkroomRoomProps {
+  benchWidth?: number;
   brightness?: number;
   roomBrightness: number;
   immediate: boolean;
 }
 
-export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ brightness = 1.0, roomBrightness, immediate }) => {
+export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ brightness = 1.0, roomBrightness, immediate, benchWidth = 4.4 }) => {
   const floorY = ROOM_ENVELOPE.floor;
   const ceilingY = ROOM_ENVELOPE.ceiling;
   const roomW = ROOM_ENVELOPE.width;
@@ -28,7 +29,7 @@ export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ brightness = 1.0, ro
       ))}
 
       {/* --- RED SAFELIGHT FIXTURE (Back Wall) --- */}
-      <group position={[-1.6, 0.45, -1.05]}>
+      <group position={[-3.6, 2.7, -1.30]}>
         {/* Wall bracket & fixture housing */}
         <mesh castShadow receiveShadow position={[0, 0, 0]}>
           <boxGeometry args={[0.34, 0.24, 0.14]} />
@@ -55,17 +56,19 @@ export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ brightness = 1.0, ro
 
       {/* --- ENCLOSED DARKROOM WALLS & BOUNDARIES --- */}
       {/* Back Wall */}
-      <mesh castShadow receiveShadow position={[0, (floorY + ceilingY) / 2, -1.1]}>
+      <mesh castShadow receiveShadow position={[0, (floorY + ceilingY) / 2, ROOM_ENVELOPE.front]}>
         <planeGeometry args={[roomW, wallH]} />
         <meshStandardMaterial color="#494b48" roughness={0.88} />
       </mesh>
 
       {/* Back Wall Baseboard Trim */}
-      <mesh castShadow receiveShadow position={[0, floorY + 0.06, -1.08]}>
+      <mesh castShadow receiveShadow position={[0, floorY + 0.06, ROOM_ENVELOPE.front + .02]}>
         <boxGeometry args={[roomW, 0.12, 0.04]} />
         <meshStandardMaterial color="#16181e" roughness={0.7} metalness={0.2} />
       </mesh>
 
+      {/* Move the equipment rail onto the side wall to clear the taller cabinet. */}
+      <group position={[2.55, 0, 2.1]} rotation={[0, -Math.PI / 2, 0]}>
       {/* Wall-Mounted Equipment Shelf */}
       <mesh castShadow receiveShadow position={[0, 1.35, -0.98]}>
         <boxGeometry args={[4.6, 0.04, 0.24]} />
@@ -182,6 +185,8 @@ export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ brightness = 1.0, ro
         ))}
       </group>
 
+      </group>
+
       {/* Left Wall */}
       <mesh
         position={[-roomW / 2, (floorY + ceilingY) / 2, roomZ]}
@@ -231,7 +236,7 @@ export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ brightness = 1.0, ro
       <group position={[0, 0, 0]}>
         {/* Solid Workbench Top (extends beneath and around the flat light table) */}
         <mesh castShadow receiveShadow position={[0, -0.83, -0.10]}>
-          <boxGeometry args={[4.4, 0.06, 2.0]} />
+          <boxGeometry args={[benchWidth, 0.06, 2.0]} />
           <meshStandardMaterial
             color="#272b35"
             roughness={0.55}
@@ -241,7 +246,7 @@ export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ brightness = 1.0, ro
 
         {/* Workbench Edge Trim / Apron */}
         <mesh castShadow receiveShadow position={[0, -0.87, 0.89]}>
-          <boxGeometry args={[4.42, 0.04, 0.04]} />
+          <boxGeometry args={[benchWidth + .02, 0.04, 0.04]} />
           <meshStandardMaterial color="#222630" roughness={0.45} metalness={0.55} />
         </mesh>
 

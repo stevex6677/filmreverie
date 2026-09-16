@@ -82,7 +82,7 @@ export async function retryOffline() {
   void checkServer();
 }
 export async function applyUpdate(beforeReload: () => Promise<void>) {
-  if (blockers.size || document.querySelector('dialog[open]')) throw new Error('Save or cancel your draft and close the library before applying the update.');
+  if (blockers.size || document.querySelector('dialog[open]')) throw new Error('Save or cancel your draft and close any dialogs before applying the update.');
   if (!registration?.waiting) return;
   await beforeReload();
   if (blockers.size || document.querySelector('dialog[open]')) throw new Error('Finish your current work before updating.');

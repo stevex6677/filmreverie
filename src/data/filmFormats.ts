@@ -1,3 +1,5 @@
+import { FILM_MODEL_UNIT } from './physicalScale';
+
 export const FILM_FORMATS = {
   '135': { label: '35mm', width: 36, height: 24, filmWidth: 35, perStrip: 6, typicalCount: 36 },
   '645': { label: '120 · 6×4.5', width: 41.5, height: 56, filmWidth: 61, perStrip: 4, typicalCount: 16 },
@@ -8,12 +10,12 @@ export const FILM_FORMATS = {
 export type FilmFormat = keyof typeof FILM_FORMATS;
 export const isFilmFormat = (value: string): value is FilmFormat => Object.hasOwn(FILM_FORMATS, value);
 export function formatLayout(format: FilmFormat) {
-  const f = FILM_FORMATS[format], unit = .55 / 36;
+  const f = FILM_FORMATS[format], unit = FILM_MODEL_UNIT;
   return { frameWidth: f.width * unit, frameHeight: f.height * unit, marginY: (f.filmWidth - f.height) / 2 * unit, marginX: .08, gap: .04, perforated: format === '135' };
 }
 
 export type FrameSizing = 'fixed' | 'free';
-export const FILM_UNIT = .55 / 36;
+export const FILM_UNIT = FILM_MODEL_UNIT;
 export const FRAME_GAP_MM = 3;
 // Usable image span, including one advance gap per exposure; leaders are excluded.
 export const NOMINAL_FILM_LENGTH_MM = { '135': 36 * (36 + FRAME_GAP_MM), '120': 728 } as const;
