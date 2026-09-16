@@ -202,15 +202,18 @@ To minimize connection overhead when executing remote commands across agents and
   `.git` metadata.
 - Preserve unrelated user changes and do not discard or overwrite them.
 - Do not add or commit binary files (such as `.blend`, `.glb`, `.jpg`, `.png`, media,
-  or 3D models) to Git unless explicitly asked by the user.
+  videos, `.heic`, camera photos, or 3D models) or test review snapshots (`artifacts/`)
+  to Git unless explicitly asked by the user.
 
 ## 5. Dependencies and generated data
 
 - Install dependencies in the corresponding remote checkout by default. An
   explicit local app startup request also permits installing the dependencies
   needed to start that app in the active local checkout.
-- Mutagen ignores `.git`, `node_modules`, `.DS_Store`, `__pycache__`, and
-  `.pytest_cache` in agent worktree sessions.
+- Mutagen ignores `.git`, `node_modules`, `.DS_Store`, `__pycache__`,
+  `.pytest_cache`, `artifacts/`, `test-results/`, `playwright-report/`, heavy
+  video recordings (`.mp4`, `.webm`), camera `.heic` photos, and Blender renders
+  in agent worktree and main checkout sessions.
 - Do not rely on local dependency or generated-data state when validating remote
   behavior.
 
