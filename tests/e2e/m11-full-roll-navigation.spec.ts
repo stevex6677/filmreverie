@@ -57,7 +57,11 @@ test("M11 six strips, 36 photo regions, 29→30→31 loupe journey and overview 
   await openViewingTools(page);await page.getByTestId("loupe-toggle").click();
   let prior = parsePng(await captureCanvas(page, { path: `${dir}/frame-29-loupe.png` }));
   for (const n of [30, 31]) {
+    // M17 gives an active loupe ownership of movement; put it away before
+    // navigating, then inspect the next frame with the same magnification.
+    await page.getByTestId("loupe-toggle").click();await closeViewingTools(page);
     await page.getByRole("button", { name: "Next", exact: true }).click(); await ready(page);
+    await openViewingTools(page);await page.getByTestId("loupe-toggle").click();
     await expect(app(page)).toHaveAttribute("data-selected-frame", String(n));
     await expect(app(page)).toHaveAttribute("data-loupe-active", "true");
     const current = parsePng(await captureCanvas(page, { path: `${dir}/frame-${n}-loupe.png` }));

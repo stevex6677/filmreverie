@@ -3,6 +3,10 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { updateTableIllumination } from "../shaders/tableIllumination";
 import { createFilmShaderMaterial } from "../shaders/filmShader";
+import { updateFilmLook } from "../shaders/filmLook";
+import { filmGrainSeed, DEFAULT_FILM_STRENGTH } from "../data/filmLooks";
+import { DEFAULT_FILM_STOCK_ID, FilmStockId } from "../data/filmStocks";
+import { FILM_UNIT } from "../data/filmFormats";
 import { photoCropScale, photoCropOffset } from "../utils/photoFraming";
 import { FilmStripLayout, getFilmCurlZ, getFrameWidth, getFrameCenter } from "../utils/loupeMapping";
 
@@ -14,6 +18,8 @@ interface FilmFrameProps {
   layout: FilmStripLayout;
   brightness?: number;
   negativeMask?: readonly number[];
+  stockId?: FilmStockId;
+  filmStrength?: number;
   onSelect?: (index: number) => void;
   onPointerMove?: (point: THREE.Vector3, index: number) => void;
 }
@@ -26,6 +32,8 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
   layout,
   brightness = 1.0,
   negativeMask,
+  stockId = DEFAULT_FILM_STOCK_ID,
+  filmStrength = DEFAULT_FILM_STRENGTH,
   onSelect,
   onPointerMove,
 }) => {
@@ -46,6 +54,7 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
   material.uniforms.uPhotoOffset.value.set(offset.x, -offset.y);
   material.uniforms.uPhotoRotation.value = rotation * Math.PI / 180;
   updateTableIllumination(material, brightness);
+  updateFilmLook(material, stockId, filmStrength, frameWidth / FILM_UNIT, layout.frameHeight / FILM_UNIT, filmGrainSeed(photo?.id ?? String(index)));
 
   // Curved plane geometry with 16 Y-segments matching the substrate transverse curl
   const frameGeometry = useMemo(() => {

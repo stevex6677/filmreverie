@@ -14,6 +14,8 @@ import {
   clampTableBrightness,
 } from "../utils/cameraBounds";
 
+import { clampFilmStrength, DEFAULT_FILM_STRENGTH } from "../data/filmLooks";
+
 export type FilmMode = "negative" | "positive";
 export type RoomMode = "inspect" | "room";
 
@@ -41,6 +43,7 @@ export interface ViewerState {
   roomMode: RoomMode;
   filmMode: FilmMode;
   filmStockId: FilmStockId;
+  filmStrength: number;
   loupe: LoupeState;
   activeFrameIndex: number;
   cameraMoving: boolean;
@@ -73,6 +76,7 @@ export const INITIAL_VIEWER_STATE: ViewerState = {
   roomMode: "inspect",
   filmMode: "negative",
   filmStockId: DEFAULT_FILM_STOCK_ID,
+  filmStrength: DEFAULT_FILM_STRENGTH,
   loupe: {
     isActive: false,
     inspecting: false,
@@ -136,7 +140,7 @@ export type ViewerAction =
   | { type: "LOOK_ROOM"; yaw: number; pitch: number }
   | { type: "SET_ROOM_BRIGHTNESS"; brightness: number }
   | { type: "TOGGLE_ROOM_LIGHTS" }
-  | { type: "LOAD_ROLL"; roll: RollDefinition; stockId?: FilmStockId; view?: import("../storage/rollRepository").SavedView }
+  | { type: "LOAD_ROLL"; roll: RollDefinition; stockId?: FilmStockId; filmStrength?: number; view?: import("../storage/rollRepository").SavedView }
   | { type: "CAMERA_MOTION"; moving: boolean }
   | { type: "ASSET_STATUS"; failures: string[]; loading: boolean; detailStatus?: string }
   | { type: "RETRY_ASSETS" }
@@ -146,6 +150,7 @@ export type ViewerAction =
   | { type: "ESCAPE_INSPECTION" }
   | { type: "VIEWPORT"; aspect: number }
   | { type: "ZOOM_AT"; delta: number; x: number; z: number }
+  | { type: "SET_FILM_STRENGTH"; strength: number }
   | { type: "SET_FILM_STOCK"; stockId: FilmStockId }
   | { type: "SET_FILM_MODE"; mode: FilmMode }
   | { type: "TOGGLE_FILM_MODE" }
@@ -236,6 +241,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       next.viewportAspect = state.viewportAspect;
       next.inspectZoom = fitRollView(action.roll, "roll", 0, state.viewportAspect).zoom;
       next = viewerReducer(next, { type: "SET_FILM_STOCK", stockId: action.stockId ?? DEFAULT_FILM_STOCK_ID });
+      next.filmStrength = clampFilmStrength(action.filmStrength);
       const v = action.view;
       if (v) {
         const index = Math.max(0, action.roll.frames.findIndex(f => f.id === v.frameId));
@@ -309,6 +315,8 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       const pan = anchoredZoom(state.inspectZoom, zoom, state.inspectPan, { x: action.x, z: action.z });
       return { ...state, inspectZoom: zoom, inspectPan: safePan(pan.x, pan.z, zoom) };
     }
+    case "SET_FILM_STRENGTH":
+      return { ...state, filmStrength: clampFilmStrength(action.strength) };
     case "SET_FILM_STOCK": {
       if (!isFilmStockId(action.stockId) || action.stockId === state.filmStockId) return state;
       const next = getFilmStock(action.stockId);

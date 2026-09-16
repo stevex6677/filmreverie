@@ -106,9 +106,9 @@ export function App() {
   const stateRef = useRef(state); stateRef.current = state;
   const saveView = async () => {
     const current = stateRef.current;
-    if (!current.roll.imported || current.roomMode !== "inspect" || current.cameraMoving || current.isTransitioning || current.assetsLoading) return;
+    if (!current.roll.imported || current.cameraMoving || current.isTransitioning || current.assetsLoading) return;
     const view: SavedView = { frameId: current.roll.frames[current.activeFrameIndex].id, level: current.inspectionLevel, mode: current.filmMode, brightness: current.tableBrightness, magnification: current.loupe.magnification, zoom: current.inspectZoom, pan: current.inspectPan, overview: current.savedOverview };
-    await rollRepository.update(current.roll.rollId, r => ({ ...r, stockId: current.filmStockId, view }));
+    await rollRepository.update(current.roll.rollId, r => ({ ...r, stockId: current.filmStockId, filmStrength: current.filmStrength, view: current.roomMode === "inspect" ? view : r.view }));
   };
   const openSaved = async (id: string) => {
     const request = ++switchRequest.current;
@@ -121,7 +121,7 @@ export function App() {
       await Promise.all(runtime.definition.frames.map(frame => new Promise<void>((resolve,reject) => { const img = new Image(); img.onload = () => resolve(); img.onerror = () => reject(new Error("Stored preview could not be loaded.")); img.src = frame.thumbnailSrc!; })));
       if (request !== switchRequest.current) { runtime.dispose(); return; }
       const previous = ownedRuntime.current; ownedRuntime.current = runtime;
-      dispatch({ type: "LOAD_ROLL", roll: runtime.definition, stockId: bundle.roll.stockId, view: bundle.roll.view });
+      dispatch({ type: "LOAD_ROLL", roll: runtime.definition, stockId: bundle.roll.stockId, filmStrength: bundle.roll.filmStrength, view: bundle.roll.view });
       previous?.dispose(); setLibraryError("");
       const url = new URL(location.href); for (const key of ["fixture", "roll", "example"]) url.searchParams.delete(key); history.replaceState({}, "", url);
       try { localStorage.setItem("darkroom-active-roll", id); } catch { /* IndexedDB remains authoritative. */ }
@@ -146,7 +146,7 @@ export function App() {
     const flush = () => { void saveView().catch(error => setLibraryError(storageMessage(error))); };
     window.addEventListener("pagehide", flush);
     return () => { window.removeEventListener("pagehide", flush); };
-  }, [roll, state.activeFrameIndex, state.inspectionLevel, state.filmStockId, state.filmMode, state.tableBrightness, state.loupe.magnification, state.inspectZoom, state.inspectPan, state.isTransitioning, state.cameraMoving, state.assetsLoading]);
+  }, [roll, state.activeFrameIndex, state.inspectionLevel, state.filmStockId, state.filmStrength, state.filmMode, state.tableBrightness, state.loupe.magnification, state.inspectZoom, state.inspectPan, state.isTransitioning, state.cameraMoving, state.assetsLoading]);
 
   const handleRetry = () => {
     setInjectedError(false);
@@ -269,6 +269,7 @@ export function App() {
       data-is-transitioning={state.isTransitioning ? "true" : "false"}
       data-film-mode={state.filmMode}
       data-film-stock={state.filmStockId}
+      data-film-strength={state.filmStrength}
       data-loupe-active={state.loupe.isActive ? "true" : "false"}
       data-loupe-state={state.loupe.inspecting ? 'inspection' : state.loupe.isActive ? 'activated' : 'inactivated'}
       data-loupe-effects={String(state.loupe.opticalEffects)}

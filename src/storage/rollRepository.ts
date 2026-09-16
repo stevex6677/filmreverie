@@ -11,6 +11,7 @@ export interface StoredFrame {
 }
 export interface StoredRoll {
   sizing?: FrameSizing;
+  filmStrength?: number;
   id: string; name: string; stockId: FilmStockId; format: FilmFormat; frameIds: string[]; coverId: string;
   createdAt: number; updatedAt: number; trashedAt: number | null; view?: SavedView;
 }

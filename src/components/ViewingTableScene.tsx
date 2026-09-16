@@ -115,7 +115,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
 
         {strips.map(strip => <group key={strip.index} position={[0, strip.y, multi ? 0.003 : 0]} scale={strip.scale}>
           <FilmStrip frames={strip.frames} stock={getFilmStock(state.filmStockId)} textures={textures.slice(strip.offset, strip.offset + strip.frames.length)}
-            isPositive={isPositive} layout={strip.layout} brightness={state.tableBrightness}
+            filmStrength={state.filmStrength} isPositive={isPositive} layout={strip.layout} brightness={state.tableBrightness}
             onSelectFrame={index => handleFrameSelect(strip.offset + index)} />
         </group>)}
 

@@ -1,3 +1,4 @@
+import { FilmStrengthControl } from "./FilmStrengthControl";
 import { useEffect, useRef, useState, Dispatch } from 'react';
 import { ViewerAction, ViewerState } from '../state/viewerState';
 import { FILM_STOCKS, getFilmStock, isFilmStockId } from '../data/filmStocks';
@@ -82,6 +83,7 @@ export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet}:{sta
         </button>;
       })}</div>:<div className="table-fields">
         <label>Film stock<select id="film-stock" data-testid="film-stock-selector" aria-label="Film stock" value={stock.id} onChange={event=>{if(isFilmStockId(event.target.value))dispatch({type:'SET_FILM_STOCK',stockId:event.target.value});}}>{FILM_STOCKS.map(profile=><option key={profile.id} value={profile.id}>{profile.displayName}</option>)}</select></label>
+        <FilmStrengthControl state={state} dispatch={dispatch}/>
         <div className="table-field"><span>Rendering <output data-testid="mode-badge">{stock.type==='reversal'?'POSITIVE · E-6':state.filmMode.toUpperCase()}</output></span>{stock.type==='negative'&&<button id="mode-toggle" data-testid="mode-toggle" onClick={()=>dispatch({type:'TOGGLE_FILM_MODE'})}>Switch to {state.filmMode==='positive'?'Negative':'Positive'}</button>}</div>
         <label data-testid="dimmer-controls">Table light <output data-testid="brightness-badge"><span data-testid="brightness-value">{Math.round(state.tableBrightness*100)}%</span></output><input id="brightness-slider" data-testid="brightness-slider" aria-label="Light Table Brightness" type="range" min=".3" max="1" step=".01" value={state.tableBrightness} onChange={event=>dispatch({type:'SET_TABLE_BRIGHTNESS',brightness:Number(event.target.value)})}/></label>
         <div className="table-field"><span>Inspection <output data-testid="loupe-badge">{state.loupe.isActive?`ACTIVE (${state.loupe.magnification}×)`:'RESTING'}</output></span><button id="loupe-toggle" data-testid="loupe-toggle" aria-pressed={state.loupe.isActive} onClick={()=>dispatch({type:'TOGGLE_LOUPE'})}>{state.loupe.isActive?'Rest Loupe':'Activate Loupe'}</button>

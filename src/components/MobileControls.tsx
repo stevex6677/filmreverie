@@ -1,3 +1,4 @@
+import { FilmStrengthControl } from "./FilmStrengthControl";
 import { useEffect, useRef } from 'react';
 import { ViewerAction, ViewerState } from '../state/viewerState';
 import { FILM_STOCKS, getFilmStock, isFilmStockId } from '../data/filmStocks';
@@ -37,6 +38,7 @@ export function MobileControls({state,dispatch,onOpenLibrary,sheet,setSheet}:{st
         {!room&&<>
           <fieldset><legend>View</legend><div className="mobile-sequence">{(['roll','strip','frame'] as const).map(level=><button key={level} aria-pressed={state.inspectionLevel===level} onClick={()=>dispatch({type:'VIEW_LEVEL',level})}>{level[0].toUpperCase()+level.slice(1)}</button>)}</div></fieldset>
           <label>Film stock<select aria-label="Film stock" value={stock.id} onChange={e=>{if(isFilmStockId(e.target.value))dispatch({type:'SET_FILM_STOCK',stockId:e.target.value});}}>{FILM_STOCKS.map(s=><option key={s.id} value={s.id}>{s.displayName}</option>)}</select></label>
+        <FilmStrengthControl state={state} dispatch={dispatch}/>
           {stock.type==='negative'?<button onClick={()=>dispatch({type:'TOGGLE_FILM_MODE'})}>Switch to {state.filmMode==='positive'?'Negative':'Positive'}</button>:<p>Positive · reversal film</p>}
           <label>Table light · {Math.round(state.tableBrightness*100)}%<input aria-label="Light Table Brightness" type="range" min=".3" max="1" step=".01" value={state.tableBrightness} onChange={e=>dispatch({type:'SET_TABLE_BRIGHTNESS',brightness:Number(e.target.value)})}/></label>
           <fieldset><legend>Loupe magnification</legend><div className="mobile-sequence">{[2,4,8].map(m=><button key={m} aria-pressed={state.loupe.magnification===m} onClick={()=>dispatch({type:'SET_LOUPE_MAGNIFICATION',magnification:m})}>{m}×</button>)}</div></fieldset>

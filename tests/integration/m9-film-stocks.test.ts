@@ -113,13 +113,14 @@ describe("M9 — whole-strip stock profiles, state, material and real rebate ras
     expect(signatures.size).toBe(5);
   });
 
-  it("propagates the physical mask to photo materials without grading positive images; base artwork remains reusable for whole-strip inversion", () => {
+  it("propagates the physical mask to photo materials at zero strength without grading positive images; base artwork remains reusable for whole-strip inversion", () => {
     const texture = new THREE.Texture();
     for (const stock of FILM_STOCKS) {
       const state = viewerReducer(createInitialViewerState(), {type: "SET_FILM_STOCK", stockId: stock.id});
       const negative = createFilmShaderMaterial(texture, state.filmMode === "positive", 1, new THREE.Color(...stock.base.negativeMask as [number, number, number]));
       const positive = createFilmShaderMaterial(texture, true, 1, new THREE.Color(...stock.base.negativeMask as [number, number, number]));
       expect(negative.uniforms.uOrangeMask.value.toArray()).toEqual(stock.base.negativeMask);
+      expect(positive.uniforms.uFilmStrength.value).toBe(0);
       expect(positive.uniforms.uTexture.value).toBe(texture);
       expect(positive.uniforms.uModeTransition.value).toBe(1);
       const before = raster(state.filmStockId);

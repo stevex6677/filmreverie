@@ -1,4 +1,4 @@
-import { openViewingTools, captureCanvas } from "./helpers/viewing";
+import { dragLoupeTo, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -98,7 +98,7 @@ test.describe("M8 E2E — Continuous Light Table Dimmer & Physical Optical Loupe
     expect(box).toBeTruthy();
     if (box) {
       // A. Move Loupe over Frame 3 (bicycle photograph)
-      await page.mouse.move(box.x + 640, box.y + 400);
+      await dragLoupeTo(page, 640, 400);
       await page.waitForTimeout(400);
       const photoBuffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m8-loupe-photo.png"), photoBuffer);
@@ -110,7 +110,7 @@ test.describe("M8 E2E — Continuous Light Table Dimmer & Physical Optical Loupe
       expect(photoStats.variance).toBeGreaterThan(5);
 
       // B. Move Loupe over Sprocket Hole (perforation showing glowing table underneath)
-      await page.mouse.move(box.x + 640, box.y + 350);
+      await dragLoupeTo(page, 640, 350);
       await page.waitForTimeout(400);
       const sprocketBuffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m8-loupe-sprocket.png"), sprocketBuffer);
@@ -121,7 +121,7 @@ test.describe("M8 E2E — Continuous Light Table Dimmer & Physical Optical Loupe
       expect(sprocketDiff).toBeGreaterThan(5);
 
       // C. Move Loupe over Film Rebate Border (edge marking & frame numbers)
-      await page.mouse.move(box.x + 640, box.y + 336);
+      await dragLoupeTo(page, 640, 336);
       await page.waitForTimeout(400);
       const rebateBuffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m8-loupe-rebate.png"), rebateBuffer);
@@ -131,7 +131,7 @@ test.describe("M8 E2E — Continuous Light Table Dimmer & Physical Optical Loupe
       expect(rebateDiff).toBeGreaterThan(3);
 
       // D. Move Loupe off-strip onto light table acrylic surface
-      await page.mouse.move(box.x + 640, box.y + 200);
+      await dragLoupeTo(page, 640, 200);
       await page.waitForTimeout(400);
       const tableBuffer = await captureCanvas(page);
       fs.writeFileSync(path.join(artifactsDir, "m8-loupe-table.png"), tableBuffer);

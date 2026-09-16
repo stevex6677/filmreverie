@@ -23,6 +23,7 @@ interface FilmStripProps {
   isPositive: boolean;
   layout: FilmStripLayout;
   brightness?: number;
+  filmStrength?: number;
   onSelectFrame?: (index: number) => void;
   onPointerMove?: (point: THREE.Vector3) => void;
 }
@@ -50,6 +51,7 @@ export const FilmStrip: React.FC<FilmStripProps> = ({
   isPositive,
   layout,
   brightness = 1.0,
+  filmStrength,
   onSelectFrame,
   onPointerMove,
 }) => {
@@ -134,6 +136,8 @@ export const FilmStrip: React.FC<FilmStripProps> = ({
           isPositive={isPositive}
           layout={layout}
           brightness={brightness}
+          stockId={stock.id}
+          filmStrength={filmStrength}
           negativeMask={stock.base.negativeMask}
           onSelect={onSelectFrame}
           onPointerMove={(pt) => onPointerMove?.(pt)}

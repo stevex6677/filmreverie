@@ -16,6 +16,25 @@ These are reference-informed reconstructions, **not exact facsimiles**. Referenc
 
 Optical edge-code tracks are visible on the negative references. Their full bit patterns and registration are not verified, so those tracks are deliberately omitted for all four negative stocks. No decorative barcode, cartridge DX code, fake batch code, SAFETY FILM inscription, or motion-picture KEYKODE is substituted. E100's selected reference has no discernible code track. This omission is a review limitation, not a claim that real negative film lacks edge codes.
 
-The negative base colors and mask vectors are modest artistic approximations under the existing M8 illumination. M9 does not simulate stock-specific photographic grading or grain. Every positive photo uses the same existing image and shader path; only physical borders/markings and permitted views change. The negative-stock physical border remains orange during positive preview.
+The negative base colors and mask vectors are modest artistic approximations under the existing M8 illumination. M9 originally supplied no photographic grading or grain. M19 adds the optional photograph treatment described below; strength zero preserves the original photo pipeline. Positive preview reverses the complete negative strip, including its border and markings; the M19 strength control does not grade those borders.
 
 The source photographs remain at their publishers' URLs (see each JSON's `reference.imageUrl`). Runtime lettering/geometry is original project artwork under the project's ISC license; Kodak names identify the represented stocks. No publisher license is inferred or transferred to reference photographs.
+
+
+## M19 photographic looks — revision 1
+
+`src/data/filmLooks.ts` holds the five authored photo profiles; `src/shaders/filmLook.ts` applies them before film transmission and table illumination. The existing JSON records remain the physical border/mask source of truth. No external resources load at runtime.
+
+The strength scale is 0–100: 0 bypasses the added treatment exactly, 50 uses the authored parameters, and 100 increases their deviations from neutral. Tone and color scale continuously; grain amplitude grows more gently. Curves operate in perceptual sRGB, then return to linear RGB before the existing light/transmission and final display conversion. The tone curve preserves endpoints except for the intentional small Portra shadow lift. A hue-based attenuation reduces saturation changes in orange colors; it is not skin detection.
+
+| Profile / represented edition | Manufacturer foundation | Authored interpretation |
+| --- | --- | --- |
+| Portra 160 / unified 2011 | [E-4051](https://www.kodakprofessional.com/sites/default/files/wysiwyg/pro/resources/e4051_Portra_160.pdf): fine grain and smooth, natural skin tones. | Restrained saturation, gentle contrast and highlight compression; smallest Portra grain. |
+| Portra 400 / unified 2010 | [E-4050](https://www.kodakprofessional.com/sites/default/files/2025-07/e4050.pdf): natural skin, fine grain for its speed, color reproduction across lighting conditions. | Balanced saturation, gentle highlights and moderate fine texture. |
+| Portra 800 / existing current-stock identity | [Kodak Photo Systems](https://kodak.photosys.com/products/portra-800-36exp-135-pro-pack-5-rolls): balanced saturation, natural skin and fine grain within its speed class. | Slightly fuller color, more apparent texture than the other Portras. |
+| Ektar 100 / 2008 | [Kodak](https://www.kodak.com/en/still-film/product/professional/ektar-100-film/): vivid saturation, sharpness and very fine grain. | Highest saturation and tonal separation, smallest grain. |
+| Ektachrome E100 / 2018 | [E-4000](https://www.kodakprofessional.com/sites/default/files/wysiwyg/pro/resources/e4000_ektachrome_100.pdf): neutral balance, moderate saturation, fine grain and low contrast. | Clean endpoints, near-neutral contrast, modest color enhancement. |
+
+These parameters are artistic approximations, not fitted spectral/density measurements, exposure simulations or scanner profiles. Grain is procedural monochrome texture, not a measured dye-cloud model. Its scale is expressed per film millimeter, seeded by frame identity and filtered according to the rendered pixel footprint, so it stays still and does not become screen-space noise. Film format changes affect its apparent size; texture-resolution upgrades do not alter its seed or scale.
+
+Original/imported pixels and stored thumbnails remain untouched. A saved roll stores `filmStrength` alongside `stockId`; absent or invalid values use 50, finite values clamp to 0–100, and explicit zero survives reopening and library edits. The shipped scene photographs already have pronounced color treatment. Candidate review on those scenes establishes the application behavior, but does not establish calibrated stock accuracy or performance on a broad range of skin tones. See the M19 review record for the actual evidence and remaining review limitations.

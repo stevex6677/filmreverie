@@ -1,3 +1,4 @@
+import { FilmStrengthControl } from "./FilmStrengthControl";
 import { RollNavigator } from "./RollNavigator";
 import { BASELINE_ROLL } from "../utils/rollLayout";
 import { FILM_STOCKS, getFilmStock, isFilmStockId } from "../data/filmStocks";
@@ -41,6 +42,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
               }}>
               {FILM_STOCKS.map((profile) => <option key={profile.id} value={profile.id}>{profile.displayName}</option>)}
             </select>
+            <FilmStrengthControl state={state} dispatch={dispatch}/>
           </div>
           {isRoomMode && <>
             <button className="btn" disabled={state.isTransitioning} onClick={() => dispatch({ type: "FACE_TABLE" })}>Face table</button>

@@ -914,3 +914,12 @@ button:disabled { opacity: .4; cursor: default; }
   .is-loupe-inspection .loupe-controls > button:last-child { flex-basis:auto; }
 }
 .has-loupe .table-caption { left:50%; right:auto; transform:translateX(-50%); width:max-content; max-width:calc(100% - 24px); padding:3px 8px; border-radius:6px; color:#e8e7df; background:#1b1e23dd; }
+
+/* M19: one film-look amount, independent of the light-table dimmer. */
+.film-strength-control { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.film-strength-control > span:first-child { display: flex; justify-content: space-between; }
+.film-strength-control input { width: 100%; min-height: 32px; margin: 0; accent-color: #dcb980; }
+.film-strength-scale { display: flex; justify-content: space-between; font-size: 11px; opacity: .65; }
+.film-strength-control small { font-size: 12px; line-height: 1.4; opacity: .75; font-weight: 400; }
+.stock-control { flex-wrap: wrap; }
+.stock-control .film-strength-control { flex-basis: 100%; max-width: 270px; }

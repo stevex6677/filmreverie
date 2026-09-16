@@ -36,7 +36,7 @@ export function RollLibrary({onClose,onOpen,onExample,activeId,onRemoved}:Props)
   const save=()=>void run(async()=>{
     if(!valid||!draft)throw new Error('Resolve failed files and duplicates before saving.');
     const frames=draft.map(p=>p.frame!),ids=frames.map(f=>f.id),now=Date.now();
-    const roll:StoredRoll={id:rollId,name,stockId:stock,format,sizing,frameIds:ids,coverId:ids.includes(cover)?cover:ids[0],createdAt:editing?.createdAt??now,updatedAt:now,trashedAt:null,view:editing?.view?{...editing.view,zoom:NaN,overview:null}:undefined};
+    const roll:StoredRoll={filmStrength:editing?.filmStrength,id:rollId,name,stockId:stock,format,sizing,frameIds:ids,coverId:ids.includes(cover)?cover:ids[0],createdAt:editing?.createdAt??now,updatedAt:now,trashedAt:null,view:editing?.view?{...editing.view,zoom:NaN,overview:null}:undefined};
     const bundle:RollBundle={roll,frames,blobs:draft.flatMap(p=>p.blobs)};abort.current=new AbortController();setProgress('Saving roll…');await rollRepository.save(bundle,abort.current.signal);setProgress('Refreshing library…');void navigator.storage?.persist?.().catch(()=>false);await refresh();setProgress('Opening photographs…');await onOpen(rollId);reset();onClose();
   });
   const removePhoto=(id:string)=>{const i=draft!.findIndex(p=>p.id===id);releaseDraft([draft![i]]);const next=draft!.filter(p=>p.id!==id);updateDraft(next);if(cover===id)setCover(next.find(p=>p.frame)?.id??'');if(selected===id)setSelected(next[Math.min(i,next.length-1)]?.id??'');};

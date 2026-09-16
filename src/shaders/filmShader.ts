@@ -1,5 +1,6 @@
 import { FilmStripLayout, getFrameBounds, getStripDimensions } from "../utils/loupeMapping";
 import * as THREE from "three";
+import { FILM_LOOK_GLSL, filmLookUniforms } from "./filmLook";
 import { DISPLAY_FRAGMENT, FILM_TRANSMISSION_GLSL, illuminationUniforms } from "./tableIllumination";
 
 export const FilmVertexShader = `
@@ -26,12 +27,13 @@ export const FilmFragmentShader = `
   uniform float uPhotoRotation;
   varying vec2 vUv;
   ${FILM_TRANSMISSION_GLSL}
+  ${FILM_LOOK_GLSL}
   void main() {
     vec2 p = (vUv - 0.5) * uPhotoCrop + uPhotoOffset;
     float c = cos(uPhotoRotation), s = sin(uPhotoRotation);
     vec2 photoUV = vec2(c * p.x - s * p.y, s * p.x + c * p.y) + 0.5;
     vec3 source = texture2D(uTexture, clamp(photoUV, vec2(0.0), vec2(1.0))).rgb * uExposure;
-    vec3 transmission = filmTransmittance(source, uModeTransition, uOrangeMask);
+    vec3 transmission = filmTransmittance(applyFilmLook(source, vUv), uModeTransition, uOrangeMask);
     gl_FragColor = vec4(transmitTableLight(transmission, uTableOutput, uSurfaceReflection), 1.0);
     ${DISPLAY_FRAGMENT}
   }
@@ -42,6 +44,7 @@ export function createFilmShaderMaterial(texture: THREE.Texture, isPositive: boo
     vertexShader: FilmVertexShader,
     fragmentShader: FilmFragmentShader,
     uniforms: {
+      ...filmLookUniforms(),
       uTexture: { value: texture },
       uPhotoCrop: { value: new THREE.Vector2(1, 1) },
       uPhotoOffset: { value: new THREE.Vector2() },

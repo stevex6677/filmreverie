@@ -1,4 +1,4 @@
-import { viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
+import { dragLoupeTo, viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect, Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -49,6 +49,8 @@ test("M9: every stock, physical borders, allowed views and keyboard restrictions
   const selector = page.getByLabel("Film stock", {exact: true});
   const app = page.locator("main");
   await expect(selector).toHaveValue("portra-400");
+  await page.getByTestId("film-strength-slider").focus();
+  await page.getByTestId("film-strength-slider").press("Home");
   let lastEdge: ReturnType<typeof parsePng> | undefined;
   let positiveMaster: ReturnType<typeof parsePng> | undefined;
   for (const stock of FILM_STOCKS) {
@@ -140,7 +142,7 @@ test("M9: macro stock lettering through the scene-capture loupe, rapid changes a
     expect(edgeStats.stdDev).toBeGreaterThan(3);
     await page.getByTestId("loupe-toggle").click();
     await page.getByTestId("mag-btn-2x").click();
-    await page.mouse.move(590, 400);
+    await dragLoupeTo(page, 590, 400);
     const lens = await capture(page, `${stock.id}-macro-loupe`);
     expect(getRegionStats(lens, 590, 400, 80).stdDev).toBeGreaterThan(3);
     expect(getRegionMeanDifference(edge, lens, 590, 400, 100)).toBeGreaterThan(3);
@@ -164,7 +166,7 @@ test("M9: macro stock lettering through the scene-capture loupe, rapid changes a
   }
   await page.getByTestId("loupe-toggle").click();
   await page.getByTestId("mag-btn-4x").click();
-  await page.mouse.move(590, 400);
+  await dragLoupeTo(page, 590, 400);
   await selector.selectOption("portra-400");
   const beforeRapid = await capture(page, "rapid-before");
   const frame = await page.getByTestId("frame-badge").textContent();
