@@ -98,7 +98,18 @@ export function startOffline() {
     void checkServer(); return;
   }
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (applying) location.reload(); else void checkOffline(); });
+  // Long-lived installed windows must discover releases without a reload.
+  let checkingUpdate = false;
+  const checkUpdate = async () => {
+    if (document.hidden || !navigator.onLine || !registration || checkingUpdate || registration.installing || registration.waiting) return;
+    checkingUpdate = true;
+    try { await registration.update(); } catch { /* Retain the working offline release. */ }
+    finally { checkingUpdate = false; }
+  };
   const refresh = () => { if (!document.hidden) { void checkOffline(); void checkServer(); } };
+  document.addEventListener('visibilitychange', () => { void checkUpdate(); });
+  window.addEventListener('online', () => { void checkUpdate(); });
+  setInterval(() => { void checkUpdate(); }, 60000);
   document.addEventListener('visibilitychange', refresh);
   window.addEventListener('online', refresh); window.addEventListener('offline', refresh);
   setInterval(refresh, 30000);

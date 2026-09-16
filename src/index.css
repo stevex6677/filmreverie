@@ -931,20 +931,22 @@ button:disabled { opacity: .4; cursor: default; }
   color:#e8e7df; background:#1b1e23ed;
 }
 
-/* Offline details stay compact and clear of the table navigation. */
-.offline-panel { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 45; font-size: 12px; color: #e8e3d2; max-width: min(380px, 92vw); }
-.offline-panel summary { cursor: pointer; padding: 7px 12px; background: #20211eee; border: 1px solid #77735b; border-radius: 16px; width: max-content; max-width: 100%; margin: auto; }
-.offline-panel[open] { width: min(380px, 92vw); }
-.offline-panel > div { margin-top: 5px; padding: 12px; background: #20211efa; border: 1px solid #77735b; border-radius: 12px; max-height: 65dvh; overflow: auto; }
-.offline-panel button { padding: 9px; margin: 4px; border: 1px solid #77735b; border-radius: 6px; background: #33362a; color: inherit; }
+/* Updates reserve their own row; the viewer and its controls share the remainder.
+   Layout containment also keeps non-modal fixed tool panels inside the viewer.
+   Modal dialogs retain the browser top layer and block update activation. */
+.app-shell { position:relative; top:var(--visible-top,0px); height:var(--visible-height,100dvh); display:flex; flex-direction:column; }
+.app-shell > .darkroom-app-container { flex:1; min-height:0; height:auto; top:0; }
+.app-shell:has(.update-notice) > .darkroom-app-container { contain:layout; }
+.update-notice { flex:none; padding:max(6px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 6px max(16px,env(safe-area-inset-left)); color:#eee5d2; background:#252820; border-bottom:1px solid #62604c; font-size:13px; }
+.update-notice-row { display:flex; justify-content:center; align-items:center; gap:20px; }
+.update-notice button { flex:none; min-height:44px; padding:8px 16px; border:1px solid #c7b285; border-radius:8px; background:#e4c391; color:#211b13; font:inherit; cursor:pointer; }
+.update-notice button:disabled { opacity:.6; cursor:wait; }
+.update-notice button:focus-visible { outline:2px solid #fff; outline-offset:2px; }
+.update-error { max-width:640px; margin:4px auto; line-height:1.4; }
+.offline-panel { margin-top:16px; }
+.offline-panel summary { cursor:pointer; }
+.offline-panel > div { display:grid; gap:12px; margin-top:12px; }
+.offline-panel button { justify-self:start; }
 .archive-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
 .archive-actions label { border: 1px solid #77735b; border-radius: 6px; padding: 8px; }
 .archive-actions input { max-width: 220px; }
-.offline-panel { top: auto; bottom: max(12px, env(safe-area-inset-bottom)); left: max(12px, env(safe-area-inset-left)); transform: none; }
-.offline-panel > div { margin-top: 0; margin-bottom: 5px; }
-.offline-panel[open] > div { position: absolute; bottom: 100%; left: 0; width: 100%; box-sizing: border-box; }
-@media (max-width: 640px) {
-  .offline-panel { top: max(12px, env(safe-area-inset-top)); bottom: auto; left: auto; right: max(12px, env(safe-area-inset-right)); max-width: min(380px, 92vw); }
-  .offline-panel summary { margin-left: auto; margin-right: 0; max-width: 170px; }
-  .offline-panel[open] > div { top: 100%; bottom: auto; right: 0; left: auto; margin-top: 5px; }
-}

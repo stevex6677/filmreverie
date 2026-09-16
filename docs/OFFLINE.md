@@ -1,12 +1,14 @@
 # Offline use and portable roll backups
 
 Use the production app. Development/HMR deliberately does not install a worker.
-After opening a secure production address online, wait for **Available offline**.
-This means the active worker has the HTML, JS/CSS, stock resources, installation
+Opening a secure production address online automatically downloads the app.
+There is no persistent offline badge. **Rolls → Offline & storage** contains
+download details, recovery and storage options. Completed preparation means the
+active worker has the HTML, JS/CSS, stock resources, installation
 icons, and all built-in photo thumbnails and full viewing images. Imported rolls
 and originals remain in the existing `darkroom-rolls` IndexedDB database.
 
-The offline details separately report server reachability. A stopped server or
+These details separately report server reachability. A stopped server or
 SSH tunnel does not prevent viewing already downloaded content. First visits
 need a working server. Files available only in iCloud or on another server must
 be downloaded to the device before importing offline. Browser storage is not a
@@ -33,7 +35,8 @@ libraries. Adding HTTPS does not transfer or delete the old library.
    Damaged, truncated or unsupported backups are rejected before writing.
 4. Open the imported rolls and verify photos, frame order, crop and saved views.
    Check Trash separately. Keep both the old library and backup until verified.
-5. Wait for **Available offline** at the new origin before disconnecting.
+5. In **Rolls → Offline & storage**, confirm that the app and built-in photographs
+   have downloaded at the new origin before disconnecting.
 
 Backup exports also work at the old insecure HTTP address. New photo import and
 service-worker offline access require HTTPS or loopback localhost. In particular,
@@ -45,7 +48,8 @@ checks, not encryption; keep the files as private as the original photographs.
 
 Open the private HTTPS address in Safari while connected to the tailnet. Safari's
 Share menu → **Add to Home Screen** is optional. Open the installed app online,
-import the backup there if its library is separate, and check **Available offline**.
+import the backup there if its library is separate, and confirm the downloads
+in **Rolls → Offline & storage**.
 Then test a full relaunch with Wi-Fi/cellular disabled and the server stopped.
 Verify actual photos, Focus/Overview, source detail, loupe, brightness and gestures.
 Browser emulation is not evidence of physical Safari/Home Screen behavior.
@@ -54,13 +58,18 @@ Browser emulation is not evidence of physical Safari/Home Screen behavior.
 
 A new worker downloads and SHA-256 verifies a complete release into a separate
 cache. The existing app keeps its own cache until the update is ready and the
-user chooses **Apply update and reload**. Save/cancel drafts and close the library
+user chooses **Update now** in the **Update Available** notice. The notice
+occupies its own row above the viewer, reserving space for all existing controls
+on desktop, tablet and phone. It disappears after the update. The app checks for
+new releases every minute while visible, on returning to the app and on reconnect.
+Save/cancel drafts and close the library
 first. Other Darkroom tabs/windows must be closed. The current saved view is
 committed before activation. Automatic activation after all old pages are closed
 uses the browser's normal worker lifecycle. Activation only cleans Darkroom app
 caches; it never changes or deletes IndexedDB photos.
 
-If preparation is interrupted, **Retry offline preparation** can retry the
+If preparation is interrupted,
+**Rolls → Offline & storage → Retry offline preparation** can retry the
 installation or repair missing entries for the active release. Repairs verify
 content hashes and will not mix assets from another release. If a release is no
 longer on the server, its missing cache entries cannot be repaired: reconnect and
@@ -87,9 +96,10 @@ ssh -N -L 5178:127.0.0.1:5178 remote
 /Applications/Tailscale.app/Contents/MacOS/Tailscale serve --bg --https=443 http://127.0.0.1:5178
 ```
 
-The stable private origin is `https://macbook.tail2b1388.ts.net` when that mapping
-and its certificate have been verified. HTTPS may require enabling certificates
-in the tailnet's admin settings. Keep the verified hostname in Vite's allowlist
+The stable private origin is `https://macbook.tail2b1388.ts.net`. Its private Serve
+mapping, trusted certificate and app responses were verified on 2026-09-16.
+On a new tailnet, HTTPS may require enabling certificates in the admin settings.
+Keep the verified hostname in Vite's allowlist
 (`FILM_PHOTO_ALLOWED_HOSTS` can override it). Use the full hostname for HTTPS;
 a short `https://macbook` name does not match the certificate.
 

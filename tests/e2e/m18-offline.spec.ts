@@ -11,12 +11,26 @@ async function ready(page:Page) {
   await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});
   await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:45000});
 }
-async function offlineReady(page:Page) { await expect(page.locator('.offline-panel summary')).toContainText('Available offline',{timeout:60000}); }
-async function panel(page:Page) { if(!await page.locator('.offline-panel').getAttribute('open').then(v=>v!==null))await page.locator('.offline-panel summary').click(); }
+async function offlineReady(page:Page) {
+  await expect.poll(()=>page.evaluate(async()=>{
+    const worker=navigator.serviceWorker.controller;
+    if(!worker)return false;
+    return new Promise<boolean>(resolve=>{
+      const channel=new MessageChannel();
+      const timeout=setTimeout(()=>{channel.port1.close();resolve(false);},5000);
+      channel.port1.onmessage=e=>{clearTimeout(timeout);channel.port1.close();resolve(e.data.ready===true);};
+      worker.postMessage({type:'STATUS'},[channel.port2]);
+    });
+  }),{timeout:60000}).toBe(true);
+}
+async function panel(page:Page) {
+  await library(page);
+  if(await page.locator('.offline-panel').getAttribute('open')===null)await page.locator('.offline-panel summary').click();
+}
 async function library(page:Page) {
+  if(await page.getByRole('dialog',{name:'Roll library',exact:true}).count())return;
   await closeViewingTools(page);
   if(await page.locator('main').getAttribute('data-focus-mode')==='true')await page.getByRole('button',{name:'← Overview',exact:true}).click();
-  if(await page.locator('.offline-panel').getAttribute('open')!==null)await page.locator('.offline-panel summary').click();
   await page.getByRole('button',{name:'Rolls',exact:true}).click();
 }
 function photo(width=600,height=400) {
@@ -90,11 +104,11 @@ test('M18 interrupted preparation and an incomplete cache never claim offline re
   try {
     await page.goto(server.url+entry);await ready(page);await panel(page);
     await expect(page.locator('.offline-panel')).toContainText('Download incomplete',{timeout:60000});
-    await expect(page.locator('.offline-panel summary')).not.toContainText('Available offline');
+    await expect(page.locator('.offline-panel')).not.toContainText('The app and built-in photographs are downloaded.');
     server.fail('');await page.getByRole('button',{name:'Retry offline preparation'}).click();await offlineReady(page);
     await page.evaluate(async()=>{for(const key of await caches.keys())if(key.startsWith('darkroom-app-'))await(await caches.open(key)).delete('/assets/photos/frame-05-road.jpg');});
     await page.locator('.offline-panel summary').click();await panel(page);
-    await expect(page.locator('.offline-panel summary')).not.toContainText('Available offline');
+    await expect(page.locator('.offline-panel')).not.toContainText('The app and built-in photographs are downloaded.');
     await expect(page.locator('.offline-panel')).toContainText('Some downloads are missing');
     await page.getByRole('button',{name:'Retry offline preparation'}).click();await offlineReady(page);
   }finally{await server.stop();}
@@ -108,20 +122,19 @@ test('M18 update download is atomic and activation protects drafts, other tabs a
     server.release('m18-update-candidate');server.fail('/assets/film-stocks/portra-800.json');
     await panel(page);await page.getByRole('button',{name:'Retry offline preparation'}).click();
     await expect(page.locator('.offline-panel')).toContainText('Download incomplete',{timeout:60000});
-    await offlineReady(page);await expect(page.getByRole('button',{name:'Apply update and reload'})).toHaveCount(0);
+    await offlineReady(page);await expect(page.getByRole('button',{name:'Update now'})).toHaveCount(0);
     server.fail('');await page.getByRole('button',{name:'Retry offline preparation'}).click();
-    await expect(page.locator('.offline-panel summary')).toContainText('Update available',{timeout:60000});
+    await expect(page.locator('.update-notice')).toContainText('Update Available',{timeout:60000});
     await library(page);await page.getByRole('button',{name:'New roll',exact:true}).click();
     // A modal makes the update control inert; invoke its actual click handler to
     // verify the underlying guard also rejects programmatic activation.
-    await page.locator('.offline-panel').evaluate(el=>{(el as HTMLDetailsElement).open=true;});
-    await page.getByRole('button',{name:'Apply update and reload'}).evaluate((el:HTMLButtonElement)=>el.click());
-    await expect(page.locator('.offline-panel [role="alert"]')).toContainText('Save or cancel');
+    await page.getByRole('button',{name:'Update now'}).evaluate((el:HTMLButtonElement)=>el.click());
+    await expect(page.locator('.update-notice [role="alert"]')).toContainText('Save or cancel');
     await expect(page.getByLabel('Choose photographs',{exact:true})).toBeVisible();
     await page.getByRole('button',{name:'Cancel draft'}).click();await page.getByRole('button',{name:'Close',exact:true}).click();
     const other=await context.newPage();await other.goto(server.url+entry);await ready(other);
-    await page.getByRole('button',{name:'Apply update and reload'}).click();await expect(page.locator('.offline-panel [role="alert"]')).toContainText('Close other');await other.close();
-    await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.getByRole('button',{name:'Apply update and reload'}).click()]);await ready(page);await offlineReady(page);
+    await page.getByRole('button',{name:'Update now'}).click();await expect(page.locator('.update-notice [role="alert"]')).toContainText('Close other');await other.close();
+    await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.getByRole('button',{name:'Update now'}).click()]);await ready(page);await offlineReady(page);
     await expect.poll(()=>page.evaluate(async()=>caches.keys())).toEqual(['darkroom-app-m18-update-candidate']);
     await expect(page.locator('main')).toHaveAttribute('data-roll-id',id);expect(await dbRolls(page)).toHaveLength(1);
   }finally{await server.stop();}
@@ -166,4 +179,47 @@ test('M18 backup migrates HTTP to an independent HTTPS origin and leaves the old
     await target.goto(legacyUrl+entry);await ready(target);expect(await dbRolls(target)).toEqual([source]);
     await target.close();await fs.unlink(archive);
   } finally {await old.stop();await secure.stop();}
+});
+
+test('M18 update notice reserves space above every viewing mode and appears without reloading',async({page},info)=>{
+  const server=await offlineServer();
+  try {
+    await page.goto(server.url+entry);await ready(page);await offlineReady(page);
+    await expect(page.getByText('Available offline',{exact:true})).toHaveCount(0);
+    await expect(page.locator('.update-notice')).toHaveCount(0);
+    const initial=await page.locator('main').boundingBox();expect(initial!.y).toBe(0);expect(initial!.height).toBe(page.viewportSize()!.height);
+    server.release('m18-layout-update');
+    // A reconnect checks for a new version in the already-open application.
+    await page.evaluate(()=>window.dispatchEvent(new Event('online')));
+    await expect(page.getByRole('button',{name:'Update now',exact:true})).toBeVisible({timeout:60000});
+    const clearOfControls=async()=>{
+      await expect.poll(()=>page.evaluate(()=>{
+        const notice=document.querySelector('.update-notice')!.getBoundingClientRect();
+        const main=document.querySelector('main')!.getBoundingClientRect();
+        const overlaps=Array.from(document.querySelectorAll('main button, main h1, main p, main span, main input, main select, main dialog[open]')).filter(el=>{
+          const r=el.getBoundingClientRect(),style=getComputedStyle(el);
+          return r.width>0&&r.height>0&&style.visibility!=='hidden'&&style.display!=='none'&&Number(style.opacity)>0&&r.top<notice.bottom-.5&&r.bottom>notice.top&&r.left<notice.right&&r.right>notice.left;
+        }).map(el=>el.textContent?.trim().slice(0,80)||el.tagName);
+        return {overlaps,above:notice.bottom<=main.top+.5,contained:main.bottom<=innerHeight+.5};
+      })).toEqual({overlaps:[],above:true,contained:true});
+      await expect(page.getByRole('button',{name:'Update now',exact:true})).toBeInViewport();
+    };
+    const sizes=info.project.name==='desktop'?[[1280,800],[768,1024]]:[[390,844],[844,390],[320,568]];
+    for(const [width,height] of sizes){
+      await page.setViewportSize({width,height});await ready(page);await clearOfControls();
+      await page.screenshot({path:info.outputPath(`update-overview-${width}x${height}.png`)});
+      await openViewingTools(page);await clearOfControls();await closeViewingTools(page);
+      await openFrame(page,1);await ready(page);await clearOfControls();
+      await page.getByTestId('loupe-activate').click();await page.getByTestId('inspect-loupe').click();await ready(page);await clearOfControls();
+      await page.screenshot({path:info.outputPath(`update-loupe-${width}x${height}.png`)});
+      await page.getByTestId('inspect-loupe').click();await ready(page);await page.getByTestId('put-away-loupe').click();
+      await page.getByRole('button',{name:'← Overview',exact:true}).click();await ready(page);
+      await page.getByRole('button',{name:'← Room',exact:true}).click();await ready(page);await clearOfControls();
+      await page.screenshot({path:info.outputPath(`update-room-${width}x${height}.png`)});
+      await page.getByTestId('approach-table-btn').click();await ready(page);
+    }
+    await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.getByRole('button',{name:'Update now',exact:true}).click()]);
+    await ready(page);await offlineReady(page);await expect(page.locator('.update-notice')).toHaveCount(0);
+    const restored=await page.locator('main').boundingBox();expect(restored!.y).toBe(0);expect(restored!.height).toBe(page.viewportSize()!.height);
+  }finally{await server.stop();}
 });
