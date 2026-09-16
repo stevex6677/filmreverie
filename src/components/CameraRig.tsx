@@ -4,7 +4,6 @@ import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import {
   DEFAULT_INSPECT_DISTANCE,
-  INSPECT_CAMERA_UP,
   ROOM_CAMERA_UP,
   TABLE_CENTER_Z,
   TABLE_SURFACE_Y,
@@ -13,9 +12,12 @@ import {
   ROOM_CAMERA_FOV,
   roomLookTarget,
 } from "../utils/cameraBounds";
+import { TableAngle, TOP_DOWN, tableCameraPose, tablePointAt } from "../utils/tableCamera";
 import { RoomMode } from "../state/viewerState";
 
 interface CameraRigProps {
+  tableAngle?: TableAngle;
+  angleDragging?: boolean;
   touchInput?: boolean;
   inputBlocked?: boolean;
   roomMode: RoomMode;
@@ -38,6 +40,8 @@ interface CameraRigProps {
 }
 
 export const CameraRig: React.FC<CameraRigProps> = ({
+  tableAngle = TOP_DOWN,
+  angleDragging = false,
   touchInput = false,
   inputBlocked = false,
   roomMode,
@@ -73,6 +77,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   const flight = useRef<InspectionMotion | null>(null);
   const lastTarget = useRef("");
   const lastStrip = useRef(stripIndex);
+  const renderedAngle = useRef({ ...tableAngle });
 
   // Spacebar tracking for table pan
   useEffect(() => {
@@ -191,15 +196,9 @@ export const CameraRig: React.FC<CameraRigProps> = ({
         panStartRef.current = { x: e.clientX, y: e.clientY };
 
         if (onAdjustInspectPan) {
-          // World units per pixel based on camera distance and vertical FOV (45 deg)
-          const fovRad = (45 * Math.PI) / 180;
-          const heightWorld = 2 * inspectZoom * Math.tan(fovRad / 2);
-          const worldPerPixel = heightWorld / Math.max(1, canvas.clientHeight);
-
-          // Moving mouse right/down pushes camera left/up (natural grab-and-drag feel)
-          const dWorldX = -dx * worldPerPixel;
-          const dWorldZ = -dy * worldPerPixel;
-          onAdjustInspectPan(dWorldX, dWorldZ);
+          const from = tablePointAt(camera, canvas, e.clientX - dx, e.clientY - dy);
+          const to = tablePointAt(camera, canvas, e.clientX, e.clientY);
+          if (from && to) onAdjustInspectPan(from.x - to.x, from.z - to.z);
         }
       }
     };
@@ -260,6 +259,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     loupeInspection,
     onUpdateRoomPose,
     onAdjustInspectPan,
+    camera,
     inputBlocked,
   ]);
 
@@ -267,14 +267,16 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   // journeys move it; quaternion interpolation remains stable across the yaw seam.
   useFrame((_, delta) => {
     const inspecting = roomMode === "inspect";
+    const tablePose = tableCameraPose(inspectZoom, inspectPan, tableAngle);
     targetPos.current.set(...(inspecting
-      ? [inspectPan.x, TABLE_SURFACE_Y + inspectZoom, inspectPan.z] as [number, number, number]
+      ? tablePose.position
       : ROOM_EYE));
     const desired = desiredCamera.current;
     desired.position.copy(targetPos.current);
-    desired.up.set(...(inspecting ? INSPECT_CAMERA_UP : ROOM_CAMERA_UP));
-    desired.lookAt(...(inspecting ? [inspectPan.x, TABLE_SURFACE_Y, inspectPan.z] as [number, number, number] : roomLookTarget(savedRoomPose)));
-    const immediate = isDeterministic || isReducedMotion || (!inspecting && !isTransitioning) || ((touchInput || loupeInspection) && !isTransitioning);
+    desired.up.set(...(inspecting ? tablePose.up : ROOM_CAMERA_UP));
+    desired.lookAt(...(inspecting ? tablePose.target : roomLookTarget(savedRoomPose)));
+    const angleChanging = Math.abs(renderedAngle.current.tilt - tableAngle.tilt) + Math.abs(renderedAngle.current.yaw - tableAngle.yaw) > .00001;
+    const immediate = angleDragging || isDeterministic || isReducedMotion || (!inspecting && !isTransitioning) || ((touchInput || loupeInspection) && !isTransitioning && !angleChanging);
     const moving = !immediate && (camera.position.distanceTo(targetPos.current) > .001 || camera.quaternion.angleTo(desired.quaternion) > .001 || isPanningTableRef.current);
     if (moving !== wasMovingRef.current) { wasMovingRef.current = moving; onCameraMotion?.(moving); }
     if (inspecting && inspectionTransition && !immediate) {
@@ -286,10 +288,24 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       }
       camera.position.set(...flight.current!.step(delta));
       camera.quaternion.slerp(desired.quaternion,1-Math.exp(-delta*12));
-    } else if (immediate) {
+    } else if (immediate || (!isTransitioning && !moving)) {
+      renderedAngle.current = { ...tableAngle };
       flight.current=null;lastTarget.current="";lastStrip.current=stripIndex;
       camera.position.copy(targetPos.current);
       camera.quaternion.copy(desired.quaternion);
+    } else if (inspecting && !isTransitioning) {
+      // Interpolate orbit coordinates, not a chord between camera positions:
+      // the point under the center stays fixed throughout an angle change.
+      flight.current=null;lastTarget.current="";lastStrip.current=stripIndex;
+      const alpha = 1 - Math.exp(-delta * 12);
+      renderedAngle.current.tilt = THREE.MathUtils.lerp(renderedAngle.current.tilt, tableAngle.tilt, alpha);
+      renderedAngle.current.yaw = THREE.MathUtils.lerp(renderedAngle.current.yaw, tableAngle.yaw, alpha);
+      const rect = gl.domElement.getBoundingClientRect();
+      const center = tablePointAt(camera, gl.domElement, rect.left + rect.width / 2, rect.top + rect.height / 2);
+      const pan = center ? { x: THREE.MathUtils.lerp(center.x, inspectPan.x, alpha), z: THREE.MathUtils.lerp(center.z, inspectPan.z, alpha) } : inspectPan;
+      const distance = center ? THREE.MathUtils.lerp(camera.position.distanceTo(center), inspectZoom, alpha) : inspectZoom;
+      const pose = tableCameraPose(distance, pan, renderedAngle.current);
+      camera.position.set(...pose.position); camera.up.set(...pose.up); camera.lookAt(...pose.target);
     } else {
       flight.current=null;lastTarget.current="";lastStrip.current=stripIndex;
       const alpha = 1 - Math.exp(-delta * (isTransitioning ? 7 : 12));
@@ -305,10 +321,12 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     // Loupe projection runs before the renderer, so refresh the view matrix now.
     camera.updateMatrixWorld();
     // Camera telemetry exposes the real rendered pose for regression checks.
+    gl.domElement.dataset.tableAngle = `${tableAngle.tilt},${tableAngle.yaw}`;
     gl.domElement.dataset.cameraFov = String(perspective.fov);
     gl.domElement.dataset.cameraPosition = camera.position.toArray().join(",");
     gl.domElement.dataset.cameraQuaternion = camera.quaternion.toArray().join(",");
     if (isTransitioning && (!inspectionTransition || immediate || flight.current?.done) && camera.position.distanceTo(targetPos.current) < .001 && camera.quaternion.angleTo(desired.quaternion) < .001 && Math.abs(perspective.fov - desiredFov) < .001) {
+      renderedAngle.current = { ...tableAngle };
       camera.position.copy(targetPos.current);
       camera.quaternion.copy(desired.quaternion);
       perspective.fov = desiredFov; perspective.updateProjectionMatrix();

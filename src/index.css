@@ -914,3 +914,19 @@ button:disabled { opacity: .4; cursor: default; }
   .is-loupe-inspection .loupe-controls > button:last-child { flex-basis:auto; }
 }
 .has-loupe .table-caption { left:50%; right:auto; transform:translateX(-50%); width:max-content; max-width:calc(100% - 24px); padding:3px 8px; border-radius:6px; color:#e8e7df; background:#1b1e23dd; }
+
+/* Camera angle mode shares the table's ordinary navigation surface. */
+.table-angle-controls { gap:12px; }
+.table-angle-controls output { padding-left:10px; font-size:.8rem; font-variant-numeric:tabular-nums; }
+.table-actions { flex-wrap:wrap; }
+[data-adjusting-view=true] canvas { cursor:move; }
+@media (max-width:480px) {
+  .table-header .table-actions { margin-left:auto; }
+  .table-angle-controls { gap:4px; }
+}
+
+.table-controls:not(.is-focus) .table-caption {
+  left:50%; right:auto; transform:translateX(-50%); width:max-content;
+  max-width:calc(100% - 24px); padding:3px 8px; border-radius:6px;
+  color:#e8e7df; background:#1b1e23ed;
+}

@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { ViewerAction, ViewerState, viewerReducer } from '../state/viewerState';
-import { TABLE_SURFACE_Y } from '../utils/cameraBounds';
+import { tablePointAt, tableInputCamera, TOP_DOWN } from '../utils/tableCamera';
+import { fitRollView } from '../utils/rollLayout';
+import { TABLE_SURFACE_Y, TABLE_CENTER_Z } from '../utils/cameraBounds';
 import { LOUPE_LENS_HEIGHT, LOUPE_RADIUS } from '../utils/loupeView';
 
 /** One gesture owner for the physical object and the close-eye view. */
@@ -20,9 +22,9 @@ export function LoupeNavigation({ state, dispatch, blocked }: { state: ViewerSta
     const down = (e: PointerEvent) => {
       const s = live.current, touch = e.pointerType !== 'mouse';
       if (blocked || s.roomMode !== 'inspect' || e.button > 0) return;
-      const rect = canvas.getBoundingClientRect();
-      const [x,y,r] = (canvas.dataset.loupeDisplay ?? '').split(',').map(Number);
-      const hit = Math.hypot(e.clientX-rect.left-x,e.clientY-rect.top-y) <= r;
+      const [sampleX, sampleY] = (canvas.dataset.loupeSample ?? '').split(',').map(Number);
+      const point = tablePointAt(camera, canvas, e.clientX, e.clientY, TABLE_SURFACE_Y + .008 + LOUPE_LENS_HEIGHT * s.loupe.scale);
+      const hit = !!point && Math.hypot(point.x - sampleX, point.z - (TABLE_CENTER_Z - sampleY)) <= LOUPE_RADIUS * s.loupe.scale;
       if (!contacts.size && !s.loupe.inspecting && !(s.loupe.isActive && touch) && !hit) { owner = 'table'; moved = false; return; }
       consume(e);
       if (s.isTransitioning) return;
@@ -53,15 +55,16 @@ export function LoupeNavigation({ state, dispatch, blocked }: { state: ViewerSta
         // Ignore contact separation completely; centroid translation still moves.
         send({ type: 'MOVE_LOUPE', dx: -dx*wpp, dy: dy*wpp });
       } else if (owner === 'loupe') {
-        const wpp = 2 * (camera.position.y-TABLE_SURFACE_Y-.008-LOUPE_LENS_HEIGHT*s.loupe.scale) * Math.tan(Math.PI/8) / canvas.clientHeight;
-        send({ type: 'MOVE_LOUPE', dx: dx*wpp, dy: -dy*wpp });
+        const height = TABLE_SURFACE_Y + .008 + LOUPE_LENS_HEIGHT * s.loupe.scale;
+        const from = tablePointAt(camera, canvas, next.x - dx, next.y - dy, height), to = tablePointAt(camera, canvas, next.x, next.y, height);
+        if (from && to) send({ type: 'MOVE_LOUPE', dx: to.x - from.x, dy: from.z - to.z });
       } else if (owner === 'table') {
-        const rect = canvas.getBoundingClientRect();
         const ratio = contacts.size === 2 && oldDistance > 8 && distance() > 8 ? oldDistance/distance() : 1;
-        const zoom = s.inspectZoom * ratio;
-        const wpp = 2*s.inspectZoom*Math.tan(Math.PI/8)/rect.height;
-        const anchor = { x: s.inspectPan.x+(old.x-rect.left-rect.width/2)*wpp, z: s.inspectPan.z+(old.y-rect.top-rect.height/2)*wpp };
-        send({ type: 'TOUCH_VIEW', zoom, x: anchor.x+(s.inspectPan.x-anchor.x)*ratio-dx*wpp*ratio, z: anchor.z+(s.inspectPan.z-anchor.z)*ratio-dy*wpp*ratio });
+        const max = s.focusMode ? fitRollView(s.roll, 'frame', s.activeFrameIndex, s.viewportAspect).zoom : Math.max(3.6, fitRollView(s.roll, 'roll', 0, s.viewportAspect).zoom);
+        const zoom = Math.max(.12 * s.roll.scale, Math.min(max, s.inspectZoom * ratio));
+        const inputCamera = tableInputCamera(s.inspectZoom, s.inspectPan, s.focusMode ? TOP_DOWN : s.tableAngle, s.viewportAspect);
+        const from = tablePointAt(inputCamera, canvas, next.x - dx, next.y - dy), to = tablePointAt(inputCamera, canvas, next.x, next.y);
+        if (from && to) send({ type: 'TOUCH_VIEW', zoom, x: from.x + (s.inspectPan.x - to.x) * zoom / s.inspectZoom, z: from.z + (s.inspectPan.z - to.z) * zoom / s.inspectZoom });
       }
     };
     const up = (e: PointerEvent) => {

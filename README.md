@@ -90,3 +90,18 @@ npm run test:e2e
 - **Testing:** Vitest & Playwright
 - **Canvas / Image Processing:** `@napi-rs/canvas`, `pngjs`
 
+### Light table camera angle
+
+In Overview, choose **Adjust view**, then drag horizontally to yaw (±60°)
+and vertically to tilt (0–50° from overhead). On desktop, **Shift-drag**
+adjusts the angle without entering the mode. Scroll or pinch to zoom.
+**Done** or **Escape** returns to normal panning; arrow keys adjust the angle
+while the mode is active. **Top-down** resets only the angles, preserving
+zoom and pan. Precision sliders are available under **Adjust**; double-click
+either slider to reset that axis to 0°.
+
+Frame focus and loupe inspection temporarily use an overhead view; returning
+restores the browsing angle and framing. Camera roll remains locked.
+
+Regression coverage: `npm run test:integration -- m18-table-angle` and
+`npm run test:e2e -- m18-table-angle` (desktop, touch Chrome, and WebKit).
