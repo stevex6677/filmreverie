@@ -67,16 +67,35 @@ model binaries into the module directory to make a new model discoverable.
 
 ## Synchronization and backups
 
-Use the existing **film-photo** Mutagen session:
+Shared media is transferred on demand using the general local `remote-setup`
+tool, described in [remote-setup README](/Users/zhangzimou/Projects/tools/remote_setup/README.md). All source-code
+Mutagen sessions exclude both shared directories.
 
-- Mac: `/Users/zhangzimou/Projects/film_photo`
-- Linux: `/workspace/film_photo`
+- Mac shared root: `/Users/zhangzimou/Projects/film_photo`
+- Linux shared root: `/workspace/film_photo`
 
-Both shared directories are included by its current ignore rules. Do not add
-overlapping sync sessions or worktree symlinks to these roots. Flush `film-photo`
-for shared data and the active worktree's session for source code before remote
-execution; flush `film-photo` after generation to retrieve outputs. Run commands
-from the active mapped remote worktree even when reading/writing shared media.
+From any worktree, upload a required file with:
+
+```bash
+/Users/zhangzimou/Projects/tools/remote_setup/remote-setup asset ensure ignored_assets/<path>
+```
+
+The same command accepts `ignored_generated/<path>` for an existing model or
+export needed remotely. It skips identical files, verifies SHA-256 after transfer,
+and refuses to overwrite differing content. Include external textures and other
+required companion files explicitly. There are no overlapping asset sessions or
+worktree copies/symlinks. The old `film-photo` session is migrated to code-only
+coverage; flushing a source session no longer transfers media.
+
+Retrieve durable remote outputs before releasing the instance:
+
+```bash
+/Users/zhangzimou/Projects/tools/remote_setup/remote-setup asset fetch ignored_generated/<unique-run>/<file>
+```
+
+Fetch only writes under the local main checkout's `ignored_generated/`. Preserve
+source originals as read-only. Run application commands from the active mapped
+remote worktree and flush that worktree's source session before execution.
 
 Back up both shared directories separately: Git and Mutagen are not a versioned
 backup. Removing a temporary worktree must not remove either shared directory.

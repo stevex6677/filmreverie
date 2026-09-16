@@ -43,88 +43,45 @@ the application and its tooling.
   reading or editing it. Do not inspect the remote copy unless the user
   explicitly asks for a remote-state diagnostic.
 
-## 2. Canonical path mappings
+## 2. Per-checkout remote setup
 
-Antigravity and Cursor worktrees use this logical mapping:
+Use the general, local-only setup tool documented in
+[remote-setup README](/Users/zhangzimou/Projects/tools/remote_setup/README.md):
 
-```text
-local:  <agent worktree root>/<project_name>
-remote: /workspace/worktrees/<agent>/<project_name>
+```bash
+/Users/zhangzimou/Projects/tools/remote_setup/remote-setup setup
 ```
 
-Codex adds its generated worktree ID between the agent and project names:
+Invoke it from the active checkout (or pass `-C <checkout>` before the command).
+The executable lives in `~/Projects/tools/remote_setup/`, outside this repository;
+its location does not determine the target project. Running this infrastructure
+tool locally is required and is an exception to the remote runtime default.
 
-```text
-local:  <codex worktree root>/<worktree_id>/<project_name>
-remote: /workspace/worktrees/codex/<worktree_id>/<project_name>
-```
-
-Orca places named worktrees inside each project directory:
-
-```text
-local:  /Users/zhangzimou/orca/workspaces/<project_name>/<worktree_name>
-remote: /workspace/worktrees/orca/<project_name>/<worktree_name>
-```
-
-Preserve every path component below the mapped repository root when translating
-a path. For Orca, the repository root includes both `<project_name>` and
-`<worktree_name>`; do not omit or swap either component.
-
-### Main checkout
-
-- Local: `/Users/zhangzimou/Projects/film_photo`
-- Remote: `/workspace/film_photo`
-- Mutagen session: `film-photo`
-
-### Antigravity worktrees
-
-- Local worktree root:
-  `/Users/zhangzimou/.gemini/antigravity/worktrees`
-- Remote worktree root: `/workspace/worktrees/antigravity`
-- Mutagen session: `antigravity-worktrees`
-- Example project mapping:
-  `/Users/zhangzimou/.gemini/antigravity/worktrees/film_photo` maps to
-  `/workspace/worktrees/antigravity/film_photo`.
-
-### Cursor worktrees
-
-- Local worktree root: `/Users/zhangzimou/.cursor/worktrees`
-- Remote worktree root: `/workspace/worktrees/cursor`
-- Mutagen session: `cursor-worktrees`
-- Example project mapping:
-  `/Users/zhangzimou/.cursor/worktrees/film_photo` maps to
-  `/workspace/worktrees/cursor/film_photo`.
-
-### Codex worktrees
-
-- Codex creates a generated root for each worktree group at
-  `/Users/zhangzimou/.codex/worktrees/<worktree_id>`.
-- Map each generated root separately to
-  `/workspace/worktrees/codex/<worktree_id>`.
-- Example project mapping:
-  `/Users/zhangzimou/.codex/worktrees/<worktree_id>/film_photo` maps to
-  `/workspace/worktrees/codex/<worktree_id>/film_photo`.
-- Name each session `codex-worktrees-<worktree_id>`. The currently configured
-  example is `codex-worktrees-4d63`.
-- When Codex creates a new `<worktree_id>`, check `mutagen sync list --long`. If
-  its root is not mapped, report that a new per-root session is required before
-  running remote commands.
-
-### Orca worktrees
-
-- Local worktree root: `/Users/zhangzimou/orca/workspaces`
-- Remote worktree root: `/workspace/worktrees/orca`
-- Use `orca-worktrees` as the Mutagen session name when configuring this root
-  mapping. Verify that the session exists and its endpoints match before use.
-- Example repository mapping:
-  `/Users/zhangzimou/orca/workspaces/film_photo/<worktree_name>` maps to
-  `/workspace/worktrees/orca/film_photo/<worktree_name>`.
-- The project directory groups worktrees; run commands from the named worktree
-  repository, not from `/workspace/worktrees/orca/film_photo`.
-- Before running remote commands, check `mutagen sync list --long`. If this
-  root is not mapped, set up the root session first. One root session covers
-  all projects and named worktrees beneath it; do not create overlapping
-  per-worktree sessions.
+- Every active checkout gets its own **two-way-safe** Mutagen session. Never
+  create a provider-wide or project-wide session covering multiple worktrees.
+- Discover the repository root with Git. Preserve the full relative suffix:
+  - Main: `/Users/zhangzimou/Projects/film_photo` → `/workspace/film_photo`.
+  - Orca: `~/orca/workspaces/<project>/<worktree>` →
+    `/workspace/worktrees/orca/<project>/<worktree>`.
+  - Antigravity: `~/.gemini/antigravity/worktrees/<suffix>` →
+    `/workspace/worktrees/antigravity/<suffix>`.
+  - Cursor: `~/.cursor/worktrees/<suffix>` →
+    `/workspace/worktrees/cursor/<suffix>`.
+  - Codex: `~/.codex/worktrees/<id>/<project>` →
+    `/workspace/worktrees/codex/<id>/<project>`.
+- Obtain the exact session name and endpoints from `setup`/`status`; do not guess.
+- New source files sync before Git staging. Git metadata, dependencies, caches,
+  local setup state, and shared media directories are excluded. Tracked source
+  files receive inclusion exceptions. Rerun setup after changing ignore policy.
+- Remote tooling may modify source/lockfiles; two-way-safe returns those changes
+  to the Mac for review. Continue to perform manual edits and all Git work locally.
+- An active overlapping legacy session blocks setup. Account for its sibling
+  worktrees, flush it if connected, pause it, and initialize the needed checkouts
+  individually before terminating the parent. Never resume a parent over children.
+- Run `stop` before retiring a worktree or switching its SSH alias to a fresh
+  instance; then run `setup` for each checkout needed on the new instance.
+- Setup and asset commands may perform bounded remote infrastructure checks,
+  existence checks, and checksums. Read/edit repository source locally as before.
 
 ## 3. Run commands remotely
 
@@ -136,15 +93,10 @@ a path. For Orca, the repository root includes both `<project_name>` and
   explicit instruction overrides the remote startup default; do not silently
   fall back to remote execution. Necessary local startup preparation is allowed.
   Keep builds, tests, and other heavy tooling remote unless separately requested.
-- Before a remote command that depends on local edits, flush the exact Mutagen
-  session for the active checkout. Examples:
+- Before a remote command that depends on local edits, flush this checkout:
 
   ```bash
-  mutagen sync flush film-photo
-  mutagen sync flush antigravity-worktrees
-  mutagen sync flush cursor-worktrees
-  mutagen sync flush codex-worktrees-<worktree_id>
-  mutagen sync flush orca-worktrees
+  /Users/zhangzimou/Projects/tools/remote_setup/remote-setup flush
   ```
 
 - Verify session endpoints, status, and conflicts with
@@ -227,7 +179,11 @@ To minimize connection overhead when executing remote commands across agents and
 
 ## Shared asset workflow
 
-- Read `SHARED_ASSETS.md` before using or generating media. Both shared folders use the existing `film-photo` sync session; do not create overlapping routes.
+- Read `SHARED_ASSETS.md` before using or generating media. Both shared folders
+  are excluded from source sync. Use `remote-setup asset ensure <path>` for needed
+  input files and `remote-setup asset fetch <path>` for durable generated outputs.
+  Paths include `ignored_assets/` or `ignored_generated/` and resolve against the
+  main checkout, never the current worktree. Do not add asset sync sessions.
 - Keep scripts in the active worktree and run them from its mapped remote checkout. Shared media resolves to `/workspace/film_photo` remotely.
 - Use unique output run folders; do not overwrite another worktree's output or the original source assets.
 - Git commits contain scripts and manifests, not ignored binary files. Local checksum/copy/move operations are allowed for asset management; application runtimes and tests remain remote except for explicitly requested local app startup under section 3.
