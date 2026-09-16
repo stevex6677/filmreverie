@@ -56,7 +56,7 @@ export function validateBundle(bundle: RollBundle) {
 export class RollRepository {
   constructor(private factory?: IDBFactory, private name = DB_NAME) {}
   async list(): Promise<StoredRoll[]> { const db = await openRollDatabase(this.factory, this.name); try { return await result(db.transaction('rolls').objectStore('rolls').getAll()); } finally { db.close(); } }
-  async read(id: string): Promise<RollBundle> {
+  async read(id: string, includeOriginals = false): Promise<RollBundle> {
     const db = await openRollDatabase(this.factory, this.name);
     try {
       const tx = db.transaction([...STORES]);
@@ -64,7 +64,7 @@ export class RollRepository {
       if (!roll) throw new Error('This roll is no longer available. Refresh the library.');
       const frames = await Promise.all(roll.frameIds.map(frameId => result<StoredFrame | undefined>(tx.objectStore('frames').get(frameId))));
       if (frames.some(f => !f)) throw new Error('Some stored frames are missing. The current roll has been kept open.');
-      const keys = [...new Set(frames.flatMap(f => [f!.viewingKey, f!.thumbnailKey]))];
+      const keys = [...new Set(frames.flatMap(f => [f!.viewingKey, f!.thumbnailKey, ...(includeOriginals ? [f!.originalKey] : [])]))];
       const blobs = await Promise.all(keys.map(key => result<StoredImageRecord | undefined>(tx.objectStore('blobs').get(key))));
       if (blobs.some(b => !b)) throw new Error('Some stored images are missing. The current roll has been kept open.');
       return { roll, frames: frames as StoredFrame[], blobs: (blobs as StoredImageRecord[]).map(imageRecord) };
@@ -126,6 +126,33 @@ export class RollRepository {
       const request = store.get(id);
       request.onsuccess = () => { if (request.result) store.put(change(request.result)); else tx.abort(); };
       await done;
+    } finally { db.close(); }
+  }
+  // Archive imports are one transaction and only add records. Even an ID
+  // collision or a quota failure on the last image preserves the entire library.
+  async importNew(bundles: RollBundle[]) {
+    bundles.forEach(validateBundle);
+    const prepared = [];
+    for (const bundle of bundles) {
+      const images = [];
+      for (const record of bundle.blobs) images.push({ key: record.key, bytes: await record.blob.arrayBuffer(), mime: record.blob.type });
+      prepared.push({ ...bundle, images });
+    }
+    const db = await openRollDatabase(this.factory, this.name);
+    try {
+      const tx = db.transaction([...STORES], 'readwrite'), done = complete(tx);
+      try {
+        for (const bundle of prepared) {
+          tx.objectStore('rolls').add(bundle.roll);
+          for (const frame of bundle.frames) tx.objectStore('frames').add(frame);
+          for (const record of bundle.images) tx.objectStore('blobs').add(record);
+          for (const frame of bundle.frames) for (const key of [frame.originalKey, frame.viewingKey, frame.thumbnailKey]) {
+            const check = tx.objectStore('blobs').count(key);
+            check.onsuccess = () => { if (check.result !== 1) tx.abort(); };
+          }
+        }
+        await done;
+      } catch (error) { try { tx.abort(); } catch { /* Already aborted. */ } await done.catch(() => {}); throw error; }
     } finally { db.close(); }
   }
   trash(id: string, trashed = true) { return this.update(id, r => ({ ...r, trashedAt: trashed ? Date.now() : null, updatedAt: Date.now() })); }
