@@ -13,6 +13,8 @@ import {
   clampTableBrightness,
 } from "../utils/cameraBounds";
 
+import { TableAngle, TOP_DOWN, clampTableAngle } from "../utils/tableCamera";
+
 export type FilmMode = "negative" | "positive";
 export type RoomMode = "inspect" | "room";
 
@@ -31,6 +33,9 @@ export interface LoupeState {
 }
 
 export interface ViewerState {
+  tableAngle: TableAngle;
+  adjustingView: boolean;
+  angleDragging: boolean;
   touchInput: boolean;
   touchPointer: boolean;
   roll: RollDefinition;
@@ -64,6 +69,9 @@ export interface ViewerState {
 const defaultFrameCenter = getFrameCenter(0, DEFAULT_LAYOUT);
 
 export const INITIAL_VIEWER_STATE: ViewerState = {
+  tableAngle: TOP_DOWN,
+  adjustingView: false,
+  angleDragging: false,
   touchInput: false,
   touchPointer: false,
   roll: BASELINE_ROLL,
@@ -123,6 +131,11 @@ export function createInitialViewerState(initialRoomMode: RoomMode = "inspect", 
 }
 
 export type ViewerAction =
+  | { type: "SET_ADJUSTING_VIEW"; active: boolean }
+  | { type: "SET_ANGLE_DRAGGING"; active: boolean }
+  | { type: "SET_TABLE_ANGLE"; angle: TableAngle }
+  | { type: "ADJUST_TABLE_ANGLE"; tilt: number; yaw: number }
+  | { type: "TOP_DOWN" }
   | { type: "INSPECT_LOUPE" }
   | { type: "PULL_BACK_LOUPE" }
   | { type: "SET_LOUPE_EFFECTS"; enabled: boolean }
@@ -186,9 +199,23 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
   const safeZoom = (zoom: number) => state.focusMode || multi ? Math.max(0.12 * state.roll.scale, Math.min(maxZoom, zoom)) : clampInspectZoom(zoom);
   const safePan = (x: number, z: number, zoom = state.inspectZoom) => state.focusMode ? clampFocusPan(state.roll, state.activeFrameIndex, zoom, state.viewportAspect, x, z) : multi ? clampRollPan(state.roll, x, z) : clampInspectPan(x, z);
   switch (action.type) {
+    case "SET_ADJUSTING_VIEW":
+      if (action.active && (state.roomMode !== 'inspect' || state.focusMode || state.loupe.inspecting || state.isTransitioning)) return state;
+      return { ...state, adjustingView: action.active, angleDragging: false };
+    case "SET_ANGLE_DRAGGING":
+      return state.angleDragging === action.active ? state : { ...state, angleDragging: action.active };
+    case "ADJUST_TABLE_ANGLE":
+      return viewerReducer(state, { type: 'SET_TABLE_ANGLE', angle: { tilt: state.tableAngle.tilt + action.tilt, yaw: state.tableAngle.yaw + action.yaw } });
+    case "SET_TABLE_ANGLE":
+    case "TOP_DOWN": {
+      if (state.roomMode !== 'inspect' || state.focusMode || state.loupe.inspecting || state.isTransitioning) return state;
+      const angle = action.type === 'TOP_DOWN' ? TOP_DOWN : action.angle;
+      if (![angle.tilt, angle.yaw].every(Number.isFinite)) return state;
+      return { ...state, tableAngle: clampTableAngle(angle) };
+    }
     case "INSPECT_LOUPE":
       if (!state.loupe.isActive || state.loupe.inspecting || state.roomMode !== 'inspect' || state.isTransitioning) return state;
-      return { ...state, loupe: { ...state.loupe, inspecting: true }, isTransitioning: true, transitionKind: 'loupe' };
+      return { ...state, adjustingView: false, angleDragging: false, loupe: { ...state.loupe, inspecting: true }, isTransitioning: true, transitionKind: 'loupe' };
     case "PULL_BACK_LOUPE":
       if (!state.loupe.inspecting) return state;
       return { ...state, loupe: { ...state.loupe, inspecting: false }, isTransitioning: true, transitionKind: 'loupe' };
@@ -273,7 +300,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       if (state.roomMode !== "inspect" || (state.isTransitioning && state.transitionKind !== "inspection")) return state;
       const selected = viewerReducer(state, { type: "SELECT_FRAME", frameIndex: action.frameIndex });
       const fit = fitRollView(state.roll, "frame", selected.activeFrameIndex, state.viewportAspect);
-      return { ...selected, focusMode: true, inspectionLevel: "frame", inspectZoom: fit.zoom, inspectPan: fit.pan, loupe: { ...selected.loupe, isActive: state.focusMode && state.loupe.isActive }, isTransitioning: true, transitionKind: "inspection",
+      return { ...selected, adjustingView: false, angleDragging: false, focusMode: true, inspectionLevel: "frame", inspectZoom: fit.zoom, inspectPan: fit.pan, loupe: { ...selected.loupe, isActive: state.focusMode && state.loupe.isActive }, isTransitioning: true, transitionKind: "inspection",
         savedOverview: !state.focusMode ? { zoom: state.inspectZoom, pan: state.inspectPan, frameIndex: state.activeFrameIndex } : state.savedOverview };
     }
     case "VIEW_LEVEL": {
@@ -305,6 +332,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       return viewerReducer(state, { type: state.inspectionLevel === "frame" ? "OPEN_FRAME" : "SELECT_FRAME", frameIndex: index });
     }
     case "ESCAPE_INSPECTION":
+      if (state.adjustingView) return { ...state, adjustingView: false, angleDragging: false };
       if (state.loupe.inspecting) return viewerReducer(state, { type: 'PULL_BACK_LOUPE' });
       if (state.loupe.isActive) return viewerReducer(state, { type: 'SET_LOUPE_ACTIVE', active: false });
       return viewerReducer(state, state.focusMode ? { type: "SHOW_OVERVIEW" } : { type: "RETURN_TO_ROOM" });
@@ -418,6 +446,8 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       return {
         ...state,
         roomMode: "room",
+        adjustingView: false,
+        angleDragging: false,
         focusMode: false,
         inspectionLevel: "roll",
         isTransitioning: true,

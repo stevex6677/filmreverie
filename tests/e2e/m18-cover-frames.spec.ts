@@ -3,8 +3,14 @@ import { PNG } from 'pngjs';
 import fs from 'node:fs/promises';
 import { ready, focusShelf, add, room } from './helpers/shelf';
 import { COVER_FRAME_MM, SHELF_CELL_MM, shelfArrangement, mm } from '../../src/data/physicalScale';
+import { ROLL_FRAMES } from '../../src/data/rollManifest';
 
 const OUT = process.env.M18_REVIEW_DIR || 'artifacts/m18-candidates';
+async function coverReady(page: Page, frame: number) {
+  await expect.poll(() => page.locator('canvas').evaluate(el => JSON.parse(el.dataset.shelfCovers ?? '{}')['roll-01']))
+    .toBe(`example-${ROLL_FRAMES[frame].id}`);
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+}
 async function photoPixels(page: Page, slot: number) {
   const box = (await page.locator(`[data-shelf-slot="${slot}"]`).boundingBox())!;
   const centerX = .5 + shelfArrangement(60, true, true).companionX / mm(SHELF_CELL_MM.width);
@@ -25,6 +31,7 @@ test('M18 saved covers render in frames, update after editing, and leave gray bl
   await expect(page.locator('canvas')).toHaveAttribute('data-packaging-loaded', '15');
   await add(page, 'Medium format cover', 'ektar-100', '66');
   await expect(page.locator('[data-owned="true"]')).toHaveCount(2);
+  await coverReady(page, 0);
   await page.mouse.move(0, 0); await page.waitForTimeout(400);
   const before = await photoPixels(page, 0), gray = await photoPixels(page, 5);
   await fs.mkdir(OUT, { recursive: true });
@@ -37,11 +44,13 @@ test('M18 saved covers render in frames, update after editing, and leave gray bl
   await editor.getByRole('button', { name: 'Save and open', exact: true }).click();
   await expect(editor).not.toBeVisible(); await ready(page); await room(page);
   await page.mouse.move(0, 0);
+  await coverReady(page, 1);
   await expect.poll(async () => difference(before, await photoPixels(page, 0))).toBeGreaterThan(12);
   expect(difference(gray, await photoPixels(page, 5))).toBeLessThan(2);
   await page.screenshot({ path: `${OUT}/${info.project.name}-cover-rotated.png` });
   const saved = await photoPixels(page, 0);
   await page.reload(); await ready(page); await focusShelf(page); await page.mouse.move(0, 0);
+  await coverReady(page, 1);
   await expect.poll(async () => difference(saved, await photoPixels(page, 0))).toBeLessThan(2);
   await expect(page.locator('[data-owned="false"]')).toHaveCount(14);
   const blank = (await page.locator('[data-shelf-slot="5"]').boundingBox())!;

@@ -18,9 +18,15 @@ test('M15 native multi-touch navigates across strips, anchors zoom, pins a loupe
   await expect.poll(async()=>Number(await page.locator('main').getAttribute('data-inspect-zoom'))).toBeLessThan(fit*.65);
   await drag(x,y,70,0);await expect(page.locator('main')).toHaveAttribute('data-selected-frame','7');
   await page.getByRole('button',{name:'Reset framing',exact:true}).tap();await ready(page);await openViewingTools(page);await page.getByTestId('loupe-toggle').tap();await closeViewingTools(page);
-  await touch('touchStart',[{x,y,id:1}]);await touch('touchEnd',[]);await page.waitForTimeout(500);
+  // M17 makes the object directly draggable; tapping its center enters
+  // Inspection instead of placing an offset lens as the M15 gesture did.
+  const initialDisplay=(await canvas.getAttribute('data-loupe-display'))!.split(',').map(Number);
+  await drag(initialDisplay[0],initialDisplay[1],25,0);
+  await expect(page.locator('main')).toHaveAttribute('data-loupe-state','activated');
+  await page.waitForTimeout(500);
   const sample=await canvas.getAttribute('data-loupe-sample'),display=(await canvas.getAttribute('data-loupe-display'))!.split(',').map(Number);
-  expect(Math.hypot(display[0]-(x-rect.x),display[1]-(y-rect.y))).toBeGreaterThan(display[2]+20);
+  expect(display[0]-initialDisplay[0]).toBeGreaterThan(20);
+  expect(display[0]-initialDisplay[0]).toBeLessThan(30);
   const lens=PNG.sync.read(await captureCanvas(page));expect(getRegionStats(lens,Math.round(display[0]),Math.round(display[1]),35).stdDev).toBeGreaterThan(3);
   await page.screenshot({path:info.outputPath('touch-loupe.png')});
   await touch('touchStart',[{x:x-30,y:y+80,id:1},{x:x+30,y:y+80,id:2}]);await touch('touchMove',[{x:x-40,y:y+90,id:1},{x:x+40,y:y+90,id:2}]);await touch('touchEnd',[]);expect(await canvas.getAttribute('data-loupe-sample')).toBe(sample);

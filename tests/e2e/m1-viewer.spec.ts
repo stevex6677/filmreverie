@@ -1,4 +1,4 @@
-import { openViewingTools, selectOverviewFrame, captureCanvas } from "./helpers/viewing";
+import { placeLoupeAtScreenPoint, openViewingTools, selectOverviewFrame, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -187,8 +187,8 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
     // 4. Test pointer canvas interaction directly
     const box = await canvas.boundingBox();
     if (box) {
-      // Hover over Frame 2 coordinates on canvas
-      await page.mouse.move(box.x + FRAME_SCREEN_CENTERS[1].x, box.y + FRAME_SCREEN_CENTERS[1].y);
+      // Drag the physical loupe over Frame 2
+      await placeLoupeAtScreenPoint(page, box.x + FRAME_SCREEN_CENTERS[1].x, box.y + FRAME_SCREEN_CENTERS[1].y);
       await page.waitForTimeout(300);
       await expect(page.locator("[data-testid=frame-badge]")).toContainText("#2");
     }
@@ -278,7 +278,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
     const box = await canvas.boundingBox();
     if (box) {
       // Move to table background well above the film strip
-      await page.mouse.move(box.x + TABLE_BG_POINT.x, box.y + TABLE_BG_POINT.y);
+      await placeLoupeAtScreenPoint(page, box.x + TABLE_BG_POINT.x, box.y + TABLE_BG_POINT.y);
       await page.waitForTimeout(400);
 
       const offStripBuffer = await captureCanvas(page);
@@ -290,7 +290,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
       expect(Math.abs(offStripLensStats.meanR - offStripLensStats.meanB)).toBeLessThan(10); // Neutral table glass
 
       // 3. Move loupe onto film frame 3 (center frame: x: 640, y: 400)
-      await page.mouse.move(box.x + FRAME_SCREEN_CENTERS[2].x, box.y + FRAME_SCREEN_CENTERS[2].y);
+      await placeLoupeAtScreenPoint(page, box.x + FRAME_SCREEN_CENTERS[2].x, box.y + FRAME_SCREEN_CENTERS[2].y);
       await page.waitForTimeout(400);
 
       const onStripBuffer = await captureCanvas(page);

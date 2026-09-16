@@ -1,4 +1,6 @@
+import { ShelfTools } from "./components/ShelfTools";
 import { RollEditor } from "./components/RollEditor";
+import { UpdateNotice } from "./components/UpdateNotice";
 import { createRuntimeRoll } from "./storage/rollRuntime";
 import { SavedView, StoredRoll, rollRepository, storageMessage } from "./storage/rollRepository";
 import { BASELINE_ROLL, FULL_ROLL_FIXTURE, LOCAL_ROLL, validateRoll } from "./utils/rollLayout";
@@ -103,11 +105,12 @@ export function App() {
   useEffect(()=>setSheet(null),[state.roomMode]);
   useEffect(()=>{if(mobile)dispatch({type:'INPUT_TOUCH',active:true});else setSheet(null);},[mobile]);
   useEffect(() => { document.title = roll.imported ? `${roll.label} — Darkroom Film Viewer` : "Darkroom Film Viewer — Roll 01"; }, [roll]);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false), [libraryError, setLibraryError] = useState("");
   const [editingRollId, setEditingRollId] = useState<string | undefined>();
   const [deletedRoll, setDeletedRoll] = useState<StoredRoll | null>(null);
   const shelfPortal = useRef<HTMLDivElement>(null);
-  const shelfVisible = state.roomMode === 'room' && !editorOpen && !sheet && !hidden && !contextLost;
+  const shelfVisible = state.roomMode === 'room' && !editorOpen && !toolsOpen && !sheet && !hidden && !contextLost;
   const shelf = useFilmShelf(rollRepository, shelfVisible);
   useEffect(() => { if (!state.shelfFocused && shelf.trash) shelf.changeTrash(false); }, [state.shelfFocused, shelf.trash]);
   const tableRollAvailable = !shelf.allRolls.some(r => r.id === roll.rollId && r.trashedAt !== null);
@@ -192,7 +195,7 @@ export function App() {
   // Keyboard shortcut support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (editorOpen || sheet==='frames') return;
+      if (editorOpen || toolsOpen || sheet==='frames') return;
       if(sheet==='tools' && e.key==='Escape'){setSheet(null);return;}
       // Ignore when typing in input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
@@ -201,6 +204,14 @@ export function App() {
 
       if ((e.target instanceof HTMLElement && e.target.isContentEditable) ||
           (e.target instanceof HTMLButtonElement && ["Enter", " "].includes(e.key))) return;
+      if (state.roomMode === "inspect" && state.adjustingView) {
+        const step = 3 * Math.PI / 180;
+        if (e.key.startsWith('Arrow')) {
+          e.preventDefault(); dispatch({type:'ADJUST_TABLE_ANGLE',yaw:e.key==='ArrowRight'?step:e.key==='ArrowLeft'?-step:0,tilt:e.key==='ArrowDown'?step:e.key==='ArrowUp'?-step:0}); return;
+        }
+        if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); dispatch({type:'SET_ADJUSTING_VIEW',active:false}); return; }
+        if (e.key === '0') { dispatch({type:'TOP_DOWN'}); return; }
+      }
       if (state.roomMode === "inspect") {
         if (state.loupe.isActive && e.key.startsWith('Arrow')) {
           e.preventDefault();
@@ -258,12 +269,17 @@ export function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.roomMode, state.shelfFocused, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, state.loupe, roll, editorOpen, sheet]);
+  }, [state.roomMode, state.adjustingView, state.shelfFocused, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, state.loupe, roll, editorOpen, toolsOpen, sheet]);
 
   const localError = new URLSearchParams(window.location.search).get("roll") === "local" ? validateRoll(LOCAL_ROLL) : null;
   if (localError) return <main className="darkroom-error-fallback"><div className="error-card" role="alert"><h2>Local roll unavailable</h2><p>{localError}</p><a href="/?mode=room">Return to shelf</a></div></main>;
 
   return (
+    <div className="app-shell">
+      <UpdateNotice beforeUpdate={async () => {
+        if (stateRef.current.cameraMoving || stateRef.current.isTransitioning || stateRef.current.assetsLoading) throw new Error("Wait for the photograph to finish opening before updating.");
+        await saveView();
+      }} />
     <main
       className={`darkroom-app-container ${roll !== BASELINE_ROLL ? "full-roll" : ""} ${mobile?'mobile-layout':''} ${state.roomMode==='inspect'?'table-layout':''}`}
       data-table-mode={state.focusMode?'focus':'overview'}
@@ -273,6 +289,8 @@ export function App() {
       data-selected-frame={state.activeFrameIndex + 1}
       data-assets-ready={!state.assetsLoading}
       data-inspect-zoom={state.inspectZoom}
+      data-table-angle={`${state.tableAngle.tilt},${state.tableAngle.yaw}`}
+      data-adjusting-view={state.adjustingView}
       data-inspect-pan={`${state.inspectPan.x},${state.inspectPan.z}`}
       data-shelf-trash={shelf.trash}
       data-table-roll-available={tableRollAvailable}
@@ -314,7 +332,7 @@ export function App() {
           <div className="canvas-wrapper" tabIndex={0} aria-label="Film viewer">
             <Canvas shadows key={canvasVersion}
               onCreated={({gl})=>{gl.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();setContextLost(true);});gl.domElement.addEventListener('webglcontextrestored',()=>setContextLost(false));}}
-              frameloop={editorOpen || sheet === 'frames' || hidden || contextLost ? "never" : "always"}
+              frameloop={editorOpen || toolsOpen || sheet === 'frames' || hidden || contextLost ? "never" : "always"}
               camera={initialCamera}
               dpr={[1, Math.min(typeof window !== "undefined" ? window.devicePixelRatio : 1, 1.5)]}
               gl={{
@@ -331,7 +349,7 @@ export function App() {
                 showRoll={tableRollAvailable}
                 shelf={shelf}
                 shelfPortal={shelfPortal}
-                inputBlocked={editorOpen || sheet==='frames' || (state.roomMode==='room' && !!sheet) || hidden || contextLost}
+                inputBlocked={editorOpen || toolsOpen || sheet==='frames' || (state.roomMode==='room' && !!sheet) || hidden || contextLost}
                 state={state}
                 dispatch={dispatch}
                 isDeterministic={isDeterministic}
@@ -348,6 +366,7 @@ export function App() {
         {state.shelfFocused && <button onClick={() => { shelf.close(); dispatch({ type: "RETURN_TO_ROOM" }); }}>← Back to room</button>}
         <div><span className="shelf-eyebrow">{shelf.trash ? "TRASH" : "YOUR COLLECTION"}</span><span>{shelf.trash ? `${shelf.trashCount} deleted rolls` : `${shelf.savedCount} saved ${shelf.savedCount === 1 ? "roll" : "rolls"}`}</span></div>
         {shelf.pages > 1 && <nav aria-label="Shelf pages"><button aria-label="Previous shelf page" disabled={shelf.page === 0} onClick={() => shelf.changePage(shelf.page - 1)}>‹</button><span aria-live="polite">{shelf.page + 1} / {shelf.pages}</span><button aria-label="Next shelf page" disabled={shelf.page + 1 === shelf.pages} onClick={() => shelf.changePage(shelf.page + 1)}>›</button></nav>}
+        <button onClick={() => { shelf.close(); setToolsOpen(true); }}>Backups &amp; offline</button>
         <button className="shelf-add" onClick={() => openEditor()}>New roll</button>
         {state.shelfFocused && <button onClick={() => shelf.changeTrash(!shelf.trash)}>{shelf.trash ? "Saved rolls" : `Trash (${shelf.trashCount})`}</button>}
         {deletedRoll && <div className="shelf-deleted-notice" role="status"><span>{deletedRoll.name} moved to Trash</span><button onClick={() => { void restoreRoll(deletedRoll.id).catch(error => setLibraryError(storageMessage(error))); }}>Undo</button><button aria-label="Dismiss deletion notice" onClick={() => setDeletedRoll(null)}>×</button></div>}
@@ -356,8 +375,10 @@ export function App() {
       {shelfVisible && shelf.selectedRoll && shelf.selection && <ShelfRollCard key={shelf.selectedRoll.id} shelf={shelf} roll={shelf.selectedRoll} repository={rollRepository} activeId={tableRollAvailable ? roll.rollId : ""} onOpen={openSaved} onEdit={openEditor} onDelete={deleteRoll} onRestore={restoreRoll} />}
       {!tableRollAvailable ? <div className="empty-table-controls"><button onClick={openShelf}>Rolls</button><span>No roll on the light table</span>{state.roomMode === 'inspect' && <button onClick={() => openEditor()}>New roll</button>}</div> : state.roomMode==='inspect'?<TableControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} sheet={sheet} setSheet={setSheet}/>:mobile ? <MobileControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} sheet={sheet} setSheet={setSheet}/> : <Controls state={state} dispatch={dispatch} onOpenLibrary={openShelf} />}
       {libraryError && <div className="library-notice" role="alert">{libraryError}<button onClick={() => { setLibraryError(""); openShelf(); }}>Open shelf</button></div>}
+      {toolsOpen && <ShelfTools onClose={() => setToolsOpen(false)} beforeExport={saveView} />}
       {editorOpen && <RollEditor onDelete={deleteRoll} editId={editingRollId} onClose={() => { setEditorOpen(false); setEditingRollId(undefined); }} onOpen={openSaved} />}
     </main>
+    </div>
   );
 }
 

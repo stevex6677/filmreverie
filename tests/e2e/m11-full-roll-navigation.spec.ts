@@ -57,7 +57,10 @@ test("M11 six strips, 36 photo regions, 29→30→31 loupe journey and overview 
   await openViewingTools(page);await page.getByTestId("loupe-toggle").click();
   let prior = parsePng(await captureCanvas(page, { path: `${dir}/frame-29-loupe.png` }));
   for (const n of [30, 31]) {
+    // M17 reserves navigation for the table while the physical loupe is away.
+    await closeViewingTools(page);await page.getByTestId('put-away-loupe').click();
     await page.getByRole("button", { name: "Next", exact: true }).click(); await ready(page);
+    await page.getByTestId('loupe-activate').click();
     await expect(app(page)).toHaveAttribute("data-selected-frame", String(n));
     await expect(app(page)).toHaveAttribute("data-loupe-active", "true");
     const current = parsePng(await captureCanvas(page, { path: `${dir}/frame-${n}-loupe.png` }));
@@ -103,6 +106,11 @@ test("M11 keyboard and endpoints through M16 Overview/Focus, stock and dimmer", 
   expect(errors).toEqual([]);
 });
 
+test.describe('photograph network failure', () => {
+// This test injects an image-request failure with page.route. A production
+// worker can satisfy that request from cache before routing sees it. Exercise
+// the network retry UI here; M18 separately tests actual worker/cache failures.
+test.use({ serviceWorkers: 'block' });
 test("M11 failed photograph keeps slots usable and recovers through visible retry", async ({ page }) => {
   const errors = trackErrors(page, true);
   let failures = 0;
@@ -119,6 +127,7 @@ test("M11 failed photograph keeps slots usable and recovers through visible retr
   const recovered = await point(page, 30);
   expect(getRegionStats(parsePng(await captureCanvas(page)), Math.round(recovered.x), Math.round(recovered.y), 60).stdDev).toBeGreaterThan(5);
   expect(failures).toBeGreaterThan(0); expect(errors).toEqual([]);
+});
 });
 
 async function brightness(page: Page, value: number) {

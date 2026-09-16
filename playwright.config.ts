@@ -55,7 +55,9 @@ export default defineConfig({
     video,
   },
   webServer: {
-    command: `npm run preview -- --host 127.0.0.1 --port ${port}`,
+    command: process.env.PLAYWRIGHT_STATIC_PREVIEW === "1"
+      ? `PORT=${port} node scripts/serve-production.mjs`
+      : `npm run preview -- --host 127.0.0.1 --port ${port}`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 30000,

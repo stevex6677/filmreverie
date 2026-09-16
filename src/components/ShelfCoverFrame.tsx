@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { mm, WORLD_UNITS_PER_MM, COVER_FRAME_MM, SHELF_FLOOR, SHELF_FRAME_YAW, shelfArrangement } from '../data/physicalScale';
 import { getPackaging } from '../data/filmPackaging';
@@ -55,6 +56,17 @@ function useCover(roll: StoredRoll) {
 
 export function ShelfCoverFrame({ roll }: { roll: StoredRoll }) {
   const cover = useCover(roll);
+  const { gl } = useThree();
+  useEffect(() => {
+    // Cover thumbnails load independently of the film on the light table.
+    const update = (ready: boolean) => {
+      const covers = JSON.parse(gl.domElement.dataset.shelfCovers ?? '{}');
+      if (ready) covers[roll.id] = roll.coverId; else delete covers[roll.id];
+      gl.domElement.dataset.shelfCovers = JSON.stringify(covers);
+    };
+    update(!!cover);
+    return () => update(false);
+  }, [gl, roll.id, roll.coverId, cover]);
   const shapes = useMemo(() => ({
     outer: roundedRectangle(WIDTH - .6, HEIGHT - .6, 2.5),
     inset: roundedRectangle(WIDTH - 3, HEIGHT - 3, 1.5),

@@ -93,7 +93,7 @@ cylinder with modeled caps and spindle. The material desaturates empty cells.
 When adding a supported stock, add both formats and a matching 35mm cartridge,
 record sources/checksums, measure panels, then check all variants in the room.
 `tests/integration/m18-film-shelf.test.ts` checks stock/format coverage and corner
-projection. `npm run validate:m18` runs the build and full integration/browser
+projection. `npm run validate:m19` runs the build and full integration/browser
 suites; `PLAYWRIGHT_WORKERS=1` is appropriate on the shared server's current
 process limit.
 

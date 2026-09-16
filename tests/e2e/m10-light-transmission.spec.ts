@@ -1,4 +1,4 @@
-import { viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
+import { placeLoupeAtScreenPoint, viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -165,17 +165,11 @@ test(`M10 linear HDR loupe: ${mode} ${brightness}% at ${magnifications.join(",")
         }
         for (const name of ["photo", "rebate", "hole", "panel"] as const) {
           const [x, y] = regions[name];
-          // Move from outside the lens to avoid the lens intercepting the pointer.
-          await page.mouse.move(100, 100);
-          await page.mouse.move(x, y);
+          const surfaceZ = name === "photo" ? 0.006 : name === "rebate" ? 0.007 : 0.001;
+          const center = await placeLoupeAtScreenPoint(page, x, y, surfaceZ);
           await page.waitForTimeout(180);
           const lens = await capture(page, `loupe-${mode}-${brightness}-${mag}-${name}`);
-          // Perspective projection of the raised lens (0.148m), compared at its
-          // optical center only; the deliberately vignetted rim is excluded.
-          const surfaceZ = name === "photo" ? 0.006 : name === "rebate" ? 0.007 : 0.001;
-          const scale = (3.2 - surfaceZ) / (3.2 - 0.148);
-          const lx = Math.round(640 + (x - 640) * scale);
-          const ly = Math.round(400 + (y - 400) * scale);
+          const lx = center.x, ly = center.y;
           const a = getRegionStats(source, x, y, 2);
           const b = getRegionStats(lens, lx, ly, 2);
           const differences = [Math.abs(a.meanR - b.meanR), Math.abs(a.meanG - b.meanG), Math.abs(a.meanB - b.meanB)];

@@ -1,3 +1,4 @@
+import { blockUpdate } from '../offline/client';
 import { photoCropPreview } from '../utils/photoFraming';
 import { useEffect, useRef, useState } from 'react';
 import { FILM_STOCKS, DEFAULT_FILM_STOCK_ID, FilmStockId, getFilmStock } from '../data/filmStocks';
@@ -12,6 +13,7 @@ export function RollEditor({editId,onClose,onOpen,onDelete}:Props) {
   const [error,setError]=useState(''),[busy,setBusy]=useState(false),[progress,setProgress]=useState(''),[loading,setLoading]=useState(true);
   const [draft,setDraft]=useState<DraftPhoto[]|null>(null),[editing,setEditing]=useState<StoredRoll|null>(null),[rollId,setRollId]=useState(''),[step,setStep]=useState<Step>('photos'),[selected,setSelected]=useState('');
   const [name,setName]=useState(''),[stock,setStock]=useState<FilmStockId>(DEFAULT_FILM_STOCK_ID),[format,setFormat]=useState<FilmFormat>('135'),[sizing,setSizing]=useState<FrameSizing>('fixed'),[cover,setCover]=useState('');
+  useEffect(() => { blockUpdate('roll-editor', true); return () => blockUpdate('roll-editor', false); }, []);
   const drag=useRef<number|null>(null);
   const run=async(fn:()=>Promise<void>)=>{setError('');setBusy(true);try{await fn();}catch(e){setError(storageMessage(e));}finally{setBusy(false);setLoading(false);}};
   useEffect(()=>{mounted.current=true;const previous=document.activeElement as HTMLElement;dialog.current?.showModal();return()=>{mounted.current=false;++loadRequest.current;abort.current?.abort();releaseDraft(draftRef.current);requestAnimationFrame(()=>{if(previous?.isConnected)previous.focus();else document.querySelector<HTMLElement>('.shelf-toolbar .shelf-add')?.focus();});};},[]);

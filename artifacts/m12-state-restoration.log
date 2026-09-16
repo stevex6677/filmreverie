@@ -1,6 +1,0 @@
-
-Running 1 test using 1 worker
-
-  ✓  1 tests/e2e/m12-roll-library.spec.ts:18:1 › M12 real import, editing, duplicate handling, switching and persistent Trash (10.1s)
-
-  1 passed (11.8s)

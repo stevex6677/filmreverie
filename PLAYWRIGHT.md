@@ -11,10 +11,10 @@ It applies to both `test:e2e` and all `validate:mN` scripts. Playwright's
 
 Follow `AGENTS.md`: inspect/edit locally, verify the exact Mutagen mapping,
 flush it, and run builds/tests in the matching remote checkout. For the main
-checkout, after confirming `film-photo` is connected and conflict-free:
+checkout, after confirming its `remote-setup status` is connected and conflict-free:
 
 ```sh
-mutagen sync flush film-photo
+/Users/zhangzimou/Projects/tools/remote_setup/remote-setup flush
 ssh remote "cd /workspace/film_photo && PLAYWRIGHT_WORKERS=4 npm run validate:m12"
 ```
 

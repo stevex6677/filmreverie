@@ -1026,3 +1026,41 @@ button:disabled { opacity: .4; cursor: default; }
   .roll-editor-dialog .import-footer-actions { flex-wrap:wrap; gap:8px; }
   .roll-editor-dialog .import-footer-actions button { font-size:12px; padding:8px; }
 }
+/* Camera angle mode shares the table's ordinary navigation surface. */
+.table-angle-controls { gap:12px; }
+.table-angle-controls output { padding-left:10px; font-size:.8rem; font-variant-numeric:tabular-nums; }
+.table-actions { flex-wrap:wrap; }
+[data-adjusting-view=true] canvas { cursor:move; }
+@media (max-width:480px) {
+  .table-header .table-actions { margin-left:auto; }
+  .table-angle-controls { gap:4px; }
+}
+
+.table-controls:not(.is-focus) .table-caption {
+  left:50%; right:auto; transform:translateX(-50%); width:max-content;
+  max-width:calc(100% - 24px); padding:3px 8px; border-radius:6px;
+  color:#e8e7df; background:#1b1e23ed;
+}
+
+/* Updates reserve their own row; the viewer and its controls share the remainder.
+   Layout containment also keeps non-modal fixed tool panels inside the viewer.
+   Modal dialogs retain the browser top layer and block update activation. */
+.app-shell { position:relative; top:var(--visible-top,0px); height:var(--visible-height,100dvh); display:flex; flex-direction:column; }
+.app-shell > .darkroom-app-container { flex:1; min-height:0; height:auto; top:0; }
+.app-shell:has(.update-notice) > .darkroom-app-container { contain:layout; }
+.update-notice { flex:none; padding:max(6px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 6px max(16px,env(safe-area-inset-left)); color:#eee5d2; background:#252820; border-bottom:1px solid #62604c; font-size:13px; }
+.update-notice-row { display:flex; justify-content:center; align-items:center; }
+.update-notice button { flex:none; min-height:44px; padding:8px 16px; border:1px solid #c7b285; border-radius:8px; background:#e4c391; color:#211b13; font:inherit; cursor:pointer; }
+.update-notice button:disabled { opacity:.6; cursor:wait; }
+.update-notice button:focus-visible { outline:2px solid #fff; outline-offset:2px; }
+.update-error { max-width:640px; margin:4px auto; line-height:1.4; }
+.offline-panel { margin-top:16px; }
+.offline-panel summary { cursor:pointer; }
+.offline-panel > div { display:grid; gap:12px; margin-top:12px; }
+.offline-panel button { justify-self:start; }
+.archive-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
+.archive-actions label { border: 1px solid #77735b; border-radius: 6px; padding: 8px; }
+.archive-actions input { max-width: 220px; }
+
+.shelf-tools-dialog { width:min(720px,94vw); }
+.shelf-tools-dialog select { display:block; max-width:100%; padding:8px; }
