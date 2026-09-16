@@ -19,14 +19,14 @@ async function library(page:Page) {
   if(await page.locator('.offline-panel').getAttribute('open')!==null)await page.locator('.offline-panel summary').click();
   await page.getByRole('button',{name:'Rolls',exact:true}).click();
 }
-function photo() {
-  const p=new PNG({width:600,height:400});
-  for(let y=0;y<400;y++)for(let x=0;x<600;x++){const i=(y*600+x)*4;p.data[i]=x%200+40;p.data[i+1]=y%160+40;p.data[i+2]=60;p.data[i+3]=255;}
+function photo(width=600,height=400) {
+  const p=new PNG({width,height});
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++){const i=(y*width+x)*4;p.data[i]=x%200+40;p.data[i+1]=y%160+40;p.data[i+2]=60;p.data[i+3]=255;}
   return {name:'offline-source.png',mimeType:'image/png',buffer:PNG.sync.write(p)};
 }
-async function createRoll(page:Page,name='Offline roll') {
+async function createRoll(page:Page,name='Offline roll',source=photo()) {
   await library(page);await page.getByRole('button',{name:'New roll',exact:true}).click();
-  await page.getByLabel('Choose photographs',{exact:true}).setInputFiles(photo());
+  await page.getByLabel('Choose photographs',{exact:true}).setInputFiles(source);
   await expect(page.getByText('Processed 1 / 1',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Continue to roll details'}).click();await page.getByLabel('Roll name',{exact:true}).fill(name);
   await page.getByRole('button',{name:'Review photographs'}).click();await page.getByRole('button',{name:'Save and open'}).click();await expect(page.getByRole('dialog',{name:'Review roll'})).toHaveCount(0);await expect(page.locator('main')).not.toHaveAttribute('data-roll-id','roll-01');await ready(page);
@@ -36,7 +36,7 @@ async function reloadApp(page:Page) {
   // Navigate through the page, avoiding WebKit's automation-only reload path.
   await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.evaluate(()=>location.reload())]);
 }
-async function rendered(page:Page) { await ready(page);const image=PNG.sync.read(await captureCanvas(page));expect(getRegionStats(image,image.width/2|0,image.height/2|0,60).stdDev).toBeGreaterThan(4); }
+async function rendered(page:Page,minimumDeviation=4) { await ready(page);await expect.poll(async()=>{const image=PNG.sync.read(await captureCanvas(page));return getRegionStats(image,image.width/2|0,image.height/2|0,60).stdDev;}).toBeGreaterThan(minimumDeviation); }
 
 test('M18 reopens offline, renders defaults and stocks, and imports local photos with source detail',async({page,context,browserName},info)=>{
   const server=await offlineServer();
@@ -51,16 +51,23 @@ test('M18 reopens offline, renders defaults and stocks, and imports local photos
   if(browserName==='webkit')await server.stop();else await context.setOffline(true);
   await reloadApp(page);await ready(page);await offlineReady(page);
   await openFrame(page,1);await rendered(page);
+  for(const brightness of ['Home','End']) {
+    await openViewingTools(page);await page.getByTestId('brightness-slider').press(brightness);
+    // Dimmed photographs retain detail with proportionally lower contrast.
+    for(let mode=0;mode<2;mode++) {await page.getByTestId('mode-toggle').click();await rendered(page,brightness==='Home'?1.2:4);}
+    await closeViewingTools(page);
+  }
   for(const stock of ['portra-400','portra-160','portra-800','ektar-100','ektachrome-e100']) {
     await openViewingTools(page);await page.getByLabel('Film stock',{exact:true}).selectOption(stock);await closeViewingTools(page);await rendered(page);
   }
   await page.getByTestId('loupe-activate').click();await page.getByTestId('inspect-loupe').click();await ready(page);
   await page.screenshot({path:info.outputPath('default-offline-loupe.png')});
   await page.getByTestId('inspect-loupe').click();await page.getByTestId('put-away-loupe').click();
-  await createRoll(page);const [roll]=await dbRolls(page);await openFrame(page,1);await rendered(page);
+  const source=photo(3072,2048);await createRoll(page,'Offline roll',source);const [roll]=await dbRolls(page);await openFrame(page,1);await rendered(page);
   await page.getByTestId('loupe-activate').click();await page.getByTestId('inspect-loupe').click();await ready(page);
+  await expect(page.locator('canvas')).toHaveAttribute('data-texture-edge','3072',{timeout:30000});
   await page.screenshot({path:info.outputPath('imported-offline-detail.png')});
-  const bytes=await page.evaluate(()=>new Promise<number[]>((resolve)=>{const q=indexedDB.open('darkroom-rolls');q.onsuccess=()=>{const db=q.result,r=db.transaction('blobs').objectStore('blobs').getAll();r.onsuccess=()=>{db.close();resolve(r.result.map(x=>x.bytes.byteLength));};};}));expect(bytes).toContain(photo().buffer.length);
+  const bytes=await page.evaluate(()=>new Promise<number[]>((resolve)=>{const q=indexedDB.open('darkroom-rolls');q.onsuccess=()=>{const db=q.result,r=db.transaction('blobs').objectStore('blobs').getAll();r.onsuccess=()=>{db.close();resolve(r.result.map(x=>x.bytes.byteLength));};};}));expect(bytes).toContain(source.buffer.length);
   const other=await context.newPage();await other.goto(url);await ready(other);await expect(other.locator('main')).toHaveAttribute('data-roll-id',roll.id);await rendered(other);await other.close();
   await reloadApp(page);await ready(page);await expect(page.locator('main')).toHaveAttribute('data-roll-id',roll.id);expect(errors).toEqual([]);
   } finally {await server.stop();}
@@ -70,10 +77,11 @@ test('M18 works with the production server stopped while the device remains onli
   const server=await offlineServer();
   try {
     await page.goto(server.url+entry);await ready(page);await offlineReady(page);await createRoll(page,'Server stopped');
+    const savedId=(await dbRolls(page))[0].id;
     await server.stop();expect(await page.evaluate(()=>navigator.onLine)).toBe(true);
-    await reloadApp(page);await ready(page);await rendered(page);await panel(page);
+    await reloadApp(page);await expect(page.locator('main')).toHaveAttribute('data-roll-id',savedId);await rendered(page);await panel(page);
     await expect(page.locator('.offline-panel')).toContainText('Server: unavailable',{timeout:15000});
-    const other=await context.newPage();await other.goto(server.url+entry);await ready(other);await rendered(other);await other.screenshot({path:info.outputPath('server-stopped-reopen.png')});await other.close();
+    const other=await context.newPage();await other.goto(server.url+entry);await expect(other.locator('main')).toHaveAttribute('data-roll-id',savedId);await rendered(other);await other.screenshot({path:info.outputPath('server-stopped-reopen.png')});await other.close();
   }finally{await server.stop();}
 });
 
@@ -141,13 +149,21 @@ test('M18 backup migrates HTTP to an independent HTTPS origin and leaves the old
     const legacy=await context.newPage(),legacyUrl=old.url.replace('127.0.0.1','old-darkroom.test');
     await legacy.route(legacyUrl+'/**',async route=>{const response=await route.fetch({url:route.request().url().replace('old-darkroom.test','127.0.0.1')});await route.fulfill({response});});
     await legacy.goto(legacyUrl+entry);await ready(legacy);expect(await legacy.evaluate(()=>window.isSecureContext)).toBe(false);
+    await panel(legacy);await expect(legacy.locator('.offline-panel')).toContainText('Server: reachable');
     await library(legacy);await legacy.getByLabel('Import backup',{exact:true}).setInputFiles(archive);await expect(legacy.getByText('Imported 1 roll as separate copies.',{exact:false})).toBeVisible();
     const legacyDownload=legacy.waitForEvent('download');await legacy.getByRole('button',{name:'Export all rolls'}).click();await(await legacyDownload).saveAs(archive);
-    const target=await context.newPage();await target.goto(secure.url+entry);await ready(target);await library(target);
+    const source=(await dbRolls(legacy))[0];
+    // Migrate by navigating the same tab; old-origin storage survives without
+    // keeping two software-rendered WebGL scenes resident on the test host.
+    const target=legacy;await target.goto(secure.url+entry);await ready(target);await library(target);
     await expect(target.getByText('A home for your photographs',{exact:true})).toBeVisible();
     await target.getByLabel('Import backup',{exact:true}).setInputFiles(archive);await expect(target.getByText('Imported 1 roll as separate copies.',{exact:false})).toBeVisible();
-    await target.getByRole('button',{name:'Open Migrated roll',exact:true}).click();await ready(target);await rendered(target);
-    const source=(await dbRolls(legacy))[0],copy=(await dbRolls(target))[0];expect(copy.id).not.toBe(source.id);expect(copy.name).toBe(source.name);expect(copy.frameIds).toHaveLength(1);
-    expect(await dbRolls(legacy)).toHaveLength(1);await legacy.close();await target.screenshot({path:info.outputPath('migrated-https-library.png')});await target.close();await fs.unlink(archive);
+    await target.getByRole('button',{name:'Open Migrated roll',exact:true}).click();
+    await expect(target.getByRole('dialog',{name:'Roll library',exact:true})).toHaveCount(0);
+    await expect(target.locator('main')).not.toHaveAttribute('data-roll-id','roll-01');await rendered(target);
+    const copy=(await dbRolls(target))[0];expect(copy.id).not.toBe(source.id);expect(copy.name).toBe(source.name);expect(copy.frameIds).toHaveLength(1);
+    await target.screenshot({path:info.outputPath('migrated-https-library.png')});
+    await target.goto(legacyUrl+entry);await ready(target);expect(await dbRolls(target)).toEqual([source]);
+    await target.close();await fs.unlink(archive);
   } finally {await old.stop();await secure.stop();}
 });

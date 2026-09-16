@@ -93,7 +93,10 @@ export async function applyUpdate(beforeReload: () => Promise<void>) {
 export function startOffline() {
   if (started) return; started = true;
   if (!import.meta.env.PROD) { publish({ phase: 'development', message: 'Offline preparation is available in the production app.' }); return; }
-  if (!window.isSecureContext || !('serviceWorker' in navigator)) { publish({ phase: 'unsupported', message: 'Use the private HTTPS address for offline access. Export your rolls here before changing addresses.' }); return; }
+  if (!window.isSecureContext || !('serviceWorker' in navigator)) {
+    publish({ phase: 'unsupported', message: 'Use the private HTTPS address for offline access. Export your rolls here before changing addresses.' });
+    void checkServer(); return;
+  }
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (applying) location.reload(); else void checkOffline(); });
   const refresh = () => { if (!document.hidden) { void checkOffline(); void checkServer(); } };
   document.addEventListener('visibilitychange', refresh);
