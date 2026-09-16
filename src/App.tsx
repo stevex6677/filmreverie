@@ -189,6 +189,14 @@ export function App() {
 
       if ((e.target instanceof HTMLElement && e.target.isContentEditable) ||
           (e.target instanceof HTMLButtonElement && ["Enter", " "].includes(e.key))) return;
+      if (state.roomMode === "inspect" && state.adjustingView) {
+        const step = 3 * Math.PI / 180;
+        if (e.key.startsWith('Arrow')) {
+          e.preventDefault(); dispatch({type:'ADJUST_TABLE_ANGLE',yaw:e.key==='ArrowRight'?step:e.key==='ArrowLeft'?-step:0,tilt:e.key==='ArrowDown'?step:e.key==='ArrowUp'?-step:0}); return;
+        }
+        if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); dispatch({type:'SET_ADJUSTING_VIEW',active:false}); return; }
+        if (e.key === '0') { dispatch({type:'TOP_DOWN'}); return; }
+      }
       if (state.roomMode === "inspect") {
         if (state.loupe.isActive && e.key.startsWith('Arrow')) {
           e.preventDefault();
@@ -245,7 +253,7 @@ export function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.roomMode, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, state.loupe, roll, libraryOpen, sheet]);
+  }, [state.roomMode, state.adjustingView, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, state.loupe, roll, libraryOpen, sheet]);
 
   const localError = new URLSearchParams(window.location.search).get("roll") === "local" ? validateRoll(LOCAL_ROLL) : null;
   if (localError) return <main className="darkroom-error-fallback"><div className="error-card" role="alert"><h2>Local roll unavailable</h2><p>{localError}</p><a href="/?example=1">Open the five-photo example</a></div></main>;
@@ -260,6 +268,8 @@ export function App() {
       data-selected-frame={state.activeFrameIndex + 1}
       data-assets-ready={!state.assetsLoading}
       data-inspect-zoom={state.inspectZoom}
+      data-table-angle={`${state.tableAngle.tilt},${state.tableAngle.yaw}`}
+      data-adjusting-view={state.adjustingView}
       data-inspect-pan={`${state.inspectPan.x},${state.inspectPan.z}`}
       data-room-mode={state.roomMode}
       data-room-pose={`${state.savedRoomPose.yaw},${state.savedRoomPose.pitch}`}

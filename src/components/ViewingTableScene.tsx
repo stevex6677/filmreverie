@@ -11,6 +11,8 @@ import { LightTable } from "./LightTable";
 import { FilmStrip } from "./FilmStrip";
 import { Loupe } from "./Loupe";
 import { DarkroomRoom } from "./DarkroomRoom";
+import { TableAngleNavigation } from "./TableAngleNavigation";
+import { TOP_DOWN } from "../utils/tableCamera";
 import { CameraRig } from "./CameraRig";
 import { TouchNavigation } from "./TouchNavigation";
 import { LoupeNavigation } from './LoupeNavigation';
@@ -70,6 +72,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
 
   return (
     <>
+      <TableAngleNavigation state={state} dispatch={dispatch} blocked={inputBlocked} />
       <LoupeNavigation state={state} dispatch={dispatch} blocked={inputBlocked} />
       <TouchNavigation state={state} dispatch={dispatch} blocked={inputBlocked} />
       {/* Darkroom Atmosphere Scene Background */}
@@ -77,6 +80,8 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
 
       {/* Dynamic Camera Rig with Orbit and Smooth Transitions */}
       <CameraRig
+        tableAngle={state.focusMode || state.loupe.inspecting ? TOP_DOWN : state.tableAngle}
+        angleDragging={state.angleDragging}
         touchInput={state.touchInput}
         inputBlocked={inputBlocked}
         roomMode={state.roomMode}

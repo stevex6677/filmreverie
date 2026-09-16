@@ -22,7 +22,7 @@ describe('M15 touch gestures and shared viewer',()=>{
     expect(pinch.ratio).toBe(.5);expect(pinch.from.x).toBe(150);expect(pinch.to.x).toBe(200);
     const anchored=anchoredZoom(2,1,{x:0,z:0},{x:.5,z:.25});expect(anchored).toEqual({x:.25,z:.125});
     g.up(p(2,300));g.move(p(1,110));g.up(p(1,110));vi.runAllTimers();
-    expect(intents.map(i=>i.type)).toEqual(['pinch','pan']);expect(intents[1]).toEqual({type:'pan',dx:10,dy:0});
+    expect(intents.map(i=>i.type)).toEqual(['pinch','pan']);expect(intents[1]).toEqual({type:'pan',dx:10,dy:0,x:110,y:100});
   });
   it('double tap is exclusive and cancellation cannot leave delayed actions',()=>{
     vi.useFakeTimers();const intents:GestureIntent[]=[];const g=new TouchGestures(i=>intents.push(i));

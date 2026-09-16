@@ -1,6 +1,6 @@
 export interface Contact { id: number; x: number; y: number }
 export type GestureIntent =
-  | { type: 'pan' | 'look'; dx: number; dy: number }
+  | { type: 'pan' | 'look'; dx: number; dy: number; x: number; y: number }
   | { type: 'pinch'; from: Contact; to: Contact; ratio: number }
   | { type: 'tap' | 'doubleTap' | 'loupe'; x: number; y: number }
   | { type: 'swipe'; direction: 'left' | 'right' };
@@ -44,7 +44,7 @@ export class TouchGestures {
     if (this.mode === 'loupe' && !this.multiple) this.emit({ type: 'loupe', ...point });
     else if (this.moved && (this.mode === 'pan' || this.mode === 'room' || this.multiple)) {
       // Include movement before threshold exactly once, then use incremental deltas.
-      this.emit({ type: this.mode === 'room' ? 'look' : 'pan', dx: wasMoved ? point.x - before.x : dx, dy: wasMoved ? point.y - before.y : dy });
+      this.emit({ type: this.mode === 'room' ? 'look' : 'pan', x: point.x, y: point.y, dx: wasMoved ? point.x - before.x : dx, dy: wasMoved ? point.y - before.y : dy });
     }
   }
   up(point: Contact, time = Date.now()) {

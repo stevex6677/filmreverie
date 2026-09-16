@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { ViewerAction, ViewerState, viewerReducer } from '../state/viewerState';
 import { TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../utils/cameraBounds';
 import { anchoredZoom, fitRollView, mapRollPoint } from '../utils/rollLayout';
+import { tableInputCamera, tablePointAt, TOP_DOWN } from '../utils/tableCamera';
 import { GestureIntent, TouchGestures } from '../utils/touchGestures';
 
 export function TouchNavigation({ state, dispatch, blocked }: { state: ViewerState; dispatch: React.Dispatch<ViewerAction>; blocked: boolean }) {
@@ -28,13 +29,15 @@ export function TouchNavigation({ state, dispatch, blocked }: { state: ViewerSta
         }
         return;
       }
-      const renderedZoom = camera.position.y - TABLE_SURFACE_Y;
-      const renderedPan = { x: camera.position.x, z: camera.position.z };
+      const rect = canvas.getBoundingClientRect();
+      const center = at(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      const renderedZoom = center ? camera.position.distanceTo(center) : s.inspectZoom;
+      const renderedPan = center ? { x: center.x, z: center.z } : s.inspectPan;
       // Touch starts from the current rendered pose, including during a flight.
       const zoom = s.isTransitioning ? renderedZoom : s.inspectZoom;
       const pan = s.isTransitioning ? renderedPan : s.inspectPan;
-      const wpp = 2 * zoom * Math.tan(Math.PI/8) / canvas.clientHeight;
-      const tableAt=(x:number,y:number)=>{const r=canvas.getBoundingClientRect();return {x:pan.x+(x-r.left-r.width/2)*wpp,z:pan.z+(y-r.top-r.height/2)*wpp};};
+      const inputCamera = s.isTransitioning ? camera : tableInputCamera(zoom, pan, s.focusMode ? TOP_DOWN : s.tableAngle, s.viewportAspect);
+      const tableAt = (x: number, y: number) => tablePointAt(inputCamera, canvas, x, y);
       const view = (z: number, p: {x:number;z:number}) => {
         const max = s.focusMode ? fitRollView(s.roll,'frame',s.activeFrameIndex,s.viewportAspect).zoom : Math.max(3.6, fitRollView(s.roll,'roll',0,s.viewportAspect).zoom);
         const next = Math.max(.12*s.roll.scale, Math.min(max,z));
@@ -43,14 +46,17 @@ export function TouchNavigation({ state, dispatch, blocked }: { state: ViewerSta
         // two updates immediately so neither half of the pinch is dropped.
         live.current=viewerReducer(s,action);dispatch(action);
       };
-      if (intent.type === 'pan') view(zoom, {x:pan.x-intent.dx*wpp,z:pan.z-intent.dy*wpp});
+      if (intent.type === 'pan') {
+        const from = tableAt(intent.x - intent.dx, intent.y - intent.dy), to = tableAt(intent.x, intent.y);
+        if (from && to) view(zoom, { x: pan.x + from.x - to.x, z: pan.z + from.z - to.z });
+      }
       if (intent.type === 'pinch') {
-        const p = tableAt(intent.from.x,intent.from.y);
+        const p = tableAt(intent.from.x,intent.from.y), to = tableAt(intent.to.x,intent.to.y);
+        if (!p || !to) return;
         const max = s.focusMode ? fitRollView(s.roll,'frame',s.activeFrameIndex,s.viewportAspect).zoom : Math.max(3.6,fitRollView(s.roll,'roll',0,s.viewportAspect).zoom);
         const next = Math.max(.12*s.roll.scale,Math.min(max,zoom*intent.ratio));
         const anchored = anchoredZoom(zoom,next,pan,p);
-        const nextWpp=2*next*Math.tan(Math.PI/8)/canvas.clientHeight;
-        view(next,{x:anchored.x-(intent.to.x-intent.from.x)*nextWpp,z:anchored.z-(intent.to.y-intent.from.y)*nextWpp});
+        view(next,{x:anchored.x+(p.x-to.x)*next/zoom,z:anchored.z+(p.z-to.z)*next/zoom});
       }
       if (intent.type === 'swipe') dispatch({type:'OPEN_FRAME',frameIndex:s.activeFrameIndex+(intent.direction==='right'?1:-1)});
       if (intent.type === 'loupe') {
@@ -65,7 +71,7 @@ export function TouchNavigation({ state, dispatch, blocked }: { state: ViewerSta
       if (intent.type === 'doubleTap') {
         const fit=fitRollView(s.roll,s.inspectionLevel,s.activeFrameIndex,s.viewportAspect);
         if(s.inspectZoom < fit.zoom*.92) dispatch({type:'FIT_VIEW'});
-        else { const p=tableAt(intent.x,intent.y); const next=Math.max(.12*s.roll.scale,fit.zoom/2);view(next,anchoredZoom(zoom,next,pan,p)); }
+        else { const p=tableAt(intent.x,intent.y); if(!p)return; const next=Math.max(.12*s.roll.scale,fit.zoom/2);view(next,anchoredZoom(zoom,next,pan,p)); }
       }
     };
     const gesture = new TouchGestures(emit);
