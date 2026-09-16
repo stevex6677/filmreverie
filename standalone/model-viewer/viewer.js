@@ -7,7 +7,7 @@ const loading=document.querySelector('#loading');
 const state=document.querySelector('#state');
 const progress=document.querySelector('#progress');
 let renderer,controls,model,ready=false;
-function fail(error){console.error(error);document.querySelector('#load-title').textContent='模型暂时未能打开';document.querySelector('#load-detail').textContent='请检查网络连接，然后重新加载';document.querySelector('#retry').hidden=false;document.querySelector('.loading-mark').style.animation='none';progress.hidden=true;loading.classList.remove('done');state.textContent='加载未完成';}
+function fail(error){console.error(error);document.querySelector('#load-title').textContent='Unable to open model';document.querySelector('#load-detail').textContent='Please check network connection and reload';document.querySelector('#retry').hidden=false;document.querySelector('.loading-mark').style.animation='none';progress.hidden=true;loading.classList.remove('done');state.textContent='Loading incomplete';}
 document.querySelector('#retry').onclick=()=>location.reload();
 let selected,profile;
 try{
@@ -15,9 +15,9 @@ try{
   const catalog=await response.json();const id=new URL(location.href).searchParams.get('model')||catalog.defaultModel;
   selected=catalog.models.find(m=>m.id===id);if(!selected)throw new Error(`Unknown model: ${id}`);
   profile=await import(`/profiles/${selected.profile}.js`);
-  document.title=`${selected.title} ${selected.titleAccent} · 模型预览`;
+  document.title=`${selected.title} ${selected.titleAccent} · 3D Model Viewer`;
   for(const [selector,value] of [['#model-title',selected.title],['#title-accent',selected.titleAccent],['.subtitle',selected.subtitle],['#eyebrow',selected.eyebrow||'MODEL STUDY'],['#edition',selected.edition],['#caption',selected.caption],['#caption-detail',selected.captionDetail]])document.querySelector(selector).textContent=value;
-  stage.setAttribute('aria-label',`${selected.title} 三维模型，可拖动旋转，双指或滚轮缩放`);
+  stage.setAttribute('aria-label',`${selected.title} 3D model, drag to rotate, pinch or scroll to zoom`);
   const picker=document.querySelector('#model-select');
   for(const m of catalog.models)picker.add(new Option([m.title,m.titleAccent].filter(Boolean).join(' '),m.id));
   picker.value=id;document.querySelector('#model-picker').hidden=catalog.models.length<2;
@@ -99,8 +99,8 @@ new GLTFLoader().load(selected.url,gltf=>{
     }
   });
   ready=true;document.querySelectorAll('button:disabled').forEach(b=>b.disabled=false);
-  progress.value=100;state.textContent='模型已就绪 · 自由旋转';setView('home');loading.classList.add('done');
+  progress.value=100;state.textContent='Model ready · Free orbit';setView('home');loading.classList.add('done');
   document.documentElement.dataset.modelReady='true';
   window.previewDiagnostics=()=>({ready,modelId:selected.id,profile:selected.profile,triangles,camera:camera.position.toArray(),target:controls.target.toArray(),autoRotate:controls.autoRotate,renderCalls:renderer.info.render.calls,geometries:renderer.info.memory.geometries});
   requestRender();
-},xhr=>{if(xhr.total){const percent=Math.round(xhr.loaded/xhr.total*100);progress.value=percent;document.querySelector('#load-detail').textContent=`正在加载模型 ${percent}%`; }},fail);
+},xhr=>{if(xhr.total){const percent=Math.round(xhr.loaded/xhr.total*100);progress.value=percent;document.querySelector('#load-detail').textContent=`Loading model ${percent}%`; }},fail);

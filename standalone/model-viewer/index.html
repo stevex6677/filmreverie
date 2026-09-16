@@ -1,23 +1,23 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#e9e7e2"><meta name="apple-mobile-web-app-capable" content="yes">
-  <title>模型预览</title>
+  <title>3D Model Viewer</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2320201e'/%3E%3Ccircle cx='32' cy='35' r='16' fill='none' stroke='%23eee' stroke-width='4'/%3E%3Cpath d='M15 16h34' stroke='%23eee' stroke-width='5'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/style.css">
   <script type="importmap">{"imports":{"three":"/vendor/three/build/three.module.js","three/addons/":"/vendor/three/examples/jsm/"}}</script>
 </head>
 <body>
   <main id="viewer">
-    <header><div><p class="eyebrow"><span id="eyebrow">MODEL STUDY</span> <span>3D</span></p><h1><span id="model-title">模型预览</span> <em id="title-accent"></em></h1><p class="subtitle"></p><label id="model-picker" hidden>切换模型 <select id="model-select" aria-label="切换模型"></select></label></div><span class="edition"><span id="edition"></span><span>INTERACTIVE MODEL</span></span></header>
-    <div id="stage" role="img" aria-label="三维模型，可拖动旋转，双指或滚轮缩放" tabindex="0"></div>
-    <div class="loading" id="loading" role="status" aria-live="polite"><div class="loading-mark"></div><strong id="load-title">正在准备模型</strong><p id="load-detail">首次打开需要加载模型，请稍候</p><progress id="progress" max="100" value="0"></progress><button id="retry" hidden>重新加载</button></div>
-    <aside class="model-note"><span class="dot"></span><span id="state">正在加载模型</span></aside>
-    <div class="right-tools"><button id="zoom-in" aria-label="放大" title="放大" disabled>＋</button><button id="zoom-out" aria-label="缩小" title="缩小" disabled>−</button><button id="fullscreen" aria-label="全屏" title="全屏" hidden>⛶</button></div>
+    <header><div><p class="eyebrow"><span id="eyebrow">MODEL STUDY</span> <span>3D</span></p><h1><span id="model-title">Model Viewer</span> <em id="title-accent"></em></h1><p class="subtitle"></p><label id="model-picker" hidden>Switch Model <select id="model-select" aria-label="Switch Model"></select></label></div><span class="edition"><span id="edition"></span><span>INTERACTIVE MODEL</span></span></header>
+    <div id="stage" role="img" aria-label="3D Model, drag to rotate, pinch or scroll to zoom" tabindex="0"></div>
+    <div class="loading" id="loading" role="status" aria-live="polite"><div class="loading-mark"></div><strong id="load-title">Preparing Model</strong><p id="load-detail">Loading 3D asset, please wait...</p><progress id="progress" max="100" value="0"></progress><button id="retry" hidden>Retry</button></div>
+    <aside class="model-note"><span class="dot"></span><span id="state">Loading model...</span></aside>
+    <div class="right-tools"><button id="zoom-in" aria-label="Zoom in" title="Zoom in" disabled>＋</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out" disabled>−</button><button id="fullscreen" aria-label="Fullscreen" title="Fullscreen" hidden>⛶</button></div>
     <footer>
-      <div class="toolbar" aria-label="模型视角"><div class="views"><button data-view="home" class="selected" disabled>初始</button><button data-view="front" disabled>正面</button><button data-view="rear" disabled>背面</button><button data-view="side" disabled>侧面</button></div><span class="divider"></span><button id="auto" aria-pressed="false" disabled><span>↻</span> 自动旋转</button><button id="reset" aria-label="复位视角" disabled>复位</button></div>
-      <p class="hint"><span class="touch-hint">单指旋转 · 双指缩放 / 平移</span><span class="mouse-hint">拖动旋转 · 滚轮缩放 · 右键平移</span><span class="hint-separator">/</span> 360° 自由查看</p>
+      <div class="toolbar" aria-label="Model views"><div class="views"><button data-view="home" class="selected" disabled>Home</button><button data-view="front" disabled>Front</button><button data-view="rear" disabled>Rear</button><button data-view="side" disabled>Side</button></div><span class="divider"></span><button id="auto" aria-pressed="false" disabled><span>↻</span> Auto Rotate</button><button id="reset" aria-label="Reset view" disabled>Reset</button></div>
+      <p class="hint"><span class="touch-hint">Drag to rotate · Pinch to zoom / pan</span><span class="mouse-hint">Drag to rotate · Scroll to zoom · Right-click to pan</span><span class="hint-separator">/</span> 360° Free Orbit</p>
     </footer>
     <div class="corner-label"><span id="caption"></span><span id="caption-detail"></span></div>
   </main>
