@@ -19,6 +19,7 @@ AGENTS.md
 /public/assets/film-packaging/*.png
 !/public/assets/photos/*.jpg
 !/public/assets/photos/*.thumb.jpg
+!/film_filter_references/**
 *.heic
 *.HEIC
 *.mp4

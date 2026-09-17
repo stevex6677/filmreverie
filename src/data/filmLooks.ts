@@ -19,11 +19,11 @@ export interface FilmLook {
 }
 
 export const FILM_LOOKS: Record<FilmStockId, FilmLook> = {
-  'portra-160': { description: 'Soft color · gentle tones · very fine grain', contrast: .94, saturation: .91, shadows: .018, highlights: -.10, color: [.012, -.008, -.004], grain: .009, grainPerMm: 58 },
-  'portra-400': { description: 'Natural color · soft highlights · fine grain', contrast: .98, saturation: .98, shadows: .012, highlights: -.075, color: [.018, -.012, -.006], grain: .014, grainPerMm: 46 },
-  'portra-800': { description: 'Fuller color · gentle highlights · visible grain', contrast: 1.025, saturation: 1.035, shadows: .008, highlights: -.055, color: [.020, -.008, -.010], grain: .021, grainPerMm: 36 },
-  'ektar-100': { description: 'Rich color · crisp tones · very fine grain', contrast: 1.10, saturation: 1.20, shadows: 0, highlights: -.025, color: [.030, .022, .032], grain: .007, grainPerMm: 64 },
-  'ektachrome-e100': { description: 'Neutral color · clean whites · very fine grain', contrast: 1.015, saturation: 1.08, shadows: 0, highlights: 0, color: [0, 0, .006], grain: .008, grainPerMm: 60 },
+  'portra-160': { description: 'Soft color · gentle tones · very fine grain', contrast: 0.90, saturation: 0.88, shadows: 0.040, highlights: -0.16, color: [0.025, -0.006, -0.016], grain: 0.014, grainPerMm: 55 },
+  'portra-400': { description: 'Natural color · soft highlights · fine grain', contrast: 0.93, saturation: 0.94, shadows: 0.030, highlights: -0.12, color: [0.030, -0.008, -0.020], grain: 0.022, grainPerMm: 45 },
+  'portra-800': { description: 'Fuller color · gentle highlights · visible grain', contrast: 1.06, saturation: 1.08, shadows: 0.015, highlights: -0.08, color: [0.035, -0.006, -0.025], grain: 0.032, grainPerMm: 35 },
+  'ektar-100': { description: 'Rich color · crisp tones · very fine grain', contrast: 1.18, saturation: 1.28, shadows: -0.010, highlights: -0.040, color: [0.020, 0.010, 0.035], grain: 0.010, grainPerMm: 65 },
+  'ektachrome-e100': { description: 'Neutral color · clean whites · very fine grain', contrast: 1.14, saturation: 1.16, shadows: -0.015, highlights: 0.010, color: [-0.010, 0.005, 0.025], grain: 0.011, grainPerMm: 60 },
 };
 
 // Independent of texture resolution, loading order and animation time.
