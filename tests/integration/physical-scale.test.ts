@@ -34,7 +34,8 @@ describe('Physical dimensions across the light table and shelf', () => {
     for (const box of FILM_PACKAGING.filter(entry => entry.format === '120')) {
       expect(COVER_FRAME_MM.openingHeight).toBeCloseTo(box.sizeMm[1] * 4 / 3);
     }
-    expect(COVER_FRAME_MM.woodBorder).toBeLessThan(5 * 2 / 3);
+    expect(COVER_FRAME_MM.woodBorder).toBeGreaterThanOrEqual(8);
+    expect(COVER_FRAME_MM.woodBorder).toBeLessThan(15);
   });
   it('fits full-size cartons and frames without overlap in every saved and placeholder arrangement', () => {
     for (const entry of FILM_PACKAGING) for (const owned of [false, true]) {

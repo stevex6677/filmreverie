@@ -9,7 +9,7 @@ export const FILM_RENDER_SCALE = WORLD_UNITS_PER_MM / FILM_MODEL_UNIT;
 // Preserve the opening's proportions and the existing slim wood/mat borders.
 const COVER_OPENING_HEIGHT = 79 * 4 / 3;
 const COVER_OPENING_WIDTH = COVER_OPENING_HEIGHT * (137 * 2 / 3 - 10) / (111.6 * 2 / 3 - 10);
-export const COVER_FRAME_MM = { width: COVER_OPENING_WIDTH + 10, height: COVER_OPENING_HEIGHT + 10, depth: 6, woodBorder: 2, matBorder: 3,
+export const COVER_FRAME_MM = { width: COVER_OPENING_WIDTH + 10, height: COVER_OPENING_HEIGHT + 10, depth: 6, woodBorder: 9, matBorder: 6.5,
   openingWidth: COVER_OPENING_WIDTH, openingHeight: COVER_OPENING_HEIGHT };
 export const CARTRIDGE_MM = { diameter: 25, capDiameter: 26.5, bodyHeight: 41, height: 47 };
 export const SHELF_CELL_MM = { width: 310, height: 135, depth: 85 };
