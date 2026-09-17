@@ -65,17 +65,16 @@ for(const film of ['35mm','120']) test(`${film} free frames preserve proportions
   await expect.poll(()=>page.evaluate(async(index)=>new Promise<boolean>((resolve,reject)=>{
     const request=indexedDB.open('darkroom-rolls');
     request.onerror=()=>reject(request.error);
-    request.onsuccess=()=>{const db=request.result,read=db.transaction('rolls').objectStore('rolls').getAll();read.onsuccess=()=>{db.close();resolve(read.result[0]?.view?.frameId===read.result[0]?.frameIds[index]);};read.onerror=()=>{db.close();reject(read.error);};};
+    request.onsuccess=()=>{const db=request.result,read=db.transaction('rolls').objectStore('rolls').getAll();read.onsuccess=()=>{db.close();resolve(read.result.find((r:any)=>r.id!=='roll-01')?.view?.frameId===read.result.find((r:any)=>r.id!=='roll-01')?.frameIds[index]);};read.onerror=()=>{db.close();reject(read.error);};};
   }),last-1)).toBe(true);
   await page.reload();
   await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true');
   await expect(page.locator('main')).toHaveAttribute('data-selected-frame',film==='35mm'?'24':'8');
   await page.getByRole('button',{name:'← Overview',exact:true}).click();
   await page.getByRole('button',{name:'Rolls',exact:true}).click();
-  await page.getByRole('button',{name:'Actions for Mixed sizes',exact:true}).click();
-  await page.getByRole('menuitem',{name:'Edit Mixed sizes',exact:true}).click();
+  await page.getByRole('button',{name:'Show saved roll Mixed sizes',exact:true}).click();
   await expect(page.getByLabel('Film format',{exact:true})).toHaveValue('free');
-  await page.getByRole('button',{name:'Review photographs',exact:true}).click();
+
   await page.getByRole('button',{name:'Select frame 2',exact:true}).click();
   await page.getByLabel('Rotate frame 2',{exact:true}).click();
   const ratio=await page.locator('.draft-preview').nth(1).evaluate(n=>{const r=n.getBoundingClientRect();return r.width/r.height;});

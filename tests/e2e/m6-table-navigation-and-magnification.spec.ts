@@ -1,4 +1,4 @@
-import { dragLoupeTo, viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
+import { placeLoupeAtScreenPoint, viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -109,23 +109,19 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
       await loupeToggle.click();
       await page.waitForTimeout(300);
 
-      await expect(loupeBadge).toHaveText("ACTIVE (4×)"); // M17 default.
-      // Keep the original 2.5× versus 8× optical comparison with explicit inputs.
-      await page.getByTestId('mag-btn-2x').click();
-      await viewerKey(page, '-'); // Lower bound is 1.5×.
-      await viewerKey(page, '+');
-      await expect(loupeBadge).toHaveText("ACTIVE (2.5×)");
+      await page.getByTestId("mag-btn-2x").click();
+      await expect(loupeBadge).toHaveText("ACTIVE (2×)");
 
       // Drag the physical loupe over Frame 3 (bicycle)
-      await dragLoupeTo(page, FRAME_SCREEN_CENTERS[2].x, FRAME_SCREEN_CENTERS[2].y);
+      await placeLoupeAtScreenPoint(page, box.x + FRAME_SCREEN_CENTERS[2].x, box.y + FRAME_SCREEN_CENTERS[2].y);
       await page.waitForTimeout(400);
 
       const magControls = page.locator("[data-testid=magnification-controls]");
       await expect(magControls).toBeVisible();
 
-      const loupe25Buffer = await captureCanvas(page);
-      fs.writeFileSync(path.join(artifactsDir, "m6-loupe-2.5x.png"), loupe25Buffer);
-      const loupe25Png = parsePng(loupe25Buffer);
+      const loupe2Buffer = await captureCanvas(page);
+      fs.writeFileSync(path.join(artifactsDir, "m6-loupe-2x.png"), loupe2Buffer);
+      const loupe2Png = parsePng(loupe2Buffer);
 
       // Switch to 4x preset
       const mag4Btn = page.locator("[data-testid=mag-btn-4x]");
@@ -148,9 +144,9 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
       fs.writeFileSync(path.join(artifactsDir, "m6-loupe-8x.png"), loupe8Buffer);
       const loupe8Png = parsePng(loupe8Buffer);
 
-      // Lens region should show clear pixel difference between 2.5x and 8x optical enlargement
+      // Lens region should show clear pixel difference between 2x and 8x optical enlargement
       const lensDiff = getRegionMeanDifference(
-        loupe25Png,
+        loupe2Png,
         loupe8Png,
         FRAME_SCREEN_CENTERS[2].x,
         FRAME_SCREEN_CENTERS[2].y,

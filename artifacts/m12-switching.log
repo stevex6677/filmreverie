@@ -1,6 +1,0 @@
-
-Running 1 test using 1 worker
-
-  ✓  1 tests/e2e/m12-roll-library.spec.ts:68:1 › M12 repeated switching restores roll settings and releases owned object URLs (11.3s)
-
-  1 passed (13.1s)

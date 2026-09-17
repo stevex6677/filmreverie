@@ -1,4 +1,4 @@
-import { dragLoupeTo, viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
+import { placeLoupeAtScreenPoint, viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect, Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -142,7 +142,7 @@ test("M9: macro stock lettering through the scene-capture loupe, rapid changes a
     expect(edgeStats.stdDev).toBeGreaterThan(3);
     await page.getByTestId("loupe-toggle").click();
     await page.getByTestId("mag-btn-2x").click();
-    await dragLoupeTo(page, 590, 400);
+    await placeLoupeAtScreenPoint(page, 590, 400);
     const lens = await capture(page, `${stock.id}-macro-loupe`);
     expect(getRegionStats(lens, 590, 400, 80).stdDev).toBeGreaterThan(3);
     expect(getRegionMeanDifference(edge, lens, 590, 400, 100)).toBeGreaterThan(3);
@@ -166,7 +166,7 @@ test("M9: macro stock lettering through the scene-capture loupe, rapid changes a
   }
   await page.getByTestId("loupe-toggle").click();
   await page.getByTestId("mag-btn-4x").click();
-  await dragLoupeTo(page, 590, 400);
+  await placeLoupeAtScreenPoint(page, 590, 400);
   await selector.selectOption("portra-400");
   const beforeRapid = await capture(page, "rapid-before");
   const frame = await page.getByTestId("frame-badge").textContent();

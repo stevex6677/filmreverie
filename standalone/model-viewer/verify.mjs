@@ -16,10 +16,10 @@ for(const [name,engine,options] of [['desktop',chromium,{viewport:{width:1200,he
  await page.waitForTimeout(1500);const initial=await page.evaluate(()=>window.previewDiagnostics());
  assert(initial.ready);assert(initial.triangles>10000);assert.equal(errors.length,0,errors.join('\n'));
  await page.screenshot({path:`${out}/${name}-front.png`,timeout:90000});
- await page.getByRole('button',{name:'背面',exact:true}).click();await page.waitForTimeout(700);
+ await page.getByRole('button',{name:'Rear',exact:true}).click();await page.waitForTimeout(700);
  const rear=await page.evaluate(()=>window.previewDiagnostics());assert(rear.camera[2]<0);
  await page.screenshot({path:`${out}/${name}-rear.png`,timeout:90000});
- await page.getByRole('button',{name:'初始',exact:true}).click();
+ await page.getByRole('button',{name:'Home',exact:true}).click();
  if(name==='desktop'){
  await page.mouse.move(650,400);await page.mouse.down();await page.mouse.move(920,470,{steps:15});await page.mouse.up();
  }else{
@@ -39,10 +39,10 @@ for(const [name,engine,options] of [['desktop',chromium,{viewport:{width:1200,he
  await page.waitForTimeout(1000);const moved=await page.evaluate(()=>window.previewDiagnostics());
  assert.notDeepEqual(moved.camera,initial.camera);
  const beforeZoom=Math.hypot(...moved.camera.map((v,i)=>v-moved.target[i]));
- await page.getByRole('button',{name:'放大',exact:true}).click();await page.waitForTimeout(300);
+ await page.getByRole('button',{name:'Zoom in',exact:true}).click();await page.waitForTimeout(300);
  const zoomed=await page.evaluate(()=>window.previewDiagnostics());assert(Math.hypot(...zoomed.camera.map((v,i)=>v-zoomed.target[i]))<beforeZoom);
- await page.getByRole('button',{name:'自动旋转'}).click();assert(await page.getByRole('button',{name:'自动旋转'}).getAttribute('aria-pressed')==='true');
- await page.waitForTimeout(600);await page.getByRole('button',{name:'自动旋转'}).click();
+ await page.getByRole('button',{name:'Auto Rotate'}).click();assert(await page.getByRole('button',{name:'Auto Rotate'}).getAttribute('aria-pressed')==='true');
+ await page.waitForTimeout(600);await page.getByRole('button',{name:'Auto Rotate'}).click();
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
  reports.push({name,engine:'Chromium',emulatedTablet:name==='ipad',initial,dragged:true,zoomed:true,autoRotate:true,errors});
  await context.close();

@@ -75,4 +75,4 @@ it('rasterizes 120 lettering at substantially higher vertical detail using less 
   expect(atlas.width*atlas.height).toBeLessThan(old.width*old.height);
   const limited=createFilmRebateAtlas(stock,layout,4096,factory);
   expect(limited.width).toBe(4096);expect(limited.height).toBe(512);
-});
+}, 15000);

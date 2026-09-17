@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+  <!-- Single-roll shelf adaptation of the Portra graphic style. Not a retail-edition facsimile. -->
+  <defs>
+    <linearGradient id="paper" x2="0.9" y2="1"><stop stop-color="#fff" stop-opacity=".10"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#231807" stop-opacity=".10"/></linearGradient>
+  </defs>
+  <path fill="#efa916" d="M0 0h600v400H0z"/>
+  <path fill="#514396" d="M0 38h600v270H0z"/>
+  <path fill="#392e74" d="M450 38h150v66H450a33 33 0 0 1 0-66"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <text x="488" y="82" fill="#f8f5ed" font-size="29" font-weight="bold" text-anchor="middle">135-36</text>
+    <text x="28" y="230" fill="#fffdf4" font-size="88" letter-spacing="-3">Portra 400</text>
+    <text x="31" y="282" fill="#f8f5ed" font-size="20" font-weight="bold" letter-spacing="1.6">COLOR NEGATIVE FILM</text>
+    <text x="30" y="372" fill="#dc2420" font-size="47" font-weight="bold" letter-spacing="-1.5">Kodak</text>
+    <text x="176" y="371" fill="#251e13" font-size="42" letter-spacing="-1.5">Professional</text>
+  </g>
+  <path fill="url(#paper)" d="M0 0h600v400H0z"/>
+  <path fill="none" stroke="#c99b46" stroke-width="2" d="M1 1h598v398H1z"/>
+</svg>

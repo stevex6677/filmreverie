@@ -1,4 +1,4 @@
-import { dragLoupeTo, viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
+import { placeLoupeAtScreenPoint, viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -165,13 +165,11 @@ test(`M10 linear HDR loupe: ${mode} ${brightness}% at ${magnifications.join(",")
         }
         for (const name of ["photo", "rebate", "hole", "panel"] as const) {
           const [x, y] = regions[name];
-          // Drag the M17 physical loupe to each sampled surface point.
-          await dragLoupeTo(page, x, y, name === "photo" ? .006 : name === "rebate" ? .007 : .001);
+          const surfaceZ = name === "photo" ? 0.006 : name === "rebate" ? 0.007 : 0.001;
+          const center = await placeLoupeAtScreenPoint(page, x, y, surfaceZ);
           await page.waitForTimeout(180);
           const lens = await capture(page, `loupe-${mode}-${brightness}-${mag}-${name}`);
-          // Compare at the physical M17 lens center, excluding its vignetted rim.
-          const [lensX,lensY] = (await page.locator('canvas').getAttribute('data-loupe-display'))!.split(',').map(Number);
-          const lx = Math.round(lensX), ly = Math.round(lensY);
+          const lx = center.x, ly = center.y;
           const a = getRegionStats(source, x, y, 2);
           const b = getRegionStats(lens, lx, ly, 2);
           const differences = [Math.abs(a.meanR - b.meanR), Math.abs(a.meanG - b.meanG), Math.abs(a.meanB - b.meanB)];

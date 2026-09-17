@@ -1,5 +1,0 @@
-Local mapping: /Users/zhangzimou/.codex/worktrees/41ad -> /root/worktrees/codex/41ad
-Mutagen: codex-worktrees-41ad, connected both sides, no conflicts; flushed before validation.
-Remote host: root@209.151.144.140
-Working directory: /root/worktrees/codex/41ad/film_photo
-REVIEW_ARTIFACTS_DIR=artifacts/m12-candidates/regressions M9_CANDIDATE_DIR=artifacts/m12-candidates/legacy/stocks M10_CANDIDATE_DIR=artifacts/m12-candidates/legacy/lighting M9_M10_CANDIDATE_DIR=artifacts/m12-candidates/legacy/combined M11_CANDIDATE_DIR=artifacts/m12-candidates/legacy/m11 PLAYWRIGHT_PORT=5197 npm run validate:m12

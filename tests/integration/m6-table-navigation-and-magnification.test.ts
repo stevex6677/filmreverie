@@ -1,3 +1,4 @@
+import { BASELINE_ROLL, fitRollView } from '../../src/utils/rollLayout';
 import { describe, it, expect } from "vitest";
 import {
   INITIAL_VIEWER_STATE,
@@ -5,7 +6,6 @@ import {
   createInitialViewerState,
 } from "../../src/state/viewerState";
 import {
-  DEFAULT_INSPECT_DISTANCE,
   MIN_INSPECT_DISTANCE,
   MAX_INSPECT_DISTANCE,
   MIN_TABLE_PAN_X,
@@ -20,7 +20,7 @@ import {
 describe("M6 Integration — Table Inspection Navigation & Loupe Magnification", () => {
   describe("Initial State & Defaults", () => {
     it("initializes with default table zoom, centered pan, and the M17 default 4x loupe magnification", () => {
-      expect(INITIAL_VIEWER_STATE.inspectZoom).toBe(DEFAULT_INSPECT_DISTANCE);
+      expect(INITIAL_VIEWER_STATE.inspectZoom).toBe(fitRollView(BASELINE_ROLL, "roll", 0, INITIAL_VIEWER_STATE.viewportAspect).zoom);
       expect(INITIAL_VIEWER_STATE.inspectPan).toEqual({ x: 0, z: TABLE_CENTER_Z });
       expect(INITIAL_VIEWER_STATE.loupe.magnification).toBe(4);
     });
@@ -28,12 +28,12 @@ describe("M6 Integration — Table Inspection Navigation & Loupe Magnification",
     it("createInitialViewerState initializes clean navigation state in both room and inspect modes", () => {
       const inspectState = createInitialViewerState("inspect");
       expect(inspectState.roomMode).toBe("inspect");
-      expect(inspectState.inspectZoom).toBe(DEFAULT_INSPECT_DISTANCE);
+      expect(inspectState.inspectZoom).toBe(fitRollView(BASELINE_ROLL, "roll", 0, INITIAL_VIEWER_STATE.viewportAspect).zoom);
       expect(inspectState.inspectPan).toEqual({ x: 0, z: TABLE_CENTER_Z });
 
       const roomState = createInitialViewerState("room");
       expect(roomState.roomMode).toBe("room");
-      expect(roomState.inspectZoom).toBe(DEFAULT_INSPECT_DISTANCE);
+      expect(roomState.inspectZoom).toBe(fitRollView(BASELINE_ROLL, "roll", 0, INITIAL_VIEWER_STATE.viewportAspect).zoom);
       expect(roomState.inspectPan).toEqual({ x: 0, z: TABLE_CENTER_Z });
     });
   });
@@ -43,12 +43,12 @@ describe("M6 Integration — Table Inspection Navigation & Loupe Magnification",
       let state = INITIAL_VIEWER_STATE;
 
       // Zoom in (decrease distance towards table surface)
-      state = viewerReducer(state, { type: "ADJUST_TABLE_ZOOM", delta: -0.5 });
-      expect(state.inspectZoom).toBeCloseTo(DEFAULT_INSPECT_DISTANCE - 0.5, 3);
+      state = viewerReducer(state, { type: "ADJUST_TABLE_ZOOM", delta: -0.1 });
+      expect(state.inspectZoom).toBeCloseTo(fitRollView(BASELINE_ROLL, "roll", 0, INITIAL_VIEWER_STATE.viewportAspect).zoom - 0.1, 3);
 
       // Zoom out (increase distance away from table surface)
-      state = viewerReducer(state, { type: "ADJUST_TABLE_ZOOM", delta: 0.8 });
-      expect(state.inspectZoom).toBeCloseTo(DEFAULT_INSPECT_DISTANCE - 0.5 + 0.8, 3);
+      state = viewerReducer(state, { type: "ADJUST_TABLE_ZOOM", delta: 0.2 });
+      expect(state.inspectZoom).toBeCloseTo(fitRollView(BASELINE_ROLL, "roll", 0, INITIAL_VIEWER_STATE.viewportAspect).zoom - 0.1 + 0.2, 3);
     });
 
     it("clamps zoom to MIN_INSPECT_DISTANCE (0.8m close-up)", () => {
@@ -124,11 +124,11 @@ describe("M6 Integration — Table Inspection Navigation & Loupe Magnification",
       state = viewerReducer(state, { type: "SET_TABLE_ZOOM", zoom: 1.2 });
       state = viewerReducer(state, { type: "SET_TABLE_PAN", x: -0.8, z: TABLE_CENTER_Z + 0.2 });
 
-      expect(state.inspectZoom).not.toBe(DEFAULT_INSPECT_DISTANCE);
+      expect(state.inspectZoom).not.toBe(fitRollView(BASELINE_ROLL, "roll", 0, INITIAL_VIEWER_STATE.viewportAspect).zoom);
       expect(state.inspectPan.x).not.toBe(0);
 
       state = viewerReducer(state, { type: "RESET_TABLE_VIEW" });
-      expect(state.inspectZoom).toBe(DEFAULT_INSPECT_DISTANCE);
+      expect(state.inspectZoom).toBe(fitRollView(BASELINE_ROLL, "roll", 0, INITIAL_VIEWER_STATE.viewportAspect).zoom);
       expect(state.inspectPan).toEqual({ x: 0, z: TABLE_CENTER_Z });
     });
   });
@@ -177,7 +177,7 @@ describe("M6 Integration — Table Inspection Navigation & Loupe Magnification",
 
       state = viewerReducer(state, { type: "RETURN_TO_ROOM" });
       expect(state.roomMode).toBe("room");
-      expect(state.inspectZoom).toBe(DEFAULT_INSPECT_DISTANCE);
+      expect(state.inspectZoom).toBe(fitRollView(BASELINE_ROLL, "roll", 0, INITIAL_VIEWER_STATE.viewportAspect).zoom);
       expect(state.inspectPan).toEqual({ x: 0, z: TABLE_CENTER_Z });
       expect(state.loupe.isActive).toBe(false);
     });
@@ -188,7 +188,7 @@ describe("M6 Integration — Table Inspection Navigation & Loupe Magnification",
       state = viewerReducer(state, { type: "SET_LOUPE_MAGNIFICATION", magnification: 8.0 });
 
       state = viewerReducer(state, { type: "RESET" });
-      expect(state.inspectZoom).toBe(DEFAULT_INSPECT_DISTANCE);
+      expect(state.inspectZoom).toBe(fitRollView(BASELINE_ROLL, "roll", 0, INITIAL_VIEWER_STATE.viewportAspect).zoom);
       expect(state.loupe.magnification).toBe(4);
     });
   });

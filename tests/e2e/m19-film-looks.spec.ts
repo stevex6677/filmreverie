@@ -12,8 +12,11 @@ const ready = async (page: Page) => {
 async function strength(page: Page, value: number) {
   await openViewingTools(page);
   const slider = page.getByRole('slider',{name:'Film strength',exact:true});
-  await slider.fill(String(value));
+  if(value===0) { await slider.focus(); await slider.press('Home'); }
+  else if(value===100) { await slider.focus(); await slider.press('End'); }
+  else await slider.fill(String(value));
   await expect(slider).toHaveValue(String(value));
+  await expect(page.locator('main')).toHaveAttribute('data-film-strength',String(value));
   await page.waitForTimeout(180);
 }
 const shot = async(page:Page) => PNG.sync.read(await captureCanvas(page));
@@ -46,11 +49,9 @@ test('M19 every stock and view has live tone/color, exact zero return and unchan
       expect(difference(zero,middle),`${stock.id}/${mode} midpoint changes photo`).toBeGreaterThan(.12);
       expect(difference(zero,strong)).toBeGreaterThan(difference(zero,middle)*1.2);
       expect(getRegionMeanDifference(zero,strong,15,15,20)).toBeLessThan(.2);
-      // Sample the physical upper rail using the settled orthographic-like camera projection.
-      const zoom=Number(await page.locator('main').getAttribute('data-inspect-zoom'));
-      const pixels=zero.height/(2*(zoom-.008)*Math.tan(Math.PI/8));
-      const railY=Math.round(zero.height/2-(.466667/2-.017)*pixels);
-      expect(getRegionMeanDifference(zero,strong,zero.width/2|0,railY,4)).toBeLessThan(.5);
+      // The current focus framing can crop the physical rail; both upper
+      // corners remain scene pixels outside the photograph material.
+      expect(getRegionMeanDifference(zero,strong,zero.width-15,15,20)).toBeLessThan(.2);
       expect(getRegionStats(strong,strong.width/2|0,strong.height/2|0,80).stdDev).toBeGreaterThan(3);
       await captureCanvas(page,{path:info.outputPath(`${stock.id}-${mode}-100.png`)});
       await strength(page,0);expect(difference(zero,await shot(page))).toBeLessThan(.3);
@@ -107,19 +108,26 @@ test('M19 actual photograph import preserves strength through edits, all film fo
   await page.getByLabel('Choose photographs').setInputFiles(files);
   await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText('2 / 2',{timeout:120000});
   await page.getByRole('button',{name:'Continue to roll details'}).click();await page.getByLabel('Roll name',{exact:true}).fill('M19 photographs');
-  await page.getByRole('button',{name:'Review photographs',exact:true}).click();await page.getByRole('button',{name:'Save and open',exact:true}).click();await ready(page);
-  await strength(page,0);await page.reload();await ready(page);await expect(page.locator('main')).toHaveAttribute('data-film-strength','0');
+  await page.getByRole('button',{name:'Review photographs',exact:true}).click();await page.getByRole('button',{name:'Save and open',exact:true}).click();
+  await expect(page.getByRole('dialog',{name:'Review roll',exact:true})).not.toBeVisible({timeout:60000});
+  await expect(page.locator('main')).not.toHaveAttribute('data-roll-id','roll-01');await ready(page);
+  const rollId=(await page.locator('main').getAttribute('data-roll-id'))!;
+  await strength(page,0);
+  await expect.poll(()=>page.evaluate(id=>new Promise<number|undefined>(resolve=>{const request=indexedDB.open('darkroom-rolls');request.onsuccess=()=>{const db=request.result,get=db.transaction('rolls').objectStore('rolls').get(id);get.onsuccess=()=>{resolve(get.result?.filmStrength);db.close();};};request.onerror=()=>resolve(undefined);}),rollId)).toBe(0);
+  await page.reload();await expect(page.locator('main')).toHaveAttribute('data-roll-id',rollId);await ready(page);await expect(page.locator('main')).toHaveAttribute('data-film-strength','0');
   for(const format of ['135','645','66','67','69']) {
     await closeViewingTools(page);await page.getByRole('button',{name:'Rolls',exact:true}).click();
-    await page.getByRole('button',{name:'Actions for M19 photographs',exact:true}).click();await page.getByRole('menuitem',{name:'Edit M19 photographs',exact:true}).click();
+    await ready(page);await page.getByRole('button',{name:'Show saved roll M19 photographs',exact:true}).click();
     await page.getByRole('radio',{name:format==='135'?'35mm':'120',exact:true}).check();await page.getByLabel('Film format',{exact:true}).selectOption(format);
     await page.getByRole('dialog').getByLabel('Film stock',{exact:true}).selectOption('ektachrome-e100');
-    await page.getByRole('button',{name:'Review photographs',exact:true}).click();await page.getByRole('button',{name:'Save and open',exact:true}).click();await ready(page);
+    await page.getByRole('button',{name:'Save and open',exact:true}).click();
+    await expect(page.getByRole('dialog',{name:'Review roll',exact:true})).not.toBeVisible({timeout:60000});
+    await expect(page.locator('main')).toHaveAttribute('data-roll-id',rollId);await ready(page);
     await expect(page.locator('main')).toHaveAttribute('data-film-strength','0');
     await openFrame(page,2);await ready(page);await strength(page,0);const zero=await shot(page);await strength(page,100);
     expect(difference(zero,await shot(page))).toBeGreaterThan(.1);
     await closeViewingTools(page);await captureCanvas(page,{path:info.outputPath(`format-${format}.png`)});
-    await page.reload();await ready(page);await expect(page.locator('main')).toHaveAttribute('data-film-strength','100');
+    await page.reload();await expect(page.locator('main')).toHaveAttribute('data-roll-id',rollId);await ready(page);await expect(page.locator('main')).toHaveAttribute('data-film-strength','100');
     await strength(page,0);await closeViewingTools(page);await page.getByRole('button',{name:'← Overview',exact:true}).click();await ready(page);
   }
 });

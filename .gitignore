@@ -10,9 +10,31 @@ AGENTS.md
 /ignored_assets/
 /ignored_generated/
 
-# Binary and 3D media formats
+# Binary, video, and 3D media formats
 *.blend
 *.blend[0-9]
 *.glb
 *.jpg
 *.jpeg
+/public/assets/film-packaging/*.png
+!/public/assets/photos/*.jpg
+!/public/assets/photos/*.thumb.jpg
+*.heic
+*.HEIC
+*.mp4
+*.webm
+*.mov
+
+# Test review artifacts & test reports
+/artifacts/
+/playwright-report/
+/blob-report/
+
+# Blender reference photos & render previews
+blender/**/mamiya_universal_photos/
+blender/**/renders*/
+blender/**/comparison/
+blender/**/component_studies/previews/
+blender/**/component_studies/renders/
+blender/**/previews_refined/
+blender/**/*.png

@@ -23,7 +23,7 @@ try{
  const page=await browser.newPage({viewport:{width:1000,height:760}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(url);await page.waitForFunction(()=>window.previewDiagnostics?.().ready);
  let diag=await page.evaluate(()=>window.previewDiagnostics());assert.equal(diag.modelId,'sculpture');assert.equal(diag.profile,'default');assert.equal(diag.triangles,4);
- await page.getByLabel('切换模型',{exact:true}).selectOption('alternate');await page.waitForFunction(()=>window.previewDiagnostics?.().modelId==='alternate');
+ await page.getByLabel('Switch Model',{exact:true}).selectOption('alternate');await page.waitForFunction(()=>window.previewDiagnostics?.().modelId==='alternate');
  assert.equal(await page.locator('#model-title').textContent(),'Alternate orientation');assert(new URL(page.url()).searchParams.get('model')==='alternate');
  await page.reload();await page.waitForFunction(()=>window.previewDiagnostics?.().modelId==='alternate');
  await page.waitForFunction(()=>getComputedStyle(document.querySelector('#loading')).opacity==='0');

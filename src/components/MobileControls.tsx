@@ -19,7 +19,7 @@ export function MobileControls({state,dispatch,onOpenLibrary,sheet,setSheet}:{st
   const next=(delta:number)=>dispatch({type:'OPEN_FRAME',frameIndex:state.activeFrameIndex+delta});
   return <>
     <header className="mobile-header">
-      <button aria-label={room?'Open roll library':'Back one level'} disabled={blocked} onClick={()=>room?onOpenLibrary():dispatch({type:'ESCAPE_INSPECTION'})}>{room?'Rolls':'← Back'}</button>
+      <button aria-label={room?'Rolls':'Back one level'} disabled={blocked} onClick={()=>room?onOpenLibrary():dispatch({type:'ESCAPE_INSPECTION'})}>{room?'Rolls':'← Back'}</button>
       <div><span className="mobile-eyebrow">{room?'DARKROOM':state.inspectionLevel.toUpperCase()}</span><h1 title={state.roll.label}>{state.roll.label}</h1></div>
       <button aria-pressed={state.focusMode} onClick={()=>room?setSheet('tools'):dispatch({type:'TOGGLE_FOCUS'})}>{room?'Lights':state.focusMode?'Exit focus':'Focus'}</button>
     </header>

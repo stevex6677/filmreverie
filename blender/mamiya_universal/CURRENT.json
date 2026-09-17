@@ -3,11 +3,11 @@
   "model_id": "mamiya-universal",
   "updated": "2026-09-12",
   "revision": "Hybrid v2 — black body",
-  "purpose": "当前交付版本的唯一入口：继续建模请打开 editable_blend；浏览器展示使用 browser_glb。旧 README 和各次 run 的记录保留历史，不代表当前版本。",
+  "purpose": "Single source of truth for the current delivery: open editable_blend to continue modeling; use browser_glb for browser presentation. Previous READMEs and run records are preserved for history and do not reflect current state.",
   "path_resolution": {
     "config": "shared-assets.json",
-    "asset_base": "main_checkout[platform] / generated_directory；如设置 FILM_PHOTO_SHARED_ROOT，则用它替代 main_checkout[platform]",
-    "asset_paths": "以下 path 和 report 均相对于共享 ignored_generated/，不是当前 worktree。代码、配置和文档路径相对于仓库根目录。"
+    "asset_base": "main_checkout[platform] / generated_directory; if FILM_PHOTO_SHARED_ROOT is set, it overrides main_checkout[platform].",
+    "asset_paths": "All paths and reports below are relative to shared ignored_generated/, not the active worktree. Code, configs, and docs are relative to repository root."
   },
   "editable_blend": {
     "path": "blender/mamiya_universal/hybrid/v2/black_body/runs/20260912T065312Z-d80c8ba1/mamiya_universal_hybrid_v2_black_body.blend",
@@ -24,7 +24,7 @@
     "triangles": 670713,
     "texture_size": 2048,
     "report": "blender/mamiya_universal/hybrid/v2/browser_preview/runs/20260912T073337Z-1d792c08/browser-export.json",
-    "note": "为移动端优化的 PBR 衍生文件，贴图内嵌；实时玻璃效果与 Cycles 不完全一致。继续编辑使用上面的 .blend。"
+    "note": "PBR derivative optimized for mobile with embedded textures; real-time glass shader differs slightly from Cycles. Edit with .blend above."
   },
   "renders": [
     {
@@ -39,16 +39,16 @@
     }
   ],
   "current_changes": [
-    "背面文字和 memo 标识清理。",
-    "镜头外壳及镜筒表面重建为平滑黑色表面，内部使用三组透明镀膜光学组件。",
-    "机身颜色调整为与镜头协调的黑色，保留皮革纹理。"
+    "Cleaned rear text and memo markings.",
+    "Rebuilt lens barrel and body surfaces with smooth black finish; inside features three multi-coated optical elements.",
+    "Adjusted body color to matching black while preserving leatherette texture."
   ],
   "continuation": {
     "body_script": "blender/mamiya_universal/hybrid/v2/match_black_body.py",
     "render_script": "blender/mamiya_universal/hybrid/v2/render_black_body_delivery.py",
     "export_script": "blender/mamiya_universal/hybrid/v2/export_browser_preview.py",
     "revision_notes": "blender/mamiya_universal/hybrid/v2/README_black_body.md",
-    "instructions": "先读 AGENTS.md 和 SHARED_ASSETS.md，通过 Blender MCP 打开 editable_blend 的指定场景；新输出写入独立 run，不覆盖当前交付和原始素材。"
+    "instructions": "Read AGENTS.md and SHARED_ASSETS.md first. Open editable_blend in Blender MCP at the specified scene; write new outputs to unique run folders without overwriting current delivery or source assets."
   },
   "viewer": {
     "readme": "standalone/model-viewer/README.md",
@@ -56,7 +56,7 @@
     "profile": "mamiya",
     "url": "http://remote.tail2b1388.ts.net:4180/?model=mamiya-universal",
     "fallback_url": "http://100.127.56.123:4180/?model=mamiya-universal",
-    "access": "设备需接入允许访问服务器的 Tailscale 网络。更改部署前检查实际服务工作目录和端口。"
+    "access": "Devices must connect to the authorized Tailscale network. Check actual working directory and port before deploying."
   },
-  "update_rule": "每次交付新版本时更新本文件的版本、路径、校验和、源文件关联及状态说明；如发布新的浏览器 GLB，同步更新 models.json 中同一 model_id 的 asset，保留稳定链接。确认文件存在且校验一致后提交 Git。二进制保留在共享目录，其他 worktree 需要包含该提交才能看到最新记录。"
+  "update_rule": "On each new delivery, update this file's version, paths, checksums, source relationship, and status. If releasing a new browser GLB, update models.json for the same model_id to preserve stable links. Verify file presence and checksums before committing to Git. Binaries remain in shared directories."
 }

@@ -36,8 +36,8 @@ export default defineConfig({
   reporter: [["list"]],
   projects: [
     { name: 'desktop', testIgnore: /m15-.*\.spec\.ts/, use:{channel:'chrome'} },
-    { name: 'mobile-chrome', testMatch: /(?:m(?:15|16|17|19)-.*|free-rolls)\.spec\.ts/, use: { channel:'chrome', viewport: {width:390,height:844}, hasTouch:true, isMobile:true, deviceScaleFactor:1 } },
-    { name: 'mobile-webkit', testMatch: /(?:m(?:15|16|17|19)-.*|free-rolls)\.spec\.ts/, testIgnore: /m15-touch-input\.spec\.ts/, use: { browserName:'webkit', channel:undefined, launchOptions:{args:[]}, viewport:{width:390,height:844},hasTouch:true,isMobile:true,deviceScaleFactor:1 } },
+    { name: 'mobile-chrome', testMatch: /(?:m(?:15|16|17|18|19)-.*|free-rolls)\.spec\.ts/, use: { channel:'chrome', viewport: {width:390,height:844}, hasTouch:true, isMobile:true, deviceScaleFactor:1 } },
+    { name: 'mobile-webkit', testMatch: /(?:m(?:15|16|17|18|19)-.*|free-rolls)\.spec\.ts/, testIgnore: /m15-touch-input\.spec\.ts/, use: { browserName:'webkit', channel:undefined, launchOptions:{args:[]}, viewport:{width:390,height:844},hasTouch:true,isMobile:true,deviceScaleFactor:1 } },
   ],
   use: {
     baseURL,
@@ -55,7 +55,9 @@ export default defineConfig({
     video,
   },
   webServer: {
-    command: `npm run preview -- --host 127.0.0.1 --port ${port}`,
+    command: process.env.PLAYWRIGHT_STATIC_PREVIEW === "1"
+      ? `PORT=${port} node scripts/serve-production.mjs`
+      : `npm run preview -- --host 127.0.0.1 --port ${port}`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 30000,

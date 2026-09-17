@@ -47,10 +47,14 @@ export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet}:{sta
     {!inspecting&&<header className="table-header">
       {focus?<button className="table-back" onClick={()=>dispatch({type:'SHOW_OVERVIEW'})} disabled={blocked}>← Overview</button>:<div className="table-entry"><button onClick={onOpenLibrary}>Rolls</button><button data-testid="return-room-btn" onClick={()=>dispatch({type:'RETURN_TO_ROOM'})} disabled={blocked}>← Room</button></div>}
       <div className="table-identity"><span className="table-eyebrow">{focus?'FOCUS':'LIGHT TABLE'}</span><h1>{state.roll.label}</h1><span>{focus?`Frame ${String(number).padStart(2,'0')}`:`${state.roll.frames.length} frames · ${state.roll.format==='135'||!state.roll.format?'35 mm':'120'}`}</span></div>
-      <div className="table-actions">{!state.loupe.isActive&&<button data-testid="loupe-activate" disabled={blocked||state.isTransitioning} onClick={()=>dispatch({type:'SET_LOUPE_ACTIVE',active:true})}>Loupe</button>}<button className="table-adjust" aria-haspopup="dialog" onClick={()=>setSheet('tools')}>Adjust</button></div>
+      <div className="table-actions">{!focus && <button aria-pressed={state.adjustingView} disabled={state.isTransitioning} onClick={()=>{setSheet(null);dispatch({type:'SET_ADJUSTING_VIEW',active:!state.adjustingView});}}>{state.adjustingView?'Done':'Adjust view'}</button>}{!state.loupe.isActive&&<button data-testid="loupe-activate" disabled={blocked||state.isTransitioning} onClick={()=>dispatch({type:'SET_LOUPE_ACTIVE',active:true})}>Loupe</button>}<button className="table-adjust" aria-haspopup="dialog" onClick={()=>setSheet('tools')}>Adjust</button></div>
     </header>}
 
-    {state.loupe.isActive&&!sheet?<nav className="loupe-controls" aria-label="Loupe controls">
+    {state.adjustingView && <nav className="table-navigation table-angle-controls" aria-label="View angle">
+      <output aria-label="Current view angle">Tilt {Math.round(state.tableAngle.tilt*180/Math.PI)}° · Yaw {Math.round(state.tableAngle.yaw*180/Math.PI)}°</output>
+      <button onClick={()=>dispatch({type:'TOP_DOWN'})}>Top-down</button>
+    </nav>}
+    {!state.adjustingView && (state.loupe.isActive&&!sheet?<nav className="loupe-controls" aria-label="Loupe controls">
       <div className="loupe-actions"><button data-testid="inspect-loupe" disabled={!inspecting&&state.isTransitioning} onClick={()=>dispatch({type:inspecting?'PULL_BACK_LOUPE':'INSPECT_LOUPE'})}>{inspecting?'← Pull back':'Inspect'}</button>
       {!inspecting&&<button data-testid="put-away-loupe" disabled={state.isTransitioning} onClick={()=>dispatch({type:'SET_LOUPE_ACTIVE',active:false})}>Put away</button>}</div>
       <div className="table-magnification" role="group" aria-label="Loupe magnification">{[2,4,8].map(value=><button key={value} data-testid={`mag-btn-${value}x`} aria-pressed={state.loupe.magnification===value} onClick={()=>dispatch({type:'SET_LOUPE_MAGNIFICATION',magnification:value})}>{value}×</button>)}</div>
@@ -67,8 +71,8 @@ export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet}:{sta
         <button aria-label="Choose frame" aria-haspopup="dialog" onClick={()=>setSheet('frames')}>Frames</button>
         <button data-testid="reset-view-btn" onClick={()=>dispatch({type:'RESET_TABLE_VIEW'})}>Fit roll</button>
       </>}
-    </nav>}
-    <div className="table-caption table-secondary">{state.loupe.isActive?(inspecting?'Drag to explore · Tap to pull back':'Drag the loupe · Tap its lens to inspect'):focus?(detailZoom?'Drag to inspect detail':''):'Drag to explore · Open a frame to focus'}</div>
+    </nav>)}
+    <div className="table-caption table-secondary">{state.adjustingView?'Drag ↔ to turn · Drag ↕ to tilt · Pinch or scroll to zoom':state.loupe.isActive?(inspecting?'Drag to explore · Tap to pull back':'Drag the loupe · Tap its lens to inspect'):focus?(detailZoom?'Drag to inspect detail':''):'Drag to explore · Shift-drag to adjust view'}</div>
     <div className="table-feedback">
       {state.assetsLoading?<p role="status">Loading photographs…</p>:state.detailStatus&&<p role="status">{state.detailStatus}{state.detailStatus.includes('unavailable')&&<button onClick={()=>dispatch({type:'RETRY_ASSETS'})}>Retry detail</button>}</p>}
       {!!state.assetFailures.length&&<p role="alert">Some photographs could not load. <button onClick={()=>dispatch({type:'RETRY_ASSETS'})}>Retry photographs</button></p>}
@@ -92,6 +96,11 @@ export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet}:{sta
         </div>
         <p className="table-muted" data-testid="frame-badge">#{state.loupe.isActive?state.loupe.frameIndex+1:number} — {state.loupe.isActive?state.roll.frames[state.loupe.frameIndex].title:frame.title}</p>
         <p className="table-muted">View scale <output data-testid="zoom-badge">{Math.round((focus?defaultZoom:DEFAULT_INSPECT_DISTANCE)/state.inspectZoom*100)}%</output></p>
+        {!focus && !inspecting && <div className="table-field">
+          <label>Tilt <output>{Math.round(state.tableAngle.tilt*180/Math.PI)}°</output><input aria-label="Table tilt" title="Double-click to reset to 0°" onDoubleClick={()=>dispatch({type:'SET_TABLE_ANGLE',angle:{...state.tableAngle,tilt:0}})} type="range" min="0" max="50" step="1" disabled={state.isTransitioning} value={state.tableAngle.tilt*180/Math.PI} onChange={event=>dispatch({type:'SET_TABLE_ANGLE',angle:{...state.tableAngle,tilt:Number(event.target.value)*Math.PI/180}})}/></label>
+          <label>Yaw <output>{Math.round(state.tableAngle.yaw*180/Math.PI)}°</output><input aria-label="Table yaw" title="Double-click to reset to 0°" onDoubleClick={()=>dispatch({type:'SET_TABLE_ANGLE',angle:{...state.tableAngle,yaw:0}})} type="range" min="-60" max="60" step="1" disabled={state.isTransitioning} value={state.tableAngle.yaw*180/Math.PI} onChange={event=>dispatch({type:'SET_TABLE_ANGLE',angle:{...state.tableAngle,yaw:Number(event.target.value)*Math.PI/180}})}/></label>
+          <button disabled={state.isTransitioning} onClick={()=>dispatch({type:'TOP_DOWN'})}>Top-down</button>
+        </div>}
       </div>}
     </dialog>}
   </div>;
