@@ -223,8 +223,15 @@ test('M18 update notice reserves space above every viewing mode and appears with
       await page.getByTestId('inspect-loupe').click();await ready(page);await page.getByTestId('put-away-loupe').click();
       await page.getByRole('button',{name:'← Overview',exact:true}).click();await ready(page);
       await page.getByRole('button',{name:'← Room',exact:true}).click();await ready(page);await clearOfControls();
-      await page.screenshot({path:info.outputPath(`update-room-${width}x${height}.png`)});
-      await page.getByTestId('approach-table-btn').click();await ready(page);
+      const approach = page.getByTestId('approach-table-btn');
+      if (await approach.isVisible()) {
+        await approach.click();
+      } else {
+        await page.locator('.canvas-wrapper').focus();
+        await page.keyboard.press('Enter');
+      }
+      await expect(page.locator('main')).toHaveAttribute('data-room-mode', 'inspect');
+      await ready(page);
     }
     await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.getByRole('button',{name:'Update Available',exact:true}).click()]);
     await ready(page);await offlineReady(page);await expect(page.locator('.update-notice')).toHaveCount(0);

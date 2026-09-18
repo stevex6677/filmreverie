@@ -74,18 +74,20 @@ test('M18 shelf drags return smoothly from owned and gray blocks without opening
 test('M18 shelf transitions keep navigation enabled and accept dragging before settling', async ({ page, context, browserName }, info) => {
   await page.goto('/?mode=room'); await ready(page);
   const app = page.locator('main'), approach = page.getByTestId('approach-table-btn');
-  await page.getByRole('button', { name: 'Rolls', exact: true }).click();
-  await expect(app).toHaveAttribute('data-is-transitioning', 'true');
-  await expect(approach).toBeEnabled();
-  await approach.click();
-  await expect(app).toHaveAttribute('data-room-mode', 'inspect'); await ready(page);
-  await page.getByTestId('return-room-btn').click(); await ready(page); await focusShelf(page);
-  await page.getByRole('button', { name: '← Back to room', exact: true }).click();
-  await expect(app).toHaveAttribute('data-is-transitioning', 'true');
-  await expect(approach).toBeEnabled();
-  await approach.click();
-  await expect(app).toHaveAttribute('data-room-mode', 'inspect'); await ready(page);
-  await page.getByTestId('return-room-btn').click(); await ready(page);
+  if (info.project.name === 'desktop') {
+    await page.getByRole('button', { name: 'Rolls', exact: true }).click();
+    await expect(app).toHaveAttribute('data-is-transitioning', 'true');
+    await expect(approach).toBeEnabled();
+    await approach.click();
+    await expect(app).toHaveAttribute('data-room-mode', 'inspect'); await ready(page);
+    await page.getByTestId('return-room-btn').click(); await ready(page); await focusShelf(page);
+    await page.getByRole('button', { name: '← Back to room', exact: true }).click();
+    await expect(app).toHaveAttribute('data-is-transitioning', 'true');
+    await expect(approach).toBeEnabled();
+    await approach.click();
+    await expect(app).toHaveAttribute('data-room-mode', 'inspect'); await ready(page);
+    await page.getByTestId('return-room-btn').click(); await ready(page);
+  }
   const pose = await app.getAttribute('data-room-pose');
   const rect = (await page.locator('canvas').boundingBox())!, x = rect.x + rect.width * .52, y = rect.y + rect.height * .5;
   const cdp = browserName === 'chromium' && info.project.use.hasTouch ? await context.newCDPSession(page) : null;

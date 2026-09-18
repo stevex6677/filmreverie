@@ -1,9 +1,20 @@
 import { expect, Page } from '@playwright/test';
+import { PerspectiveCamera, Vector3 } from 'three';
 import { SHELF_CAMERA } from '../../../src/data/physicalScale';
 export const ready = async (page: Page) => {
   await expect(page.locator('main')).toHaveAttribute('data-assets-ready', 'true', { timeout: 60000 });
   await expect(page.locator('main')).toHaveAttribute('data-is-transitioning', 'false');
 };
+export async function screenPoint(page: Page, point: [number, number, number]) {
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  const canvas = page.locator('canvas'), rect = (await canvas.boundingBox())!;
+  const camera = new PerspectiveCamera(Number(await canvas.getAttribute('data-camera-fov')), rect.width / rect.height, .04, 100);
+  camera.position.fromArray((await canvas.getAttribute('data-camera-position'))!.split(',').map(Number));
+  camera.quaternion.fromArray((await canvas.getAttribute('data-camera-quaternion'))!.split(',').map(Number));
+  camera.updateMatrixWorld();
+  const p = new Vector3(...point).project(camera);
+  return { x: rect.x + (p.x + 1) * rect.width / 2, y: rect.y + (1 - p.y) * rect.height / 2 };
+}
 export async function focusShelf(page: Page) {
   if (await page.locator('main').getAttribute('data-shelf-focused') !== 'true') {
     await page.getByRole('button', { name: 'Rolls', exact: true }).click();

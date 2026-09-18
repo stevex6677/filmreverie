@@ -23,15 +23,20 @@ export function MobileControls({state,dispatch,onOpenLibrary,sheet,setSheet}:{st
       <div><span className="mobile-eyebrow">{room?'DARKROOM':state.inspectionLevel.toUpperCase()}</span><h1 title={state.roll.label}>{state.roll.label}</h1></div>
       <button aria-pressed={state.focusMode} onClick={()=>room?setSheet('tools'):dispatch({type:'TOGGLE_FOCUS'})}>{room?'Lights':state.focusMode?'Exit focus':'Focus'}</button>
     </header>
-    <footer className="mobile-footer">
-      {room?<div className="mobile-sequence"><button disabled={blocked} onClick={()=>dispatch({type:'FACE_TABLE'})}>Face table</button><button className="primary" data-testid="approach-table-btn" disabled={blocked} onClick={()=>dispatch({type:'APPROACH_TABLE'})}>Approach table</button></div>:<>
-        <nav className="mobile-sequence" aria-label="Frame navigation"><button disabled={blocked||state.activeFrameIndex===0} onClick={()=>next(-1)}>Previous</button><button aria-label="Choose frame" aria-haspopup="dialog" onClick={()=>setSheet('frames')}>{state.activeFrameIndex+1} / {state.roll.frames.length}</button><button disabled={blocked||state.activeFrameIndex===state.roll.frames.length-1} onClick={()=>next(1)}>Next</button></nav>
-        <div className="mobile-secondary"><button aria-pressed={state.loupe.isActive} data-testid="loupe-toggle" onClick={()=>dispatch({type:'TOGGLE_LOUPE'})}>{state.loupe.isActive?'Exit loupe':'Loupe'}</button><button disabled={blocked} onClick={()=>dispatch({type:'FIT_VIEW'})}>Fit</button><button aria-haspopup="dialog" onClick={()=>setSheet('tools')}>Tools</button></div>
-      </>}
+    {!room && <footer className="mobile-footer">
+      <nav className="mobile-sequence" aria-label="Frame navigation"><button disabled={blocked||state.activeFrameIndex===0} onClick={()=>next(-1)}>Previous</button><button aria-label="Choose frame" aria-haspopup="dialog" onClick={()=>setSheet('frames')}>{state.activeFrameIndex+1} / {state.roll.frames.length}</button><button disabled={blocked||state.activeFrameIndex===state.roll.frames.length-1} onClick={()=>next(1)}>Next</button></nav>
+      <div className="mobile-secondary"><button aria-pressed={state.loupe.isActive} data-testid="loupe-toggle" onClick={()=>dispatch({type:'TOGGLE_LOUPE'})}>{state.loupe.isActive?'Exit loupe':'Loupe'}</button><button disabled={blocked} onClick={()=>dispatch({type:'FIT_VIEW'})}>Fit</button><button aria-haspopup="dialog" onClick={()=>setSheet('tools')}>Tools</button></div>
       {state.assetsLoading?<p role="status">Loading photographs…</p>:state.detailStatus&&<p role="status">{state.detailStatus}{state.detailStatus.includes('unavailable')&&<button onClick={()=>dispatch({type:'RETRY_ASSETS'})}>Retry detail</button>}</p>}
       {!!state.assetFailures.length&&<p role="alert">Some photographs could not load.<button onClick={()=>dispatch({type:'RETRY_ASSETS'})}>Retry photographs</button></p>}
-      {!room&&state.loupe.isActive&&!state.assetsLoading&&!state.assetFailures.length&&<p className="touch-hint">Touch film to place the loupe · Two fingers move the view</p>}
-    </footer>
+      {state.loupe.isActive&&!state.assetsLoading&&!state.assetFailures.length&&<p className="touch-hint">Touch film to place the loupe · Two fingers move the view</p>}
+    </footer>}
+    {room && (state.assetsLoading || (state.detailStatus && state.detailStatus.includes('unavailable')) || !!state.assetFailures.length) && (
+      <div className="asset-status" role="status">
+        {state.assetsLoading ? 'Loading photographs…' : state.detailStatus}
+        {state.detailStatus?.includes('unavailable') && <button onClick={()=>dispatch({type:'RETRY_ASSETS'})}>Retry detail</button>}
+        {!!state.assetFailures.length && <p role="alert">Some photographs could not load.<button onClick={()=>dispatch({type:'RETRY_ASSETS'})}>Retry photographs</button></p>}
+      </div>
+    )}
     {sheet&&<dialog ref={dialog} className={`mobile-sheet ${sheet==='frames'?'frame-sheet':''}`} aria-label={sheet==='tools'?'Viewing tools':'Choose frame'} onCancel={e=>{e.preventDefault();setSheet(null);}} onKeyDown={e=>e.stopPropagation()}>
       <header><h2>{sheet==='tools'?'Viewing tools':'Your photographs'}</h2><button onClick={()=>setSheet(null)}>Close</button></header>
       {sheet==='frames'?<div className="mobile-frame-grid">{state.roll.frames.map((frame,i)=>{const layout=focusFrameLayout(state.roll,i);return <button key={frame.id} aria-label={`Open frame ${i+1}`} aria-current={i===state.activeFrameIndex?'true':undefined} onClick={()=>{dispatch({type:'OPEN_FRAME',frameIndex:i});setSheet(null);}}><div style={{aspectRatio:layout.frameWidth/layout.frameHeight}}><img loading="lazy" src={frame.thumbnailSrc??frame.src} alt={frame.alt} style={photoCropPreview(frame.aspectRatio,layout.frameWidth/layout.frameHeight,frame.rotation??0,frame.cropPosition)}/></div><span>Frame {i+1}</span></button>;})}</div>:<div className="mobile-tool-content">
