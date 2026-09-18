@@ -1,7 +1,9 @@
 import { openViewingTools, closeViewingTools, openFrame } from "./helpers/viewing";
-import {test,expect} from '@playwright/test';
-import {PNG} from 'pngjs';
-import {getRegionMeanDifference} from './helpers/pixelAnalysis';
+import { test, expect } from '@playwright/test';
+import { PNG } from 'pngjs';
+import { TABLE_SURFACE_Y } from '../../src/utils/cameraBounds';
+import { screenPoint } from './helpers/shelf';
+import { getRegionMeanDifference } from './helpers/pixelAnalysis';
 
 test('M15 iPad tools preserve scene brightness and show lighting, mode and framing changes while open',async({page},info)=>{
   await page.setViewportSize({width:1180,height:820});
@@ -20,7 +22,11 @@ test('M15 iPad tools preserve scene brightness and show lighting, mode and frami
   expect(difference(dark,bright)).toBeGreaterThan(3);await expect(tools).toBeVisible();
   await page.screenshot({path:info.outputPath('ipad-live-room-lights.png')});
   await page.getByRole('button',{name:'Close',exact:true}).tap();
-  await page.getByRole('button',{name:'Approach table',exact:true}).tap();await ready();
+  await expect(page.getByRole('button',{name:'Approach table',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Face table',exact:true})).toHaveCount(0);
+  await expect(page.locator('.mobile-footer')).toHaveCount(0);
+  const point = await screenPoint(page, [0, TABLE_SURFACE_Y + .002, 0]);
+  await page.touchscreen.tap(point.x, point.y);await ready();
   await page.getByRole('button',{name:'Choose frame',exact:true}).tap();await page.getByRole('button',{name:'Open frame 7',exact:true}).tap();await ready();
   const frameBefore=await shot();await page.getByRole('button',{name:'Adjust',exact:true}).tap();
   expect(difference(frameBefore,await shot())).toBeLessThan(1);

@@ -48,3 +48,21 @@ test('M15 mobile import appends, reorders, crops, saves, reloads and cancels edi
   await expect(page.getByLabel('Horizontal crop position')).toHaveValue('0.6');await page.getByLabel('Horizontal crop position').fill('-0.6');await page.getByRole('button',{name:'Cancel edits',exact:true}).tap();
   await page.getByRole('button',{name:'Show saved roll Phone contact sheet'}).tap();await expect(page.getByLabel('Horizontal crop position')).toHaveValue('0.6');
 });
+
+test('M15 iPad and iPhone in room mode have no bottom tools or footer', async ({ page }, info) => {
+  for (const [width, height] of [[1180, 820], [820, 1180], [390, 844], [844, 390]]) {
+    await page.setViewportSize({ width, height });
+    await page.goto('/?mode=room&deterministic=true');
+    await ready(page);
+
+    await expect(page.getByRole('button', { name: 'Rolls', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeVisible();
+
+    await expect(page.getByRole('button', { name: 'Face table', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Approach table', exact: true })).toHaveCount(0);
+    await expect(page.getByTestId('approach-table-btn')).toHaveCount(0);
+    await expect(page.locator('.mobile-footer')).toHaveCount(0);
+
+    await page.screenshot({ path: info.outputPath(`room-no-bottom-tools-${width}x${height}.png`) });
+  }
+});
