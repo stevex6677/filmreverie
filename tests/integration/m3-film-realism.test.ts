@@ -85,13 +85,13 @@ describe("M3 Integration — Film Realism, Perforation Geometry & Shader Synchro
       }
     });
 
-    it("maintains realistic rectangular sprocket proportions", () => {
-      expect(SPROCKET_WIDTH).toBeGreaterThan(0.015);
+    it("maintains realistic rectangular sprocket proportions (KS-1870 / ISO 1007)", () => {
+      expect(SPROCKET_WIDTH).toBeGreaterThan(0.025);
       expect(SPROCKET_WIDTH).toBeLessThan(0.035);
-      expect(SPROCKET_HEIGHT).toBeGreaterThan(0.01);
-      expect(SPROCKET_HEIGHT).toBeLessThan(0.025);
-      // Width is greater than height in 35mm standard perforations
-      expect(SPROCKET_WIDTH).toBeGreaterThan(SPROCKET_HEIGHT);
+      expect(SPROCKET_HEIGHT).toBeGreaterThan(0.035);
+      expect(SPROCKET_HEIGHT).toBeLessThan(0.05);
+      // Authentic 35mm perforations are taller (transverse 2.794mm) than they are wide (longitudinal 1.981mm)
+      expect(SPROCKET_HEIGHT).toBeGreaterThan(SPROCKET_WIDTH);
     });
   });
 

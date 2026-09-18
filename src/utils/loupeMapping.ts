@@ -17,17 +17,20 @@ export const DEFAULT_LAYOUT: FilmStripLayout = {
   frameHeight: 0.366667, // 0.55 / 1.5
   gap: 0.04,
   marginX: 0.08,
-  marginY: 0.05,
+  marginY: 0.084028, // (35mm - 24mm) / 2 = 5.5mm margin: 5.5 * (0.55 / 36)
 };
 
 export const LOUPE_MAGNIFICATION = 2.5;
 
-// Standard 35mm film perforation specifications (8 perforations per frame along each edge)
+// Standard 35mm film perforation specifications (KS-1870 / ISO 1007: 8 perforations per frame along each edge)
 export const PERFORATIONS_PER_FRAME = 8;
 export const TOTAL_PERFORATIONS_PER_EDGE = DEFAULT_LAYOUT.frameCount * PERFORATIONS_PER_FRAME; // 40
-export const SPROCKET_WIDTH = 0.024;
-export const SPROCKET_HEIGHT = 0.016;
-export const SPROCKET_CORNER_RADIUS = 0.004;
+// Longitudinal width along film length: 1.981 mm (0.0780 in)
+export const SPROCKET_WIDTH = 0.030265; // 1.981 * (0.55 / 36)
+// Transverse height across film width: 2.794 mm (0.1100 in)
+export const SPROCKET_HEIGHT = 0.042686; // 2.794 * (0.55 / 36)
+// Perforation corner radius: 0.508 mm (0.020 in)
+export const SPROCKET_CORNER_RADIUS = 0.007761; // 0.508 * (0.55 / 36)
 
 // Authentic 35mm film transverse curl: outer edges lift ~1.8mm while center rests on table
 export const FILM_CURL_HEIGHT = 0.0018;
@@ -66,17 +69,20 @@ export function getPerforationPositions(layout: FilmStripLayout = DEFAULT_LAYOUT
   const top: PerforationPosition[] = [];
   const bottom: PerforationPosition[] = [];
 
+  // Authentic KS-1870 / ISO 1007: perforation centers sit 3.4155mm from the film edge (±14.0845mm from centerline)
+  const unit = 0.55 / 36;
+  const topY = height / 2 - 3.4155 * unit;
+  const bottomY = -height / 2 + 3.4155 * unit;
+
   if (layout.frameWidths) {
     const { width } = getStripDimensions(layout);
     const step = (DEFAULT_LAYOUT.frameWidth + DEFAULT_LAYOUT.gap) / PERFORATIONS_PER_FRAME;
     for (let x = -width / 2 + step / 2, k = 0; x < width / 2 - SPROCKET_WIDTH / 2; x += step, k++) {
-      top.push({ x, y: height / 2 - layout.marginY / 2, frameIndex: 0, perforationIndex: k });
-      bottom.push({ x, y: -height / 2 + layout.marginY / 2, frameIndex: 0, perforationIndex: k });
+      top.push({ x, y: topY, frameIndex: 0, perforationIndex: k });
+      bottom.push({ x, y: bottomY, frameIndex: 0, perforationIndex: k });
     }
     return { top, bottom };
   }
-  const topY = height / 2 - layout.marginY / 2;
-  const bottomY = -height / 2 + layout.marginY / 2;
   const frameSpan = layout.frameWidth + layout.gap;
   const step = frameSpan / PERFORATIONS_PER_FRAME;
 

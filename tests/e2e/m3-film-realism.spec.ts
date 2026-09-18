@@ -61,10 +61,10 @@ test.describe("M3 E2E — Realistic Viewing Table, 35mm Film & Loupe Optics", ()
     }
 
     // 3. Validate sprocket perforations reveal illuminated table
-    // Above frame 3 at (634, 337), a sprocket hole reveals the glowing white table (lum ~ 226)
-    // While the opaque film substrate at (645, 337) is dark (lum ~ 14)
-    const sprocketStats = getRegionStats(negPng, 634, 337, 2);
-    const substrateStats = getRegionStats(negPng, 645, 337, 2);
+    // Above frame 3 at (634, 324), a sprocket hole reveals the glowing white table (lum ~ 244)
+    // While the film substrate between holes at (648, 324) is darker (lum ~ 163)
+    const sprocketStats = getRegionStats(negPng, 634, 324, 2);
+    const substrateStats = getRegionStats(negPng, 648, 324, 2);
 
     // Sprocket hole shows bright table emission through cutout
     expect(sprocketStats.meanLum).toBeGreaterThan(150);

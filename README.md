@@ -19,6 +19,8 @@ Faithfully modeled film characteristics, color gamuts, and edgeprints for five c
 - **Kodak Ektar 100:** Ultra-vivid color negative emulsion with high-contrast edge branding.
 - **Kodak Ektachrome E100:** Reversal slide film with neutral clear base and positive-only viewing.
 
+For complete physical standards (KS-1870 / ISO 1007), coordinate spaces, modification instructions, and how to add new stocks, see [docs/FILM_SPECS.md](docs/FILM_SPECS.md).
+
 ### 3. Physical Loupe & Optical Magnification
 - **Tactile Inspection Loupe:** Drag to inspect fine film grain and edge markings across frames.
 - **Magnification Modes:** Discrete presets (2.5x, 4x, 8x) and continuous optical macro zoom up to 1000%.

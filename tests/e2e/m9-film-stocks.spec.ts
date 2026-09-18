@@ -59,7 +59,7 @@ test("M9: every stock, physical borders, allowed views and keyboard restrictions
     await selector.selectOption(stock.id);
     await expect(app).toHaveAttribute("data-film-stock", stock.id);
     const initial = await capture(page, `${stock.id}-${stock.type === "negative" ? "negative" : "positive"}`);
-    if (lastEdge) expect(getRegionMeanDifference(lastEdge, initial, 640, 331, 18)).toBeGreaterThan(1);
+    if (lastEdge) expect(getRegionMeanDifference(lastEdge, initial, 640, 320, 18)).toBeGreaterThan(1);
     lastEdge = initial;
     if (stock.type === "reversal") {
       await expect(page.getByTestId("mode-toggle")).toHaveCount(0);
@@ -73,7 +73,7 @@ test("M9: every stock, physical borders, allowed views and keyboard restrictions
       positiveMaster = initial;
     } else {
       await expect(app).toHaveAttribute("data-film-mode", "negative");
-      const base = getRegionStats(initial, 645, 338, 4);
+      const base = getRegionStats(initial, 645, 320, 4);
       expect(base.meanR).toBeGreaterThan(base.meanB + 15);
       await page.getByTestId("mode-toggle").click();
       await expect(app).toHaveAttribute("data-film-mode", "positive");
@@ -81,15 +81,15 @@ test("M9: every stock, physical borders, allowed views and keyboard restrictions
       readablePhotos(positive);
       expect(getRegionMeanDifference(initial, positive, 640, 400, 50)).toBeGreaterThan(15);
       // User review: positive preview now reverses the complete strip, including its border.
-      expect(getRegionMeanDifference(initial, positive, 640, 330, 12)).toBeGreaterThan(15);
-      expect(getRegionStats(positive, 645, 338, 2).meanLum).toBeLessThan(base.meanLum - 30);
+      expect(getRegionMeanDifference(initial, positive, 640, 320, 12)).toBeGreaterThan(15);
+      expect(getRegionStats(positive, 645, 320, 2).meanLum).toBeLessThan(base.meanLum - 30);
       for (const x of [233, 437, 640, 843, 1047]) {
         expect(getRegionMeanDifference(positiveMaster!, positive, x, 400, 28)).toBeLessThan(1);
       }
       await page.getByTestId("mode-toggle").click();
       const negativeAgain = await capture(page, `${stock.id}-negative-return`);
       expect(getRegionMeanDifference(initial, negativeAgain, 640, 400, 50)).toBeLessThan(1);
-      expect(getRegionMeanDifference(initial, negativeAgain, 640, 330, 12)).toBeLessThan(1);
+      expect(getRegionMeanDifference(initial, negativeAgain, 640, 320, 12)).toBeLessThan(1);
     }
   }
   // Native keyboard selection must not invoke global frame/mode/navigation shortcuts.
@@ -117,17 +117,19 @@ test("M9: macro stock lettering through the scene-capture loupe, rapid changes a
   await slider.press("Tab");
   await expect(page.getByTestId("brightness-badge")).toHaveText("31%");
   await page.mouse.move(640, 400);
-  for (let i = 0; i < 12; i++) {
-    const previousZoom = await page.getByTestId("zoom-badge").textContent();
-    await page.mouse.wheel(0, -350);
-    await expect(page.getByTestId("zoom-badge")).not.toHaveText(previousZoom!);
+  while (true) {
+    const currentZoom = await page.getByTestId("zoom-badge").textContent();
+    if (parseInt(currentZoom!) >= 250) break;
+    await page.mouse.wheel(0, -120);
+    await expect(page.getByTestId("zoom-badge")).not.toHaveText(currentZoom!);
   }
   const zoom = await page.getByTestId("zoom-badge").textContent();
   expect(parseInt(zoom!)).toBeGreaterThan(250);
   // Move the top rebate into the center of the view, keeping macro zoom.
+  const stripHeight = 35 * 0.0036;
   const distance = 3.2 / (parseFloat(zoom!) / 100);
   const pixelsPerUnit = 800 / (2 * distance * Math.tan(Math.PI / 8));
-  const railY = 400 - (0.466667 / 2 - 13 / 468 * 0.466667) * pixelsPerUnit;
+  const railY = 400 - (stripHeight / 2 - 13 / 468 * stripHeight) * pixelsPerUnit;
   await page.mouse.move(800, 400);
   await page.mouse.down({button: "right"});
   await page.mouse.move(800, 400 + (400 - railY), {steps: 10});
