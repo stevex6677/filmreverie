@@ -8,7 +8,17 @@ import { tableInputCamera, tablePointAt, TOP_DOWN } from '../utils/tableCamera';
 import { GestureIntent, TouchGestures } from '../utils/touchGestures';
 import { roomHitTarget } from '../utils/roomHitTarget';
 
-export function TouchNavigation({ state, dispatch, blocked }: { state: ViewerState; dispatch: React.Dispatch<ViewerAction>; blocked: boolean }) {
+export function TouchNavigation({
+  state,
+  dispatch,
+  blocked,
+  livePose,
+}: {
+  state: ViewerState;
+  dispatch: React.Dispatch<ViewerAction>;
+  blocked: boolean;
+  livePose?: React.MutableRefObject<{ zoom: number; pan: { x: number; z: number }; active: boolean }>;
+}) {
   const { camera, gl } = useThree();
   const live = useRef(state); live.current = state;
   useEffect(() => {
@@ -22,6 +32,13 @@ export function TouchNavigation({ state, dispatch, blocked }: { state: ViewerSta
     const captures = new Map<number, HTMLElement>();
     const accepts = (target: EventTarget | null) => target === canvas || (target instanceof Element && !!target.closest('.shelf-approach-target'));
     const release = (id: number) => { const owner = captures.get(id); captures.delete(id); if (owner?.hasPointerCapture(id)) owner.releasePointerCapture(id); };
+    let pinchSession: {
+      startDistance: number;
+      startCenter: { x: number; y: number };
+      startZoom: number;
+      startPan: { x: number; z: number };
+      anchor: { x: number; z: number };
+    } | null = null;
     const emit = (intent: GestureIntent) => {
       const s = live.current;
       if (blocked || s.shelfFocused) return;
@@ -45,6 +62,11 @@ export function TouchNavigation({ state, dispatch, blocked }: { state: ViewerSta
       const view = (z: number, p: {x:number;z:number}) => {
         const max = s.focusMode ? fitRollView(s.roll,'frame',s.activeFrameIndex,s.viewportAspect).zoom : Math.max(3.6, fitRollView(s.roll,'roll',0,s.viewportAspect).zoom);
         const next = Math.max(.12*s.roll.scale, Math.min(max,z));
+        if (livePose) {
+          livePose.current.zoom = next;
+          livePose.current.pan = p;
+          livePose.current.active = true;
+        }
         const action:ViewerAction={type:'TOUCH_VIEW',zoom:next,x:p.x,z:p.z};
         // Browsers dispatch both contacts before React renders. Accumulate the
         // two updates immediately so neither half of the pinch is dropped.
@@ -55,12 +77,58 @@ export function TouchNavigation({ state, dispatch, blocked }: { state: ViewerSta
         if (from && to) view(zoom, { x: pan.x + from.x - to.x, z: pan.z + from.z - to.z });
       }
       if (intent.type === 'pinch') {
-        const p = tableAt(intent.from.x,intent.from.y), to = tableAt(intent.to.x,intent.to.y);
-        if (!p || !to) return;
+        const pts = [...gesture.contacts.values()];
+        if (pts.length !== 2) return;
+        const currentDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        const currentCenter = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+        if (currentDist <= 8) return;
+
+        if (!pinchSession) {
+          const anchor = tableAt(currentCenter.x, currentCenter.y);
+          if (!anchor) return;
+          pinchSession = {
+            startDistance: currentDist,
+            startCenter: currentCenter,
+            startZoom: zoom,
+            startPan: pan,
+            anchor,
+          };
+        }
+
         const max = s.focusMode ? fitRollView(s.roll,'frame',s.activeFrameIndex,s.viewportAspect).zoom : Math.max(3.6,fitRollView(s.roll,'roll',0,s.viewportAspect).zoom);
-        const next = Math.max(.12*s.roll.scale,Math.min(max,zoom*intent.ratio));
-        const anchored = anchoredZoom(zoom,next,pan,p);
-        view(next,{x:anchored.x+(p.x-to.x)*next/zoom,z:anchored.z+(p.z-to.z)*next/zoom});
+        const min = 0.12 * s.roll.scale;
+        const ratio = pinchSession.startDistance / currentDist;
+        const next = Math.max(min, Math.min(max, pinchSession.startZoom * ratio));
+        const anchored = anchoredZoom(pinchSession.startZoom, next, pinchSession.startPan, pinchSession.anchor);
+
+        // Filter out alternating single-finger micro-jitter on the centroid
+        const dx = currentCenter.x - pinchSession.startCenter.x;
+        const dy = currentCenter.y - pinchSession.startCenter.y;
+        const dist = Math.hypot(dx, dy);
+        let panX = anchored.x, panZ = anchored.z;
+        if (dist > 8) {
+          const factor = (dist - 8) / dist;
+          const from = tablePointAt(inputCamera, canvas, pinchSession.startCenter.x, pinchSession.startCenter.y);
+          const to = tablePointAt(inputCamera, canvas, pinchSession.startCenter.x + dx * factor, pinchSession.startCenter.y + dy * factor);
+          if (from && to) {
+            panX += from.x - to.x;
+            panZ += from.z - to.z;
+          }
+        }
+
+        if (next === min || next === max) {
+          // Rebase when hitting bounds so reversing direction is instantaneous
+          const rebaseAnchor = tableAt(currentCenter.x, currentCenter.y) || pinchSession.anchor;
+          pinchSession = {
+            startDistance: currentDist,
+            startCenter: currentCenter,
+            startZoom: next,
+            startPan: { x: panX, z: panZ },
+            anchor: rebaseAnchor,
+          };
+        }
+
+        view(next, { x: panX, z: panZ });
       }
       if (intent.type === 'swipe') dispatch({type:'OPEN_FRAME',frameIndex:s.activeFrameIndex+(intent.direction==='right'?1:-1)});
       if (intent.type === 'loupe') {
@@ -92,14 +160,16 @@ export function TouchNavigation({ state, dispatch, blocked }: { state: ViewerSta
       const s=live.current,fit=fitRollView(s.roll,'frame',s.activeFrameIndex,s.viewportAspect);
       if(!gesture.contacts.size)priorSample={x:s.loupe.worldX,y:s.loupe.worldY};
       else if(gesture.contacts.size===1&&s.loupe.isActive){const action:ViewerAction={type:'SET_LOUPE_POSITION',...priorSample};live.current=viewerReducer(s,action);dispatch(action);}
+      if (gesture.contacts.size === 1) pinchSession = null;
       magnified=s.inspectZoom < fit.zoom*(magnified?.97:.92);
       gesture.down(point(e),s.roomMode==='room'?'room':s.loupe.isActive?'loupe':s.inspectionLevel==='frame'&&!magnified?'swipe':'pan');
-      const owner = e.target as HTMLElement; captures.set(e.pointerId, owner); owner.setPointerCapture(e.pointerId);
+      const owner = e.target as HTMLElement; captures.set(e.pointerId, owner);
+      try { owner.setPointerCapture(e.pointerId); } catch {}
     };
     const move=(e:PointerEvent)=>{if(!gesture.contacts.has(e.pointerId)&&!accepts(e.target))return;if(e.pointerType==='mouse'&&live.current.touchPointer)dispatch({type:'TOUCH_POINTER',active:false});if(gesture.contacts.has(e.pointerId)){consume(e);gesture.move(point(e));}};
-    const up=(e:PointerEvent)=>{if(gesture.contacts.has(e.pointerId)){consume(e);gesture.up(point(e));release(e.pointerId);}};
-    const cancel=()=>{const ids=[...gesture.contacts.keys()];gesture.cancel();ids.forEach(release);};
-    const lost=(e:PointerEvent)=>{if(gesture.contacts.has(e.pointerId))cancel();};
+    const up=(e:PointerEvent)=>{if(gesture.contacts.has(e.pointerId)){consume(e);gesture.up(point(e));release(e.pointerId);if(gesture.contacts.size<2)pinchSession=null;if(!gesture.contacts.size&&livePose)livePose.current.active=false;}};
+    const cancel=()=>{pinchSession=null;if(livePose)livePose.current.active=false;const ids=[...gesture.contacts.keys()];gesture.cancel();ids.forEach(release);};
+    const lost=(e:PointerEvent)=>{if(gesture.contacts.has(e.pointerId)){if(gesture.contacts.size<=1)cancel();else{gesture.up(point(e));release(e.pointerId);pinchSession=null;}}};
     const click=(e:MouseEvent)=>{if(accepts(e.target)&&((e as PointerEvent).pointerType==='touch'||(e as PointerEvent).pointerType==='pen')){e.preventDefault();e.stopImmediatePropagation();}};
     // Preserve the loupe's priority on the canvas; share these handlers with
     // the room's cabinet overlay without intercepting table/loupe gestures.

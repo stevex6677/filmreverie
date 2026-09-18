@@ -39,6 +39,7 @@ interface CameraRigProps {
   onAdjustInspectZoom?: (delta: number) => void;
   onAdjustInspectPan?: (dx: number, dz: number) => void;
   onTransitionComplete: () => void;
+  livePose?: React.MutableRefObject<{ zoom: number; pan: { x: number; z: number }; active: boolean }>;
   isDeterministic?: boolean;
   isReducedMotion?: boolean;
 }
@@ -66,6 +67,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   onAdjustInspectZoom,
   onAdjustInspectPan,
   onTransitionComplete,
+  livePose,
   isDeterministic = false,
   isReducedMotion = false,
 }) => {
@@ -294,7 +296,10 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   useFrame((_, delta) => {
     const inspecting = roomMode === "inspect";
     const perspective = camera as THREE.PerspectiveCamera;
-    const tablePose = tableCameraPose(inspectZoom, inspectPan, tableAngle);
+    const live = livePose?.current;
+    const effectiveZoom = (live?.active && inspecting) ? live.zoom : inspectZoom;
+    const effectivePan = (live?.active && inspecting) ? live.pan : inspectPan;
+    const tablePose = tableCameraPose(effectiveZoom, effectivePan, tableAngle);
     targetPos.current.set(...(inspecting
       ? tablePose.position
       : shelfFocused ? SHELF_CAMERA : ROOM_EYE));
@@ -303,7 +308,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     desired.up.set(...(inspecting ? tablePose.up : ROOM_CAMERA_UP));
     desired.lookAt(...(inspecting ? tablePose.target : shelfFocused ? SHELF_ORIGIN : roomLookTarget(savedRoomPose)));
     const angleChanging = Math.abs(renderedAngle.current.tilt - tableAngle.tilt) + Math.abs(renderedAngle.current.yaw - tableAngle.yaw) > .00001;
-    const immediate = angleDragging || isDeterministic || isReducedMotion || (!inspecting && !isTransitioning) || ((touchInput || loupeInspection) && !isTransitioning && !angleChanging);
+    const immediate = angleDragging || isDeterministic || isReducedMotion || (!inspecting && !isTransitioning) || ((touchInput || loupeInspection || live?.active) && !isTransitioning && !angleChanging);
     const moving = !immediate && (camera.position.distanceTo(targetPos.current) > .001 || camera.quaternion.angleTo(desired.quaternion) > .001 || isPanningTableRef.current);
     if (moving !== wasMovingRef.current) { wasMovingRef.current = moving; onCameraMotion?.(moving); }
     // A finite shelf flight avoids waiting for an exponential tail to settle.
@@ -352,7 +357,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       camera.position.lerp(targetPos.current, alpha);
       camera.quaternion.slerp(desired.quaternion, alpha);
     }
-    perspective.near = inspecting ? Math.min(.04, inspectZoom * .025) : .04;
+    perspective.near = inspecting ? Math.min(.04, effectiveZoom * .025) : .04;
     // Keep the entire cabinet reachable on a portrait screen from the same
     // standing eye. Widen the lens, never move the viewer through the room.
     const roomFov = 2 * Math.atan(Math.tan(ROOM_CAMERA_FOV * Math.PI / 360) * Math.max(1, 1.6 / (size.width / size.height))) * 180 / Math.PI;

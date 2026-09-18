@@ -99,11 +99,17 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
     }
   };
 
+  const livePose = useRef<{ zoom: number; pan: { x: number; z: number }; active: boolean }>({ zoom: state.inspectZoom, pan: state.inspectPan, active: false });
+  if (!livePose.current.active) {
+    livePose.current.zoom = view.zoom;
+    livePose.current.pan = view.pan;
+  }
+
   return (
     <>
       <TableAngleNavigation state={state} dispatch={dispatch} blocked={inputBlocked} />
       <LoupeNavigation state={state} dispatch={dispatch} blocked={inputBlocked} />
-      <TouchNavigation state={state} dispatch={dispatch} blocked={inputBlocked} />
+      <TouchNavigation state={state} dispatch={dispatch} blocked={inputBlocked} livePose={livePose} />
       <ShelfNavigation enabled={state.shelfFocused && !inputBlocked} onLeave={() => { shelf.close(); dispatch({ type: 'RETURN_TO_ROOM' }); }} onLook={(dx, dy) => dispatch({ type: 'LOOK_ROOM', yaw: dx * .0035, pitch: -dy * .0035 })} />
       {/* Darkroom Atmosphere Scene Background */}
       <color attach="background" args={["#13151b"]} />
@@ -124,6 +130,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         savedRoomPose={state.savedRoomPose}
         inspectZoom={view.zoom}
         inspectPan={view.pan}
+        livePose={livePose}
         loupeInspection={state.loupe.inspecting || state.transitionKind === 'loupe'}
         isLoupeActive={state.loupe.isActive}
         onUpdateRoomPose={(pose) => dispatch({ type: "UPDATE_ROOM_POSE", pose })}
