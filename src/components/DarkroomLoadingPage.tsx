@@ -88,6 +88,27 @@ export const DarkroomLoadingPage: React.FC<DarkroomLoadingPageProps> = ({
     return "Calibrating 5000K light table & film emulsion...";
   }, [displayPercent, progress, hasError]);
 
+  // Sync state directly to the single persistent DOM element
+  useEffect(() => {
+    const textEl = document.getElementById("darkroom-status-text");
+    const pctEl = document.getElementById("darkroom-status-percent");
+    const fillEl = document.getElementById("darkroom-progress-fill");
+    const trackEl = fillEl?.parentElement;
+
+    if (textEl && textEl.textContent !== statusMessage) {
+      textEl.textContent = statusMessage;
+    }
+    if (pctEl && pctEl.textContent !== `${displayPercent}%`) {
+      pctEl.textContent = `${displayPercent}%`;
+    }
+    if (fillEl) {
+      fillEl.style.width = `${displayPercent}%`;
+    }
+    if (trackEl) {
+      trackEl.setAttribute("aria-valuenow", String(displayPercent));
+    }
+  }, [statusMessage, displayPercent]);
+
   // Handle completion and smooth dissolve
   useEffect(() => {
     const isReady =
@@ -98,17 +119,29 @@ export const DarkroomLoadingPage: React.FC<DarkroomLoadingPageProps> = ({
       setDisplayPercent(100);
       onFullyLoaded?.();
 
+      const staticLoader = document.getElementById("darkroom-loader");
+
       if (isDeterministic || isReducedMotion || hasError) {
         setDismissed(true);
+        if (staticLoader) {
+          staticLoader.style.display = "none";
+        }
         return;
       }
 
       const holdTimer = setTimeout(() => {
         setFadingOut(true);
+        if (staticLoader) {
+          staticLoader.classList.add("fading-out");
+          staticLoader.setAttribute("data-loading-state", "ready");
+        }
       }, 250);
 
       const dismissTimer = setTimeout(() => {
         setDismissed(true);
+        if (staticLoader) {
+          staticLoader.style.display = "none";
+        }
       }, 750);
 
       return () => {
@@ -133,6 +166,14 @@ export const DarkroomLoadingPage: React.FC<DarkroomLoadingPageProps> = ({
         setDisplayPercent(100);
         setFadingOut(true);
         onFullyLoaded?.();
+        const staticLoader = document.getElementById("darkroom-loader");
+        if (staticLoader) {
+          staticLoader.classList.add("fading-out");
+          staticLoader.setAttribute("data-loading-state", "ready");
+          setTimeout(() => {
+            staticLoader.style.display = "none";
+          }, 500);
+        }
         setTimeout(() => setDismissed(true), 500);
       }
     }, 12000);
@@ -141,6 +182,10 @@ export const DarkroomLoadingPage: React.FC<DarkroomLoadingPageProps> = ({
   }, [onFullyLoaded]);
 
   if (dismissed) return null;
+
+  // If the static HTML loader exists, do not render a duplicate DOM element
+  const hasStaticLoader = typeof document !== "undefined" && !!document.getElementById("darkroom-loader");
+  if (hasStaticLoader) return null;
 
   return (
     <aside
