@@ -44,3 +44,42 @@ it('reads old Blob records alongside binary records without migration or rewriti
   const b=await repo.read('r');expect(await b.blobs.find(x=>x.key==='v')!.blob.text()).toBe('bytes-v');
   await repo.save({...b,roll:{...b.roll,name:'Edited'},blobs:[]});expect(await (await repo.original('f')).text()).toBe('bytes-o');
 });
+
+it('imports rolls and detects duplicates over unsecured connections without crypto.subtle or crypto.randomUUID',async()=>{
+  const {createCanvas,loadImage}=await import('@napi-rs/canvas');
+  const source=createCanvas(100,75);source.getContext('2d').fillRect(0,0,100,75);
+  const jpg=source.toBuffer('image/jpeg');
+
+  vi.stubGlobal('Image',class {onload:(()=>void)|null=null;onerror:(()=>void)|null=null;naturalWidth=100;naturalHeight=75;set src(value:string){if(value)queueMicrotask(()=>this.onload?.());}});
+  vi.stubGlobal('document',{createElement:()=>{const c=createCanvas(1,1) as any,ctx=c.getContext('2d'),draw=ctx.drawImage.bind(ctx);ctx.drawImage=(image:any,...args:any[])=>draw(image.naturalWidth?source:image,...args);c.toBlob=(cb:(b:Blob)=>void)=>cb(new Blob([c.toBuffer('image/jpeg')],{type:'image/jpeg'}));return c;}});
+  vi.stubGlobal('createImageBitmap',async(blob:Blob)=>Object.assign(await loadImage(Buffer.from(await blob.arrayBuffer())),{close:()=>{}}));
+
+  // Simulate insecure context: no crypto.subtle, no crypto.randomUUID
+  const originalCrypto = globalThis.crypto;
+  const insecureCrypto = {
+    getRandomValues: (arr: any) => originalCrypto.getRandomValues(arr)
+  };
+  vi.stubGlobal('crypto', insecureCrypto);
+
+  const file1 = new File([new Uint8Array(jpg)], 'one.jpg', { type: 'image/jpeg' });
+  const file2 = new File([new Uint8Array(jpg)], 'duplicate.jpg', { type: 'image/jpeg' });
+
+  const photos = await processPhotos([file1, file2], 'unsecured-roll', new AbortController().signal, () => {});
+  try {
+    expect(photos).toHaveLength(2);
+    expect(photos[0].frame).toBeDefined();
+    expect(photos[1].frame).toBeDefined();
+    // UUID format check: 8-4-4-4-12
+    expect(photos[0].id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(photos[1].id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(photos[0].id).not.toEqual(photos[1].id);
+    // Duplicate detection based on hash
+    expect(photos[0].duplicate).toBe(false);
+    expect(photos[1].duplicate).toBe(true);
+    expect(photos[0].frame!.hash).toBe(photos[1].frame!.hash);
+    expect(photos[0].frame!.hash).toHaveLength(64);
+  } finally {
+    releaseDraft(photos);
+  }
+});
+

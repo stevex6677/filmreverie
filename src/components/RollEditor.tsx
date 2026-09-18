@@ -5,6 +5,7 @@ import { FILM_STOCKS, DEFAULT_FILM_STOCK_ID, FilmStockId, getFilmStock } from '.
 import { EXTRA_FILM_ALLOWANCE, FILM_FORMATS, FilmFormat, FrameSizing, frameAspect, filmLengthUsage, rollFormatLabel } from '../data/filmFormats';
 import { RollBundle, StoredRoll, storageMessage, rollRepository } from '../storage/rollRepository';
 import { DraftPhoto, processPhotos, releaseDraft } from '../storage/importPhotos';
+import { generateUuid } from '../storage/crypto';
 import { CropInspector } from './CropInspector';
 interface Props { onDelete:(roll:StoredRoll)=>Promise<void>;editId?:string;onClose:()=>void;onOpen:(id:string)=>Promise<void> }
 type Step='photos'|'details'|'review';
@@ -20,7 +21,7 @@ export function RollEditor({editId,onClose,onOpen,onDelete}:Props) {
   useEffect(()=>{if(draft!==null){dialog.current?.querySelector<HTMLElement>('[data-step-title]')?.focus();dialog.current?.scrollTo(0,0);}},[step,draft===null]);
   const updateDraft=(photos:DraftPhoto[]|null)=>{draftRef.current=photos??[];setDraft(photos);};
   const reset=()=>{abort.current?.abort();releaseDraft(draftRef.current);updateDraft(null);setEditing(null);setError('');setProgress('');};
-  const start=()=>{if(!crypto.subtle||!crypto.randomUUID){setError('Photo import needs a secure connection. Open the HTTPS preview address and try again.');return;}reset();setRollId(crypto.randomUUID());setName('');setStock(DEFAULT_FILM_STOCK_ID);setFormat('135');setSizing('fixed');setCover('');setSelected('');setStep('photos');updateDraft([]);};
+  const start=()=>{reset();setRollId(generateUuid());setName('');setStock(DEFAULT_FILM_STOCK_ID);setFormat('135');setSizing('fixed');setCover('');setSelected('');setStep('photos');updateDraft([]);};
   const choose=(files:File[])=>void run(async()=>{
     abort.current=new AbortController();const controller=abort.current,prior=draftRef.current;setProgress('Processing photographs…');
     try{const photos=await processPhotos(files,rollId,controller.signal,(done,total)=>setProgress(`Processed ${done} / ${total}`),prior);controller.signal.throwIfAborted();updateDraft([...prior,...photos]);if(!cover)setCover(photos.find(p=>p.frame)?.id??'');if(!selected)setSelected(photos[0]?.id??'');}
