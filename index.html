@@ -5,13 +5,218 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Darkroom Film Viewer — Roll 01</title>
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#171813" />
+    <meta name="theme-color" content="#08090c" />
     <link rel="apple-touch-icon" href="/icon-180.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="description" content="3D darkroom film viewing experience for 35mm negatives and positives" />
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #08090c;
+        color: #f8fafc;
+        overflow: hidden;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+      #root {
+        width: 100%;
+        height: 100%;
+      }
+      .darkroom-loading-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle at 50% 45%, rgba(239, 68, 68, 0.07) 0%, rgba(217, 119, 6, 0.04) 30%, transparent 65%), #08090c;
+        color: #f8fafc;
+        padding: 32px 24px;
+        box-sizing: border-box;
+        opacity: 1;
+        transform: scale(1);
+        transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .darkroom-loading-screen.fading-out {
+        opacity: 0;
+        transform: scale(1.02);
+        pointer-events: none;
+      }
+      .darkroom-loading-content {
+        max-width: 480px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 28px;
+        text-align: center;
+        position: relative;
+      }
+      .safelight-beacon {
+        position: relative;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .safelight-core {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #ef4444;
+        box-shadow: 0 0 14px #ef4444, 0 0 24px rgba(239, 68, 68, 0.6);
+        animation: safelight-pulse 2s ease-in-out infinite alternate;
+      }
+      .safelight-halo {
+        position: absolute;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: rgba(239, 68, 68, 0.2);
+        filter: blur(4px);
+        animation: halo-pulse 2s ease-in-out infinite alternate;
+      }
+      @keyframes safelight-pulse {
+        from {
+          transform: scale(0.85);
+          opacity: 0.7;
+          box-shadow: 0 0 10px #f59e0b, 0 0 18px rgba(245, 158, 11, 0.4);
+          background: #f59e0b;
+        }
+        to {
+          transform: scale(1.1);
+          opacity: 1;
+          box-shadow: 0 0 16px #ef4444, 0 0 30px rgba(239, 68, 68, 0.7);
+          background: #ef4444;
+        }
+      }
+      @keyframes halo-pulse {
+        from { transform: scale(0.8); opacity: 0.3; }
+        to { transform: scale(1.3); opacity: 0.8; }
+      }
+      .loading-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .loading-brand {
+        font-size: 2.4rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: #f8fafc;
+        margin: 0;
+        line-height: 1.15;
+      }
+      .loading-welcome {
+        font-size: 0.95rem;
+        font-weight: 400;
+        color: #d4af37;
+        letter-spacing: 0.06em;
+        margin: 0;
+        text-transform: uppercase;
+      }
+      .loading-status-section {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .status-primary {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 16px;
+      }
+      .status-text {
+        font-size: 1.15rem;
+        font-weight: 500;
+        color: #e2e8f0;
+        letter-spacing: -0.01em;
+        text-align: left;
+        flex: 1;
+      }
+      .status-percent {
+        font-size: 1.25rem;
+        font-weight: 700;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: #d4af37;
+      }
+      .progress-track {
+        position: relative;
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #d4af37 0%, #f59e0b 60%, #ef4444 100%);
+        border-radius: 3px;
+        transition: width 0.15s ease-out;
+        box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+      }
+      @keyframes initial-progress {
+        0% { width: 15%; }
+        100% { width: 32%; }
+      }
+      .progress-fill.initial-sweep {
+        animation: initial-progress 2.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .safelight-core,
+        .safelight-halo,
+        .progress-fill.initial-sweep {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <aside
+        class="darkroom-loading-screen"
+        data-testid="darkroom-loader"
+        data-loading-state="loading"
+        aria-live="polite"
+        aria-label="Loading Film Reverie"
+      >
+        <div class="darkroom-loading-content">
+          <div class="safelight-beacon" aria-hidden="true">
+            <div class="safelight-core"></div>
+            <div class="safelight-halo"></div>
+          </div>
+          <div class="loading-header">
+            <h1 class="loading-brand">Film Reverie</h1>
+            <p class="loading-welcome">Welcome to Film Reverie</p>
+          </div>
+          <div class="loading-status-section">
+            <div class="status-primary">
+              <span class="status-text">Initializing 3D darkroom environment...</span>
+              <span class="status-percent">15%</span>
+            </div>
+            <div
+              class="progress-track"
+              role="progressbar"
+              aria-valuenow="15"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            >
+              <div
+                class="progress-fill initial-sweep"
+                style="width: 15%"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

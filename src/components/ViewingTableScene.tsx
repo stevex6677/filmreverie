@@ -1,7 +1,7 @@
 import { photoSourceDemand } from "../utils/photoFraming";
 import { BASELINE_ROLL, createRollLayout, lightTableSize, focusFrameLayout, locateFrame } from "../utils/rollLayout";
 import { useRollTextures } from "../utils/useRollTextures";
-import { useThree } from "@react-three/fiber";
+import { useThree, useFrame } from "@react-three/fiber";
 import { getFilmStock } from "../data/filmStocks";
 import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -32,6 +32,8 @@ interface ViewingTableSceneProps {
   dispatch: React.Dispatch<ViewerAction>;
   isDeterministic?: boolean;
   isReducedMotion?: boolean;
+  onLoadProgress?: (progress: { loaded: number; total: number; settled: boolean }) => void;
+  onFirstFrameRendered?: () => void;
 }
 
 export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
@@ -41,8 +43,18 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   dispatch,
   isDeterministic = false,
   isReducedMotion = false,
+  onLoadProgress,
+  onFirstFrameRendered,
 }) => {
   const tableGroupRef = useRef<THREE.Group>(null);
+  const firstFrameReported = useRef(false);
+
+  useFrame(() => {
+    if (!firstFrameReported.current) {
+      firstFrameReported.current = true;
+      onFirstFrameRendered?.();
+    }
+  });
 
   const { size, gl, camera } = useThree();
   const multi = state.roll !== BASELINE_ROLL;
@@ -58,6 +70,13 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   const { textures, failed, settled, bytes, loadedCount, detailStatus } = useRollTextures(state.roll, priority, state.assetRetry, demand, gl.capabilities.maxTextureSize);
   useEffect(()=>{gl.domElement.dataset.textureIds=JSON.stringify(textures.map(t=>t.uuid));gl.domElement.dataset.textureBytes=String(bytes);gl.domElement.dataset.textureCount=String(loadedCount);gl.domElement.dataset.detailStatus=detailStatus;gl.domElement.dataset.textureEdge=String(Math.max(textures[state.activeFrameIndex]?.image?.width||0,textures[state.activeFrameIndex]?.image?.height||0));},[bytes,loadedCount,detailStatus,textures,state.activeFrameIndex,gl]);
   useEffect(() => { dispatch({ type: "ASSET_STATUS", failures: failed, loading: !settled, detailStatus }); }, [failed, settled, detailStatus, dispatch]);
+  useEffect(() => {
+    onLoadProgress?.({
+      loaded: loadedCount,
+      total: state.roll.frames.length,
+      settled,
+    });
+  }, [loadedCount, state.roll.frames.length, settled, onLoadProgress]);
   useEffect(() => { dispatch({ type: "VIEWPORT", aspect: size.width / size.height }); }, [size.width, size.height, dispatch]);
 
   const activeTexture = textures[state.loupe.frameIndex] || textures[0];
