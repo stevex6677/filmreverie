@@ -24,7 +24,7 @@ export function TouchNavigation({ state, dispatch, blocked }: { state: ViewerSta
     const release = (id: number) => { const owner = captures.get(id); captures.delete(id); if (owner?.hasPointerCapture(id)) owner.releasePointerCapture(id); };
     const emit = (intent: GestureIntent) => {
       const s = live.current;
-      if (blocked || s.shelfFocused || s.transitionKind === 'journey') return;
+      if (blocked || s.shelfFocused) return;
       if (intent.type === 'look') { dispatch({ type: 'LOOK_ROOM', yaw: intent.dx*.0035, pitch: -intent.dy*.0035 }); return; }
       if (s.roomMode === 'room') {
         if (intent.type === 'tap') {
@@ -86,7 +86,7 @@ export function TouchNavigation({ state, dispatch, blocked }: { state: ViewerSta
     const down=(e:PointerEvent)=>{
       if (!accepts(e.target) || live.current.shelfFocused) return;
       if(e.pointerType!=='touch'&&e.pointerType!=='pen'){dispatch({type:'TOUCH_POINTER',active:false});return;}
-      consume(e); if(blocked||live.current.transitionKind==='journey')return;
+      consume(e); if(blocked)return;
       dispatch({type:'INPUT_TOUCH',active:true});
       dispatch({type:'TOUCH_POINTER',active:true});
       const s=live.current,fit=fitRollView(s.roll,'frame',s.activeFrameIndex,s.viewportAspect);

@@ -18,7 +18,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
   const currentFrame = state.roll.frames[state.loupe.frameIndex] || state.roll.frames[0];
   const isPositive = state.filmMode === "positive";
   const isRoomMode = state.roomMode === "room";
-  const navigationBlocked = state.isTransitioning && state.transitionKind !== 'shelf';
+  const navigationBlocked = state.isTransitioning && state.transitionKind !== 'shelf' && state.transitionKind !== 'journey';
 
   return (
     <div className={`darkroom-controls ${state.focusMode && !isRoomMode ? "focus-mode" : ""}`} data-testid="controls-panel">
@@ -69,7 +69,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
                 id="return-btn"
                 data-testid="return-room-btn"
                 className="btn btn-back"
-                disabled={state.isTransitioning}
+                disabled={navigationBlocked}
                 onClick={() => dispatch({ type: "RETURN_TO_ROOM" })}
                 title="Step back to darkroom view (Escape)"
               >

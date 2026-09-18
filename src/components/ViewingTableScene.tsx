@@ -64,7 +64,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   const isPositive = state.filmMode === "positive";
 
   const handleFrameSelect = (index: number) => {
-    if (state.isTransitioning && state.transitionKind !== "inspection" && state.transitionKind !== 'shelf') return;
+    if (state.isTransitioning && state.transitionKind !== "inspection" && state.transitionKind !== 'shelf' && state.transitionKind !== 'journey') return;
     if (state.roomMode === "room") {
       dispatch({ type: "APPROACH_TABLE" });
       dispatch({ type: "SELECT_FRAME", frameIndex: index });
@@ -74,7 +74,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   };
 
   const handleTableClick = () => {
-    if (!showRoll || (state.isTransitioning && state.transitionKind !== 'shelf')) return;
+    if (!showRoll || (state.isTransitioning && state.transitionKind !== 'shelf' && state.transitionKind !== 'journey')) return;
     if (state.roomMode === "room") {
       dispatch({ type: "APPROACH_TABLE" });
     }
@@ -96,6 +96,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         touchInput={state.touchInput}
         shelfFocused={state.shelfFocused}
         shelfTransition={state.transitionKind === 'shelf'}
+        journeyTransition={state.transitionKind === 'journey'}
         inputBlocked={inputBlocked || state.shelfFocused}
         roomMode={state.roomMode}
         inspectionTransition={state.transitionKind === "inspection" || state.transitionKind === 'loupe'}
@@ -122,7 +123,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         const target = point ? roomHitTarget(camera, gl.domElement, point.x, point.y, tableSize) : 'shelf';
         if (!target) return;
         shelf.close(); dispatch({ type: target === 'table' ? 'APPROACH_TABLE' : 'APPROACH_SHELF' });
-      }} shelf={shelf} portal={shelfPortal} activeId={state.roll.rollId} interactive={state.roomMode === 'room' && !inputBlocked && (!state.isTransitioning || state.transitionKind === 'shelf')} />
+      }} shelf={shelf} portal={shelfPortal} activeId={state.roll.rollId} interactive={state.roomMode === 'room' && !inputBlocked && (!state.isTransitioning || state.transitionKind === 'shelf' || state.transitionKind === 'journey')} />
 
       {/* Flat Light Table on Workbench (placed horizontally on tabletop) */}
       <group

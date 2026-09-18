@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ready, focusShelf, showRoll, openRoll } from './helpers/shelf';
+import { ready, focusShelf, showRoll } from './helpers/shelf';
 
 test('New roll creation and photo import succeed on unsecured connections without crypto.subtle', async ({ page }) => {
   // Invalidate crypto.subtle and crypto.randomUUID to simulate an insecure context (e.g. HTTP over LAN)

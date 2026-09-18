@@ -6,7 +6,7 @@ import { photoCropPreview } from "../utils/photoFraming";
 
 export function RollNavigator({ state, dispatch }: { state: ViewerState; dispatch: Dispatch<ViewerAction> }) {
   const thumbsRef = useRef<HTMLElement>(null);
-  const blocked = state.isTransitioning && state.transitionKind !== "inspection";
+  const blocked = state.isTransitioning && state.transitionKind !== "inspection" && state.transitionKind !== "journey";
   useEffect(()=>{const container=thumbsRef.current,button=container?.querySelector<HTMLElement>('[aria-pressed="true"]');if(container&&button){const left=button.getBoundingClientRect().left-container.getBoundingClientRect().left+container.scrollLeft;if(left<container.scrollLeft)container.scrollLeft=left;else if(left+button.offsetWidth>container.scrollLeft+container.clientWidth)container.scrollLeft=left+button.offsetWidth-container.clientWidth;}},[state.activeFrameIndex]);
   const mapRef = useRef<HTMLDivElement>(null);
   useEffect(() => {

@@ -25,6 +25,7 @@ interface CameraRigProps {
   inputBlocked?: boolean;
   roomMode: RoomMode;
   inspectionTransition?: boolean;
+  journeyTransition?: boolean;
   stripIndex?: number;
   isTransitioning: boolean;
   savedRoomPose: RoomCameraPose;
@@ -51,6 +52,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   inputBlocked = false,
   roomMode,
   inspectionTransition = false,
+  journeyTransition = false,
   stripIndex = 0,
   isTransitioning,
   savedRoomPose,
@@ -84,7 +86,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   const lastTarget = useRef("");
   const lastStrip = useRef(stripIndex);
   const shelfFlight = useRef<{ key: string; elapsed: number; position: THREE.Vector3; rotation: THREE.Quaternion; fov: number } | null>(null);
-  const navigationBlocked = isTransitioning && !shelfTransition;
+  const navigationBlocked = isTransitioning && !shelfTransition && !journeyTransition;
   const renderedAngle = useRef({ ...tableAngle });
 
   // Spacebar tracking for table pan
@@ -115,7 +117,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     const canvas = gl.domElement;
     const handleWheel = (e: WheelEvent) => {
       if (loupeInspection) { e.preventDefault(); return; }
-      if (inputBlocked || roomMode !== "inspect" || isTransitioning) return;
+      if (inputBlocked || roomMode !== "inspect" || (isTransitioning && !journeyTransition)) return;
       e.preventDefault();
       if (onAdjustInspectZoom) {
         // Proportional step scaling: micro-steps when zoomed in, large steps when zoomed out
@@ -346,7 +348,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       camera.position.set(...pose.position); camera.up.set(...pose.up); camera.lookAt(...pose.target);
     } else {
       flight.current=null;lastTarget.current="";lastStrip.current=stripIndex;
-      const alpha = 1 - Math.exp(-delta * (isTransitioning ? 7 : 12));
+      const alpha = 1 - Math.exp(-delta * (isTransitioning ? (journeyTransition ? 8.5 : 7) : 12));
       camera.position.lerp(targetPos.current, alpha);
       camera.quaternion.slerp(desired.quaternion, alpha);
     }
@@ -358,7 +360,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     const desiredFov = inspecting ? 45 : shelfFocused ? cabinetFov : roomFov;
     perspective.fov = immediate ? desiredFov : shelfProgress !== null
       ? THREE.MathUtils.lerp(shelfFlight.current!.fov, desiredFov, shelfProgress)
-      : THREE.MathUtils.lerp(perspective.fov, desiredFov, 1 - Math.exp(-delta * 7));
+      : THREE.MathUtils.lerp(perspective.fov, desiredFov, 1 - Math.exp(-delta * (journeyTransition ? 8.5 : 7)));
     perspective.updateProjectionMatrix();
     camera.up.copy(desired.up);
     // Loupe projection runs before the renderer, so refresh the view matrix now.
@@ -368,7 +370,10 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     gl.domElement.dataset.cameraFov = String(perspective.fov);
     gl.domElement.dataset.cameraPosition = camera.position.toArray().join(",");
     gl.domElement.dataset.cameraQuaternion = camera.quaternion.toArray().join(",");
-    if (isTransitioning && (!inspectionTransition || immediate || flight.current?.done) && camera.position.distanceTo(targetPos.current) < .001 && camera.quaternion.angleTo(desired.quaternion) < .001 && Math.abs(perspective.fov - desiredFov) < .001) {
+    const posTolerance = journeyTransition ? .005 : .001;
+    const rotTolerance = journeyTransition ? .005 : .001;
+    const fovTolerance = journeyTransition ? .01 : .001;
+    if (isTransitioning && (!inspectionTransition || immediate || flight.current?.done) && camera.position.distanceTo(targetPos.current) < posTolerance && camera.quaternion.angleTo(desired.quaternion) < rotTolerance && Math.abs(perspective.fov - desiredFov) < fovTolerance) {
       renderedAngle.current = { ...tableAngle };
       camera.position.copy(targetPos.current);
       camera.quaternion.copy(desired.quaternion);
