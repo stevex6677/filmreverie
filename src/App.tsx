@@ -4,7 +4,7 @@ import { UpdateNotice } from "./components/UpdateNotice";
 import { createRuntimeRoll } from "./storage/rollRuntime";
 import { SavedView, StoredRoll, rollRepository, storageMessage } from "./storage/rollRepository";
 import { BASELINE_ROLL, FULL_ROLL_FIXTURE, LOCAL_ROLL, validateRoll } from "./utils/rollLayout";
-import { useReducer, useEffect, useMemo, useState, useRef, Suspense } from "react";
+import { useReducer, useEffect, useMemo, useState, useRef, useCallback, Suspense } from "react";
 import * as THREE from "three";
 import { DISPLAY_EXPOSURE } from "./shaders/tableIllumination";
 import { Canvas } from "@react-three/fiber";
@@ -13,6 +13,7 @@ import {
   viewerReducer,
   RoomMode,
 } from "./state/viewerState";
+import { DarkroomLoadingPage, LoadingProgress } from "./components/DarkroomLoadingPage";
 import {
   DEFAULT_ROOM_POSE,
   INSPECT_CAMERA_POSITION,
@@ -82,6 +83,34 @@ export function App() {
   const initialRoll = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("fixture") === "36" ? FULL_ROLL_FIXTURE : params.get("roll") === "local" && LOCAL_ROLL.frames.length ? LOCAL_ROLL : BASELINE_ROLL;
+  }, []);
+
+  const [loadingProgress, setLoadingProgress] = useState<LoadingProgress>({
+    loaded: 0,
+    total: initialRoll.frames.length,
+    settled: false,
+    firstFrameRendered: false,
+  });
+  const [appReady, setAppReady] = useState(false);
+
+  const handleLoadProgress = useCallback(({ loaded, total, settled }: { loaded: number; total: number; settled: boolean }) => {
+    setLoadingProgress(prev => ({
+      ...prev,
+      loaded,
+      total,
+      settled,
+    }));
+  }, []);
+
+  const handleFirstFrameRendered = useCallback(() => {
+    setLoadingProgress(prev => ({
+      ...prev,
+      firstFrameRendered: true,
+    }));
+  }, []);
+
+  const handleFullyLoaded = useCallback(() => {
+    setAppReady(true);
   }, []);
 
   const [state, dispatch] = useReducer(
@@ -287,6 +316,13 @@ export function App() {
         if (stateRef.current.cameraMoving || stateRef.current.isTransitioning || stateRef.current.assetsLoading) throw new Error("Wait for the photograph to finish opening before updating.");
         await saveView();
       }} />
+      <DarkroomLoadingPage
+        progress={loadingProgress}
+        isDeterministic={isDeterministic}
+        isReducedMotion={isReducedMotion}
+        hasError={injectedError || !!state.error}
+        onFullyLoaded={handleFullyLoaded}
+      />
     <main
       className={`darkroom-app-container ${roll !== BASELINE_ROLL ? "full-roll" : ""} ${mobile?'mobile-layout':''} ${state.roomMode==='inspect'?'table-layout':''}`}
       data-table-mode={state.focusMode?'focus':'overview'}
@@ -295,6 +331,7 @@ export function App() {
       data-inspection-level={state.inspectionLevel}
       data-selected-frame={state.activeFrameIndex + 1}
       data-assets-ready={!state.assetsLoading}
+      data-app-ready={appReady ? "true" : "false"}
       data-inspect-zoom={state.inspectZoom}
       data-table-angle={`${state.tableAngle.tilt},${state.tableAngle.yaw}`}
       data-adjusting-view={state.adjustingView}
@@ -362,6 +399,8 @@ export function App() {
                 dispatch={dispatch}
                 isDeterministic={isDeterministic}
                 isReducedMotion={isReducedMotion}
+                onLoadProgress={handleLoadProgress}
+                onFirstFrameRendered={handleFirstFrameRendered}
               />
             </Canvas>
           </div>
