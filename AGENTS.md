@@ -4,6 +4,22 @@ These instructions apply to the repository root and all descendants. The local
 Mac filesystem is the source of truth. The remote Linux server is used to run
 the application and its tooling.
 
+> [!CAUTION]
+> **CRITICAL EXECUTION CONSTRAINT: NEVER RUN BUILDS, TESTS, OR RUNTIMES LOCALLY ON MAC.**
+> The local Mac is strictly for file editing and Git. It does NOT have the dependencies,
+> Playwright browser binaries, or GPU environment to execute code.
+>
+> - ❌ **FORBIDDEN (Never run directly in run_command):**
+>   `npm test`, `npm run build`, `npm install`, `pytest`, `python ...`, `node ...`
+> - ✅ **REQUIRED (Must prefix with remote_exec run):**
+>   `remote_exec run npm test`, `remote_exec run pytest`, `remote_exec run npm run build`
+>
+> **LOCAL COMMAND WHITELIST (The ONLY commands permitted without remote_exec run):**
+> 1. `git ...` (all git operations)
+> 2. `remote_exec ...` (`setup`, `run`, `status`, `asset`, `stop`)
+> 3. SSH port forwarding tunnels (`ssh -N -L ...`) and `tailscale serve ...`
+> 4. Local app startup ONLY when the user explicitly says "start the app locally".
+
 ## Existing reusable tools: check before implementing
 
 - For **Mamiya model continuation or latest .blend / GLB / renders**, first read
@@ -60,8 +76,9 @@ remote_exec setup
 
 ## 3. Run commands remotely
 
-- By default, run builds, tests, package-manager commands, scripts, and
-  application tooling remotely through `remote_exec run`:
+- **MANDATORY**: All builds, tests, package-manager operations (`npm`, `pip`), test
+  runners (`playwright`, `pytest`), and script executions MUST run remotely through
+  `remote_exec run`:
 
   ```bash
   remote_exec run <command>
