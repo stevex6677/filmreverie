@@ -91,6 +91,12 @@ function drawDXBarcodeBlock(
   ctx.fillRect(ex + 12, yTop, 3.5, yBot - yTop);
 }
 
+const FUJI_EMULSION_CODES: Record<string, string> = {
+  "provia-100": "RDP III",
+  "velvia-50": "RVP 50",
+  "velvia-100": "RVP 100",
+};
+
 function paintRebate(ctx: CanvasRenderingContext2D, stock: FilmStockProfile, layout: FilmStripLayout, canvasWidth: number, canvasHeight: number) {
   ctx.save();
   const colors = getRebateColors(stock);
@@ -109,6 +115,8 @@ function paintRebate(ctx: CanvasRenderingContext2D, stock: FilmStockProfile, lay
   ctx.font = `${stock.rebate.fontWeight} 19px ${stock.rebate.font}`;
   ctx.textBaseline = "middle";
 
+  const fujiCode = FUJI_EMULSION_CODES[stock.id];
+
   for (let i = 0; i < layout.frameCount; i++) {
     const center = getFrameCenter(i, layout);
     const left = (center.x + stripWidth / 2 - getFrameWidth(i, layout) / 2) * scaleX;
@@ -121,7 +129,7 @@ function paintRebate(ctx: CanvasRenderingContext2D, stock: FilmStockProfile, lay
     const frameNum = i + 1 + (layout.frameNumberOffset ?? 0);
     const step = (frameWidth + layout.gap * scaleX) / 8;
 
-    // Latent registration dashes between perforation holes in inner margins for negative film
+    // Latent registration marks between perforation holes in inner margins
     if (stock.type === "negative") {
       ctx.fillStyle = colors.rebateText;
       for (let k = 0; k < 7; k++) {
@@ -129,12 +137,26 @@ function paintRebate(ctx: CanvasRenderingContext2D, stock: FilmStockProfile, lay
         ctx.fillRect(dashX - 3.5, py - 6, 7, 2.5);
         ctx.fillRect(dashX - 3.5, py + ph + 3.5, 7, 2.5);
       }
+    } else if (fujiCode) {
+      // Authentic Fuji slide latent registration dots in inner margins
+      ctx.fillStyle = colors.rebateText;
+      for (let k = 0; k < 7; k++) {
+        const dotX = left + (k + 1.0) * step;
+        ctx.beginPath();
+        ctx.arc(dotX, py - 5, 2.0, 0, Math.PI * 2);
+        ctx.arc(dotX, py + ph + 5, 2.0, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     // Top outer rail: frame number and stock label
     ctx.fillStyle = colors.rebateText;
     ctx.fillText(String(frameNum), left + 12, 13);
-    ctx.fillText(stock.rebate.label, left + 95, 13);
+    const labelX = fujiCode ? left + 40 : left + 95;
+    ctx.fillText(stock.rebate.label, labelX, 13);
+    if (fujiCode) {
+      ctx.fillText(fujiCode, left + frameWidth - 90, 13);
+    }
 
     // Bottom outer rail: frame numbers, advance arrow, and authentic DX edge code barcode track
     ctx.fillText(String(frameNum), left + 12, height - 13);
@@ -164,9 +186,22 @@ function paintRebate(ctx: CanvasRenderingContext2D, stock: FilmStockProfile, lay
       const frameBits = getFrameDXBits(frameNum);
       drawDXBarcodeBlock(ctx, b2Start, b2End, frameBits, height, colors.rebateText);
     } else {
-      // Reversal / E-6 slide film (Ektachrome E100): clean human-readable numbering, no barcode track
+      // Reversal / E-6 slide film: clean human-readable numbering, no barcode track
       if (stock.rebate.halfFrameNumbers) {
-        ctx.fillText(`${frameNum}A`, midpoint + 12, height - 13);
+        ctx.fillStyle = colors.rebateText;
+        if (fujiCode) {
+          // Authentic right-pointing triangle advance arrow for Fujifilm slide films
+          ctx.beginPath();
+          ctx.moveTo(midpoint + 8, height - 17);
+          ctx.lineTo(midpoint + 14, height - 13);
+          ctx.lineTo(midpoint + 8, height - 9);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillText(`${frameNum}A`, midpoint + 18, height - 13);
+          ctx.fillText(fujiCode, midpoint + 68, height - 13);
+        } else {
+          ctx.fillText(`${frameNum}A`, midpoint + 12, height - 13);
+        }
       }
     }
   }

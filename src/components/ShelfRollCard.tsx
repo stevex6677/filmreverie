@@ -27,12 +27,14 @@ export function ShelfRollCard({ shelf, roll, repository, activeId, onOpen, onEdi
     const position = () => {
       const node = card.current; if (!node) return;
       const rect = anchor.getBoundingClientRect(), margin = 12;
+      const cardRect = node.getBoundingClientRect();
+      const cardW = Math.ceil(cardRect.width), cardH = Math.ceil(cardRect.height);
       const viewport = window.visualViewport;
       const width = viewport?.width ?? window.innerWidth, height = viewport?.height ?? window.innerHeight;
       const ox = viewport?.offsetLeft ?? 0, oy = viewport?.offsetTop ?? 0;
-      const x = rect.right + node.offsetWidth + margin <= width + ox ? rect.right + 12 : rect.left - node.offsetWidth - 12;
-      node.style.left = `${Math.max(ox + margin, Math.min(x, ox + width - node.offsetWidth - margin))}px`;
-      node.style.top = `${Math.max(oy + margin, Math.min(rect.top, oy + height - node.offsetHeight - margin))}px`;
+      const x = rect.right + cardW + margin <= width + ox ? rect.right + 12 : rect.left - cardW - 12;
+      node.style.left = `${Math.max(ox + margin, Math.min(x, ox + width - cardW - margin))}px`;
+      node.style.top = `${Math.max(oy + margin, Math.min(rect.top, oy + height - cardH - margin))}px`;
     };
     position(); const resize = new ResizeObserver(position); if (card.current) resize.observe(card.current);
     window.addEventListener('resize', position); window.visualViewport?.addEventListener('resize', position);

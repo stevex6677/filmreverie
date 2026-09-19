@@ -21,8 +21,8 @@ function pixel(canvas: HTMLCanvasElement, x: number, y: number) {
 }
 
 describe("M9 — whole-strip stock profiles, state, material and real rebate raster", () => {
-  it("resolves exactly five unique local profiles and their provenance without bundled reference photographs", () => {
-    expect(new Set(FILM_STOCKS.map((s) => s.id)).size).toBe(5);
+  it("resolves all eight unique local profiles and their provenance without bundled reference photographs", () => {
+    expect(new Set(FILM_STOCKS.map((s) => s.id)).size).toBe(8);
     const provenance = JSON.parse(fs.readFileSync("public/assets/provenance.json", "utf8"));
     for (const stock of FILM_STOCKS) {
       const entry = provenance.filmStocks.find((item: {id: string}) => item.id === stock.id);
@@ -38,13 +38,13 @@ describe("M9 — whole-strip stock profiles, state, material and real rebate ras
     expect(fs.readdirSync("public/assets/film-stocks").filter((name) => /\.(jpg|png|webp)$/.test(name))).toEqual([]);
   });
 
-  it("defaults to Portra 400 negative and exposes a labeled selector with five choices", () => {
+  it("defaults to Portra 400 negative and exposes a labeled selector with eight choices", () => {
     const state = createInitialViewerState();
     expect(state.filmStockId).toBe(DEFAULT_FILM_STOCK_ID);
     expect(state.filmMode).toBe("negative");
     const html = renderToStaticMarkup(React.createElement(Controls, {state, dispatch: () => {}}));
     expect(html).toContain('for="film-stock"');
-    expect(html.match(/<option /g)).toHaveLength(5);
+    expect(html.match(/<option /g)).toHaveLength(8);
     expect(html).toContain('value="portra-400" selected');
   });
 
@@ -84,7 +84,7 @@ describe("M9 — whole-strip stock profiles, state, material and real rebate ras
       const {filmStockId: _nextStock, filmMode: _nextMode, ...after} = state;
       expect(after).toEqual(before);
     }
-    expect(state.filmStockId).toBe("portra-800");
+    expect(state.filmStockId).toBe("velvia-100");
     expect(viewerReducer(state, {type: "RESET"}).filmStockId).toBe(DEFAULT_FILM_STOCK_ID);
   });
 
@@ -110,7 +110,7 @@ describe("M9 — whole-strip stock profiles, state, material and real rebate ras
         else expect(Math.max(...base.slice(0, 3))).toBeLessThan(40);
       }
     }
-    expect(signatures.size).toBe(5);
+    expect(signatures.size).toBe(8);
   });
 
   it("propagates the physical mask to photo materials at zero strength without grading positive images; base artwork remains reusable for whole-strip inversion", () => {

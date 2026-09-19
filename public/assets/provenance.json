@@ -136,6 +136,24 @@
       "runtimeUrl": "/assets/film-stocks/portra-800.json",
       "license": "ISC \u2014 original procedural artwork; external reference photographs linked only",
       "referenceEdition": "Portra 800, 135 still film, 2024 comparison"
+    },
+    {
+      "id": "provia-100",
+      "runtimeUrl": "/assets/film-stocks/provia-100.json",
+      "license": "ISC \u2014 original procedural artwork; external reference photographs linked only",
+      "referenceEdition": "Fujifilm Provia 100F Professional (RDP III), 135 still film"
+    },
+    {
+      "id": "velvia-50",
+      "runtimeUrl": "/assets/film-stocks/velvia-50.json",
+      "license": "ISC \u2014 original procedural artwork; external reference photographs linked only",
+      "referenceEdition": "Fujifilm Velvia 50 Professional (RVP 50), 135 still film"
+    },
+    {
+      "id": "velvia-100",
+      "runtimeUrl": "/assets/film-stocks/velvia-100.json",
+      "license": "ISC \u2014 original procedural artwork; external reference photographs linked only",
+      "referenceEdition": "Fujifilm Velvia 100 Professional (RVP 100), 135 still film"
     }
   ]
 }

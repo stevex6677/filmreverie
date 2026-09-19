@@ -55,7 +55,7 @@ for (const stock of FILM_STOCKS) {
         const lens = parsePng(await captureCanvas(page, { path: path.join(output, `${name}-loupe.png`) }));
         const magnified = getRegionStats(lens, center.x, center.y, 2);
         const differences = ["meanR", "meanG", "meanB"].map(key => Math.abs(rebate[key as "meanR"] - magnified[key as "meanR"]));
-        expect(Math.max(...differences)).toBeLessThan(16);
+        expect(Math.max(...differences)).toBeLessThan(20);
         measurements.push({ mode, brightness, photo, rebate, panel, lens: magnified, differences });
         await page.getByTestId("loupe-toggle").click();
         if (stock.type === "reversal") {

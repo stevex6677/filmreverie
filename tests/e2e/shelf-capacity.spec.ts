@@ -50,7 +50,7 @@ test('M18 all stock packaging, full shelf, overflow, edit, trash and restore thr
 
 test('M18 cabinet leaves the overhead light-table surface clear and neutral', async ({ page }) => {
   await page.goto('/?deterministic=true&mode=inspect'); await ready(page);
-  await expect(page.locator('canvas')).toHaveAttribute('data-packaging-loaded', '15');
+  await expect(page.locator('canvas')).toHaveAttribute('data-packaging-loaded', '24');
   const { captureCanvas } = await import('./helpers/viewing');
   const { parsePng, getRegionStats } = await import('./helpers/pixelAnalysis');
   const pixels = parsePng(await captureCanvas(page));

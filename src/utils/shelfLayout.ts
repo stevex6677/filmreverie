@@ -28,7 +28,7 @@ export function reconcileShelfSlots(rolls: StoredRoll[]): StoredRoll[] {
 // Stable pseudo-random decor, with every stock/format represented on page one.
 // No roll records, persistence writes or interaction targets for placeholders.
 export function placeholderPackaging(slot: number) {
-  return FILM_PACKAGING[(slot * 7 + 3 + Math.floor(slot / 10) * 2) % FILM_PACKAGING.length];
+  return FILM_PACKAGING[(slot * 7 + 3 + Math.floor(slot / 10) * 2) % Math.min(10, FILM_PACKAGING.length)];
 }
 export function shelfPageCount(rolls: StoredRoll[]) {
   return Math.max(1, Math.ceil((Math.max(-1, ...rolls.filter(r => r.trashedAt === null).map(r => r.shelfSlot ?? -1)) + 1) / SHELF_CAPACITY));

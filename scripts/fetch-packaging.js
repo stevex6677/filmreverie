@@ -12,6 +12,10 @@ for (const entry of manifest.entries) for (const source of [entry.box, ...(entry
     if (createHash('sha256').update(fs.readFileSync(target)).digest('hex') !== source.sha256) throw new Error(`Existing source differs; preserved ${target}`);
     continue;
   }
+  const publicTarget = path.join(root, 'public', source.asset);
+  if (source.asset.endsWith('.svg') && fs.existsSync(publicTarget)) {
+    continue;
+  }
   const response = await fetch(source.imageUrl, { signal: AbortSignal.timeout(30000) });
   if (!response.ok) throw new Error(`${response.status}: ${source.imageUrl}`);
   const bytes = Buffer.from(await response.arrayBuffer());

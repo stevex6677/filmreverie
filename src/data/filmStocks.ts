@@ -3,8 +3,11 @@ import ektar_100 from "../../public/assets/film-stocks/ektar-100.json" with { ty
 import portra_160 from "../../public/assets/film-stocks/portra-160.json" with { type: "json" };
 import portra_400 from "../../public/assets/film-stocks/portra-400.json" with { type: "json" };
 import portra_800 from "../../public/assets/film-stocks/portra-800.json" with { type: "json" };
+import provia_100 from "../../public/assets/film-stocks/provia-100.json" with { type: "json" };
+import velvia_50 from "../../public/assets/film-stocks/velvia-50.json" with { type: "json" };
+import velvia_100 from "../../public/assets/film-stocks/velvia-100.json" with { type: "json" };
 
-export type FilmStockId = "ektachrome-e100" | "ektar-100" | "portra-160" | "portra-400" | "portra-800";
+export type FilmStockId = "ektachrome-e100" | "ektar-100" | "portra-160" | "portra-400" | "portra-800" | "provia-100" | "velvia-50" | "velvia-100";
 export interface FilmStockProfile {
   readonly id: FilmStockId;
   readonly displayName: string;
@@ -30,7 +33,7 @@ export interface FilmStockProfile {
 }
 
 // The local JSON files are also reviewable reference records. No runtime network lookup.
-export const FILM_STOCKS = [ektachrome_e100, ektar_100, portra_160, portra_400, portra_800] as readonly FilmStockProfile[];
+export const FILM_STOCKS = [ektachrome_e100, ektar_100, portra_160, portra_400, portra_800, provia_100, velvia_50, velvia_100] as readonly FilmStockProfile[];
 export const DEFAULT_FILM_STOCK_ID: FilmStockId = "portra-400";
 export function getFilmStock(id: FilmStockId): FilmStockProfile {
   return FILM_STOCKS.find((stock) => stock.id === id) ?? FILM_STOCKS[3];

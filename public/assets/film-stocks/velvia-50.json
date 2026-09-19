@@ -1,0 +1,37 @@
+{
+  "id": "velvia-50",
+  "displayName": "Fujifilm Velvia 50",
+  "type": "reversal",
+  "process": "E-6",
+  "allowedViews": [
+    "positive"
+  ],
+  "base": {
+    "substrateBase": "rgba(38, 10, 28, 0.94)",
+    "rebateText": "#fac848",
+    "rebateSecondary": "#fac848",
+    "frameShadow": "rgba(30, 15, 10, 0.4)",
+    "negativeMask": [
+      1,
+      1,
+      1
+    ]
+  },
+  "rebate": {
+    "label": "FUJIFILM VELVIA 50",
+    "font": "Arial, Helvetica, sans-serif",
+    "fontWeight": "bold",
+    "orientation": "same-direction",
+    "halfFrameNumbers": true,
+    "codePattern": null
+  },
+  "reference": {
+    "edition": "Fujifilm Velvia 50 Professional (RVP 50), 135 still film",
+    "title": "Fujifilm Fujichrome Velvia 50 Professional developed 135 slide film reference",
+    "url": "https://www.fujifilm.com/products/photofinishing/films/pdf/velvia_50_datasheet.pdf",
+    "imageUrl": "https://www.fujifilm.com/products/photofinishing/films/images/velvia_50.jpg",
+    "accessed": "2026-09-18",
+    "license": "Linked for study only; reference photograph not redistributed. Runtime lettering and geometry are original project artwork (ISC).",
+    "limitations": "Lettering, frame and half-frame numbers reconstructed from developed 135/120 references. Optical code tracks are omitted per slide film standard. Placement normalized to five frames; font and base color are approximations, not calibrated measurements."
+  }
+}
