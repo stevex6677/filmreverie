@@ -45,80 +45,46 @@ the application and its tooling.
 
 ## 2. Per-checkout remote setup
 
-Use the general, local-only setup tool documented in
-[remote-setup README](/Users/zhangzimou/Projects/tools/remote_setup/README.md):
+All worktree setup, two-way Mutagen sync, and remote path mapping are managed by
+[`remote_exec`](/Users/zhangzimou/Projects/tools/remote_exec/README.md).
+The executable lives in `~/Projects/tools/remote_exec/remote_exec` (accessible via PATH
+as `remote_exec` or `~/.local/bin/remote_exec`).
 
 ```bash
-/Users/zhangzimou/Projects/tools/remote_setup/remote-setup setup
+remote_exec setup
 ```
 
-Invoke it from the active checkout (or pass `-C <checkout>` before the command).
-The executable lives in `~/Projects/tools/remote_setup/`, outside this repository;
-its location does not determine the target project. Running this infrastructure
-tool locally is required and is an exception to the remote runtime default.
-
-- Every active checkout gets its own **two-way-safe** Mutagen session. Never
-  create a provider-wide or project-wide session covering multiple worktrees.
-- Discover the repository root with Git. Preserve the full relative suffix:
-  - Main: `/Users/zhangzimou/Projects/film_photo` → `/workspace/film_photo`.
-  - Orca: `~/orca/workspaces/<project>/<worktree>` →
-    `/workspace/worktrees/orca/<project>/<worktree>`.
-  - Antigravity: `~/.gemini/antigravity/worktrees/<suffix>` →
-    `/workspace/worktrees/antigravity/<suffix>`.
-  - Cursor: `~/.cursor/worktrees/<suffix>` →
-    `/workspace/worktrees/cursor/<suffix>`.
-  - Codex: `~/.codex/worktrees/<id>/<project>` →
-    `/workspace/worktrees/codex/<id>/<project>`.
-- Obtain the exact session name and endpoints from `setup`/`status`; do not guess.
-- New source files sync before Git staging. Git metadata, dependencies, caches,
-  local setup state, and shared media directories are excluded. Tracked source
-  files receive inclusion exceptions. Rerun setup after changing ignore policy.
-- Remote tooling may modify source/lockfiles; two-way-safe returns those changes
-  to the Mac for review. Continue to perform manual edits and all Git work locally.
-- An active overlapping legacy session blocks setup. Account for its sibling
-  worktrees, flush it if connected, pause it, and initialize the needed checkouts
-  individually before terminating the parent. Never resume a parent over children.
-- Run `stop` before retiring a worktree or switching its SSH alias to a fresh
-  instance; then run `setup` for each checkout needed on the new instance.
-- Setup and asset commands may perform bounded remote infrastructure checks,
-  existence checks, and checksums. Read/edit repository source locally as before.
+- Run `remote_exec setup` once per checkout (pass `--no-install` to skip remote dependency install).
+- Use `remote_exec status` to inspect sync health and `remote_exec stop` before retiring a worktree.
+- Read [`remote_exec` README](/Users/zhangzimou/Projects/tools/remote_exec/README.md) for full options and multi-agent worktree mappings.
 
 ## 3. Run commands remotely
 
-- By default, run builds, tests, package-manager commands, scripts, development
-  servers, and application runtimes remotely through `ssh remote "<command>"`.
+- By default, run builds, tests, package-manager commands, scripts, and
+  application tooling remotely through `remote_exec run`:
+
+  ```bash
+  remote_exec run <command>
+  ```
+
+  Examples:
+  ```bash
+  remote_exec run npm test
+  remote_exec run pytest -v --maxfail=1
+  remote_exec run -e PLAYWRIGHT_WORKERS=4 npm run validate:m12
+  remote_exec run --no-flush nvidia-smi
+  ```
+
+- `remote_exec run` automatically flushes local edits before execution, preserves working
+  subdirectories remotely, keeps long runs alive, and recovers dead SSH sockets safely.
+  Refer to [`remote_exec` README](/Users/zhangzimou/Projects/tools/remote_exec/README.md)
+  for details. **Agents MUST NOT run destructive commands like `rm -f ~/.ssh/sockets/*`**.
 - When the user says "start the app locally" (or equivalent), you MUST start
   the application process on the local Mac in the active checkout. A remote
   server exposed through localhost/SSH does not satisfy this request. This
   explicit instruction overrides the remote startup default; do not silently
   fall back to remote execution. Necessary local startup preparation is allowed.
-  Keep builds, tests, and other heavy tooling remote unless separately requested.
-- Before a remote command that depends on local edits, flush this checkout:
-
-  ```bash
-  /Users/zhangzimou/Projects/tools/remote_setup/remote-setup flush
-  ```
-
-- Verify session endpoints, status, and conflicts with
-  `mutagen sync list --long`. Never guess a session name or remote path.
-- If the matching session is absent, disconnected, or conflicted, do not run
-  tests against another remote checkout. Set up or repair synchronization first.
-- Change to the mapped remote repository before running a command. For example:
-
-  ```bash
-  ssh remote "cd /workspace/worktrees/codex/<worktree_id>/film_photo && <command>"
-  ssh remote "cd /workspace/worktrees/orca/film_photo/<worktree_name> && <command>"
-  ```
-
-### SSH Connection Multiplexing (ControlMaster)
-
-To minimize connection overhead when executing remote commands across agents and worktrees:
-- `Host remote` and `Host vast` in `~/.ssh/config` use OpenSSH `ControlMaster` (`ControlMaster auto`, `ControlPath ~/.ssh/sockets/%r@%h:%p`, `ControlPersist 10m`).
-- Local socket directory `~/.ssh/sockets` is maintained on the Mac.
-- **Stale Socket Recovery:** If an `ssh remote` command hangs or fails with `Control socket connect(...): Connection refused` (e.g. after laptop sleep or Vast.ai instance reboot), agents MUST clear stale sockets before retrying:
-  ```bash
-  ssh -O exit remote 2>/dev/null || rm -f ~/.ssh/sockets/*
-  ```
+  Keep builds, tests, and other heavy tooling remote via `remote_exec run`.
 
 ### App startup and Web Access (local Mac or Vast.ai)
 
@@ -180,11 +146,12 @@ To minimize connection overhead when executing remote commands across agents and
 ## Shared asset workflow
 
 - Read `SHARED_ASSETS.md` before using or generating media. Both shared folders
-  are excluded from source sync. Use `remote-setup asset ensure <path>` for needed
-  input files and `remote-setup asset fetch <path>` for durable generated outputs.
-  Paths include `ignored_assets/` or `ignored_generated/` and resolve against the
-  main checkout, never the current worktree. Do not add asset sync sessions.
-- Keep scripts in the active worktree and run them from its mapped remote checkout. Shared media resolves to `/workspace/film_photo` remotely.
+  are excluded from source sync.
+- Transfer shared assets via `remote_exec asset ensure <path>` (upload) and
+  `remote_exec asset fetch <path>` (download). Pass `--checksum` for SHA-256
+  verification. See [`remote_exec` README](/Users/zhangzimou/Projects/tools/remote_exec/README.md).
+- Keep scripts in the active worktree and run them via `remote_exec run`. Shared
+  media resolves to `/workspace/film_photo` remotely.
 - Use unique output run folders; do not overwrite another worktree's output or the original source assets.
 - Git commits contain scripts and manifests, not ignored binary files. Local checksum/copy/move operations are allowed for asset management; application runtimes and tests remain remote except for explicitly requested local app startup under section 3.
 
@@ -200,10 +167,6 @@ To minimize connection overhead when executing remote commands across agents and
 
 Before reporting an implementation complete:
 
-1. Confirm the active local checkout and which agent owns its worktree layout.
-2. Translate it using the canonical mapping above.
-3. Confirm the matching Mutagen session is connected and has no conflict.
-4. Flush that session.
-5. If remote SSH fails or hangs with socket errors, clear stale master sockets (`ssh -O exit remote 2>/dev/null || rm -f ~/.ssh/sockets/*`).
-6. Run the relevant checks in the mapped remote checkout.
-7. Review the local Git diff and summarize the files changed and checks run.
+1. Confirm active checkout and verify sync health with `remote_exec status`.
+2. Run relevant checks using `remote_exec run <command>`.
+3. Review local Git diff and summarize files changed and checks run.

@@ -9,19 +9,17 @@ Set `PLAYWRIGHT_WORKERS` to a positive integer or a percentage of logical CPUs.
 It applies to both `test:e2e` and all `validate:mN` scripts. Playwright's
 `--workers` CLI option takes precedence over the configured worker count.
 
-Follow `AGENTS.md`: inspect/edit locally, verify the exact Mutagen mapping,
-flush it, and run builds/tests in the matching remote checkout. For the main
-checkout, after confirming its `remote-setup status` is connected and conflict-free:
+Follow `AGENTS.md`: inspect/edit locally, verify the exact Mutagen mapping
+and status via `remote_exec status`, and execute tests remotely via `remote_exec run`:
 
 ```sh
-/Users/zhangzimou/Projects/tools/remote_setup/remote-setup flush
-ssh remote "cd /workspace/film_photo && PLAYWRIGHT_WORKERS=4 npm run validate:m12"
+remote_exec run -e PLAYWRIGHT_WORKERS=4 npm run validate:m12
 ```
 
 For an already current production build, use the test runner directly:
 
 ```sh
-ssh remote "cd /workspace/film_photo && npm run test:e2e -- --workers=6"
+remote_exec run npm run test:e2e -- --workers=6
 ```
 
 Use `PLAYWRIGHT_WORKERS=1` for a serial diagnostic run. `100%` means one worker

@@ -67,8 +67,8 @@ model binaries into the module directory to make a new model discoverable.
 
 ## Synchronization and backups
 
-Shared media is transferred on demand using the general local `remote-setup`
-tool, described in [remote-setup README](/Users/zhangzimou/Projects/tools/remote_setup/README.md). All source-code
+Shared media is transferred on demand using the general local `remote_exec`
+tool, described in [`remote_exec` README](/Users/zhangzimou/Projects/tools/remote_exec/README.md). All source-code
 Mutagen sessions exclude both shared directories.
 
 - Mac shared root: `/Users/zhangzimou/Projects/film_photo`
@@ -77,25 +77,26 @@ Mutagen sessions exclude both shared directories.
 From any worktree, upload a required file with:
 
 ```bash
-/Users/zhangzimou/Projects/tools/remote_setup/remote-setup asset ensure ignored_assets/<path>
+remote_exec asset ensure ignored_assets/<path>
 ```
 
 The same command accepts `ignored_generated/<path>` for an existing model or
-export needed remotely. It skips identical files, verifies SHA-256 after transfer,
-and refuses to overwrite differing content. Include external textures and other
-required companion files explicitly. There are no overlapping asset sessions or
-worktree copies/symlinks. The old `film-photo` session is migrated to code-only
-coverage; flushing a source session no longer transfers media.
+export needed remotely (use optional `--checksum` for SHA-256 verification).
+It skips identical files and refuses to overwrite differing content. Include
+external textures and other required companion files explicitly. There are no
+overlapping asset sessions or worktree copies/symlinks. The old `film-photo`
+session is migrated to code-only coverage; flushing a source session no longer
+transfers media.
 
 Retrieve durable remote outputs before releasing the instance:
 
 ```bash
-/Users/zhangzimou/Projects/tools/remote_setup/remote-setup asset fetch ignored_generated/<unique-run>/<file>
+remote_exec asset fetch ignored_generated/<unique-run>/<file>
 ```
 
 Fetch only writes under the local main checkout's `ignored_generated/`. Preserve
-source originals as read-only. Run application commands from the active mapped
-remote worktree and flush that worktree's source session before execution.
+source originals as read-only. Run application commands from the active worktree
+via `remote_exec run` (which automatically flushes source edits before execution).
 
 Back up both shared directories separately: Git and Mutagen are not a versioned
 backup. Removing a temporary worktree must not remove either shared directory.
