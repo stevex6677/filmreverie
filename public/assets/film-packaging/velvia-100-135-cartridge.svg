@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400">
+  <defs>
+    <linearGradient id="v100cbg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00522b"/>
+      <stop offset="50%" stop-color="#007a40"/>
+      <stop offset="100%" stop-color="#00522b"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="url(#v100cbg)"/>
+  <rect y="110" width="800" height="160" fill="#9d174d"/>
+  <rect y="270" width="800" height="12" fill="#f472b6"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <text x="40" y="68" fill="#ffffff" font-size="32" font-weight="900" letter-spacing="3">FUJIFILM</text>
+    <text x="760" y="68" fill="#ffffff" font-size="24" font-weight="bold" text-anchor="end">135 · 36 EXP</text>
+    <text x="40" y="100" fill="#facc15" font-size="18" font-weight="bold" letter-spacing="2">FUJICHROME</text>
+    <text x="40" y="210" fill="#ffffff" font-size="78" font-weight="900" letter-spacing="-1">Velvia 100</text>
+    <text x="40" y="255" fill="#fdf2f8" font-size="20" font-weight="bold" letter-spacing="1">PROCESS CR-56 / E-6 · RVP 100</text>
+    <text x="40" y="340" fill="#ffffff" font-size="44" font-weight="bold">ISO 100 / 21°</text>
+    <text x="760" y="340" fill="#fbcfe8" font-size="24" font-weight="bold" text-anchor="end">DAYLIGHT</text>
+  </g>
+</svg>

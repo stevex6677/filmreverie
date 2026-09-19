@@ -11,12 +11,20 @@ const referencesDir = path.join(projectRoot, 'film_filter_references');
 import { FILM_LOOKS, filmGrainSeed } from '../src/data/filmLooks.ts';
 import { applyFilmLookToBuffer } from '../src/shaders/filmLook.ts';
 
+const STOCK_NAMES = {
+  'portra-160': 'Kodak Portra 160',
+  'portra-400': 'Kodak Portra 400',
+  'portra-800': 'Kodak Portra 800',
+  'ektar-100': 'Kodak Ektar 100',
+  'ektachrome-e100': 'Kodak Ektachrome E100',
+  'provia-100': 'Fujifilm Provia 100F',
+  'velvia-50': 'Fujifilm Velvia 50',
+  'velvia-100': 'Fujifilm Velvia 100',
+};
+
 const FILM_STOCKS = Object.entries(FILM_LOOKS).map(([id, look]) => ({
   id,
-  name: id === 'portra-160' ? 'Kodak Portra 160' :
-        id === 'portra-400' ? 'Kodak Portra 400' :
-        id === 'portra-800' ? 'Kodak Portra 800' :
-        id === 'ektar-100' ? 'Kodak Ektar 100' : 'Kodak Ektachrome E100',
+  name: STOCK_NAMES[id] || id,
   ...look
 }));
 
@@ -60,17 +68,15 @@ async function run() {
       stockImages.push({ stock, canvas });
     }
 
-    // Generate comparison sheet for this scene (2 rows x 3 columns)
-    // Row 1: Original, Portra 160, Portra 400
-    // Row 2: Portra 800, Ektar 100, Ektachrome E100
-    const cellW = 600;
+    // Generate comparison sheet for this scene (3 rows x 3 columns = 9 tiles)
+    const cellW = 560;
     const cellH = Math.round(cellW * (height / width));
     const pad = 20;
     const headerH = 70;
     const labelH = 34;
 
     const sheetW = cellW * 3 + pad * 4;
-    const sheetH = headerH + (cellH + labelH + pad) * 2 + pad;
+    const sheetH = headerH + (cellH + labelH + pad) * 3 + pad;
 
     const sheetCanvas = createCanvas(sheetW, sheetH);
     const sCtx = sheetCanvas.getContext('2d');
@@ -84,15 +90,14 @@ async function run() {
     sCtx.fillText(`Film Filter Reference · ${scene.label}`, pad, 40);
     sCtx.fillStyle = '#9ca3af';
     sCtx.font = '15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    sCtx.fillText(`Default Strength: 50 (Authored M19 Look) · Resolution: ${width}×${height}px`, pad, 62);
+    sCtx.fillText(`Default Strength: 50 (Authored Look) · Resolution: ${width}×${height}px`, pad, 62);
 
     const tiles = [
       { title: 'Original (Bypass / No Filter)', canvas: img },
-      { title: 'Kodak Portra 160 (Soft · Gentle Tones · ISO 160)', canvas: stockImages[0].canvas },
-      { title: 'Kodak Portra 400 (Natural · Warm · ISO 400)', canvas: stockImages[1].canvas },
-      { title: 'Kodak Portra 800 (Fuller Color · Rich · ISO 800)', canvas: stockImages[2].canvas },
-      { title: 'Kodak Ektar 100 (Ultra Vivid · High Contrast · ISO 100)', canvas: stockImages[3].canvas },
-      { title: 'Kodak Ektachrome E100 (Reversal Slide · Cool Whites · ISO 100)', canvas: stockImages[4].canvas },
+      ...stockImages.map(si => ({
+        title: `${si.stock.name} (${si.stock.description})`,
+        canvas: si.canvas
+      }))
     ];
 
     for (let i = 0; i < tiles.length; i++) {
@@ -107,8 +112,8 @@ async function run() {
       sCtx.fillStyle = '#1e232d';
       sCtx.fillRect(x, y + cellH, cellW, labelH);
       sCtx.fillStyle = i === 0 ? '#38bdf8' : '#e5e7eb';
-      sCtx.font = 'bold 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      sCtx.fillText(tiles[i].title, x + 12, y + cellH + 22);
+      sCtx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      sCtx.fillText(tiles[i].title, x + 10, y + cellH + 22);
     }
 
     const sheetOut = path.join(referencesDir, `${sceneBase}_comparison.jpg`);
@@ -119,14 +124,14 @@ async function run() {
 
   // Generate All-In-One Matrix Comparison
   console.log('\n--- Generating Overall Matrix Sheet: all_filters_comparison.jpg ---');
-  const thumbW = 360;
-  const thumbH = 240;
+  const thumbW = 320;
+  const thumbH = 213;
   const pad = 16;
   const headerH = 70;
   const rowH = thumbH + 8;
   const colW = thumbW + 8;
 
-  const cols = 6; // Original + 5 stocks
+  const cols = 1 + FILM_STOCKS.length; // Original + 8 stocks = 9 columns
   const rows = SCENES.length; // 5 scenes
 
   const matrixW = pad * 2 + 150 + cols * colW;
@@ -140,13 +145,13 @@ async function run() {
 
   mCtx.fillStyle = '#f8fafc';
   mCtx.font = 'bold 26px -apple-system, BlinkMacSystemFont, sans-serif';
-  mCtx.fillText('M19 Film Filters — 5 Scenes × 5 Film Stocks (Default Strength 50)', pad, 42);
+  mCtx.fillText('Film Filters — 5 Scenes × 8 Film Stocks (Default Strength 50)', pad, 42);
 
-  const colHeaders = ['Original', 'Portra 160', 'Portra 400', 'Portra 800', 'Ektar 100', 'E100 Slide'];
+  const colHeaders = ['Original', ...FILM_STOCKS.map(s => s.name.replace(/^(Kodak|Fujifilm)\s+/, ''))];
 
   for (let c = 0; c < colHeaders.length; c++) {
     mCtx.fillStyle = c === 0 ? '#38bdf8' : '#fbbf24';
-    mCtx.font = 'bold 16px -apple-system, BlinkMacSystemFont, sans-serif';
+    mCtx.font = 'bold 15px -apple-system, BlinkMacSystemFont, sans-serif';
     mCtx.fillText(colHeaders[c], pad + 150 + c * colW + 10, headerH);
   }
 
@@ -157,7 +162,7 @@ async function run() {
 
     // Row header
     mCtx.fillStyle = '#e2e8f0';
-    mCtx.font = 'bold 16px -apple-system, BlinkMacSystemFont, sans-serif';
+    mCtx.font = 'bold 15px -apple-system, BlinkMacSystemFont, sans-serif';
     const shortLabel = scene.file.replace('.jpg', '').replace('_', ' ').toUpperCase();
     mCtx.fillText(shortLabel, pad, y + thumbH / 2);
 
@@ -166,7 +171,7 @@ async function run() {
     const origImg = await loadImage(origBuf);
     mCtx.drawImage(origImg, pad + 150, y, thumbW, thumbH);
 
-    // Cols 1..5: Filtered
+    // Cols 1..8: Filtered
     for (let c = 0; c < FILM_STOCKS.length; c++) {
       const stock = FILM_STOCKS[c];
       const filteredBuf = await fs.readFile(path.join(referencesDir, `${sceneBase}_${stock.id}.jpg`));

@@ -24,7 +24,20 @@ const ALIASES = {
   'ektar100': 'ektar-100',
   'ektachrome-e100': 'ektachrome-e100',
   'e100': 'ektachrome-e100',
-  'ektachrome': 'ektachrome-e100'
+  'ektachrome': 'ektachrome-e100',
+  'provia-100': 'provia-100',
+  'provia': 'provia-100',
+  'provia100': 'provia-100',
+  'rdp': 'provia-100',
+  'rdpiii': 'provia-100',
+  'velvia-50': 'velvia-50',
+  'velvia': 'velvia-50',
+  'velvia50': 'velvia-50',
+  'rvp': 'velvia-50',
+  'rvp50': 'velvia-50',
+  'velvia-100': 'velvia-100',
+  'velvia100': 'velvia-100',
+  'rvp100': 'velvia-100'
 };
 
 function printUsage() {
@@ -45,6 +58,9 @@ Supported Film Stocks:
   - portra-800       (aliases: portra800, 800)       Kodak Portra 800 (Rich tones, visible analog grain)
   - ektar-100        (aliases: ektar, ektar100)      Kodak Ektar 100 (Ultra-vivid colors, high contrast)
   - ektachrome-e100  (aliases: e100, ektachrome)     Kodak Ektachrome E100 (Reversal slide, clean whites)
+  - provia-100       (aliases: provia, rdpiii)       Fujifilm Provia 100F (Natural color, ultra-fine grain)
+  - velvia-50        (aliases: velvia, rvp50)        Fujifilm Velvia 50 (Ultra-vivid color, deep blacks)
+  - velvia-100       (aliases: velvia100, rvp100)    Fujifilm Velvia 100 (Vivid saturation, high contrast)
 
 Examples:
   node scripts/apply-filter.mjs photo.jpg portra-400

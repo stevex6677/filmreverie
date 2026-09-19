@@ -24,6 +24,9 @@ export const FILM_LOOKS: Record<FilmStockId, FilmLook> = {
   'portra-800': { description: 'Fuller color · gentle highlights · visible grain', contrast: 1.06, saturation: 1.08, shadows: 0.015, highlights: -0.08, color: [0.035, -0.006, -0.025], grain: 0.032, grainPerMm: 35 },
   'ektar-100': { description: 'Rich color · crisp tones · very fine grain', contrast: 1.18, saturation: 1.28, shadows: -0.010, highlights: -0.040, color: [0.020, 0.010, 0.035], grain: 0.010, grainPerMm: 65 },
   'ektachrome-e100': { description: 'Neutral color · clean whites · very fine grain', contrast: 1.14, saturation: 1.16, shadows: -0.015, highlights: 0.010, color: [-0.010, 0.005, 0.025], grain: 0.011, grainPerMm: 60 },
+  'provia-100': { description: 'Natural color · faithful tones · ultra-fine grain', contrast: 1.12, saturation: 1.14, shadows: -0.018, highlights: 0.008, color: [-0.012, 0.010, 0.015], grain: 0.009, grainPerMm: 70 },
+  'velvia-50': { description: 'Ultra-vivid color · deep blacks · exceptional sharpness', contrast: 1.30, saturation: 1.38, shadows: -0.038, highlights: 0.020, color: [0.022, 0.016, -0.012], grain: 0.008, grainPerMm: 75 },
+  'velvia-100': { description: 'Vivid saturation · high contrast · ultra-fine grain', contrast: 1.24, saturation: 1.32, shadows: -0.028, highlights: 0.014, color: [0.018, -0.004, 0.022], grain: 0.009, grainPerMm: 70 },
 };
 
 // Independent of texture resolution, loading order and animation time.

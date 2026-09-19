@@ -1,0 +1,37 @@
+{
+  "id": "provia-100",
+  "displayName": "Fujifilm Provia 100F",
+  "type": "reversal",
+  "process": "E-6",
+  "allowedViews": [
+    "positive"
+  ],
+  "base": {
+    "substrateBase": "rgba(20, 22, 25, 0.99)",
+    "rebateText": "#e2dad0",
+    "rebateSecondary": "#e2dad0",
+    "frameShadow": "rgba(30, 20, 15, 0.4)",
+    "negativeMask": [
+      1,
+      1,
+      1
+    ]
+  },
+  "rebate": {
+    "label": "FUJIFILM PROVIA 100F",
+    "font": "Arial, Helvetica, sans-serif",
+    "fontWeight": "bold",
+    "orientation": "same-direction",
+    "halfFrameNumbers": true,
+    "codePattern": null
+  },
+  "reference": {
+    "edition": "Fujifilm Provia 100F Professional (RDP III), 135 still film",
+    "title": "Fujifilm Fujichrome Provia 100F Professional developed 135 slide film reference",
+    "url": "https://www.fujifilm.com/products/photofinishing/films/pdf/provia_100f_datasheet.pdf",
+    "imageUrl": "https://www.fujifilm.com/products/photofinishing/films/images/provia_100f.jpg",
+    "accessed": "2026-09-18",
+    "license": "Linked for study only; reference photograph not redistributed. Runtime lettering and geometry are original project artwork (ISC).",
+    "limitations": "Lettering, frame and half-frame numbers reconstructed from developed 135/120 references. Optical code tracks are omitted per slide film standard. Placement normalized to five frames; font and base color are approximations, not calibrated measurements."
+  }
+}
