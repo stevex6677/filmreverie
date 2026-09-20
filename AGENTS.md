@@ -51,8 +51,9 @@ the application and its tooling.
 ## 1. Read and edit files locally
 
 - Perform all file discovery, inspection, creation, and editing on the local Mac.
-- Never edit repository files through SSH. Mutagen synchronizes local changes to
-  the remote server.
+- Never edit repository files through SSH. Mutagen synchronizes local changes
+  one-way to the remote server (local Mac -> remote). Remote modifications are
+  not synced back to the local Mac.
 - Resolve the active local repository root with `git rev-parse --show-toplevel`.
   Do not assume that a task is using the main checkout.
 - If the user supplies a remote path, map it to its local counterpart before
@@ -61,7 +62,7 @@ the application and its tooling.
 
 ## 2. Per-checkout remote setup
 
-All worktree setup, two-way Mutagen sync, and remote path mapping are managed by
+All worktree setup, one-way Mutagen sync (local Mac -> remote), and remote path mapping are managed by
 [`remote_exec`](/Users/zhangzimou/Projects/tools/remote_exec/README.md).
 The executable lives in `~/Projects/tools/remote_exec/remote_exec` (accessible via PATH
 as `remote_exec` or `~/.local/bin/remote_exec`).
