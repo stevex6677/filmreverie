@@ -5,8 +5,10 @@ import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
 import { assetPath, generatedPath } from "./shared-assets.js";
 import { preparePackaging } from './prepare-packaging.js';
+import { prepareCamera } from './prepare-camera.js';
 
 preparePackaging();
+prepareCamera();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

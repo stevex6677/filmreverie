@@ -30,7 +30,7 @@ export function TouchNavigation({
       return ray.ray.intersectPlane(plane, new THREE.Vector3());
     };
     const captures = new Map<number, HTMLElement>();
-    const accepts = (target: EventTarget | null) => target === canvas || (target instanceof Element && !!target.closest('.shelf-approach-target'));
+    const accepts = (target: EventTarget | null) => target === canvas || (target instanceof Element && !!target.closest('.shelf-approach-target, .camera-shelf-target'));
     const release = (id: number) => { const owner = captures.get(id); captures.delete(id); if (owner?.hasPointerCapture(id)) owner.releasePointerCapture(id); };
     let pinchSession: {
       startDistance: number;
@@ -46,7 +46,7 @@ export function TouchNavigation({
       if (s.roomMode === 'room') {
         if (intent.type === 'tap') {
           const target = roomHitTarget(camera, canvas, intent.x, intent.y, lightTableSize(s.roll));
-          if (target) dispatch({ type: target === 'table' ? 'APPROACH_TABLE' : 'APPROACH_SHELF' });
+          if (target) dispatch({ type: target === 'table' ? 'APPROACH_TABLE' : target === 'camera' ? 'APPROACH_CAMERA_SHELF' : 'APPROACH_SHELF' });
         }
         return;
       }
@@ -149,11 +149,13 @@ export function TouchNavigation({
     const gesture = new TouchGestures(emit);
     let priorSample={x:0,y:0};
     let magnified = false;
+    let capturedTouchClick = false;
     const point=(e:PointerEvent)=>({id:e.pointerId,x:e.clientX,y:e.clientY});
     const consume=(e:PointerEvent)=>{e.preventDefault();e.stopImmediatePropagation();};
     const down=(e:PointerEvent)=>{
       if (!accepts(e.target) || live.current.shelfFocused) return;
       if(e.pointerType!=='touch'&&e.pointerType!=='pen'){dispatch({type:'TOUCH_POINTER',active:false});return;}
+      capturedTouchClick = true;
       consume(e); if(blocked)return;
       dispatch({type:'INPUT_TOUCH',active:true});
       dispatch({type:'TOUCH_POINTER',active:true});
@@ -170,7 +172,7 @@ export function TouchNavigation({
     const up=(e:PointerEvent)=>{if(gesture.contacts.has(e.pointerId)){consume(e);gesture.up(point(e));release(e.pointerId);if(gesture.contacts.size<2)pinchSession=null;if(!gesture.contacts.size&&livePose)livePose.current.active=false;}};
     const cancel=()=>{pinchSession=null;if(livePose)livePose.current.active=false;const ids=[...gesture.contacts.keys()];gesture.cancel();ids.forEach(release);};
     const lost=(e:PointerEvent)=>{if(gesture.contacts.has(e.pointerId)){if(gesture.contacts.size<=1)cancel();else{gesture.up(point(e));release(e.pointerId);pinchSession=null;}}};
-    const click=(e:MouseEvent)=>{if(accepts(e.target)&&((e as PointerEvent).pointerType==='touch'||(e as PointerEvent).pointerType==='pen')){e.preventDefault();e.stopImmediatePropagation();}};
+    const click=(e:MouseEvent)=>{if(capturedTouchClick&&accepts(e.target)&&((e as PointerEvent).pointerType==='touch'||(e as PointerEvent).pointerType==='pen')){capturedTouchClick=false;e.preventDefault();e.stopImmediatePropagation();}};
     // Preserve the loupe's priority on the canvas; share these handlers with
     // the room's cabinet overlay without intercepting table/loupe gestures.
     const shelfDown=(e:PointerEvent)=>{if(e.target!==canvas)down(e);};

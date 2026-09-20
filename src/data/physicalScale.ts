@@ -1,3 +1,5 @@
+import { ROOM_ENVELOPE } from '../utils/cameraBounds';
+
 // Shared world scale for negatives, cartridges, cartons and framed prints.
 // Camera fitting changes the view; it must never change an object's dimensions.
 export const WORLD_UNITS_PER_MM = .0036;
@@ -26,6 +28,28 @@ export const SHELF_CAMERA: [number, number, number] = [0, SHELF_ORIGIN[1], SHELF
 export function shelfFov(aspect: number) {
   return 2 * Math.atan(Math.max(SHELF_HEIGHT * 1.4, SHELF_WIDTH * 1.10 / aspect) / (2 * SHELF_CAMERA_DISTANCE)) * 180 / Math.PI;
 }
+
+// Right wall, replacing the chemistry rail; wet bench now sits by the door.
+// Local +Z faces into the room (-X).
+export const CAMERA_SHELF_MM = { width: 900, depth: 240, height: SHELF_CELL_MM.height * 4 + 18, tiers: 2 };
+export const CAMERA_PRESENTATION_YAW = -.04;
+// Leave a clear corner for the developing bench along the rear wall.
+export const CAMERA_SHELF_ORIGIN: [number, number, number] = [ROOM_ENVELOPE.width / 2 - mm(7), SHELF_ORIGIN[1] - SHELF_HEIGHT / 2, 2.9];
+export const CAMERA_SHELF_YAW = -Math.PI / 2;
+export const CAMERA_SHELF_TARGET: [number, number, number] = [CAMERA_SHELF_ORIGIN[0] - mm(CAMERA_SHELF_MM.depth / 2), SHELF_ORIGIN[1], CAMERA_SHELF_ORIGIN[2]];
+export const CAMERA_SHELF_EYE: [number, number, number] = [CAMERA_SHELF_TARGET[0] - SHELF_CAMERA_DISTANCE, SHELF_ORIGIN[1], CAMERA_SHELF_ORIGIN[2]];
+export function cameraShelfFov(aspect: number, visibleHeight = .65, visibleWidth = .94) {
+  // Fit the closest cabinet corners, leaving only a narrow horizontal margin.
+  const frontDistance = SHELF_CAMERA_DISTANCE - mm(CAMERA_SHELF_MM.depth / 2);
+  return 2 * Math.atan(Math.max(mm(CAMERA_SHELF_MM.height) / visibleHeight,
+    mm(CAMERA_SHELF_MM.width) / (visibleWidth * aspect)) / (2 * frontDistance)) * 180 / Math.PI;
+}
+// Three 300 mm positions on each tier; new collection entries can occupy these
+// without resizing the furniture or changing any camera's physical scale.
+export const CAMERA_SHELF_SLOTS = Array.from({ length: 6 }, (_, index) => ({
+  x: mm(-300 + (index % 3) * 300), y: mm(Math.floor(index / 3) * (CAMERA_SHELF_MM.height / CAMERA_SHELF_MM.tiers - 10)), z: mm(CAMERA_SHELF_MM.depth / 2),
+}));
+export const PRIMARY_CAMERA_SLOT = CAMERA_SHELF_SLOTS[3];
 
 // Objects are arranged side by side without changing either one's scale.
 export function shelfArrangement(boxWidthMm: number, small: boolean, owned: boolean, boxDepthMm = 38) {

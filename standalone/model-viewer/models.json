@@ -3,6 +3,14 @@
   "models": [
     {
       "id": "mamiya-universal",
+      "sha256": "6d426487c0a5c5fc59ad969158bee3d2612ce67a6bf6934f82cc78c1bbd96b73",
+      "widthMm": 210,
+      "manufacturer": "Mamiya",
+      "introduced": 1969,
+      "manufactured": null,
+      "category": "Medium-format press rangefinder",
+      "description": "A modular camera built around interchangeable lenses and film backs. This display pairs the black body with a Mamiya-Sekor 100 mm f/2.8 lens.",
+      "sources": [{ "title": "Mamiya Universal camera history", "url": "https://mamiya.awane-photo.com/camera/press/universa/index.htm" }],
       "title": "Mamiya",
       "titleAccent": "Universal",
       "subtitle": "Black Body · Multi-coated Optics",
@@ -12,6 +20,7 @@
       "captionDetail": "100 mm / f 2.8",
       "asset": "blender/mamiya_universal/hybrid/v2/browser_preview/runs/20260912T073337Z-1d792c08/mamiya-black-body.glb",
       "profile": "mamiya",
+      "rotation": [0, 0, 0],
       "camera": {"distance": 5.2, "portraitDistance": 6, "home": [1.7, 1.5, 3.2]},
       "exposure": 1.15
     }

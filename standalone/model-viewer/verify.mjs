@@ -8,9 +8,11 @@ const out=path.join(assetRoot(),`model-viewer/qa/${new Date().toISOString().repl
 fs.mkdirSync(out,{recursive:true});
 const reports=[];
 for(const [name,engine,options] of [['desktop',chromium,{viewport:{width:1200,height:850},deviceScaleFactor:1}],['ipad',chromium,{...devices['iPad Pro 11'],deviceScaleFactor:1}]] ){
- const browser=await engine.launch({headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+ const browser=await engine.launch({headless:true,channel:'chrome',args:['--no-sandbox','--use-gl=angle',...(process.platform==='linux'?['--use-angle=vulkan']:[]),'--enable-webgl','--ignore-gpu-blocklist']});
  try{
  const context=await browser.newContext(options);const page=await context.newPage();const errors=[];
+ page.setDefaultTimeout(30000);
+ console.log(`Verifying standalone viewer: ${name}`);
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);await page.waitForFunction(()=>document.documentElement.dataset.modelReady==='true',{},{timeout:120000});
  await page.waitForTimeout(1500);const initial=await page.evaluate(()=>window.previewDiagnostics());

@@ -10,12 +10,17 @@ export function ShelfNavigation({ enabled, onLeave, onLook }: { enabled: boolean
     const canvas = gl.domElement;
     let drag: { id: number; x: number; y: number; moved: boolean } | null = null;
     let suppressClickUntil = 0;
-    const accepts = (target: EventTarget | null) => target === canvas || (target instanceof Element && !!target.closest('.shelf-roll-target'));
+    const contacts = new Set<number>();
+    const accepts = (target: EventTarget | null) => target === canvas || (target instanceof Element && !!target.closest('.shelf-roll-target, .camera-shelf-target'));
     const consume = (event: Event) => { event.preventDefault(); event.stopImmediatePropagation(); };
     const down = (event: PointerEvent) => {
       // A fresh press is a new action, including toolbar clicks immediately
       // after a reduced-motion return. Suppress only the drag's trailing click.
       suppressClickUntil = 0;
+      if (live.current.enabled && accepts(event.target)) {
+        contacts.add(event.pointerId);
+        if (contacts.size > 1) { drag = null; suppressClickUntil = performance.now() + 500; return; }
+      }
       if (drag || !live.current.enabled || event.button !== 0 || !accepts(event.target)) return;
       drag = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
     };
@@ -37,6 +42,7 @@ export function ShelfNavigation({ enabled, onLeave, onLook }: { enabled: boolean
       if (id !== undefined && canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
     };
     const up = (event: PointerEvent) => {
+      contacts.delete(event.pointerId);
       if (!drag || drag.id !== event.pointerId) return;
       move(event); // Include the final sample on browsers that coalesce moves.
       if (drag.moved) { suppressClickUntil = performance.now() + 500; consume(event); }
@@ -45,20 +51,21 @@ export function ShelfNavigation({ enabled, onLeave, onLook }: { enabled: boolean
     const click = (event: MouseEvent) => {
       if (event.detail > 0 && performance.now() < suppressClickUntil) { consume(event); suppressClickUntil = 0; }
     };
+    const cancel = () => { contacts.clear(); suppressClickUntil = performance.now() + 500; release(); };
     document.addEventListener('pointerdown', down, true);
     window.addEventListener('pointermove', move, true);
     window.addEventListener('pointerup', up, true);
     window.addEventListener('click', click, true);
-    window.addEventListener('pointercancel', release);
-    window.addEventListener('blur', release);
+    window.addEventListener('pointercancel', cancel);
+    window.addEventListener('blur', cancel);
     return () => {
       release();
       document.removeEventListener('pointerdown', down, true);
       window.removeEventListener('pointermove', move, true);
       window.removeEventListener('pointerup', up, true);
       window.removeEventListener('click', click, true);
-      window.removeEventListener('pointercancel', release);
-      window.removeEventListener('blur', release);
+      window.removeEventListener('pointercancel', cancel);
+      window.removeEventListener('blur', cancel);
     };
   }, [gl]);
   return null;

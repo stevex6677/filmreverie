@@ -14,7 +14,7 @@ const header=Buffer.alloc(20);header.writeUInt32LE(0x46546c67,0);header.writeUIn
 const binHeader=Buffer.alloc(8);binHeader.writeUInt32LE(bin.length,0);binHeader.writeUInt32LE(0x004e4942,4);
 fs.writeFileSync(path.join(out,'sculpture.glb'),Buffer.concat([header,padded,binHeader,bin]));
 fs.writeFileSync(path.join(out,'models.json'),JSON.stringify({defaultModel:'sculpture',models:[{id:'sculpture',title:'Reusable sculpture',asset:'sculpture.glb'},{id:'alternate',title:'Alternate orientation',asset:'sculpture.glb',rotation:[0,.5,0],camera:{home:[-1,1,2]},exposure:.9}]}));
-const host=new URL(process.env.PREVIEW_URL||'http://100.127.56.123:4180').hostname;
+const host='127.0.0.1';
 const server=spawn(process.execPath,['server.mjs'],{cwd:root,env:{...process.env,PREVIEW_HOST:host,PREVIEW_PORT:'0',MODEL_ASSET_ROOT:out,MODEL_CONFIG:path.join(out,'models.json')},stdio:['ignore','pipe','pipe']});
 let browser;
 try{

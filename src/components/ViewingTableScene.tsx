@@ -17,10 +17,12 @@ import { CameraRig } from "./CameraRig";
 import { TouchNavigation } from "./TouchNavigation";
 import { LoupeNavigation } from './LoupeNavigation';
 import { loupeInspectionView } from '../utils/loupeView';
-import { FilmShelf } from './FilmShelf';
+import { FilmShelf, usePackagingTextures } from './FilmShelf';
 import { FilmShelfState } from '../utils/useFilmShelf';
 import { ShelfNavigation } from './ShelfNavigation';
 import { roomHitTarget } from '../utils/roomHitTarget';
+import { CameraShelf } from './CameraShelf';
+import { PRIMARY_CAMERA } from '../data/cameras';
 
 interface ViewingTableSceneProps {
   onEditShelfRoll: (id: string) => void;
@@ -34,6 +36,7 @@ interface ViewingTableSceneProps {
   isReducedMotion?: boolean;
   onLoadProgress?: (progress: { loaded: number; total: number; settled: boolean }) => void;
   onFirstFrameRendered?: () => void;
+  onCameraSettled?: () => void;
 }
 
 export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
@@ -45,7 +48,9 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   isReducedMotion = false,
   onLoadProgress,
   onFirstFrameRendered,
+  onCameraSettled,
 }) => {
+  const packagingTextures = usePackagingTextures();
   const tableGroupRef = useRef<THREE.Group>(null);
   const firstFrameReported = useRef(false);
 
@@ -79,6 +84,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   }, [loadedCount, state.roll.frames.length, settled, onLoadProgress]);
   useEffect(() => { dispatch({ type: "VIEWPORT", aspect: size.width / size.height }); }, [size.width, size.height, dispatch]);
 
+  const cabinetOnly = state.shelfId === 'camera' && !state.isTransitioning;
   const activeTexture = textures[state.loupe.frameIndex] || textures[0];
   const isPositive = state.filmMode === "positive";
 
@@ -112,7 +118,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       <TouchNavigation state={state} dispatch={dispatch} blocked={inputBlocked} livePose={livePose} />
       <ShelfNavigation enabled={state.shelfFocused && !inputBlocked} onLeave={() => { shelf.close(); dispatch({ type: 'RETURN_TO_ROOM' }); }} onLook={(dx, dy) => dispatch({ type: 'LOOK_ROOM', yaw: dx * .0035, pitch: -dy * .0035 })} />
       {/* Darkroom Atmosphere Scene Background */}
-      <color attach="background" args={["#13151b"]} />
+      <color attach="background" args={[cabinetOnly ? "#0b0c0e" : "#13151b"]} />
 
       {/* Dynamic Camera Rig with Orbit and Smooth Transitions */}
       <CameraRig
@@ -120,6 +126,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         angleDragging={state.angleDragging}
         touchInput={state.touchInput}
         shelfFocused={state.shelfFocused}
+        cameraShelf={state.shelfId === 'camera'}
         shelfTransition={state.transitionKind === 'shelf'}
         journeyTransition={state.transitionKind === 'journey'}
         inputBlocked={inputBlocked || state.shelfFocused}
@@ -144,15 +151,20 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       />
 
       {/* Surrounding 3D Darkroom Environment & Workbench */}
-      <DarkroomRoom benchWidth={Math.max(4.4, tableSize.width + .8)} brightness={state.tableBrightness} roomBrightness={state.roomBrightness} immediate={isDeterministic || isReducedMotion} />
-      <FilmShelf onEdit={onEditShelfRoll} focused={state.shelfFocused} onApproach={point => {
+      <DarkroomRoom cabinetOnly={cabinetOnly} benchWidth={Math.max(4.4, tableSize.width + .8)} brightness={state.tableBrightness} roomBrightness={state.roomBrightness} immediate={isDeterministic || isReducedMotion} />
+      <CameraShelf textures={packagingTextures} focused={state.shelfId === 'camera'} load={true} onSettled={onCameraSettled} portal={shelfPortal}
+        interactive={state.roomMode === 'room' && !inputBlocked && state.shelfId !== 'film'}
+        onApproach={() => { shelf.close(); dispatch({ type: 'APPROACH_CAMERA_SHELF' }); }}
+        onOpen={() => dispatch({ type: 'OPEN_CAMERA', id: PRIMARY_CAMERA.id })} />
+      <group visible={!cabinetOnly}><FilmShelf textures={packagingTextures} onEdit={onEditShelfRoll} focused={state.shelfId === 'film'} onApproach={point => {
         const target = point ? roomHitTarget(camera, gl.domElement, point.x, point.y, tableSize) : 'shelf';
         if (!target) return;
-        shelf.close(); dispatch({ type: target === 'table' ? 'APPROACH_TABLE' : 'APPROACH_SHELF' });
-      }} shelf={shelf} portal={shelfPortal} activeId={state.roll.rollId} interactive={state.roomMode === 'room' && !inputBlocked && (!state.isTransitioning || state.transitionKind === 'shelf' || state.transitionKind === 'journey')} />
+        shelf.close(); dispatch({ type: target === 'table' ? 'APPROACH_TABLE' : target === 'camera' ? 'APPROACH_CAMERA_SHELF' : 'APPROACH_SHELF' });
+      }} shelf={shelf} portal={shelfPortal} activeId={state.roll.rollId} interactive={state.roomMode === 'room' && state.shelfId !== 'camera' && !inputBlocked && (!state.isTransitioning || state.transitionKind === 'shelf' || state.transitionKind === 'journey')} /></group>
 
       {/* Flat Light Table on Workbench (placed horizontally on tabletop) */}
       <group
+        visible={!cabinetOnly}
         ref={tableGroupRef}
         position={[0, TABLE_SURFACE_Y, TABLE_CENTER_Z]}
         rotation={[-Math.PI / 2, 0, 0]}

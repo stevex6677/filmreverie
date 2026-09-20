@@ -34,8 +34,16 @@ export function validateCatalog(raw,assets){
     for(const key of ['home','front','rear','side'])if(camera[key]){vector(camera[key],key);if(Math.hypot(...camera[key])===0)throw new Error(`Zero camera direction: ${id}`);}
     for(const key of ['distance','portraitDistance'])if(camera[key]!==undefined&&(!Number.isFinite(camera[key])||camera[key]<1.15||camera[key]>9))throw new Error(`Invalid camera distance: ${id}`);
     if(model.exposure!==undefined&&(!Number.isFinite(model.exposure)||model.exposure<=0||model.exposure>5))throw new Error(`Invalid exposure: ${id}`);
+    if(model.widthMm!==undefined){
+      if(!Number.isFinite(model.widthMm)||model.widthMm<=0)throw new Error(`Invalid physical width: ${id}`);
+      if(!/^[a-f0-9]{64}$/.test(model.sha256||''))throw new Error(`Missing camera checksum: ${id}`);
+      if(!Number.isInteger(model.introduced)||model.introduced<1800)throw new Error(`Invalid introduction year: ${id}`);
+      if(model.manufactured!==null&&(!Number.isInteger(model.manufactured)||model.manufactured<1800))throw new Error(`Invalid manufacture year: ${id}`);
+      if(!Array.isArray(model.sources)||!model.sources.length||model.sources.some(source=>typeof source.title!=='string'||!/^https:\/\//.test(source.url)))throw new Error(`Missing camera sources: ${id}`);
+    }
     const publicModel={id,title:model.title,profile,camera,rotation:model.rotation||[0,0,0],exposure:model.exposure??1.15,url:`/assets/models/${id}.glb`};
     for(const key of ['titleAccent','subtitle','eyebrow','edition','caption','captionDetail'])publicModel[key]=typeof model[key]==='string'?model[key]:'';
+    if(model.widthMm!==undefined)for(const key of ['widthMm','introduced','manufactured','manufacturer','category','description','sources'])publicModel[key]=model[key];
     return {file:realFile,public:publicModel};
   });
   if(!ids.has(raw.defaultModel))throw new Error('defaultModel must name a configured model');

@@ -16,6 +16,7 @@ const https = process.env.FILM_PHOTO_TLS_CERT && process.env.FILM_PHOTO_TLS_KEY
 export default defineConfig({
   plugins: [react()],
   resolve: {
+    dedupe: ['three'],
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },

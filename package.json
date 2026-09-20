@@ -30,7 +30,8 @@
     "validate:m16": "npm run build && npm run test:integration && npm run test:e2e",
     "validate:m13": "npm run build && npm run test:integration && npm run test:e2e",
     "fetch:packaging": "node scripts/fetch-packaging.js",
-    "validate:m19": "npm run build && npm run test:integration && npm run test:e2e"
+    "validate:m19": "npm run build && npm run test:integration && npm run test:e2e",
+    "validate:m20": "npm run build && npm run test:integration && npm run test:e2e && npm --prefix standalone/model-viewer test && npm --prefix standalone/model-viewer run test:reuse && npm --prefix standalone/model-viewer run test:browser"
   },
   "keywords": [],
   "author": "",

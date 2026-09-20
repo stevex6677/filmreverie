@@ -1,0 +1,33 @@
+import { test, expect } from '@playwright/test';
+import { PRIMARY_CAMERA } from '../../src/data/cameras';
+import { ready } from './helpers/shelf';
+import { ROOM_EYE } from '../../src/utils/cameraBounds';
+
+test('initial room prepares camera alongside photographs and reveals it with the workspace', async ({ page }, info) => {
+  let release!: () => void;
+  const pending = new Promise<void>(resolve => { release = resolve; });
+  let cameraRequested = false;
+  await page.route(`**${PRIMARY_CAMERA.url}`, async route => { cameraRequested = true; await pending; await route.continue(); });
+  await page.goto('/?mode=room&reduced_motion=true');
+  await expect.poll(() => cameraRequested).toBe(true);
+  await expect(page.locator('main')).toHaveAttribute('data-assets-ready', 'true');
+  await expect(page.locator('main')).toHaveAttribute('data-app-ready', 'false');
+  await expect(page.getByTestId('darkroom-loader')).toBeVisible();
+  release();
+  await expect(page.getByTestId('darkroom-loader')).not.toBeVisible({ timeout: 60000 });
+  await expect(page.locator('.canvas-wrapper canvas')).toHaveAttribute('data-camera-model-width', '0.756');
+  await expect(page.locator('.canvas-wrapper canvas')).toHaveAttribute('data-camera-position', ROOM_EYE.join(','));
+  await page.screenshot({ path: `artifacts/m20-room-revision/${info.project.name}-starting-view.png` });
+  await page.locator('.canvas-wrapper').focus();
+  for (let i = 0; i < 18; i++) await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: `artifacts/m20-revision/${info.project.name}-chemistry-wall.png` });
+  await page.getByRole('button', { name: 'Cameras', exact: true }).click();
+  await expect(page.locator('main')).toHaveAttribute('data-is-transitioning', 'false');
+  await page.screenshot({ path: `artifacts/m20-revision/${info.project.name}-large-shelf.png` });
+  await page.getByRole('button', { name: 'Back to room' }).click(); await ready(page);
+  await page.locator('.canvas-wrapper').focus();
+  for (let i = 0; i < 9; i++) await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: `artifacts/m20-revision/${info.project.name}-door-equipment.png` });
+});

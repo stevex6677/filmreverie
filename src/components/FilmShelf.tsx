@@ -13,7 +13,7 @@ import { mm, WORLD_UNITS_PER_MM, CARTRIDGE_MM, SHELF_CELL_MM, SHELF_WIDTH, SHELF
 export { SHELF_ORIGIN } from '../data/physicalScale';
 const WIDTH = mm(SHELF_CELL_MM.width), HEIGHT = mm(SHELF_CELL_MM.height), DEPTH = mm(SHELF_CELL_MM.depth);
 const sourceImages = [...new Set(FILM_PACKAGING.flatMap(p => [p.singleRollArtwork ?? p.box.asset, ...(p.cartridge ? [p.cartridge.asset] : [])]))];
-function usePackagingTextures() {
+export function usePackagingTextures() {
   const { gl } = useThree();
   const [textures, setTextures] = useState<Record<string, THREE.Texture>>({});
   useEffect(() => { gl.domElement.dataset.packagingLoaded = String(Object.keys(textures).length); }, [gl, textures]);
@@ -35,7 +35,7 @@ function usePackagingTextures() {
   return textures;
 }
 
-function Package({ entry, owned, textures }: { entry: FilmPackaging; owned: boolean; textures: Record<string, THREE.Texture> }) {
+export function FilmPackage({ entry, owned, textures, standalone = false }: { entry: FilmPackaging; owned: boolean; textures: Record<string, THREE.Texture>; standalone?: boolean }) {
   const [w, h, d] = entry.sizeMm;
   const materials = useMemo(() => ({
     front: packagingMaterial(textures[entry.singleRollArtwork ?? entry.box.asset], entry.singleRollArtwork ? [[0, 0], [1, 0], [1, 1], [0, 1]] : entry.front, owned),
@@ -45,9 +45,9 @@ function Package({ entry, owned, textures }: { entry: FilmPackaging; owned: bool
   }), [entry, textures, owned]);
   useEffect(() => () => Object.values(materials).forEach(material => material.dispose()), [materials]);
   const small = entry.format === '135';
-  const arrangement = shelfArrangement(w, small, owned, d);
+  const arrangement = shelfArrangement(w, small, owned && !standalone, d);
   const boxX = arrangement.boxX;
-  return <group position={[0, SHELF_FLOOR, 0]}>
+  return <group position={[0, standalone ? 0 : SHELF_FLOOR, 0]}>
     <group name="film-box" position={[boxX, 0, 0]} rotation={[0, SHELF_FILM_YAW, 0]} scale={WORLD_UNITS_PER_MM}>
       <group position={[0, h / 2, 0]}>
         <mesh castShadow receiveShadow material={materials.body}><boxGeometry args={[w, h, d]} /></mesh>
@@ -122,11 +122,10 @@ function CellLabel({ position, roll, slot, active, portal, shelf, focused, onApp
   </Html>;
 }
 
-export function FilmShelf({ shelf, activeId, interactive, portal, focused, onApproach, onEdit }: {
+export function FilmShelf({ shelf, activeId, interactive, portal, focused, onApproach, onEdit, textures }: {
   onEdit: (id: string) => void; focused: boolean; onApproach: (point?: { x: number; y: number }) => void;
-  shelf: FilmShelfState; activeId: string; interactive: boolean; portal: RefObject<HTMLDivElement>;
+  shelf: FilmShelfState; activeId: string; interactive: boolean; portal: RefObject<HTMLDivElement>; textures: Record<string, THREE.Texture>;
 }) {
-  const textures = usePackagingTextures();
   const wood = useMemo(() => {
     const material = new THREE.MeshStandardMaterial({ color: '#705841', roughness: .72 });
     material.onBeforeCompile = shader => {
@@ -146,7 +145,7 @@ export function FilmShelf({ shelf, activeId, interactive, portal, focused, onApp
     {[-2, -1, 0, 1, 2].map(i => <mesh key={`col-${i}`} position={[i * WIDTH, 0, 0]} castShadow receiveShadow material={wood}><boxGeometry args={[mm(Math.abs(i) === 2 ? 18 : 8), HEIGHT * 4, DEPTH]} /></mesh>)}
     {[-WIDTH * 2, WIDTH * 2].flatMap(x => [-HEIGHT * 2, HEIGHT * 2].map(y => <mesh key={`${x}-${y}`} position={[x, y, DEPTH / 2 + .001]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[.009, .009, .004, 12]} /><meshStandardMaterial color="#8f8065" roughness={.35} metalness={.8} /></mesh>))}
     {cells.map(({ slot, position, roll }) => <group key={slot}>
-      <group name={`shelf-cell:${slot}`} position={[position[0], position[1], 0]}><Package entry={roll ? getPackaging(roll.stockId, roll.format) : placeholderPackaging(slot)} owned={!!roll} textures={textures} />{roll && <ShelfCoverFrame roll={roll} />}</group>
+      <group name={`shelf-cell:${slot}`} position={[position[0], position[1], 0]}><FilmPackage entry={roll ? getPackaging(roll.stockId, roll.format) : placeholderPackaging(slot)} owned={!!roll} textures={textures} />{roll && <ShelfCoverFrame roll={roll} />}</group>
       {interactive && <CellLabel focused={focused} position={position} roll={roll} slot={slot} active={roll?.id === activeId} portal={portal} shelf={shelf} onEdit={onEdit} />}
     </group>)}
     {interactive && !focused && <CellLabel focused={false} position={[0, 0, DEPTH / 2]} slot={-1} active={false} portal={portal} shelf={shelf} onEdit={onEdit} onApproach={onApproach} />}

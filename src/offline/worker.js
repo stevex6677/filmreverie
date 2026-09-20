@@ -1,22 +1,29 @@
 /* Generated into /sw.js with a content-addressed inventory by build-offline.mjs. */
 const RELEASE = __DARKROOM_RELEASE__;
 const ASSETS = __DARKROOM_ASSETS__;
+const OPTIONAL = __DARKROOM_OPTIONAL__;
+const MODEL_CACHE = 'darkroom-camera-models-v1';
 const PREFIX = 'darkroom-app-';
 const CACHE = PREFIX + RELEASE;
 const urls = new Set(ASSETS.map(asset => asset.url));
 
-async function download(cache, asset) {
+async function verifiedResponse(asset) {
   const response = await fetch(asset.url, { cache: 'no-store', credentials: 'same-origin', signal: AbortSignal.timeout(30000) });
   if (!response.ok || response.redirected) throw new Error('Download incomplete: ' + asset.url);
   const bytes = await response.clone().arrayBuffer();
   const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), n => n.toString(16).padStart(2, '0')).join('');
   if (hash !== asset.hash) throw new Error('The release changed during download. Retry preparation.');
-  await cache.put(asset.url, response);
+  return response;
+}
+async function download(cache, asset) {
+  await cache.put(asset.url, await verifiedResponse(asset));
 }
 async function status() {
   const cache = await caches.open(CACHE);
   const present = await Promise.all(ASSETS.map(asset => cache.match(asset.url)));
-  return { ready: present.every(Boolean), version: RELEASE, count: present.filter(Boolean).length, total: ASSETS.length };
+  const models = await caches.open(MODEL_CACHE);
+  const cameraReady = (await Promise.all(OPTIONAL.map(asset => models.match(asset.url)))).every(Boolean);
+  return { ready: present.every(Boolean), cameraReady, version: RELEASE, count: present.filter(Boolean).length, total: ASSETS.length };
 }
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
@@ -44,6 +51,10 @@ self.addEventListener('message', event => {
         const cache = await caches.open(CACHE);
         for (const asset of ASSETS) if (!await cache.match(asset.url)) await download(cache, asset);
       }
+      if (event.data?.type === 'PREPARE_CAMERAS') {
+        const cache = await caches.open(MODEL_CACHE);
+        for (const asset of OPTIONAL) if (!await cache.match(asset.url)) await download(cache, asset);
+      }
       if (event.data?.type === 'ACTIVATE') {
         const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
         if (clients.length > 1) throw new Error('Close other Darkroom tabs and windows before applying this update.');
@@ -58,6 +69,20 @@ self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin || url.pathname === '/offline-health.json') return;
   const key = event.request.mode === 'navigate' ? '/index.html' : url.pathname;
+  const optional = OPTIONAL.find(asset => asset.url === key);
+  if (optional) {
+    event.respondWith((async () => {
+      const cache = await caches.open(MODEL_CACHE), cached = await cache.match(key);
+      if (cached) return cached;
+      try {
+        const response = await verifiedResponse(optional);
+        // Quota failure permits online viewing, but never reports preparation.
+        try { await cache.put(key, response.clone()); } catch { /* Film cache is independent. */ }
+        return response;
+      } catch { return new Response("Camera model isn't available offline.", { status: 503 }); }
+    })());
+    return;
+  }
   if (!urls.has(key)) return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE), cached = await cache.match(key);

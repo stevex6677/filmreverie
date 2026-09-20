@@ -5,12 +5,13 @@ import { getTableIllumination } from "../shaders/tableIllumination";
 
 interface DarkroomRoomProps {
   benchWidth?: number;
+  cabinetOnly?: boolean;
   brightness?: number;
   roomBrightness: number;
   immediate: boolean;
 }
 
-export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ brightness = 1.0, roomBrightness, immediate, benchWidth = 4.4 }) => {
+export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ cabinetOnly = false, brightness = 1.0, roomBrightness, immediate, benchWidth = 4.4 }) => {
   const floorY = ROOM_ENVELOPE.floor;
   const ceilingY = ROOM_ENVELOPE.ceiling;
   const roomW = ROOM_ENVELOPE.width;
@@ -20,7 +21,8 @@ export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ brightness = 1.0, ro
 
   return (
     <group position={[0, 0, 0]}>
-      <RoomLighting brightness={roomBrightness} immediate={immediate} />
+      <RoomLighting brightness={roomBrightness} immediate={immediate} fixturesVisible={!cabinetOnly} />
+      <group visible={!cabinetOnly}>
       <RoomZones />
       {/* Short-range distributed bounce from the diffuser onto nearby objects. */}
       {[-1.45, 0, 1.45].map(x => (
@@ -67,11 +69,12 @@ export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ brightness = 1.0, ro
         <meshStandardMaterial color="#16181e" roughness={0.7} metalness={0.2} />
       </mesh>
 
-      {/* Move the equipment rail onto the side wall to clear the taller cabinet. */}
-      <group position={[2.55, 0, 2.1]} rotation={[0, -Math.PI / 2, 0]}>
+      {/* Chemicals, timer and drying clips beside the rear entrance, in place
+          of the removed box-storage unit. Faces into the room. */}
+      <group name="door-processing-equipment" position={[1.9, 0, ROOM_ENVELOPE.back - 1.15]} rotation={[0, Math.PI, 0]}>
       {/* Wall-Mounted Equipment Shelf */}
       <mesh castShadow receiveShadow position={[0, 1.35, -0.98]}>
-        <boxGeometry args={[4.6, 0.04, 0.24]} />
+        <boxGeometry args={[2.7, 0.04, 0.24]} />
         <meshStandardMaterial color="#191b22" roughness={0.7} metalness={0.3} />
       </mesh>
 
@@ -157,7 +160,7 @@ export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ brightness = 1.0, ro
       </group>
 
       {/* 3. Film Drying Wire with Hanging Clips (Upper Left Wall) */}
-      <group position={[-2.4, 1.85, -0.92]}>
+      <group position={[-.15, 2.05, -0.92]}>
         <mesh castShadow receiveShadow position={[0, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.002, 0.002, 1.8, 8]} />
           <meshStandardMaterial color="#94a3b8" metalness={0.35} roughness={0.3} />
@@ -382,6 +385,7 @@ export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ brightness = 1.0, ro
             <meshStandardMaterial color="#ef4444" roughness={0.1} transparent={true} opacity={0.75} />
           </mesh>
         </group>
+      </group>
       </group>
     </group>
   );

@@ -5,7 +5,7 @@ import { FILM_STOCKS, getFilmStock, isFilmStockId } from '../data/filmStocks';
 import { focusFrameLayout } from '../utils/rollLayout';
 import { photoCropPreview } from '../utils/photoFraming';
 export type MobileSheet = 'tools' | 'frames' | null;
-export function MobileControls({state,dispatch,onOpenLibrary,sheet,setSheet}:{state:ViewerState;dispatch:React.Dispatch<ViewerAction>;onOpenLibrary:()=>void;sheet:MobileSheet;setSheet:(s:MobileSheet)=>void}) {
+export function MobileControls({state,dispatch,onOpenLibrary,onOpenCameras,sheet,setSheet}:{state:ViewerState;dispatch:React.Dispatch<ViewerAction>;onOpenLibrary:()=>void;onOpenCameras?:()=>void;sheet:MobileSheet;setSheet:(s:MobileSheet)=>void}) {
   const dialog=useRef<HTMLDialogElement>(null);
   const room=state.roomMode==='room',stock=getFilmStock(state.filmStockId);
 
@@ -20,6 +20,7 @@ export function MobileControls({state,dispatch,onOpenLibrary,sheet,setSheet}:{st
   return <>
     <header className="mobile-header">
       <button aria-label={room?'Rolls':'Back one level'} onClick={()=>room?onOpenLibrary():dispatch({type:'ESCAPE_INSPECTION'})}>{room?'Rolls':'← Back'}</button>
+      {room && onOpenCameras && <button onClick={onOpenCameras}>Cameras</button>}
       <div><span className="mobile-eyebrow">{room?'DARKROOM':state.inspectionLevel.toUpperCase()}</span><h1 title={state.roll.label}>{state.roll.label}</h1></div>
       <button aria-pressed={state.focusMode} onClick={()=>room?setSheet('tools'):dispatch({type:'TOGGLE_FOCUS'})}>{room?'Lights':state.focusMode?'Exit focus':'Focus'}</button>
     </header>

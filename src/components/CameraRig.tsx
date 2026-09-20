@@ -1,4 +1,4 @@
-import { SHELF_CAMERA, SHELF_ORIGIN, shelfFov } from '../data/physicalScale';
+import { SHELF_CAMERA, SHELF_ORIGIN, shelfFov, CAMERA_SHELF_EYE, CAMERA_SHELF_TARGET, CAMERA_SHELF_ORIGIN, CAMERA_SHELF_MM, mm, cameraShelfFov } from '../data/physicalScale';
 import { InspectionMotion, Point3 } from "../utils/inspectionMotion";
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
@@ -17,6 +17,7 @@ import { TableAngle, TOP_DOWN, tableCameraPose, tablePointAt } from "../utils/ta
 import { RoomMode } from "../state/viewerState";
 
 interface CameraRigProps {
+  cameraShelf?: boolean;
   shelfTransition?: boolean;
   shelfFocused?: boolean;
   tableAngle?: TableAngle;
@@ -46,6 +47,7 @@ interface CameraRigProps {
 
 export const CameraRig: React.FC<CameraRigProps> = ({
   shelfTransition = false,
+  cameraShelf = false,
   shelfFocused = false,
   tableAngle = TOP_DOWN,
   angleDragging = false,
@@ -72,6 +74,28 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   isReducedMotion = false,
 }) => {
   const { camera, gl, size } = useThree();
+  const cabinetFrame = useRef({ height: .65, width: .94, center: .5 });
+  useEffect(() => {
+    if (!cameraShelf) return;
+    const update = () => {
+      const rect = gl.domElement.getBoundingClientRect();
+      const header = document.querySelector('.controls-header, .mobile-header')?.getBoundingClientRect();
+      const toolbar = document.querySelector('.camera-collection-toolbar')?.getBoundingClientRect();
+      const expanded = rect.width >= 700 && rect.height >= 450;
+      const margin = expanded ? 8 : 16;
+      const top = Math.max(0, (header?.bottom ?? rect.top) - rect.top) + margin;
+      const bottom = Math.min(rect.height, (toolbar?.top ?? rect.bottom) - rect.top) - margin;
+      // Larger screens use the entire space between controls, not a smaller
+      // symmetric region around the canvas center. Keep phone framing intact.
+      cabinetFrame.current = expanded
+        ? { height: Math.max(.15, (bottom - top) / rect.height), width: .98, center: (top + bottom) / (2 * rect.height) }
+        : { height: Math.max(.15, Math.min(.94, 2 * Math.min(rect.height / 2 - top, bottom - rect.height / 2) / rect.height)), width: .94, center: .5 };
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    for (const element of [gl.domElement, document.querySelector('.controls-header, .mobile-header'), document.querySelector('.camera-collection-toolbar')]) if (element) observer.observe(element);
+    return () => observer.disconnect();
+  }, [cameraShelf, gl, size.width, size.height]);
   const captureOwner = useRef<HTMLElement | null>(null);
   const isDraggingRoomRef = useRef(false);
   const isPanningTableRef = useRef(false);
@@ -149,7 +173,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       }
     };
 
-    const accepts = (target: EventTarget | null) => target === canvas || (target instanceof Element && !!target.closest('.shelf-approach-target'));
+    const accepts = (target: EventTarget | null) => target === canvas || (target instanceof Element && !!target.closest('.shelf-approach-target, .camera-shelf-target'));
     const handlePointerDown = (e: PointerEvent) => {
       if (!accepts(e.target)) return;
       if (inputBlocked || loupeInspection || e.pointerType === 'touch' || e.pointerType === 'pen' || navigationBlocked) return;
@@ -300,13 +324,19 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     const effectiveZoom = (live?.active && inspecting) ? live.zoom : inspectZoom;
     const effectivePan = (live?.active && inspecting) ? live.pan : inspectPan;
     const tablePose = tableCameraPose(effectiveZoom, effectivePan, tableAngle);
+    const frame = cabinetFrame.current;
+    const cabinetFov = cameraShelf ? cameraShelfFov(size.width / size.height, frame.height, frame.width) : shelfFov(size.width / size.height);
+    const frontDistance = CAMERA_SHELF_ORIGIN[0] - mm(CAMERA_SHELF_MM.depth) - CAMERA_SHELF_EYE[0];
+    const cabinetOffset = cameraShelf && shelfFocused ? (frame.center - .5) * 2 * frontDistance * Math.tan(cabinetFov * Math.PI / 360) : 0;
     targetPos.current.set(...(inspecting
       ? tablePose.position
-      : shelfFocused ? SHELF_CAMERA : ROOM_EYE));
+      : shelfFocused ? (cameraShelf ? CAMERA_SHELF_EYE : SHELF_CAMERA) : ROOM_EYE));
+    targetPos.current.y += cabinetOffset;
     const desired = desiredCamera.current;
     desired.position.copy(targetPos.current);
     desired.up.set(...(inspecting ? tablePose.up : ROOM_CAMERA_UP));
-    desired.lookAt(...(inspecting ? tablePose.target : shelfFocused ? SHELF_ORIGIN : roomLookTarget(savedRoomPose)));
+    desired.lookAt(...(inspecting ? tablePose.target : shelfFocused ? (cameraShelf ? CAMERA_SHELF_TARGET : SHELF_ORIGIN) : roomLookTarget(savedRoomPose)));
+    if (cameraShelf && shelfFocused) desired.lookAt(CAMERA_SHELF_TARGET[0], CAMERA_SHELF_TARGET[1] + cabinetOffset, CAMERA_SHELF_TARGET[2]);
     const angleChanging = Math.abs(renderedAngle.current.tilt - tableAngle.tilt) + Math.abs(renderedAngle.current.yaw - tableAngle.yaw) > .00001;
     const immediate = angleDragging || isDeterministic || isReducedMotion || (!inspecting && !isTransitioning) || ((touchInput || loupeInspection || live?.active) && !isTransitioning && !angleChanging);
     const moving = !immediate && (camera.position.distanceTo(targetPos.current) > .001 || camera.quaternion.angleTo(desired.quaternion) > .001 || isPanningTableRef.current);
@@ -316,7 +346,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     let shelfProgress: number | null = null;
     if (!shelfTransition || immediate) shelfFlight.current = null;
     if (shelfTransition && !immediate) {
-      const key = shelfFocused ? 'shelf' : 'room';
+      const key = shelfFocused ? (cameraShelf ? 'camera-shelf' : 'shelf') : 'room';
       if (shelfFlight.current?.key !== key) shelfFlight.current = { key, elapsed: 0, position: camera.position.clone(), rotation: camera.quaternion.clone(), fov: perspective.fov };
       const motion = shelfFlight.current;
       motion.elapsed = Math.min(.42, motion.elapsed + delta);
@@ -361,7 +391,6 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     // Keep the entire cabinet reachable on a portrait screen from the same
     // standing eye. Widen the lens, never move the viewer through the room.
     const roomFov = 2 * Math.atan(Math.tan(ROOM_CAMERA_FOV * Math.PI / 360) * Math.max(1, 1.6 / (size.width / size.height))) * 180 / Math.PI;
-    const cabinetFov = shelfFov(size.width / size.height);
     const desiredFov = inspecting ? 45 : shelfFocused ? cabinetFov : roomFov;
     perspective.fov = immediate ? desiredFov : shelfProgress !== null
       ? THREE.MathUtils.lerp(shelfFlight.current!.fov, desiredFov, shelfProgress)

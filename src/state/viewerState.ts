@@ -45,6 +45,8 @@ export interface ViewerState {
   savedOverview: { zoom: number; pan: { x: number; z: number }; frameIndex: number } | null;
   roomMode: RoomMode;
   shelfFocused: boolean;
+  shelfId: 'film' | 'camera' | null;
+  cameraDisplay: string | null;
   filmMode: FilmMode;
   filmStockId: FilmStockId;
   filmStrength: number;
@@ -82,6 +84,8 @@ export const INITIAL_VIEWER_STATE: ViewerState = {
   savedOverview: null,
   roomMode: "inspect",
   shelfFocused: false,
+  shelfId: null,
+  cameraDisplay: null,
   filmMode: "negative",
   filmStockId: DEFAULT_FILM_STOCK_ID,
   filmStrength: DEFAULT_FILM_STRENGTH,
@@ -173,6 +177,9 @@ export type ViewerAction =
   | { type: "SET_LOUPE_POSITION"; x: number; y: number }
   | { type: "SET_ROOM_MODE"; mode: RoomMode }
   | { type: "APPROACH_SHELF" }
+  | { type: "APPROACH_CAMERA_SHELF" }
+  | { type: "OPEN_CAMERA"; id: string }
+  | { type: "CLOSE_CAMERA" }
   | { type: "APPROACH_TABLE" }
   | { type: "RETURN_TO_ROOM" }
   | { type: "SET_TRANSITIONING"; isTransitioning: boolean }
@@ -426,10 +433,21 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
     }
 
     case "APPROACH_SHELF":
-      if (state.roomMode === "room" && state.shelfFocused) return state;
-      return { ...state, roomMode: "room", shelfFocused: true, focusMode: false, loupe: { ...state.loupe, isActive: false, inspecting: false }, isTransitioning: true, transitionKind: "shelf" };
+      if (state.roomMode === "room" && state.shelfFocused && state.shelfId === 'film') return state;
+      return { ...state, roomMode: "room", shelfFocused: true, shelfId: 'film', cameraDisplay: null, focusMode: false, loupe: { ...state.loupe, isActive: false, inspecting: false }, isTransitioning: true, transitionKind: "shelf" };
+
+    case "APPROACH_CAMERA_SHELF":
+      if (state.shelfId === 'camera' && !state.cameraDisplay) return state;
+      return { ...state, roomMode: 'room', shelfFocused: true, shelfId: 'camera', cameraDisplay: null,
+        loupe: { ...state.loupe, isActive: false, inspecting: false }, adjustingView: false,
+        isTransitioning: true, transitionKind: 'shelf' };
+    case "OPEN_CAMERA":
+      return state.shelfId === 'camera' ? { ...state, cameraDisplay: action.id, isTransitioning: false, transitionKind: null } : state;
+    case "CLOSE_CAMERA":
+      return { ...state, cameraDisplay: null };
 
     case "APPROACH_TABLE":
+      if (state.shelfId === 'camera') return { ...state, roomMode: 'inspect', shelfFocused: false, shelfId: null, cameraDisplay: null, isTransitioning: true, transitionKind: 'journey' };
       // Guard against competing transitions or already inspecting
       if (state.roomMode === "inspect" || (state.isTransitioning && state.transitionKind !== 'shelf')) {
         return state;
@@ -438,6 +456,8 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
         ...state,
         roomMode: "inspect",
         shelfFocused: false,
+        shelfId: null,
+        cameraDisplay: null,
         focusMode: false,
         inspectionLevel: "roll",
         ...(multi ? { inspectZoom: fitRollView(state.roll, "roll", state.activeFrameIndex, state.viewportAspect).zoom, inspectPan: { x: 0, z: TABLE_CENTER_Z }, savedOverview: null } : {}),
@@ -446,7 +466,8 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       };
 
     case "RETURN_TO_ROOM":
-      if (state.roomMode === "room" && state.shelfFocused) return { ...state, shelfFocused: false, isTransitioning: true, transitionKind: "shelf" };
+      if (state.cameraDisplay) return { ...state, cameraDisplay: null };
+      if (state.roomMode === "room" && state.shelfFocused) return { ...state, shelfFocused: false, shelfId: null, isTransitioning: true, transitionKind: "shelf" };
       // Guard against competing transitions or already in room
       if (state.roomMode === "room" || state.isTransitioning) {
         return state;
@@ -474,6 +495,8 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
         ...state,
         roomMode: action.mode,
         shelfFocused: false,
+        shelfId: null,
+        cameraDisplay: null,
       };
 
     case "SET_TRANSITIONING":

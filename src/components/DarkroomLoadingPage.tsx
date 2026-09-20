@@ -5,6 +5,7 @@ export interface LoadingProgress {
   total: number;
   settled: boolean;
   firstFrameRendered: boolean;
+  cameraSettled?: boolean;
 }
 
 interface DarkroomLoadingPageProps {
@@ -84,6 +85,8 @@ export const DarkroomLoadingPage: React.FC<DarkroomLoadingPageProps> = ({
     if (!settled && loaded < total) {
       return `Developing photographs (${loaded} of ${total})...`;
     }
+
+    if (progress.cameraSettled === false) return "Arranging the camera collection...";
 
     return "Calibrating 5000K light table & film emulsion...";
   }, [displayPercent, progress, hasError]);

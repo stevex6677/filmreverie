@@ -2,6 +2,7 @@ export interface OfflineState {
   phase: 'preparing' | 'ready' | 'incomplete' | 'unsupported' | 'development';
   server: 'checking' | 'reachable' | 'unreachable';
   update: boolean; message: string; version: string;
+  cameraReady?: boolean;
 }
 let state: OfflineState = { phase: 'preparing', server: 'checking', update: false, message: '', version: '' };
 const listeners = new Set<() => void>();
@@ -11,10 +12,10 @@ const blockers = new Set<string>();
 export function blockUpdate(key: string, blocked: boolean) { if (blocked) blockers.add(key); else blockers.delete(key); }
 function publish(change: Partial<OfflineState>) { state = { ...state, ...change }; listeners.forEach(fn => fn()); }
 export const offlineStore = { subscribe(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; }, snapshot: () => state };
-function request(worker: ServiceWorker, type: string): Promise<{ ready: boolean; version: string }> {
+function request(worker: ServiceWorker, type: string): Promise<{ ready: boolean; cameraReady: boolean; version: string }> {
   return new Promise((resolve, reject) => {
     const channel = new MessageChannel();
-    const timeout = setTimeout(() => { channel.port1.close(); reject(new Error('Offline preparation did not finish. Reconnect and retry.')); }, type === 'REPAIR' ? 180000 : 10000);
+    const timeout = setTimeout(() => { channel.port1.close(); reject(new Error('Offline preparation did not finish. Reconnect and retry.')); }, ['REPAIR', 'PREPARE_CAMERAS'].includes(type) ? 180000 : 10000);
     channel.port1.onmessage = event => { clearTimeout(timeout); channel.port1.close(); if (event.data.error) reject(new Error(event.data.error)); else resolve(event.data); };
     worker.postMessage({ type }, [channel.port2]);
   });
@@ -24,9 +25,14 @@ export async function checkOffline() {
   if (!worker) return;
   try {
     const result = await request(worker, 'STATUS');
-    publish({ phase: result.ready ? 'ready' : 'incomplete', version: result.version,
+    publish({ phase: result.ready ? 'ready' : 'incomplete', version: result.version, cameraReady: result.cameraReady,
       message: result.ready ? (state.phase === 'incomplete' ? '' : state.message) : 'Some downloads are missing. Reconnect and retry preparation.' });
   } catch (error) { publish({ phase: 'incomplete', message: (error as Error).message }); }
+}
+export async function prepareCamerasOffline() {
+  const worker = navigator.serviceWorker?.controller;
+  if (!worker) throw new Error('Prepare the app at its private HTTPS address before downloading the camera for offline use.');
+  await request(worker, 'PREPARE_CAMERAS'); await checkOffline();
 }
 export async function checkServer() {
   try {

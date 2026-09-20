@@ -23,9 +23,13 @@ async function inventory(dir) {
   return files;
 }
 const assets = [];
-for (const file of (await inventory(root)).sort()) assets.push({ url: '/' + path.relative(root, file).split(path.sep).join('/'), hash: hash(await readFile(file)) });
+const optional = [];
+for (const file of (await inventory(root)).sort()) {
+  const asset = { url: '/' + path.relative(root, file).split(path.sep).join('/'), hash: hash(await readFile(file)) };
+  (asset.url.startsWith('/assets/cameras/') ? optional : assets).push(asset);
+}
 const template = await readFile('src/offline/worker.js', 'utf8');
-const version = hash(JSON.stringify(assets) + template + (process.env.FILM_PHOTO_RELEASE ?? '')).slice(0, 20);
-await writeFile(path.join(root, 'sw.js'), template.replace('__DARKROOM_RELEASE__', JSON.stringify(version)).replace('__DARKROOM_ASSETS__', JSON.stringify(assets)));
+const version = hash(JSON.stringify({ assets, optional }) + template + (process.env.FILM_PHOTO_RELEASE ?? '')).slice(0, 20);
+await writeFile(path.join(root, 'sw.js'), template.replace('__DARKROOM_RELEASE__', JSON.stringify(version)).replace('__DARKROOM_ASSETS__', JSON.stringify(assets)).replace('__DARKROOM_OPTIONAL__', JSON.stringify(optional)));
 await writeFile(path.join(root, 'offline-health.json'), JSON.stringify({ app: 'darkroom', version }));
 console.log(`Offline release ${version}: ${assets.length} required assets`);

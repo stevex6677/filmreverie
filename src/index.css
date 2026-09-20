@@ -1270,3 +1270,72 @@ button:disabled { opacity: .4; cursor: default; }
 .film-strength-control small { font-size:12px; line-height:1.4; opacity:.75; font-weight:400; }
 .stock-control { flex-wrap:wrap; }
 .stock-control .film-strength-control { flex-basis:100%; max-width:270px; }
+
+/* Camera collection: the model is the primary content, with a quiet museum label. */
+.camera-shelf-target { display:flex; flex-direction:column; align-items:center; gap:5px; min-width:165px; min-height:48px; padding:10px 18px; border:1px solid #b19b7450; border-radius:5px; color:#f0e4c9; background:#27291fe8; cursor:pointer; touch-action:none; }
+.camera-shelf-target span { font:16px Georgia,serif; white-space:nowrap; }
+.camera-shelf-target small { font-size:10px; letter-spacing:.08em; color:#c7ba9d; white-space:nowrap; }
+.camera-shelf-status { width:210px; padding:10px; background:#242721; color:#eee5d4; font-size:12px; text-align:center; }
+.camera-display { position:absolute; inset:0; z-index:45; display:grid; grid-template-columns:minmax(0,1fr) 310px; grid-template-rows:72px minmax(0,1fr) auto; background:radial-gradient(ellipse at 36% 38%,#373a35 0%,#202420 48%,#171b18 90%); color:#eee9df; overflow:hidden; }
+.camera-display button { min-height:44px; border:1px solid #a69b8050; border-radius:5px; background:#252b25e8; color:#e6dfcf; padding:8px 13px; font-family:inherit; font-size:12px; cursor:pointer; }
+.camera-display button:hover:not(:disabled), .camera-display button[aria-pressed=true] { background:#d2c6a8; color:#20271f; }
+.camera-display button:disabled { opacity:.4; cursor:default; }
+.camera-display button:focus-visible, .camera-stage:focus-visible, .camera-shelf-target:focus-visible { outline:2px solid #edcea0; outline-offset:3px; }
+.camera-display-header { grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; padding:12px 28px; border-bottom:1px solid #c8b99125; }
+.camera-display-header > span { font-size:10px; letter-spacing:.2em; color:#a9ad9b; }
+.camera-display-header > span > span { margin-left:32px; }
+.camera-stage { position:relative; grid-column:1; grid-row:2; min-width:0; min-height:0; touch-action:none; outline:none; }
+.camera-stage canvas { display:block; width:100%; height:100%; touch-action:none; }
+.camera-stage-footer { grid-column:1; grid-row:3; padding:10px 20px 25px; display:flex; flex-direction:column; gap:10px; align-items:center; }
+.camera-hint { margin:0 0 2px; font-size:11px; letter-spacing:.06em; color:#aaa995; }
+.camera-view-presets, .camera-orbit-tools { display:flex; flex-wrap:wrap; justify-content:center; gap:6px; }
+.camera-view-presets button { font-size:11px; min-width:55px; }
+.camera-information { grid-column:2; grid-row:2/4; padding:38px 27px; border-left:1px solid #c8b99125; background:#171d18a0; overflow-y:auto; overscroll-behavior:contain; }
+.camera-kicker { font-size:10px; letter-spacing:.19em; color:#a6a891; }
+.camera-information h1 { font:42px/1.06 Georgia,serif; letter-spacing:-.02em; font-weight:normal; margin:21px 0; }
+.camera-information h1 em { color:#bdb593; font-weight:normal; }
+.camera-information p { color:#b7bcaf; font-size:13px; line-height:1.7; }
+.camera-information .camera-intro { font:italic 15px Georgia,serif; color:#dbd3bb; }
+.camera-information dl { margin:28px 0; }
+.camera-information dl > div { display:flex; gap:15px; justify-content:space-between; padding:12px 0; border-top:1px solid #a8a88c25; font-size:12px; line-height:1.5; }
+.camera-information dt { color:#929e8a; flex-shrink:0; }
+.camera-information dd { text-align:right; margin:0; max-width:155px; }
+.camera-information dd small { display:block; color:#929e8a; }
+.camera-information .camera-note { font-size:11px; color:#929e8a; }
+.camera-information a { color:#c6b98f; font-size:11px; line-height:1.5; }
+.camera-info-toggle, .camera-info-close { display:none; }
+.camera-load-status { position:absolute; top:40%; left:calc((100% - 310px)/2); transform:translate(-50%,-50%); max-width:330px; text-align:center; font-size:14px; }
+@media (max-width:850px) {
+  .camera-display { grid-template-columns:minmax(0,1fr); grid-template-rows:60px minmax(120px,1fr) auto auto; padding-bottom:env(safe-area-inset-bottom); }
+  .camera-display-header { padding:8px 14px; }
+  .camera-display-header > span { font-size:8px; letter-spacing:.1em; }
+  .camera-display-header > span > span { display:none; }
+  .camera-stage-footer { padding:8px 8px 12px; gap:7px; }
+  .camera-view-presets, .camera-orbit-tools { gap:4px; }
+  .camera-display button { padding:7px 10px; font-size:11px; }
+  .camera-view-presets button { min-width:45px; }
+  .camera-display .camera-info-toggle { display:flex; flex-direction:column; gap:5px; grid-row:4; padding:14px 20px; text-align:left; border-radius:0; border-width:1px 0 0; background:#171d18; }
+  .camera-info-toggle span { font:20px Georgia,serif; }
+  .camera-info-toggle small { color:#aaa995; font-size:10px; }
+  .camera-information { display:none; position:absolute; bottom:0; right:0; left:0; max-height:65%; padding:20px 25px calc(22px + env(safe-area-inset-bottom)); border:1px solid #a69b8050; border-radius:16px 16px 0 0; background:#1b241dfc; z-index:3; box-shadow:0 -15px 80px #0008; }
+  .camera-information.is-open { display:block; }
+  .camera-display .camera-info-close { display:block; margin-left:auto; }
+  .camera-information h1 { font-size:34px; margin:15px 0; }
+  .camera-load-status { left:50%; top:35%; width:80%; }
+}
+@media (max-height:500px) and (orientation:landscape) {
+  .camera-display { grid-template-columns:minmax(0,1fr) 210px; grid-template-rows:52px minmax(0,1fr); }
+  .camera-stage-footer { grid-column:2; grid-row:2; justify-content:center; padding:8px; }
+  .camera-display .camera-info-toggle { position:absolute; bottom:4px; left:12px; padding:6px 12px; border:0; background:#171d18c9; }
+  .camera-info-toggle span { font-size:15px; }
+  .camera-hint { display:none; }
+  .camera-information { left:auto; width:310px; max-height:calc(100% - 54px); box-sizing:border-box; }
+}
+.camera-shelf-target, .camera-shelf-status button { pointer-events:auto; }
+
+/* Give the camera cabinet the larger-screen area normally used by film tools. */
+@media (min-width: 700px) and (min-height: 600px) {
+  .darkroom-app-container[data-shelf-id="camera"] .controls-header .action-buttons,
+  .darkroom-app-container[data-shelf-id="camera"] .controls-footer { display: none; }
+  .darkroom-app-container[data-shelf-id="camera"] .camera-collection-toolbar { bottom: 12px; }
+}

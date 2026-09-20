@@ -9,6 +9,7 @@ import {
   ROOM_CAMERA_TARGET,
   ROOM_CAMERA_UP,
   ROOM_EYE,
+  ROOM_ENVELOPE,
   roomLookTarget,
   TABLE_SURFACE_Y,
   TABLE_CENTER_Z,
@@ -56,7 +57,7 @@ describe("M2 Integration — Camera Bounds, State Transitions & Pose Restoration
       expect(typeof x).toBe("number");
       expect(typeof y).toBe("number");
       expect(typeof z).toBe("number");
-      expect(x).toBeGreaterThan(0.4); // gentle 3/4 architectural perspective
+      expect(x).toBe(0); // centered default heading
       expect(y).toBeGreaterThan(0.4); // eye-level viewing elevation
       expect(z).toBeGreaterThan(3.0); // comfortable distance from table
     });
@@ -66,9 +67,9 @@ describe("M2 Integration — Camera Bounds, State Transitions & Pose Restoration
       expect(ROOM_CAMERA_TARGET[1]).toBeLessThan(0); // workbench level to frame flat table & legs
       expect(ROOM_CAMERA_TARGET[2]).toBe(TABLE_CENTER_Z);
       const [rx, ry, rz] = ROOM_EYE;
-      expect(rx).toBeGreaterThan(0.4);
+      expect(rx).toBe(0);
       expect(ry).toBeGreaterThan(0.0); // eye-level viewing elevation
-      expect(rz).toBeGreaterThan(3.0);
+      expect(rz).toBe((ROOM_ENVELOPE.front + ROOM_ENVELOPE.back) / 2);
       expect(roomLookTarget(DEFAULT_ROOM_POSE)[1]).toBeGreaterThan(ry);
     });
 

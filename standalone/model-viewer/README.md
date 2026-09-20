@@ -46,6 +46,7 @@ Custom material adjustments (e.g. Mamiya-specific optical glass coating) live in
 - `catalog.mjs`: Configuration validation, asset path resolution, and sanitized public configuration.
 - `index.html`, `style.css`: Minimalist UI, responsive tablet/mobile layout.
 - `viewer.js`: Three.js scene, auto-centering, studio lighting, camera controls, mouse/touch handlers.
+- `model-core.js`: Shared cached GLB loading, opt-in material preparation, uniform physical mounting, studio environment and orbit controls. Used by this viewer and the main app's camera collection. Scene clones share geometry; each renderer disposes only its own resources.
 - `profiles/`: Optional per-model material overrides (default preserves native GLB materials).
 - `server.mjs`: Lightweight HTTP server with Range requests, MIME types, and caching.
 - `deploy/`: Systemd service template and deployment generator.
@@ -77,3 +78,24 @@ npm run inspect -- mamiya-universal
 - Configuration tests verify multi-model parsing, duplicate IDs, missing assets, and path safety.
 - Reuse tests generate a dynamic test mesh and verify model switching and direct URL routing.
 - Browser tests check mouse orbit, tablet touch gestures, pinch zoom, and layout responsiveness.
+
+The browser gate starts an isolated server on an ephemeral loopback port in the
+current checkout. It does not test or restart a deployed service. On Linux, the
+real-model browser check uses installed Chrome with Vulkan, matching the app's
+GPU test configuration. Install this module's dependencies remotely; when adding
+Playwright browser versions on a shared host use `PLAYWRIGHT_SKIP_BROWSER_GC=1`.
+
+## Main app camera collection
+
+The main app integrates the same Mamiya asset/profile through `model-core.js`.
+Camera catalog entries add `widthMm`, `sha256`, `manufacturer`, `introduced`,
+nullable `manufactured`, `category`, `description` and sourced `sources` links.
+`scripts/prepare-camera.js` verifies the current GLB against `CURRENT.json` and
+prepares an ignored content-addressed serving copy. The existing standalone
+model URLs remain unchanged. Physical mounting uses the upright model's X width;
+standalone study framing retains its original normalization.
+
+The app caches the camera separately from essential offline film resources.
+Opening it downloads it on demand; Backups & offline → Offline & storage also
+offers explicit preparation. An uncached or failed camera download does not
+block saved-roll viewing. Camera binaries and review captures stay out of Git.

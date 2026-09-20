@@ -8,11 +8,12 @@ import { DEFAULT_INSPECT_DISTANCE, TABLE_CENTER_Z } from "../utils/cameraBounds"
 
 interface ControlsProps {
   onOpenLibrary?: () => void;
+  onOpenCameras?: () => void;
   state: ViewerState;
   dispatch: React.Dispatch<ViewerAction>;
 }
 
-export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibrary }) => {
+export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibrary, onOpenCameras }) => {
   const stock = getFilmStock(state.filmStockId);
   const multi = state.roll !== BASELINE_ROLL;
   const currentFrame = state.roll.frames[state.loupe.frameIndex] || state.roll.frames[0];
@@ -28,6 +29,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
       {!isRoomMode && <button className="focus-toggle" aria-pressed={state.focusMode} onClick={()=>dispatch({type:"TOGGLE_FOCUS"})}>{state.focusMode?"Exit focus":"Focus"}</button>}
 
           {onOpenLibrary && <button className="rolls-button" onClick={onOpenLibrary}>Rolls</button>}
+          {isRoomMode && onOpenCameras && <button className="rolls-button" onClick={onOpenCameras}>Cameras</button>}
           <span className="dot" />
           <h1>DARKROOM FILM VIEWER</h1>
           <span className="roll-id">{state.roll.imported ? `${state.roll.frames.length} FRAMES · ${state.roll.format === "135" ? "35MM" : "120"}` : multi ? "36-SLOT FIXTURE" : "ROLL 01 — 35MM"}</span>
@@ -216,7 +218,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
           {isRoomMode ? (
             <div className="status-item room-hint-wrapper">
               <span className="room-nav-hint">
-                {state.shelfFocused ? 'Click a roll to edit • Drag or press Escape to return to room' : 'Drag or use arrow keys to look • 0 faces table • Enter approaches'}
+                {state.shelfId === 'camera' ? 'Click the camera to inspect • Drag or press Escape to return to room' : state.shelfFocused ? 'Click a roll to edit • Drag or press Escape to return to room' : 'Drag or use arrow keys to look • 0 faces table • Enter approaches'}
               </span>
             </div>
           ) : (

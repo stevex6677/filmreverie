@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { loadModel, mountModel, studioEnvironment, orbitControls } from './model-core.js';
 
 const stage=document.querySelector('#stage');
 const loading=document.querySelector('#loading');
@@ -9,12 +8,11 @@ const progress=document.querySelector('#progress');
 let renderer,controls,model,ready=false;
 function fail(error){console.error(error);document.querySelector('#load-title').textContent='Unable to open model';document.querySelector('#load-detail').textContent='Please check network connection and reload';document.querySelector('#retry').hidden=false;document.querySelector('.loading-mark').style.animation='none';progress.hidden=true;loading.classList.remove('done');state.textContent='Loading incomplete';}
 document.querySelector('#retry').onclick=()=>location.reload();
-let selected,profile;
+let selected;
 try{
   const response=await fetch('/api/catalog');if(!response.ok)throw new Error('Unable to load model catalog');
   const catalog=await response.json();const id=new URL(location.href).searchParams.get('model')||catalog.defaultModel;
   selected=catalog.models.find(m=>m.id===id);if(!selected)throw new Error(`Unknown model: ${id}`);
-  profile=await import(`/profiles/${selected.profile}.js`);
   document.title=`${selected.title} ${selected.titleAccent} · 3D Model Viewer`;
   for(const [selector,value] of [['#model-title',selected.title],['#title-accent',selected.titleAccent],['.subtitle',selected.subtitle],['#eyebrow',selected.eyebrow||'MODEL STUDY'],['#edition',selected.edition],['#caption',selected.caption],['#caption-detail',selected.captionDetail]])document.querySelector(selector).textContent=value;
   stage.setAttribute('aria-label',`${selected.title} 3D model, drag to rotate, pinch or scroll to zoom`);
@@ -30,27 +28,14 @@ renderer.shadowMap.enabled=false;
 stage.append(renderer.domElement);
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(34,1,.01,100);
-controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.09;
+controls=orbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.09;
 controls.minDistance=1.15;controls.maxDistance=9;controls.maxPolarAngle=Math.PI;
 controls.autoRotateSpeed=.7;controls.screenSpacePanning=true;
 controls.touches.ONE=THREE.TOUCH.ROTATE;controls.touches.TWO=THREE.TOUCH.DOLLY_PAN;
 
 // Continuous, feathered studio illumination instead of four hard rectangular cards.
-const w=512,h=256,data=new Float32Array(w*h*4);
-const lobes=[{d:new THREE.Vector3(-.7,.65,1).normalize(),width:.40,power:5},
-             {d:new THREE.Vector3(1,.4,-.5).normalize(),width:.4,power:3},
-             {d:new THREE.Vector3(.1,1,.1).normalize(),width:.55,power:1.7}];
-for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-  const phi=(x/w)*Math.PI*2,theta=(y/h)*Math.PI;
-  const v=new THREE.Vector3(-Math.sin(theta)*Math.cos(phi),Math.cos(theta),Math.sin(theta)*Math.sin(phi));
-  let value=.14+.18*Math.max(0,v.y);
-  for(const l of lobes)value+=l.power*Math.exp(-(1-v.dot(l.d))/l.width**2);
-  const i=(y*w+x)*4;data[i]=value;data[i+1]=value;data[i+2]=value*1.015;data[i+3]=1;
-}
-const env=new THREE.DataTexture(data,w,h,THREE.RGBAFormat,THREE.FloatType);
-env.mapping=THREE.EquirectangularReflectionMapping;env.needsUpdate=true;
-const pmrem=new THREE.PMREMGenerator(renderer);const envTarget=pmrem.fromEquirectangular(env);
-scene.environment=envTarget.texture;env.dispose();pmrem.dispose();
+const envTarget=studioEnvironment(renderer);
+scene.environment=envTarget.texture;
 scene.add(new THREE.HemisphereLight(0xffffff,0x74746f,1));
 const key=new THREE.DirectionalLight(0xfffaf2,.7);key.position.set(-3,6,4);key.castShadow=true;
 key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=key.shadow.camera.bottom=-2;
@@ -82,17 +67,12 @@ renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();r
 function resize(){const {width,height}=stage.getBoundingClientRect();renderer.setSize(width,height);camera.aspect=width/height;camera.updateProjectionMatrix();homeDistance=camera.aspect<.8?(selected.camera.portraitDistance||6.4):(selected.camera.distance||5.6);requestRender();}
 new ResizeObserver(resize).observe(stage);resize();setView('home');
 
-new GLTFLoader().load(selected.url,gltf=>{
-  model=gltf.scene;const oriented=new THREE.Group();oriented.add(model);oriented.rotation.fromArray(selected.rotation);
-  const box=new THREE.Box3().setFromObject(oriented);const size=box.getSize(new THREE.Vector3());
-  if(!Number.isFinite(size.length())||size.length()===0){fail(new Error('Model has no visible geometry'));return;}
-  const scale=2.05/Math.max(size.x,size.y,size.z);const center=box.getCenter(new THREE.Vector3());
-  const mount=new THREE.Group();mount.add(oriented);mount.scale.setScalar(scale);oriented.position.sub(center);scene.add(mount);
-  floor.position.y=-size.y*scale/2-.015;
+loadModel(selected.url,selected.profile).then(source=>{
+  const mounted=mountModel(source,selected.rotation);model=mounted.object;scene.add(model);
+  floor.position.y=-mounted.size.y/2-.015;
   let triangles=0;
   model.traverse(o=>{if(!o.isMesh)return;triangles+=(o.geometry.index?o.geometry.index.count:o.geometry.attributes.position.count)/3;
     o.castShadow=true;o.receiveShadow=true;
-    profile.prepareMesh(o);
     for(const m of (Array.isArray(o.material)?o.material:[o.material])){
       if(m.map)m.map.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
       m.needsUpdate=true;
@@ -103,4 +83,4 @@ new GLTFLoader().load(selected.url,gltf=>{
   document.documentElement.dataset.modelReady='true';
   window.previewDiagnostics=()=>({ready,modelId:selected.id,profile:selected.profile,triangles,camera:camera.position.toArray(),target:controls.target.toArray(),autoRotate:controls.autoRotate,renderCalls:renderer.info.render.calls,geometries:renderer.info.memory.geometries});
   requestRender();
-},xhr=>{if(xhr.total){const percent=Math.round(xhr.loaded/xhr.total*100);progress.value=percent;document.querySelector('#load-detail').textContent=`Loading model ${percent}%`; }},fail);
+}).catch(fail);

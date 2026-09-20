@@ -25,13 +25,13 @@ export const DEFAULT_CAMERA_BOUNDS: CameraBounds = {
   minDistance: 3.5, maxDistance: 3.5,
 };
 // Aim above the table so the taller, physically scaled cabinet remains visible.
-// ROOM_EYE stays at the existing standing position; only its heading changes.
-export const DEFAULT_ROOM_POSE: RoomCameraPose = { yaw: .18, pitch: -.16, distance: 3.5 };
+// Stand on the room's centerline, facing the centered film cabinet.
+export const DEFAULT_ROOM_POSE: RoomCameraPose = { yaw: 0, pitch: -.16, distance: 3.5 };
 export const ROOM_CAMERA_FOV = 64;
 export const ROOM_EYE: [number, number, number] = [
-  3.5 * Math.cos(.28) * Math.sin(.18),
+  0,
   -.78 + 3.5 * Math.sin(.28),
-  TABLE_CENTER_Z + 3.5 * Math.cos(.28) * Math.cos(.18),
+  (ROOM_ENVELOPE.front + ROOM_ENVELOPE.back) / 2,
 ];
 export function roomLookTarget(pose: RoomCameraPose): [number, number, number] {
   const { yaw, pitch } = clampRoomPose(pose);

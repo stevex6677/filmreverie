@@ -5,6 +5,7 @@ import { openRoll } from './helpers/shelf';
 import { offlineServer } from './helpers/offlineServer';
 import { openFrame, openViewingTools, closeViewingTools, captureCanvas } from './helpers/viewing';
 import { getRegionStats } from './helpers/pixelAnalysis';
+import { PRIMARY_CAMERA } from '../../src/data/cameras';
 
 test.use({ serviceWorkers: 'allow', ignoreHTTPSErrors: true });
 const entry='/?mode=inspect&reduced_motion=true';
@@ -127,6 +128,9 @@ test('M18 update download is atomic and activation protects drafts, other tabs a
   try {
     await page.goto(server.url+entry);await ready(page);await offlineReady(page);await createRoll(page);
     const id=(await dbRolls(page))[0].id;
+    // The optional, content-addressed model cache must survive app releases.
+    const modelBytes = await page.evaluate(async url => (await (await fetch(url)).arrayBuffer()).byteLength, PRIMARY_CAMERA.url);
+    expect(modelBytes).toBeGreaterThan(1000000);
     server.release('m18-update-candidate');server.fail('/assets/film-stocks/portra-800.json');
     await panel(page);await page.getByRole('button',{name:'Retry offline preparation'}).click();
     await expect(page.locator('.offline-panel')).toContainText('Download incomplete',{timeout:60000});
@@ -143,7 +147,11 @@ test('M18 update download is atomic and activation protects drafts, other tabs a
     const other=await context.newPage();await other.goto(server.url+entry);await ready(other);
     await page.getByRole('button',{name:'Update Available'}).click();await expect(page.locator('.update-notice [role="alert"]')).toContainText('Close other');await other.close();
     await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.getByRole('button',{name:'Update Available'}).click()]);await ready(page);await offlineReady(page);
-    await expect.poll(()=>page.evaluate(async()=>caches.keys())).toEqual(['darkroom-app-m18-update-candidate']);
+    await expect.poll(()=>page.evaluate(async()=>(await caches.keys()).filter(key => key.startsWith('darkroom-app-')))).toEqual(['darkroom-app-m18-update-candidate']);
+    expect(await page.evaluate(async url => {
+      const model = await (await caches.open('darkroom-camera-models-v1')).match(url);
+      return model ? (await model.arrayBuffer()).byteLength : 0;
+    }, PRIMARY_CAMERA.url)).toBe(modelBytes);
     await expect(page.locator('main')).toHaveAttribute('data-roll-id',id);expect(await dbRolls(page)).toHaveLength(1);
   }finally{await server.stop();}
 });

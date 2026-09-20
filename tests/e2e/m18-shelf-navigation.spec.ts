@@ -19,9 +19,12 @@ async function screenPoint(page: Page, point: [number, number, number]) {
 test('M18 room clicks select the physical table or shelf across viewing angles', async ({ page }, info) => {
   await page.goto('/?mode=room&reduced_motion=true'); await ready(page);
   const app = page.locator('main');
-  for (const [x, z, key] of [[-1.4, -.8, 'ArrowLeft'], [1.4, -.8, 'ArrowRight'], [0, .4, 'ArrowDown']] as const) {
+  // The centered room eye brings the near table edge behind the desktop
+  // collection toolbar. Use a visible center patch for the third physical hit.
+  for (const [x, z, key] of [[-1.4, -.8, 'ArrowLeft'], [1.4, -.8, 'ArrowRight'], [0, -.4, 'ArrowDown']] as const) {
     await page.locator('.canvas-wrapper').focus(); await page.keyboard.press(key);
     const point = await screenPoint(page, [x, TABLE_SURFACE_Y + .002, z]);
+    expect(await page.evaluate(({x,y}) => document.elementFromPoint(x,y)?.tagName, point)).toBe('CANVAS');
     if (info.project.use.hasTouch) await page.touchscreen.tap(point.x, point.y); else await page.mouse.click(point.x, point.y);
     await expect(app).toHaveAttribute('data-room-mode', 'inspect');
     await expect(app).toHaveAttribute('data-shelf-focused', 'false'); await ready(page);
