@@ -6,3 +6,4 @@ export const CAMERAS = catalog.models.filter(model => model.widthMm > 0).map(mod
 }));
 export const PRIMARY_CAMERA = CAMERAS[0];
 export const cameraById = (id: string) => CAMERAS.find(camera => camera.id === id);
+export type CameraEntry = (typeof CAMERAS)[number];

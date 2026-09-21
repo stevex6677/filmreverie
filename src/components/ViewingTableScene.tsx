@@ -22,7 +22,6 @@ import { FilmShelfState } from '../utils/useFilmShelf';
 import { ShelfNavigation } from './ShelfNavigation';
 import { roomHitTarget } from '../utils/roomHitTarget';
 import { CameraShelf } from './CameraShelf';
-import { PRIMARY_CAMERA } from '../data/cameras';
 
 interface ViewingTableSceneProps {
   onEditShelfRoll: (id: string) => void;
@@ -155,7 +154,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       <CameraShelf textures={packagingTextures} focused={state.shelfId === 'camera'} load={true} onSettled={onCameraSettled} portal={shelfPortal}
         interactive={state.roomMode === 'room' && !inputBlocked && state.shelfId !== 'film'}
         onApproach={() => { shelf.close(); dispatch({ type: 'APPROACH_CAMERA_SHELF' }); }}
-        onOpen={() => dispatch({ type: 'OPEN_CAMERA', id: PRIMARY_CAMERA.id })} />
+        onOpen={id => dispatch({ type: 'OPEN_CAMERA', id })} />
       <group visible={!cabinetOnly}><FilmShelf textures={packagingTextures} onEdit={onEditShelfRoll} focused={state.shelfId === 'film'} onApproach={point => {
         const target = point ? roomHitTarget(camera, gl.domElement, point.x, point.y, tableSize) : 'shelf';
         if (!target) return;

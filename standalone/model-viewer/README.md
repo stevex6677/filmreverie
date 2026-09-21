@@ -95,6 +95,11 @@ prepares an ignored content-addressed serving copy. The existing standalone
 model URLs remain unchanged. Physical mounting uses the upright model's X width;
 standalone study framing retains its original normalization.
 
+Large editable camera masters should follow the Mamiya and Autocord pattern:
+export a non-destructive browser derivative with a bounded mesh and texture
+budget, record both versions in the model's `CURRENT.json`, and point the catalog
+at the derivative. Do not decimate or overwrite the accepted editable master.
+
 The app caches the camera separately from essential offline film resources.
 Opening it downloads it on demand; Backups & offline → Offline & storage also
 offers explicit preparation. An uncached or failed camera download does not

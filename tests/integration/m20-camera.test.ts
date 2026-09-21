@@ -4,13 +4,14 @@ import { createHash } from 'node:crypto';
 import { Box3, Mesh, MeshPhysicalMaterial, Ray, Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mountModel, fittedDistance } from '../../standalone/model-viewer/model-core.js';
-import { PRIMARY_CAMERA } from '../../src/data/cameras';
-import { mm, CAMERA_SHELF_MM, CAMERA_SHELF_ORIGIN, CAMERA_SHELF_SLOTS, SHELF_HEIGHT, SHELF_ORIGIN, CAMERA_PRESENTATION_YAW } from '../../src/data/physicalScale';
+import { CAMERAS, PRIMARY_CAMERA } from '../../src/data/cameras';
+import { mm, CAMERA_SHELF_MM, CAMERA_SHELF_ORIGIN, CAMERA_SHELF_SLOTS, SHELF_HEIGHT, SHELF_ORIGIN, CAMERA_PRESENTATION_YAW, cameraShelfSlot } from '../../src/data/physicalScale';
 import { roomCameraModel } from '../../src/utils/roomCameraModel';
 import { ROOM_EYE, ROOM_ENVELOPE, DEFAULT_ROOM_POSE } from '../../src/utils/cameraBounds';
 import { createInitialViewerState, viewerReducer } from '../../src/state/viewerState';
 import { roomRayTarget } from '../../src/utils/roomHitTarget';
 import current from '../../blender/mamiya_universal/CURRENT.json';
+import autocordCurrent from '../../blender/autocord/CURRENT.json';
 
 describe('M20 current camera and physical shelf', () => {
   it('loads the actual current GLB geometry and fits a uniformly scaled 210 mm assembly', async () => {
@@ -72,6 +73,16 @@ describe('M20 current camera and physical shelf', () => {
     expect(CAMERA_SHELF_ORIGIN[0] + mm(7)).toBeCloseTo(ROOM_ENVELOPE.width / 2);
     expect(CAMERA_SHELF_ORIGIN[0] - mm(CAMERA_SHELF_MM.depth)).toBeGreaterThanOrEqual(3.22 - .82 / 2); // no closer than the opposite bench edge
     expect(ROOM_ENVELOPE.back - .65 - .82 / 2 - (CAMERA_SHELF_ORIGIN[2] + mm(CAMERA_SHELF_MM.width / 2))).toBeGreaterThan(mm(150)); // clear gap to rear developing bench
+  });
+  it('derives collection entries and eye-level cabinet positions from the catalog', () => {
+    expect(CAMERAS.map(camera => camera.id)).toEqual(['mamiya-universal', 'minolta-autocord']);
+    const autocord = CAMERAS[1];
+    expect(autocord.widthMm).toBe(84);
+    expect(mm(autocord.widthMm)).toBeCloseTo(.3024, 8);
+    expect(autocord.asset).toBe(autocordCurrent.browser_glb.path);
+    expect(autocord.sha256).toBe(autocordCurrent.browser_glb.sha256);
+    expect(cameraShelfSlot(0)).toBe(CAMERA_SHELF_SLOTS[3]);
+    expect(cameraShelfSlot(1)).toBe(CAMERA_SHELF_SLOTS[4]);
   });
   it('returns the nearest physical shelf for a ray directed at the right wall', () => {
     const [x, y, z] = CAMERA_SHELF_ORIGIN;

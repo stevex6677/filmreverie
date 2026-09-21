@@ -2,7 +2,7 @@
   "schema_version": 1,
   "model_id": "minolta-autocord",
   "updated": "2026-09-21",
-  "revision": "Reference-based front lens lettering, shutter inscriptions and dual distance scales",
+  "revision": "Browser-optimized derivative of the accepted front-detail master",
   "state": "complete",
   "path_resolution": {
     "config": "shared-assets.json",
@@ -20,16 +20,31 @@
     "textures": "Packed; no external texture dependencies"
   },
   "browser_glb": {
+    "path": "blender/autocord/browser_preview/runs/20260921T075000Z-browser-v2/minolta-autocord-browser.glb",
+    "sha256": "0fd838994e57a92a54a2ba8a0968e36ce059a425585076dce381bcb3e56cb311",
+    "source_blend_sha256": "43f2abc72cbaeb514db9d3fb32cbcab848081a7adda6fa633f3b762615399f63",
+    "bytes": 20002272,
+    "triangles": 395646,
+    "embedded_textures": 17,
+    "maximum_texture_dimension": 2048,
+    "texture_format": "JPEG",
+    "jpeg_quality": 85,
+    "maximum_texture_coordinate_set": 3,
+    "source_triangles": 1779953,
+    "body_decimation_ratio": 0.2,
+    "note": "Non-destructive browser derivative. Detail meshes are retained; only the dense scanned body is decimated. The accepted full-detail GLB remains recorded below."
+  },
+  "full_detail_glb": {
     "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/minolta-autocord.glb",
     "sha256": "50133c409360bd8a106ebc5d659a31eabe622f6d3c24ad75749e027ee6166077",
     "source_blend_sha256": "43f2abc72cbaeb514db9d3fb32cbcab848081a7adda6fa633f3b762615399f63",
     "bytes": 105709964,
     "triangles": 1779953,
     "embedded_textures": 17,
-    "maximum_texture_coordinate_set": 3,
     "no_decimation": true
   },
   "current_changes": [
+    "Added a 20.0 MB browser derivative (down from 105.7 MB) with 395,646 triangles, 2048 px maximum textures and JPEG quality 85. The accepted editable master and full-detail GLB remain unchanged.",
     "Removed the two strap cords and red/black anchors, including detached residual anchor fragments; retained camera mounting hardware and the closed finder lid.",
     "Clarified minolta and AUTOCORD using the supplied front-logo photograph.",
     "Clarified winding-side pressure-plate instructions, distance and depth-of-field markings using the supplied side photograph; preserved crank and central hub.",
@@ -134,24 +149,26 @@
     "manifest": "blender/autocord/detail_refinement/runs/20260921-front-c3/delivery_manifest.json",
     "geometry": "blender/autocord/detail_refinement/runs/20260921-front-c3/refinement_report.json",
     "export": "blender/autocord/detail_refinement/runs/20260921-front-c3/export_report.json",
+    "browser_export": "blender/autocord/browser_preview/runs/20260921T075000Z-browser-v2/browser-export.json",
     "comparisons": "Five comparison_*.jpg sheets compare the prior B3 delivery and this revision with matched cameras and lighting. Prior closeups are preserved in 20260921-front-c1/before."
   },
   "continuation": {
     "entrypoint": "blender/autocord/build_delivery.py",
+    "browser_export": "blender/autocord/export_browser_preview.py",
     "mcp_client": "blender/autocord/mcp_client.py",
-    "instructions": "Use Blender MCP. Open editable_blend to continue modeling. For a clean rebuild, import the original GLB with inspect_source.py. Choose a new shared generated run and use the same FILM_PHOTO_OUTPUT_DIR for prepare_references.py, prepare_detail_textures.py, prepare_upper_front.py and prepare_lower_front.py through remote_exec run. Then run mcp_client.py execute_blender_code --script blender/autocord/build_delivery.py --blend <original source.blend> --output <that run>. Never feed an already-refined master to build_delivery.py. Upper and lower front passes share one UV set so the GLB stays within the viewer texture-coordinate limit.",
+    "instructions": "Use Blender MCP. Open editable_blend to continue modeling. For a clean rebuild, import the original GLB with inspect_source.py. Choose a new shared generated run and use the same FILM_PHOTO_OUTPUT_DIR for prepare_references.py, prepare_detail_textures.py, prepare_upper_front.py and prepare_lower_front.py through remote_exec run. Then run mcp_client.py execute_blender_code --script blender/autocord/build_delivery.py --blend <original source.blend> --output <that run>. Never feed an already-refined master to build_delivery.py. For a browser derivative, run export_browser_preview.py through the same MCP client with editable_blend as --blend and a new browser_preview run as --output. Upper and lower front passes share one UV set so the GLB stays within the viewer texture-coordinate limit.",
     "base_code_revision": "5eeb357",
     "script_checksums": "Recorded in delivery_manifest.json; generated binaries are not tracked in Git."
   },
   "viewer": {
     "catalog": "standalone/model-viewer/models.json",
     "profile": "default",
-    "localhost_url": "http://localhost:4181/?model=minolta-autocord",
-    "ipad_url": "http://macbook.tail2b1388.ts.net:4181/?model=minolta-autocord",
-    "process_host": "remote Linux",
-    "working_directory": "/workspace/worktrees/paseo/lying-stingray/standalone/model-viewer",
-    "access": "Private Tailscale network; MacBook forwards port 4181 to remote loopback. Existing model entries and default are preserved.",
-    "verification": "Final GLB visually inspected in remote Chrome at 1280x1000 desktop and 834x1112 touch-tablet sizes. Both lens inscriptions, shutter lettering, distance scales and preserved side details checked; zoom, pan and touch orbit exercised. No page errors observed. Localhost and MacBook Tailscale HTTP health verified. Physical iPad hardware was not used."
+    "localhost_url": "http://localhost:5179/?mode=room",
+    "ipad_url": "http://macbook.tail2b1388.ts.net:5179/?mode=room",
+    "process_host": "local Mac",
+    "working_directory": "active application checkout",
+    "access": "Private Tailscale network. Existing model IDs and stable routes are preserved.",
+    "verification": "Optimized derivative visually inspected in the main app through remote Chrome desktop and mobile WebKit. Cabinet scale, silhouette, AUTOCORD badge, lenses, controls, leather and chrome materials remain intact; no holes, missing parts, severe faceting or layout defects observed. Targeted desktop/mobile interaction tests passed. Physical iPad hardware was not used."
   },
   "previous_delivery": {
     "editable_blend": {
@@ -205,24 +222,19 @@
   ],
   "browser_evidence": [
     {
-      "view": "viewer-front-desktop",
-      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/viewer-front-desktop.png",
-      "sha256": "ad027a7400e7081e0ec565be98457c753fb9e3233d5f0b2e6921766d0221a919"
+      "view": "app-desktop-inspection",
+      "path": "blender/autocord/browser_preview/runs/20260921T075000Z-browser-v2/evidence/app-desktop.png",
+      "sha256": "7951641e538cd7c14cd238633bbd6da0617f3c61010acda44992d3a66fa6a220"
     },
     {
-      "view": "viewer-front-tablet",
-      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/viewer-front-tablet.png",
-      "sha256": "7bcd26bf4f796e199f80ff08f349789b895c9fab58f07b2f41975a5c1bf28bbf"
+      "view": "app-mobile-cabinet",
+      "path": "blender/autocord/browser_preview/runs/20260921T075000Z-browser-v2/evidence/app-mobile-shelf.png",
+      "sha256": "d929fe7ad320de17b58893aae53e6cb8c1f14087b940d944dabb283dca38eee6"
     },
     {
-      "view": "viewer-front-touch-tablet",
-      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/viewer-front-touch-tablet.png",
-      "sha256": "e5f4d1e8635f1a43264c420bb9778ba440024c044969f838d69481d0bb213a07"
-    },
-    {
-      "view": "viewer-lower-closeup",
-      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/viewer-lower-closeup.png",
-      "sha256": "ad955016fdbfa83babc65a64143c6687f3d2528534ace5c626f2c28ff384bb19"
+      "view": "app-mobile-inspection",
+      "path": "blender/autocord/browser_preview/runs/20260921T075000Z-browser-v2/evidence/app-mobile-inspection.png",
+      "sha256": "dd58305c70e0c8becad9e9c9a82c9f64ff9ca58bcb212cf5233dadb07085e04b"
     }
   ]
 }

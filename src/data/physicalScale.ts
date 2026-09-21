@@ -49,7 +49,11 @@ export function cameraShelfFov(aspect: number, visibleHeight = .65, visibleWidth
 export const CAMERA_SHELF_SLOTS = Array.from({ length: 6 }, (_, index) => ({
   x: mm(-300 + (index % 3) * 300), y: mm(Math.floor(index / 3) * (CAMERA_SHELF_MM.height / CAMERA_SHELF_MM.tiers - 10)), z: mm(CAMERA_SHELF_MM.depth / 2),
 }));
-export const PRIMARY_CAMERA_SLOT = CAMERA_SHELF_SLOTS[3];
+// Fill the eye-level tier first, then the lower tier. Catalog order alone is
+// enough to place a new camera; furniture coordinates stay out of model data.
+const CAMERA_SHELF_SLOT_ORDER = [3, 4, 5, 0, 1, 2];
+export const cameraShelfSlot = (index: number) => CAMERA_SHELF_SLOTS[CAMERA_SHELF_SLOT_ORDER[index]];
+export const PRIMARY_CAMERA_SLOT = cameraShelfSlot(0);
 
 // Objects are arranged side by side without changing either one's scale.
 export function shelfArrangement(boxWidthMm: number, small: boolean, owned: boolean, boxDepthMm = 38) {

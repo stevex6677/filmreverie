@@ -15,7 +15,7 @@ test('failed optional preparation preserves film readiness; uncached inspection 
     await page.getByRole('button', { name: 'Backups & offline' }).click();
     await page.getByText('Offline & storage', { exact: true }).click();
     await expect(page.locator('.offline-panel')).toContainText('The app and built-in photographs are downloaded.');
-    await page.getByRole('button', { name: 'Download camera for offline use' }).click();
+    await page.getByRole('button', { name: 'Download cameras for offline use' }).click();
     await expect(page.locator('.offline-panel [role="alert"]')).toContainText('Download incomplete');
     await expect(page.locator('.offline-panel')).toContainText('The app and built-in photographs are downloaded.');
     await expect(page.locator('.offline-panel')).not.toContainText('downloaded for offline inspection');

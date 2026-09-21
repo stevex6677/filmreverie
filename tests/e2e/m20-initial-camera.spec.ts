@@ -16,6 +16,7 @@ test('initial room prepares camera alongside photographs and reveals it with the
   release();
   await expect(page.getByTestId('darkroom-loader')).not.toBeVisible({ timeout: 60000 });
   await expect(page.locator('.canvas-wrapper canvas')).toHaveAttribute('data-camera-model-width', '0.756');
+  await expect(page.locator('.canvas-wrapper canvas')).toHaveAttribute('data-camera-model-widths', /minolta-autocord:0\.3024/, { timeout: 90000 });
   await expect(page.locator('.canvas-wrapper canvas')).toHaveAttribute('data-camera-position', ROOM_EYE.join(','));
   await page.screenshot({ path: `artifacts/m20-room-revision/${info.project.name}-starting-view.png` });
   await page.locator('.canvas-wrapper').focus();

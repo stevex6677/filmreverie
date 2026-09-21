@@ -135,7 +135,7 @@ export function CameraDisplayView({ id, onBack, reducedMotion }: { id: string; o
       <button className="camera-info-close" onClick={() => setInfo(false)}>Close information</button>
       <span className="camera-kicker">{entry.manufacturer.toUpperCase()}</span><h1>{entry.title}<br /><em>{entry.titleAccent}</em></h1><p className="camera-intro">A camera built for possibilities.</p>
       <p>{entry.description}</p>
-      <dl><div><dt>Introduced</dt><dd>{entry.introduced}</dd></div><div><dt>Manufactured</dt><dd>{entry.manufactured ?? 'Unknown'}</dd></div><div><dt>Type</dt><dd>{entry.category}</dd></div><div><dt>Lens shown</dt><dd>{entry.captionDetail}</dd></div><div><dt>Width</dt><dd>{entry.widthMm / 10} cm <small>including grip</small></dd></div></dl>
+      <dl><div><dt>Introduced</dt><dd>{entry.introduced}</dd></div><div><dt>Manufactured</dt><dd>{entry.manufactured ?? 'Unknown'}</dd></div><div><dt>Type</dt><dd>{entry.category}</dd></div><div><dt>Lens shown</dt><dd>{entry.captionDetail}</dd></div><div><dt>Width</dt><dd>{entry.widthMm / 10} cm <small>physical display scale</small></dd></div></dl>
       <p className="camera-note">The introduction year describes the model. The manufacture year of this individual camera has not been documented.</p>
       {entry.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a>)}
     </aside>

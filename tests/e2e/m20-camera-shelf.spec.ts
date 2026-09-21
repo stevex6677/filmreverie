@@ -17,6 +17,25 @@ async function display(page: import('@playwright/test').Page) {
   await expect(page.locator('.camera-display')).toHaveAttribute('data-model-ready', 'true', { timeout: 90000 });
 }
 
+test('catalog cameras occupy independent physical-scale cabinet slots', async ({ page }, info) => {
+  await page.goto('/?mode=room&reduced_motion=true'); await ready(page); await cameraShelf(page);
+  const canvas = page.locator('.canvas-wrapper canvas');
+  await expect(canvas).toHaveAttribute('data-camera-model-widths', /minolta-autocord:0\.3024/, { timeout: 180000 });
+  await expect(page.getByRole('button', { name: /^Inspect / })).toHaveCount(2);
+  await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-two-camera-shelf.png` });
+  await page.getByRole('button', { name: 'Inspect Minolta Autocord', exact: true }).click();
+  await expect(page.locator('.camera-display')).toHaveAttribute('data-model-ready', 'true', { timeout: 180000 });
+  await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-id', 'minolta-autocord');
+  await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-width', '0.3024');
+  if ((page.viewportSize()?.width ?? 1000) < 700) {
+    await expect(page.locator('.camera-info-toggle')).toBeVisible();
+    await page.locator('.camera-info-toggle').click();
+    await expect(page.locator('.camera-information')).toHaveClass(/is-open/);
+  }
+  await expect(page.getByText('8.4 cm', { exact: false })).toBeVisible();
+  await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-autocord-display.png` });
+});
+
 test('physical shelf, all rendered sides, orbit, zoom, reset, history and preserved room pose', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/?mode=room&reduced_motion=true'); await ready(page);
@@ -109,9 +128,9 @@ test('model failure can retry and prepared camera reopens with the server stoppe
     await page.getByRole('button', { name: 'Film shelf', exact: true }).click(); await ready(page);
     await page.getByRole('button', { name: 'Backups & offline' }).click();
     await page.getByText('Offline & storage', { exact: true }).click();
-    const download = page.getByRole('button', { name: 'Download camera for offline use' });
+    const download = page.getByRole('button', { name: 'Download cameras for offline use' });
     if (await download.isVisible()) await download.click();
-    await expect(page.getByText('Camera model: downloaded for offline inspection', { exact: false })).toBeVisible({ timeout: 90000 });
+    await expect(page.getByText('Camera models: downloaded for offline inspection', { exact: false })).toBeVisible({ timeout: 180000 });
     await server.stop();
     await page.reload(); await ready(page); await cameraShelf(page); await display(page);
     await page.getByRole('button', { name: 'Bottom', exact: true }).click();

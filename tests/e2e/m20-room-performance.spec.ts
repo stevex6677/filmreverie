@@ -18,7 +18,8 @@ test('room dragging remains bounded when the camera collection is visible', asyn
   await page.goto('/?mode=room&reduced_motion=true');
   await expect(page.locator('main')).toHaveAttribute('data-app-ready', 'true', { timeout: 60000 });
   await ready(page);
-  if (!process.env.CAMERA_BENCHMARK_BASELINE) expect(Number(await page.locator('.canvas-wrapper canvas').getAttribute('data-camera-model-meshes'))).toBeLessThanOrEqual(30);
+  // Both catalog cameras remain below a compact collection-wide batch budget.
+  if (!process.env.CAMERA_BENCHMARK_BASELINE) expect(Number(await page.locator('.canvas-wrapper canvas').getAttribute('data-camera-model-meshes'))).toBeLessThanOrEqual(40);
   const measure = async () => {
     const canvas = page.locator('.canvas-wrapper canvas'), box = (await canvas.boundingBox())!;
     await page.mouse.move(box.x + box.width * .5, box.y + box.height * .7); await page.mouse.down();

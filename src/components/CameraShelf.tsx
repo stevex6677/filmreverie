@@ -1,46 +1,102 @@
 import { Html } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Box3, Euler, Matrix4, Quaternion, Raycaster, Texture, Vector2, Vector3 } from 'three';
 import type { RefObject } from 'react';
 import { mountModel, studioEnvironment } from '../../standalone/model-viewer/model-core.js';
-import { PRIMARY_CAMERA } from '../data/cameras';
-import { mm, CAMERA_SHELF_MM, CAMERA_SHELF_ORIGIN, CAMERA_SHELF_YAW, PRIMARY_CAMERA_SLOT, CAMERA_PRESENTATION_YAW } from '../data/physicalScale';
+import { CAMERAS } from '../data/cameras';
+import type { CameraEntry } from '../data/cameras';
+import { mm, CAMERA_SHELF_MM, CAMERA_SHELF_ORIGIN, CAMERA_SHELF_YAW, cameraShelfSlot, CAMERA_PRESENTATION_YAW } from '../data/physicalScale';
 import { useCameraModel } from '../utils/useCameraModel';
 import { FilmPackage } from './FilmShelf';
 import { getPackaging } from '../data/filmPackaging';
 import { roomCameraModel } from '../utils/roomCameraModel';
 
-export function CameraShelf({ focused, interactive, load, portal, onApproach, onOpen, onSettled, textures }: {
-  focused: boolean; interactive: boolean; load: boolean; portal: RefObject<HTMLDivElement>;
-  onApproach: () => void; onOpen: () => void;
-  onSettled?: () => void; textures: Record<string, Texture>;
+type MountedCamera = ReturnType<typeof mountModel> & { object: ReturnType<typeof roomCameraModel>['object'] };
+
+function CameraCabinetItem({ entry, index, enabled, focused, interactive, portal, onMounted, onOpen, onSettled }: {
+  entry: CameraEntry; index: number; enabled: boolean; focused: boolean; interactive: boolean;
+  portal: RefObject<HTMLDivElement>; onMounted: (index: number, mounted: MountedCamera | null) => void;
+  onOpen: (id: string) => void; onSettled?: () => void;
 }) {
-  const { gl, camera } = useThree();
-  const { model, error, retry } = useCameraModel(load);
+  const { gl } = useThree();
+  const { model, error, retry } = useCameraModel(entry, enabled);
   const mounted = useMemo(() => {
     if (!model) return null;
-    const result = mountModel(model, PRIMARY_CAMERA.rotation, mm(PRIMARY_CAMERA.widthMm));
+    const result = mountModel(model, entry.rotation, mm(entry.widthMm));
     const environment = studioEnvironment(gl), presentation = roomCameraModel(result.object, environment.texture);
     return { ...result, object: presentation.object, environment, dispose: presentation.dispose };
-  }, [model, gl]);
+  }, [entry, model, gl]);
+  useEffect(() => {
+    onMounted(index, mounted);
+    return () => onMounted(index, null);
+  }, [index, mounted, onMounted]);
   useEffect(() => () => { mounted?.environment.dispose(); mounted?.dispose(); }, [mounted]);
   const rendered = useRef(0);
   useFrame(() => { if (mounted && rendered.current < 2 && ++rendered.current === 2) onSettled?.(); });
   useEffect(() => { if (error) onSettled?.(); }, [error, onSettled]);
-  const focusTarget = useCallback((node: HTMLButtonElement | null) => { if (node && focused) node.focus({ preventScroll: true }); }, [focused]);
-  useEffect(() => {
-    gl.domElement.dataset.cameraModelWidth = mounted ? String(mounted.size.x) : '';
-    gl.domElement.dataset.cameraModelSize = mounted?.size.toArray().join(',') ?? '';
-    gl.domElement.dataset.cameraModelMeshes = mounted ? String(mounted.object.children.length) : '';
-  }, [gl, mounted]);
+  const focusTarget = useCallback((node: HTMLButtonElement | null) => { if (node && focused && index === 0) node.focus({ preventScroll: true }); }, [focused, index]);
   const pointer = useRef({ x: 0, y: 0, moved: false, contacts: new Set<number>() });
+  useEffect(() => { pointer.current.contacts.clear(); pointer.current.moved = false; }, [interactive, focused]);
+  const slot = cameraShelfSlot(index), centerY = slot.y + mm(21) + (mounted?.size.y ?? 0) / 2;
+  return <>
+    {mounted && <group position={[slot.x, centerY, slot.z]} rotation={[0, CAMERA_PRESENTATION_YAW, 0]}>
+      <primitive object={mounted.object} dispose={null} />
+    </group>}
+    <mesh position={[slot.x, slot.y + mm(20.5), slot.z]} rotation={[-Math.PI / 2, 0, 0]}>
+      <circleGeometry args={[mm(Math.min(entry.widthMm * .62, 125, CAMERA_SHELF_MM.depth / 2 - 5)), 48]} /><meshBasicMaterial color="#080a08" transparent opacity={.2} depthWrite={false} />
+    </mesh>
+    {interactive && focused && <Html position={[slot.x, slot.y + mm(30), mm(CAMERA_SHELF_MM.depth + 5)]} center portal={{ current: portal.current ?? gl.domElement.parentElement! }} zIndexRange={[3, 2]}
+      calculatePosition={(object, view, size) => {
+        const point = new Vector3().setFromMatrixPosition(object.matrixWorld).project(view);
+        const canvasRect = gl.domElement.getBoundingClientRect(), overlayRect = portal.current?.getBoundingClientRect() ?? canvasRect;
+        const projectedX = (point.x + 1) * size.width / 2 + canvasRect.left - overlayRect.left;
+        const labelX = projectedX + (focused && size.height < 450 ? Math.min(160, size.width * .2) : 0);
+        const x = focused ? Math.max(90, Math.min(overlayRect.width - 90, labelX)) : labelX;
+        let y = (1 - point.y) * size.height / 2 + canvasRect.top - overlayRect.top + (focused ? (size.width < 700 ? 28 : 40) : 0);
+        // Narrow screens cannot fit adjacent 165 px nameplates side by side.
+        // Stagger catalog entries without moving their physical shelf slots.
+        if (overlayRect.width < 700) y += index * 58;
+        const toolbar = focused ? document.querySelector('.camera-collection-toolbar')?.getBoundingClientRect() : null;
+        if (toolbar && x + 90 > toolbar.left - overlayRect.left && x - 90 < toolbar.right - overlayRect.left) y = Math.min(y, toolbar.top - overlayRect.top - 38);
+        return [x, y];
+      }}>
+      <button ref={focusTarget} className="camera-shelf-target" aria-label={`Inspect ${entry.name}`}
+        onPointerDown={event => {
+          const p = pointer.current; p.contacts.add(event.pointerId); p.x = event.clientX; p.y = event.clientY; p.moved = p.contacts.size > 1;
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={event => { const p = pointer.current; if (p.contacts.size && Math.hypot(p.x - event.clientX, p.y - event.clientY) > 7) p.moved = true; }}
+        onPointerUp={event => { pointer.current.contacts.delete(event.pointerId); if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }}
+        onPointerCancel={() => { pointer.current.contacts.clear(); pointer.current.moved = true; }}
+        onClick={event => { event.stopPropagation(); if (!event.detail || !pointer.current.moved) onOpen(entry.id); }}>
+        <span>{entry.name}</span>
+        <small>{entry.introduced} · Inspect camera ↗</small>
+      </button>
+      {!mounted && <div className="camera-shelf-status" role="status">{error || `Loading ${entry.name}…`}{error && <button onClick={retry}>Retry model</button>}</div>}
+    </Html>}
+  </>;
+}
+
+export function CameraShelf({ focused, interactive, load, portal, onApproach, onOpen, onSettled, textures }: {
+  focused: boolean; interactive: boolean; load: boolean; portal: RefObject<HTMLDivElement>;
+  onApproach: () => void; onOpen: (id: string) => void;
+  onSettled?: () => void; textures: Record<string, Texture>;
+}) {
+  const { gl, camera } = useThree();
+  const [mountedCameras, setMountedCameras] = useState<Map<number, MountedCamera>>(new Map());
+  const updateMounted = useCallback((index: number, mounted: MountedCamera | null) => setMountedCameras(current => {
+    if (current.get(index) === mounted || (!mounted && !current.has(index))) return current;
+    const next = new Map(current); if (mounted) next.set(index, mounted); else next.delete(index); return next;
+  }), []);
   useEffect(() => {
-    // A drag can transfer capture to the canvas, and inspection unmounts the
-    // label. Neither should leave a contact attached to its next appearance.
-    pointer.current.contacts.clear(); pointer.current.moved = false;
-  }, [interactive, focused]);
-  const live = useRef({ interactive, focused, mounted, onApproach, onOpen }); live.current = { interactive, focused, mounted, onApproach, onOpen };
+    const primary = mountedCameras.get(0);
+    gl.domElement.dataset.cameraModelWidth = primary ? String(primary.size.x) : '';
+    gl.domElement.dataset.cameraModelSize = primary?.size.toArray().join(',') ?? '';
+    gl.domElement.dataset.cameraModelWidths = [...mountedCameras].map(([index, mounted]) => `${CAMERAS[index].id}:${mounted.size.x}`).join(',');
+    gl.domElement.dataset.cameraModelMeshes = String([...mountedCameras.values()].reduce((count, mounted) => count + mounted.object.children.length, 0));
+  }, [gl, mountedCameras]);
+  const live = useRef({ interactive, focused, mountedCameras, onApproach, onOpen }); live.current = { interactive, focused, mountedCameras, onApproach, onOpen };
   useEffect(() => {
     const canvas = gl.domElement, ray = new Raycaster();
     const inverse = new Matrix4().compose(new Vector3(...CAMERA_SHELF_ORIGIN), new Quaternion().setFromEuler(new Euler(0, CAMERA_SHELF_YAW, 0)), new Vector3(1, 1, 1)).invert();
@@ -65,13 +121,13 @@ export function CameraShelf({ focused, interactive, load, portal, onApproach, on
       if (!shelfHit) return;
       event.preventDefault(); event.stopImmediatePropagation();
       if (!state.focused) state.onApproach();
-      else if (state.mounted) {
-        const slot = PRIMARY_CAMERA_SLOT;
-        const center = new Vector3(slot.x, slot.y + mm(21) + state.mounted.size.y / 2, slot.z);
+      else for (const [index, mounted] of state.mountedCameras) {
+        const slot = cameraShelfSlot(index);
+        const center = new Vector3(slot.x, slot.y + mm(21) + mounted.size.y / 2, slot.z);
         const objectRay = localRay.clone().applyMatrix4(new Matrix4().makeTranslation(-center.x, -center.y, -center.z))
           .applyMatrix4(new Matrix4().makeRotationY(-CAMERA_PRESENTATION_YAW));
-        const bounds = new Box3().setFromCenterAndSize(new Vector3(), state.mounted.size.clone().addScalar(mm(12)));
-        if (objectRay.intersectsBox(bounds)) state.onOpen();
+        const bounds = new Box3().setFromCenterAndSize(new Vector3(), mounted.size.clone().addScalar(mm(12)));
+        if (objectRay.intersectsBox(bounds)) { state.onOpen(CAMERAS[index].id); break; }
       }
     };
     const up = (event: PointerEvent) => {
@@ -88,7 +144,6 @@ export function CameraShelf({ focused, interactive, load, portal, onApproach, on
     return () => { canvas.removeEventListener('pointerdown', down); window.removeEventListener('pointerup', up); window.removeEventListener('pointermove', move); canvas.removeEventListener('click', click, true); window.removeEventListener('pointercancel', cancel); };
   }, [gl, camera]);
   const w = mm(CAMERA_SHELF_MM.width), h = mm(CAMERA_SHELF_MM.height), d = mm(CAMERA_SHELF_MM.depth);
-  const slot = PRIMARY_CAMERA_SLOT;
   return <group name="camera-collection-cabinet" position={CAMERA_SHELF_ORIGIN} rotation={[0, CAMERA_SHELF_YAW, 0]}>
     <mesh position={[0, h / 2, 0]} receiveShadow><boxGeometry args={[w, h, mm(14)]} /><meshStandardMaterial color="#242823" roughness={.9} /></mesh>
     {[mm(10), h / 2, h - mm(10)].map(y => <mesh key={y} position={[0, y, d / 2]} castShadow receiveShadow><boxGeometry args={[w, mm(20), d]} /><meshStandardMaterial color="#806246" roughness={.7} /></mesh>)}
@@ -109,49 +164,8 @@ export function CameraShelf({ focused, interactive, load, portal, onApproach, on
         <FilmPackage entry={getPackaging('provia-100', '120')} owned textures={textures} standalone />
       </group>
     </group>
-    {mounted && <group position={[slot.x, slot.y + mm(21) + mounted.size.y / 2, slot.z]} rotation={[0, CAMERA_PRESENTATION_YAW, 0]}>
-      <primitive object={mounted.object} dispose={null} />
-    </group>}
-    <mesh position={[slot.x, slot.y + mm(20.5), slot.z]} rotation={[-Math.PI / 2, 0, 0]}>
-      <circleGeometry args={[mm(Math.min(125, CAMERA_SHELF_MM.depth / 2 - 5)), 48]} /><meshBasicMaterial color="#080a08" transparent opacity={.2} depthWrite={false} />
-    </mesh>
-    {interactive && focused && <>
-      <Html position={[slot.x, slot.y + mm(30), d + mm(5)]} center portal={{ current: portal.current ?? gl.domElement.parentElement! }} zIndexRange={[3, 2]}
-        calculatePosition={(object, view, size) => {
-          const point = new Vector3().setFromMatrixPosition(object.matrixWorld).project(view);
-          const canvasRect = gl.domElement.getBoundingClientRect(), overlayRect = portal.current?.getBoundingClientRect() ?? canvasRect;
-          // The mobile canvas starts below the header; its portal covers the
-          // whole app. Convert into that portal and keep the nameplate below
-          // the camera rather than covering its small silhouette.
-          const projectedX = (point.x + 1) * size.width / 2 + canvasRect.left - overlayRect.left;
-          const labelX = projectedX + (focused && size.height < 450 ? Math.min(160, size.width * .2) : 0);
-          const x = focused ? Math.max(100, Math.min(overlayRect.width - 100, labelX)) : labelX;
-          let y = (1 - point.y) * size.height / 2 + canvasRect.top - overlayRect.top + (focused ? (size.width < 700 ? 28 : 40) : 0);
-          // Returning from inspection can leave a very short landscape view.
-          // Keep the projected nameplate above controls when their bounds meet.
-          const toolbar = focused ? document.querySelector('.camera-collection-toolbar')?.getBoundingClientRect() : null;
-          if (toolbar && x + 100 > toolbar.left - overlayRect.left && x - 100 < toolbar.right - overlayRect.left) {
-            y = Math.min(y, toolbar.top - overlayRect.top - 38);
-          }
-          return [x, y];
-        }}>
-        <button ref={focusTarget} className="camera-shelf-target" aria-label={`Inspect ${PRIMARY_CAMERA.name}`}
-          onPointerDown={event => {
-            const p = pointer.current; p.contacts.add(event.pointerId); p.x = event.clientX; p.y = event.clientY; p.moved = p.contacts.size > 1;
-            // The projected label can move as the resumed room camera refits
-            // after rotation. Keep release/click on this button; ShelfNavigation
-            // transfers capture to the canvas once an actual drag begins.
-            event.currentTarget.setPointerCapture(event.pointerId);
-          }}
-          onPointerMove={event => { const p = pointer.current; if (p.contacts.size && Math.hypot(p.x - event.clientX, p.y - event.clientY) > 7) p.moved = true; }}
-          onPointerUp={event => { pointer.current.contacts.delete(event.pointerId); if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }}
-          onPointerCancel={() => { pointer.current.contacts.clear(); pointer.current.moved = true; }}
-          onClick={event => { event.stopPropagation(); if (!event.detail || !pointer.current.moved) onOpen(); }}>
-          <span>{PRIMARY_CAMERA.name}</span>
-          <small>{PRIMARY_CAMERA.introduced} · Inspect camera ↗</small>
-        </button>
-        {focused && !mounted && <div className="camera-shelf-status" role="status">{error || 'Loading camera…'}{error && <button onClick={retry}>Retry model</button>}</div>}
-      </Html>
-    </>}
+    {CAMERAS.map((entry, index) => <CameraCabinetItem key={entry.id} entry={entry} index={index}
+      enabled={load} focused={focused} interactive={interactive} portal={portal}
+      onMounted={updateMounted} onOpen={onOpen} onSettled={index === 0 ? onSettled : undefined} />)}
   </group>;
 }
