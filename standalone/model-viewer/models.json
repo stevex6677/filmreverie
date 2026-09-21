@@ -23,6 +23,29 @@
       "rotation": [0, 0, 0],
       "camera": {"distance": 5.2, "portraitDistance": 6, "home": [1.7, 1.5, 3.2]},
       "exposure": 1.15
+    },
+    {
+      "id": "minolta-autocord",
+      "sha256": "50133c409360bd8a106ebc5d659a31eabe622f6d3c24ad75749e027ee6166077",
+      "title": "Minolta",
+      "titleAccent": "Autocord",
+      "subtitle": "Refined lens inscriptions · Dual distance scales",
+      "eyebrow": "THE CAMERA STUDY",
+      "edition": "FRONT LETTERING REFINEMENT",
+      "caption": "MINOLTA AUTOCORD",
+      "captionDetail": "VIEW ROKKOR · CITIZEN-MVL",
+      "asset": "blender/autocord/detail_refinement/runs/20260921-front-c3/minolta-autocord.glb",
+      "profile": "default",
+      "rotation": [0, 0, 0],
+      "camera": {
+        "distance": 5.2,
+        "portraitDistance": 6,
+        "home": [-1.7, 1.2, 3.2],
+        "front": [0, 0.15, 3.8],
+        "rear": [0, 0.4, -3.8],
+        "side": [-3.8, 0.15, 0]
+      },
+      "exposure": 1.15
     }
   ]
 }
