@@ -152,7 +152,7 @@ export function CameraShelf({ focused, interactive, load, portal, onApproach, on
       <mesh position={[0, y - mm(14), d * .68]}><boxGeometry args={[w - mm(55), mm(3), mm(6)]} /><meshBasicMaterial color="#efe2c6" /></mesh>
       <pointLight position={[0, y - mm(70), d * .83]} color="#fff1d7" intensity={1.4} distance={2.8} decay={2} />
     </group>)}
-    {/* A few inert display props, with shared film-shelf textures and real package sizes. */}
+    {/* Keep the film props on the lower tier, clear of the camera collection above. */}
     <group name="camera-shelf-film-props">
       <group position={[mm(-270), mm(21), mm(150)]} rotation={[0, .1, 0]}>
         <FilmPackage entry={getPackaging('portra-400', '135')} owned textures={textures} standalone />
@@ -160,7 +160,7 @@ export function CameraShelf({ focused, interactive, load, portal, onApproach, on
       <group position={[mm(150), mm(21), mm(165)]} rotation={[0, -.06, 0]}>
         <FilmPackage entry={getPackaging('ektar-100', '135')} owned textures={textures} standalone />
       </group>
-      <group position={[mm(210), h / 2 + mm(11), mm(130)]} rotation={[0, .12, 0]}>
+      <group position={[mm(-60), mm(21), mm(130)]} rotation={[0, .12, 0]}>
         <FilmPackage entry={getPackaging('provia-100', '120')} owned textures={textures} standalone />
       </group>
     </group>

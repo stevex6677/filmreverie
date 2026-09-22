@@ -1,0 +1,271 @@
+{
+  "model_id": "canon-7s",
+  "state": "bottom-refined",
+  "source_code_base_revision": "81166a7992094daf191ee01991d2c423d6d0a02d",
+  "source": {
+    "path": "blender/canon7s/tripo/tripo_canon7s.glb",
+    "sha256": "426aae8ecfc6f707387e64056ba1db3588fea92354c7b693e69fdbaea99f7220"
+  },
+  "references": [
+    {
+      "path": "blender/canon7s/reference/IMG_2050.jpg",
+      "sha256": "5c5a38dfbe90138c972e5bfb6f2c632c08c9d2ec0f3cef3a8bb21b677806de15"
+    },
+    {
+      "path": "blender/canon7s/reference/IMG_2052.jpg",
+      "sha256": "3682111af395706c19090448e3992445668f8ea70b4f25c4dc9c0177b91a8db9"
+    },
+    {
+      "path": "blender/canon7s/reference/IMG_2054.jpg",
+      "sha256": "ff74965264ecbf7cf53d4aaed5f1be1fc98df6f9c9b89ee9b3771beb6d2635e0"
+    },
+    {
+      "path": "blender/canon7s/reference/bottom.HEIC",
+      "sha256": "800e6b2fb32e65ab76456ce8f5155788a0db0e3d78bcc0e8dbd7c29caf08e8fb"
+    }
+  ],
+  "editable_blend": {
+    "path": "blender/canon7s/bottom/runs/20260922-bottom-a/canon7s-refined.blend",
+    "sha256": "ae80cacbab5b95964083279944089743abba0325307cd5474394f8ffb437b0ea",
+    "bytes": 91427272
+  },
+  "full_detail_glb": {
+    "path": "blender/canon7s/bottom/runs/20260922-bottom-a/canon7s-refined.glb",
+    "sha256": "db4055ba66f54fb64d66ba5371f07a8a371b6f14bddfeca5a85460ab6b9df5ad",
+    "bytes": 94561668,
+    "triangles": 2020134,
+    "embedded_images": 12,
+    "source_blend_sha256": "ae80cacbab5b95964083279944089743abba0325307cd5474394f8ffb437b0ea"
+  },
+  "browser_glb": {
+    "path": "blender/canon7s/bottom/runs/20260922-bottom-a/canon7s-browser.glb",
+    "sha256": "46656605d7e5440cea732f7c435c0b30aea60a221df1c83952c3c0ddc291abc9",
+    "bytes": 23700224,
+    "triangles": 577256,
+    "embedded_images": 12,
+    "source_blend_sha256": "ae80cacbab5b95964083279944089743abba0325307cd5474394f8ffb437b0ea"
+  },
+  "renders": [
+    {
+      "path": "blender/canon7s/bottom/runs/20260922-bottom-a/bottom.png",
+      "sha256": "2036473af3dc9243e595802acd5d96e0af42500359e361ac86f3de3aeba57880",
+      "bytes": 1305948
+    },
+    {
+      "path": "blender/canon7s/bottom/runs/20260922-bottom-a/bottom_oblique.png",
+      "sha256": "25169e4fe9890525ecb284b7d96895d6fc1a8f82ab8e1c4484236a790851a9e6",
+      "bytes": 1500510
+    },
+    {
+      "path": "blender/canon7s/bottom/runs/20260922-bottom-a/front.png",
+      "sha256": "858108cc90a87e47561c6dbb806472b7fff396682dc910401f605ac2cc5f199d",
+      "bytes": 1706963
+    },
+    {
+      "path": "blender/canon7s/bottom/runs/20260922-bottom-a/rear.png",
+      "sha256": "7a439d53a7ba0fd8a661a98e39ff30a15cc53dcd628dbd37d1085b885eefe602",
+      "bytes": 1725449
+    },
+    {
+      "path": "blender/canon7s/bottom/runs/20260922-bottom-a/top.png",
+      "sha256": "26fbb3c72938d8e4b5c06b582437e009abe541a8842a11e7687a5fb9065d3166",
+      "bytes": 1447601
+    },
+    {
+      "path": "blender/canon7s/bottom/runs/20260922-bottom-a/oblique.png",
+      "sha256": "7f725322adfdd63b728198dea42b37964fa5430a1d2d1533ff5304151344d3bc",
+      "bytes": 1741270
+    },
+    {
+      "path": "blender/canon7s/bottom/runs/20260922-bottom-a/lens_detail.png",
+      "sha256": "57197e6ccba3f9f08d3263fc3064ac4fe509c44e73b058ae91bc941a1b33c2ce",
+      "bytes": 2117829
+    },
+    {
+      "path": "blender/canon7s/bottom/runs/20260922-bottom-a/rear_detail.png",
+      "sha256": "a7a47bb2831db2c72b8dfc3497cdb6bb0ab5ba7b52da5d5b3052d6c2045eaee2",
+      "bytes": 1681609
+    },
+    {
+      "path": "blender/canon7s/bottom/runs/20260922-bottom-a/top_oblique.png",
+      "sha256": "d70a704b0e8711595f3842b57e60996cf7664b01705baeba282baad0f6ab96da",
+      "bytes": 1628922
+    }
+  ],
+  "browser_renders": [
+    {
+      "path": "blender/canon7s/bottom/runs/20260922-bottom-a/browser_review/bottom.png",
+      "sha256": "2d4a1e4d74171030aa88eaf4b3ec13e63c44c221dc1cfb5af1e8ec0fdf24a22e",
+      "bytes": 1310534
+    },
+    {
+      "path": "blender/canon7s/bottom/runs/20260922-bottom-a/browser_review/bottom_oblique.png",
+      "sha256": "8dd6b8e2bd942a3f90dcb3087d94255b8721fc1a0cada30fcbb34ae821221642",
+      "bytes": 1485614
+    },
+    {
+      "path": "blender/canon7s/bottom/runs/20260922-bottom-a/browser_review/top.png",
+      "sha256": "e20878d9a4da9ec92a11f797a4a0d8f5983adac65a95bc403f5c60899b79e71a",
+      "bytes": 1437742
+    },
+    {
+      "path": "blender/canon7s/bottom/runs/20260922-bottom-a/browser_review/oblique.png",
+      "sha256": "9387eaffe390679e0d336831c9cd10eb37beaa02952f37bac4d45811c56be0cd",
+      "bytes": 1688684
+    }
+  ],
+  "reports": {
+    "refinement": "blender/canon7s/bottom/runs/20260922-bottom-a/refinement_report.json",
+    "export": "blender/canon7s/bottom/runs/20260922-bottom-a/export_report.json",
+    "surface": "blender/canon7s/bottom/runs/20260922-bottom-a/surface_report.json",
+    "bottom": "blender/canon7s/bottom/runs/20260922-bottom-a/bottom_report.json",
+    "manifest": "blender/canon7s/bottom/runs/20260922-bottom-a/delivery_manifest.json"
+  },
+  "verification": {
+    "source_unchanged": true,
+    "browser_glb_reimported": true,
+    "render_device": "GPU",
+    "render_backend": "CUDA",
+    "reference_refinement": {
+      "outside_patch_coordinates_identical": true,
+      "unchanged_vertices": 951460,
+      "modified_vertices": 48369
+    },
+    "surface_vertex_colors_preserved": true,
+    "surface_smoothing": {
+      "moved_vertices": 220772,
+      "maximum_displacement": 0.005897939670830965,
+      "protected_vertices": 779011,
+      "protected_coordinates_unchanged": true,
+      "topology_unchanged": true,
+      "uv_layers_unchanged": true,
+      "restored_materials_unchanged": true,
+      "separate_detail_objects_unchanged": true,
+      "fascia_planes": [
+        {
+          "region": "front fascia",
+          "vertices": 3371,
+          "rms_before": 0.00023776141735879562,
+          "rms_after": 0.000016483390205932044
+        },
+        {
+          "region": "rear fascia",
+          "vertices": 2539,
+          "rms_before": 0.0004363255898918859,
+          "rms_after": 0.0000265983775918374
+        }
+      ],
+      "parent_master": {
+        "path": "blender/canon7s/refinement/runs/20260922-canon7s-detail-c/canon7s-refined.blend",
+        "sha256": "77a966d1a471ff0c779ce5c33ab05fd85256c0ff9767c7adcaccda2870b90017",
+        "bytes": 88403113
+      }
+    },
+    "bottom_refinement": {
+      "all_source_vertices_unchanged": true,
+      "retained_topology_uvs_colors_normals_exact": true,
+      "removed_local_faces": 3578,
+      "added_triangles": 113228,
+      "master_clear_socket_rays": 25,
+      "browser_clear_socket_rays": 25,
+      "browser_width_units": 0.9791840314865112,
+      "physical_scale": {
+        "original_width_units": 0.9791259765625,
+        "final_width_units": 0.9791259765625,
+        "width_unchanged": true,
+        "requested_width_mm": 138,
+        "units_per_mm": 0.007095115772192029,
+        "mm_per_unit": 140.94202717865602,
+        "master_was_rescaled": false,
+        "bounds": [
+          [
+            -0.48956298828125,
+            -0.23864075541496277,
+            -0.00044999999227002263
+          ],
+          [
+            0.48956298828125,
+            0.2385948747396469,
+            0.5996732115745544
+          ]
+        ]
+      },
+      "socket": {
+        "nominal_major_diameter_mm": 6.35,
+        "pitch_mm": 1.27,
+        "depth_mm": 7,
+        "depth_is_reference_estimate": true
+      }
+    },
+    "visual_review": "Master bottom, bottom-oblique and rear-engraving renders inspected. Final compact GLB bottom-oblique render confirms the fittings and open thread without the decimation crease. Live three-camera cabinet, desktop and 390x844 phone Bottom views, and standalone Home view inspected. The served 23,700,224-byte GLB SHA-256 matches browser_glb. Localhost and MacBook Tailscale HTTP routes verified.",
+    "checks": {
+      "build": "npm run build passed",
+      "integration": "6 tests passed in tests/integration/m20-camera.test.ts, including measured real-GLB widths and cabinet clearances",
+      "e2e": "6 focused Playwright cases passed across desktop and mobile-chrome: catalog placement, physical Canon selection, failure/retry and offline reopening of all three cameras"
+    },
+    "web_review": [
+      {
+        "path": "blender/canon7s/bottom/runs/20260922-bottom-a/web_review/cabinet-desktop.webp",
+        "sha256": "2febfc4136ce965bdb4509447822f7536b35684ca3afa7631047ad81e3401005"
+      },
+      {
+        "path": "blender/canon7s/bottom/runs/20260922-bottom-a/web_review/canon-bottom-desktop.webp",
+        "sha256": "aacfb971b9a369f27c42e1233e7100f996061232b73644a4becf0c640817b19f"
+      },
+      {
+        "path": "blender/canon7s/bottom/runs/20260922-bottom-a/web_review/canon-bottom-phone.webp",
+        "sha256": "4da4645aad6e6e65bfa7aa16fd38516dd3e417fc4cd99242cef671a3397443ac"
+      },
+      {
+        "path": "blender/canon7s/bottom/runs/20260922-bottom-a/web_review/standalone-home.webp",
+        "sha256": "047daa8e38abe61acdbdccfe22927b3857db16af60a902e10870090482827b61"
+      }
+    ]
+  },
+  "refinements": {
+    "front": "Photographic VOIGTLÄNDER / COLOR-SKOPAR / 35mm F2.5 MC pigment mask; shallow false inscription relief leveled; glass and chrome retained.",
+    "rear": "CANON / CAMERA CO., INC. / MADE IN JAPAN / NO. 103959; re-typeset sans-serif engraving matched to measured reference line widths. Typeface is an approximation, not a recovered original font.",
+    "top": "Reference Canon 7s wordmark, shutter speed/ASA/DIN face, colored meter window with modeled bezel, 35 film reminder, folding rewind handle, frame counter, film-plane mark and release markings; continuous satin aluminum plate finish.",
+    "preservation": "This underside stage retains all 999,829 parent vertex coordinates. Both UV layers, per-corner colors and encoded custom normals are exact on retained faces; 3,578 local underside faces were removed for the recesses. The 22 added detail meshes contain 113,228 triangles. Prior smoothing and inscription refinements remain intact; the compact GLB is a separate derivative with its base plate protected from decimation.",
+    "surfaces": "Metal housing, bottom trim and front lens bezel smoothed using virtual-seam Taubin filtering, fitted fascia planes and feathered PBR colors. Barrel markings retained with reduced scan-normal intensity.",
+    "bottom": "Reference-matched slotted cap with two spanner holes, offset open 1/4-20 tripod socket, recessed split circular latch with concentric grooves, and two slotted screws. Nominal thread diameter is 6.35 mm and pitch 1.27 mm; the hidden 7 mm blind depth is an estimate, not a measurement recovered from the photograph."
+  },
+  "continuation": {
+    "mcp_client": "blender/autocord/mcp_client.py",
+    "scripts_directory": "blender/canon7s",
+    "source_inspection_blend": "blender/canon7s/refinement/runs/20260921-canon7s-detail-a/source.blend",
+    "source_inspection_sha256": "75ba57cac16f120104e61c649547c6b38529e41fdfcde12b4101f76f6663f603",
+    "instructions": "For continued editing, open editable_blend through Blender MCP. To reproduce the underside pass, first use prepare_bottom_reference.py remotely with Pillow/pillow-heif to prepare bottom_reference.jpg in ignored_generated/blender/canon7s/bottom/runs/20260922-bottom-a/reference. Open the recorded parent_master through MCP and execute refine_bottom.py into a new FILM_PHOTO_OUTPUT_DIR. Then execute render_views.py and export_delivery.py on the packed new master; wait for the render processes to finish and inspect master and reimported compact-GLB views. Run verify_delivery.py remotely with FILM_PHOTO_OUTPUT_DIR and CANON7S_CODE_REVISION. Update CURRENT.json and the shared viewer catalog together, then run npm run prepare:assets to refresh the cabinet copy. Keep the parent and original HEIC intact.",
+    "path_roots": "Source and references resolve under main-checkout ignored_assets; all other media paths resolve under main-checkout ignored_generated. Python source stays in the active worktree."
+  },
+  "scripts": {
+    "blender/canon7s/export_delivery.py": "a4055bb0da95dbe69a10bf89b1ea0718bafc716bf4cd9da50fa48222c28c0d64",
+    "blender/canon7s/inspect_source.py": "7eebf0152465cd0e95bd5d1ef12fa092dd68d110beaf3dc173450b1661ef27f2",
+    "blender/canon7s/prepare_bottom_reference.py": "c4f7b94a5a913d1199c94539fb6a1c1421a680f5fc354dc218badb9df71aac1d",
+    "blender/canon7s/prepare_details.py": "c90fab0c08afcc630f987e8d3512bc4ddb4f0aa428f2a88f1923a362177c7a24",
+    "blender/canon7s/refine_bottom.py": "dd1bca36d83b4dfe6b53ffada78dc91d4af14373cfaad22b5a198ce015bbf261",
+    "blender/canon7s/refine_canon7s.py": "920e96f7f62e4a6a947dc864628f48c0f0b92eb131eadba3122b89b66a553540",
+    "blender/canon7s/render_views.py": "daff18f3e2819f074bb084bc00845ddd87f8e81989787711b47af5b00a101bb9",
+    "blender/canon7s/smooth_surfaces.py": "f2b8a96f23223af0f41056308a2c307d924a2463168c7daca1d22dbe0669bd07",
+    "blender/canon7s/verify_delivery.py": "c3904984b25f162f8a600a96d129dc8e238defbc472570bd47c75d7002f934e4"
+  },
+  "viewer": {
+    "model_id": "canon-7s",
+    "route": "/?model=canon-7s",
+    "catalog": "standalone/model-viewer/models.json",
+    "deployment": "Standalone viewer runs remotely from /workspace/worktrees/paseo/massive-rabbit on loopback port 4182: http://localhost:4182/?model=canon-7s ; phone/iPad: http://macbook:4182/?model=canon-7s . The main app runs from the same checkout on port 5183: http://localhost:5183/?mode=room ; phone/iPad: http://macbook:5183/?mode=room . Select Cameras, then Canon 7s. Private Tailscale access only; existing Mamiya and Autocord entries preserved."
+  },
+  "parent_master": {
+    "path": "blender/canon7s/surface_smoothing/runs/20260922-surface-b/canon7s-refined.blend",
+    "sha256": "a67fa8e2e46c641ca9916c1e6223861efacfefb5942cc56d5d196e3d88ff7309",
+    "bytes": 89677236
+  },
+  "camera_collection": {
+    "width_mm": 138,
+    "measured_width_world_units": 0.4968,
+    "width_source": "User-specified 13.8 cm",
+    "asset": "Same browser_glb as the standalone viewer",
+    "mounting": "Uniform scaling from the actual upright GLB X bounds; editable master is not rescaled",
+    "slot": "Third camera, upper-right cabinet slot"
+  }
+}

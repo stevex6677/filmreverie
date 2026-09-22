@@ -12,6 +12,7 @@ def main():
     parser.add_argument("--script", help="Blender script to launch through MCP")
     parser.add_argument("--output", help="Shared generated run directory")
     parser.add_argument("--blend", help="Optional existing Blender master")
+    parser.add_argument("--prompt", help="Task-specific Blender MCP instruction")
     args = parser.parse_args()
     process = subprocess.Popen(["/usr/local/bin/blender-mcp"], stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE, text=True)
@@ -49,7 +50,7 @@ def main():
                     f"p=subprocess.Popen([bpy.app.binary_path]+{command!r}, stdout=log, stderr=subprocess.STDOUT, env=env)\n"
                     "print({'pid':p.pid,'output':str(out)})"
                 )
-                arguments = {"code": code, "user_prompt": "Refine only the requested Autocord areas from supplied photos: strap and inscriptions, uniform winding-side enamel panel, and missing underside details. Preserve the rest of the model. Render evidence and export for the existing standalone/model-viewer. Keep code under blender and durable outputs under shared ignored_generated."}
+                arguments = {"code": code, "user_prompt": args.prompt or "Refine only the requested Autocord areas from supplied photos: strap and inscriptions, uniform winding-side enamel panel, and missing underside details. Preserve the rest of the model. Render evidence and export for the existing standalone/model-viewer. Keep code under blender and durable outputs under shared ignored_generated."}
             else:
                 with open(args.arguments) as stream:
                     arguments = json.load(stream)

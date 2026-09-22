@@ -1,18 +1,20 @@
 import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { PRIMARY_CAMERA } from '../../src/data/cameras';
-import { CAMERA_SHELF_ORIGIN, PRIMARY_CAMERA_SLOT, CAMERA_SHELF_MM, mm } from '../../src/data/physicalScale';
+import { CAMERAS, PRIMARY_CAMERA } from '../../src/data/cameras';
+import { CAMERA_SHELF_ORIGIN, CAMERA_SHELF_MM, cameraShelfSlot, mm } from '../../src/data/physicalScale';
 import { ready, screenPoint } from './helpers/shelf';
 import { offlineServer } from './helpers/offlineServer';
 test.use({ actionTimeout: 15000 });
+const canon = CAMERAS.find(camera => camera.id === 'canon-7s')!;
 
-async function cameraShelf(page: import('@playwright/test').Page) {
+async function cameraShelf(page: Page) {
   await page.getByRole('button', { name: 'Cameras', exact: true }).click();
   await expect(page.locator('main')).toHaveAttribute('data-shelf-id', 'camera'); await ready(page);
   await expect(page.locator('.canvas-wrapper canvas')).toHaveAttribute('data-camera-model-width', '0.756', { timeout: 90000 });
 }
-async function display(page: import('@playwright/test').Page) {
-  await page.getByRole('button', { name: 'Inspect Mamiya Universal', exact: true }).click();
+async function display(page: Page, name = PRIMARY_CAMERA.name) {
+  await page.getByRole('button', { name: `Inspect ${name}`, exact: true }).click();
   await expect(page.locator('.camera-display')).toBeVisible();
   await expect(page.locator('.camera-display')).toHaveAttribute('data-model-ready', 'true', { timeout: 90000 });
 }
@@ -21,19 +23,25 @@ test('catalog cameras occupy independent physical-scale cabinet slots', async ({
   await page.goto('/?mode=room&reduced_motion=true'); await ready(page); await cameraShelf(page);
   const canvas = page.locator('.canvas-wrapper canvas');
   await expect(canvas).toHaveAttribute('data-camera-model-widths', /minolta-autocord:0\.3024/, { timeout: 180000 });
-  await expect(page.getByRole('button', { name: /^Inspect / })).toHaveCount(2);
-  await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-two-camera-shelf.png` });
-  await page.getByRole('button', { name: 'Inspect Minolta Autocord', exact: true }).click();
-  await expect(page.locator('.camera-display')).toHaveAttribute('data-model-ready', 'true', { timeout: 180000 });
-  await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-id', 'minolta-autocord');
-  await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-width', '0.3024');
-  if ((page.viewportSize()?.width ?? 1000) < 700) {
-    await expect(page.locator('.camera-info-toggle')).toBeVisible();
-    await page.locator('.camera-info-toggle').click();
-    await expect(page.locator('.camera-information')).toHaveClass(/is-open/);
+  await expect(canvas).toHaveAttribute('data-camera-model-widths', /canon-7s:0\.4968/, { timeout: 180000 });
+  await expect(page.getByRole('button', { name: /^Inspect / })).toHaveCount(3);
+  await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-three-camera-shelf.png` });
+  for (const [name, id, width, label] of [
+    ['Minolta Autocord', 'minolta-autocord', '0.3024', '8.4 cm'],
+    ['Canon 7s', 'canon-7s', '0.4968', '13.8 cm'],
+  ]) {
+    await display(page, name);
+    await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-id', id);
+    await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-width', width);
+    if ((page.viewportSize()?.width ?? 1000) < 700) {
+      await expect(page.locator('.camera-info-toggle')).toBeVisible();
+      await page.locator('.camera-info-toggle').click();
+      await expect(page.locator('.camera-information')).toHaveClass(/is-open/);
+    }
+    await expect(page.getByText(label, { exact: false })).toBeVisible();
+    await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-${id}-display.png` });
+    await page.getByRole('button', { name: 'Back to shelf' }).click();
   }
-  await expect(page.getByText('8.4 cm', { exact: false })).toBeVisible();
-  await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-autocord-display.png` });
 });
 
 test('physical shelf, all rendered sides, orbit, zoom, reset, history and preserved room pose', async ({ page }, info) => {
@@ -96,28 +104,31 @@ test('physical shelf, all rendered sides, orbit, zoom, reset, history and preser
   expect(errors).toEqual([]);
 });
 
-test('physical camera opens only from shelf; shelf drag exits without opening', async ({ page }) => {
+test('third physical camera opens from its shelf slot; shelf drag exits without opening', async ({ page }) => {
   await page.goto('/?mode=room&reduced_motion=true'); await ready(page);
   // A toolbar approach also works when the object is outside the initial view.
   await cameraShelf(page);
-  const slot = PRIMARY_CAMERA_SLOT;
-  const point = await screenPoint(page, [CAMERA_SHELF_ORIGIN[0] - slot.z, CAMERA_SHELF_ORIGIN[1] + slot.y + mm(98), CAMERA_SHELF_ORIGIN[2] + slot.x]);
+  await expect(page.locator('.canvas-wrapper canvas')).toHaveAttribute('data-camera-model-widths', /canon-7s:0\.4968/, { timeout: 180000 });
+  const slot = cameraShelfSlot(CAMERAS.indexOf(canon));
+  const point = await screenPoint(page, [CAMERA_SHELF_ORIGIN[0] - slot.z, CAMERA_SHELF_ORIGIN[1] + slot.y + mm(60), CAMERA_SHELF_ORIGIN[2] + slot.x]);
   await page.mouse.click(point.x, point.y);
   await expect(page.locator('.camera-display')).toHaveAttribute('data-model-ready', 'true', { timeout: 90000 });
+  await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-id', 'canon-7s');
+  await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-width', '0.4968');
   await page.getByRole('button', { name: 'Back to shelf' }).click();
-  const target = await page.getByRole('button', { name: 'Inspect Mamiya Universal' }).boundingBox();
+  const target = await page.getByRole('button', { name: 'Inspect Canon 7s' }).boundingBox();
   await page.mouse.move(target!.x + 25, target!.y + 20); await page.mouse.down(); await page.mouse.move(target!.x + 75, target!.y + 30, { steps: 4 }); await page.mouse.up();
   await expect(page.locator('main')).toHaveAttribute('data-shelf-focused', 'false');
   await expect(page.locator('.camera-display')).toHaveCount(0);
 });
 
-test('model failure can retry and prepared camera reopens with the server stopped', async ({ page }) => {
+test('Canon model failure can retry and all prepared cameras reopen with the server stopped', async ({ page }) => {
   const server = await offlineServer();
   try {
-    server.fail(PRIMARY_CAMERA.url);
+    server.fail(canon.url);
     await page.goto(`${server.url}/?mode=room&reduced_motion=true`); await ready(page);
     await page.getByRole('button', { name: 'Cameras', exact: true }).click(); await ready(page);
-    await page.getByRole('button', { name: 'Inspect Mamiya Universal' }).click();
+    await page.getByRole('button', { name: 'Inspect Canon 7s' }).click();
     await expect(page.locator('.camera-display [role="alert"]')).toBeVisible({ timeout: 90000 });
     server.fail('');
     await page.getByRole('button', { name: 'Retry model', exact: true }).click();
@@ -132,9 +143,14 @@ test('model failure can retry and prepared camera reopens with the server stoppe
     if (await download.isVisible()) await download.click();
     await expect(page.getByText('Camera models: downloaded for offline inspection', { exact: false })).toBeVisible({ timeout: 180000 });
     await server.stop();
-    await page.reload(); await ready(page); await cameraShelf(page); await display(page);
-    await page.getByRole('button', { name: 'Bottom', exact: true }).click();
-    await expect(page.locator('.camera-display')).toHaveAttribute('data-preset', 'bottom');
+    await page.reload(); await ready(page); await cameraShelf(page);
+    for (const entry of CAMERAS) {
+      await display(page, entry.name);
+      await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-id', entry.id);
+      await page.getByRole('button', { name: 'Bottom', exact: true }).click();
+      await expect(page.locator('.camera-display')).toHaveAttribute('data-preset', 'bottom');
+      await page.getByRole('button', { name: 'Back to shelf' }).click();
+    }
   } finally { await server.stop(); }
 });
 
