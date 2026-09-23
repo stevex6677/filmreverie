@@ -4,6 +4,13 @@ import { createHash } from 'node:crypto';
 import { generatedPath } from './shared-assets.js';
 
 export function prepareCamera() {
+  // Local decoder files are part of the essential offline shell, so a cached
+  // compressed model can also be opened after a fresh offline page load.
+  const decoderTarget = new URL('../public/assets/draco/', import.meta.url);
+  fs.mkdirSync(decoderTarget, { recursive: true });
+  for (const file of ['draco_decoder.js', 'draco_wasm_wrapper.js', 'draco_decoder.wasm']) {
+    fs.copyFileSync(new URL(`../node_modules/three/examples/jsm/libs/draco/gltf/${file}`, import.meta.url), new URL(file, decoderTarget));
+  }
   const catalog = JSON.parse(fs.readFileSync(new URL('../standalone/model-viewer/models.json', import.meta.url)));
   const currentFiles = fs.readdirSync(new URL('../blender/', import.meta.url), { withFileTypes: true })
     .filter(entry => entry.isDirectory() && fs.existsSync(new URL(`../blender/${entry.name}/CURRENT.json`, import.meta.url)))

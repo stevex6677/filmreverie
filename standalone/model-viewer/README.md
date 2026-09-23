@@ -38,6 +38,12 @@ Optional fields:
 
 Custom material adjustments (e.g. Mamiya-specific optical glass coating) live in `profiles/mamiya.js` and are explicitly opted in. Standard models use `default` without custom shaders.
 
+The standalone viewer also accepts embedded `KHR_draco_mesh_compression` GLBs.
+Its decoder JavaScript and WASM are served from the installed Three.js package;
+no external decoder CDN is required. Shared `loadModel` consumers opt in by
+passing `{dracoDecoderPath}` as the third argument. Existing uncompressed model
+consumers need no change.
+
 ---
 
 ## Directory Structure

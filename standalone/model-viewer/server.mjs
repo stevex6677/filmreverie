@@ -13,7 +13,7 @@ fixed.set('/model-core.js', path.join(root, 'model-core.js'));
 for(const model of catalog.models)fixed.set(model.public.url,model.file);
 fixed.set('/assets/model.glb',catalog.models.find(m=>m.public.id===catalog.defaultModel).file);
 for(const name of ['default','mamiya'])fixed.set(`/profiles/${name}.js`,path.join(root,'profiles',`${name}.js`));
-const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.glb':'model/gltf-binary'};
+const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.wasm':'application/wasm','.glb':'model/gltf-binary'};
 const vendor=path.join(root,'node_modules/three');
 const server=http.createServer((req,res)=>{
   if(!['GET','HEAD'].includes(req.method)){res.writeHead(405,{'Allow':'GET, HEAD'});return res.end();}
@@ -24,7 +24,7 @@ const server=http.createServer((req,res)=>{
     return res.end(req.method==='HEAD'?undefined:JSON.stringify(data));
   }
   let file=fixed.get(url);
-  if(!file&&url.startsWith('/vendor/three/')){const candidate=path.resolve(vendor,url.slice('/vendor/three/'.length));if(candidate.startsWith(vendor+path.sep)&&candidate.endsWith('.js'))file=candidate;}
+  if(!file&&url.startsWith('/vendor/three/')){const candidate=path.resolve(vendor,url.slice('/vendor/three/'.length));if(candidate.startsWith(vendor+path.sep)&&['.js','.wasm'].includes(path.extname(candidate)))file=candidate;}
   if(!file){res.writeHead(404);return res.end('Not found');}
   fs.stat(file,(error,stat)=>{
     if(error||!stat.isFile()){res.writeHead(404);return res.end('Not found');}

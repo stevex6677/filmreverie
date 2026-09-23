@@ -55,6 +55,35 @@
       "exposure": 1.15
     },
     {
+      "id": "canon-demi-ee17",
+      "widthMm": 116,
+      "manufacturer": "Canon",
+      "introduced": 1966,
+      "manufactured": null,
+      "category": "35 mm half-frame zone-focus camera",
+      "description": "A compact half-frame camera with a Canon SH 30 mm f/1.7 lens and shutter-priority automatic exposure. Displayed at the owner's specified 11.6 cm width.",
+      "sources": [{ "title": "Canon Camera Museum: Demi EE17", "url": "https://global.canon/en/c-museum/product/film64.html" }],
+      "title": "Canon",
+      "titleAccent": "Demi EE17",
+      "subtitle": "Front, top, underside and rear reference corrections",
+      "edition": "REFERENCE REFINEMENT",
+      "caption": "CANON LENS SH",
+      "captionDetail": "30 mm / 1:1.7",
+      "asset": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/canon-demi-ee17-compact.glb",
+      "sha256": "fef17d78b1357b012bf0771909adfaea893e44f34cf1a6f63476524f791f23ae",
+      "profile": "default",
+      "rotation": [0, 0, 0],
+      "camera": {
+        "distance": 4.5,
+        "portraitDistance": 5.4,
+        "home": [-1.7, 1.3, 3.2],
+        "front": [0, 0.15, 3.8],
+        "rear": [0, 0.3, -3.8],
+        "side": [-3.8, 0.2, 0]
+      },
+      "exposure": 1.15
+    },
+    {
       "id": "canon-7s",
       "widthMm": 138,
       "manufacturer": "Canon",

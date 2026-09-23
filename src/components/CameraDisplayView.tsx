@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { cameraById } from '../data/cameras';
 import { mm } from '../data/physicalScale';
-import { fittedDistance, loadModel, mountModel, orbitControls, studioEnvironment, viewDirections } from '../../standalone/model-viewer/model-core.js';
+import { fittedDistance, mountModel, orbitControls, studioEnvironment, viewDirections } from '../../standalone/model-viewer/model-core.js';
+import { loadCameraModel } from '../utils/loadCameraModel';
 import { createRenderLoop } from '../../standalone/model-viewer/render-loop.js';
 
 type View = keyof typeof viewDirections;
@@ -97,7 +98,7 @@ export function CameraDisplayView({ id, onBack, reducedMotion }: { id: string; o
         gl.domElement.removeEventListener('webglcontextlost', lost);
         environment.dispose(); gl.dispose(); gl.forceContextLoss(); gl.domElement.remove(); actions.current = null;
       };
-      loadModel(entry.url, entry.profile).then(source => {
+      loadCameraModel(entry).then(source => {
         if (disposed) return;
         const mounted = mountModel(source, entry.rotation, mm(entry.widthMm));
         scene.add(mounted.object); size = mounted.size;

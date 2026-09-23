@@ -1,15 +1,19 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as mamiya from './profiles/mamiya.js';
 
 // The shelf and inspection stage share decoded geometry/materials. Clones own
 // only their transforms; disposing a stage must not dispose this shared asset.
 const models = new Map();
-export function loadModel(url, profile = 'default') {
+export function loadModel(url, profile = 'default', {dracoDecoderPath} = {}) {
   const key = `${profile}:${url}`;
   if (!models.has(key)) {
-    const promise = new GLTFLoader().loadAsync(url).then(gltf => {
+    const loader = new GLTFLoader();
+    const draco = dracoDecoderPath ? new DRACOLoader().setDecoderPath(dracoDecoderPath).setWorkerLimit(2) : null;
+    if (draco) loader.setDRACOLoader(draco);
+    const promise = loader.loadAsync(url).then(gltf => {
       gltf.scene.traverse(mesh => {
         if (!mesh.isMesh) return;
         if (profile === 'mamiya') mamiya.prepareMesh(mesh);
@@ -18,7 +22,7 @@ export function loadModel(url, profile = 'default') {
         }
       });
       return gltf.scene;
-    }).catch(error => { models.delete(key); throw error; });
+    }).catch(error => { models.delete(key); throw error; }).finally(() => draco?.dispose());
     models.set(key, promise);
   }
   return models.get(key);

@@ -44,14 +44,15 @@ export function cameraShelfFov(aspect: number, visibleHeight = .65, visibleWidth
   return 2 * Math.atan(Math.max(mm(CAMERA_SHELF_MM.height) / visibleHeight,
     mm(CAMERA_SHELF_MM.width) / (visibleWidth * aspect)) / (2 * frontDistance)) * 180 / Math.PI;
 }
-// Three 300 mm positions on each tier; new collection entries can occupy these
-// without resizing the furniture or changing any camera's physical scale.
-export const CAMERA_SHELF_SLOTS = Array.from({ length: 6 }, (_, index) => ({
-  x: mm(-300 + (index % 3) * 300), y: mm(Math.floor(index / 3) * (CAMERA_SHELF_MM.height / CAMERA_SHELF_MM.tiers - 10)), z: mm(CAMERA_SHELF_MM.depth / 2),
+// Four positions per tier, with extra clearance for the wide Mamiya at left.
+// Keep all four cameras above the film props without changing physical scale.
+const CAMERA_SHELF_COLUMNS_MM = [-320, -90, 130, 330];
+export const CAMERA_SHELF_SLOTS = Array.from({ length: 8 }, (_, index) => ({
+  x: mm(CAMERA_SHELF_COLUMNS_MM[index % 4]), y: mm(Math.floor(index / 4) * (CAMERA_SHELF_MM.height / CAMERA_SHELF_MM.tiers - 10)), z: mm(CAMERA_SHELF_MM.depth / 2),
 }));
 // Fill the eye-level tier first, then the lower tier. Catalog order alone is
 // enough to place a new camera; furniture coordinates stay out of model data.
-const CAMERA_SHELF_SLOT_ORDER = [3, 4, 5, 0, 1, 2];
+const CAMERA_SHELF_SLOT_ORDER = [4, 5, 6, 7, 0, 1, 2, 3];
 export const cameraShelfSlot = (index: number) => CAMERA_SHELF_SLOTS[CAMERA_SHELF_SLOT_ORDER[index]];
 export const PRIMARY_CAMERA_SLOT = cameraShelfSlot(0);
 

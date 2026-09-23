@@ -1,5 +1,31 @@
 # M20 — Camera shelf and close inspection
 
+## Canon Demi EE17 cabinet addition — 2026-09-23
+
+The accepted `20260923T-top2-b` compact model is now the third of four upper-tier
+cameras. Its owner-specified width is **116 mm**, uniformly mounted at 0.4176
+world units using the shared 0.0036 units/mm scale. The GLB remains 8,283,892
+bytes with SHA-256 `fef17d78b1357b012bf0771909adfaea893e44f34cf1a6f63476524f791f23ae`;
+the editable master and model geometry were not changed for this integration.
+Four upper positions leave the existing lower film props clear. Both cabinet
+and inspection use locally served Draco decoders included in the offline shell.
+
+Validation: production build and six physical-cabinet integration checks passed;
+desktop/mobile Chrome catalog, physical-click and stopped-server offline scenarios
+passed (six browser cases). The initial width assertion compared decimal strings;
+it now compares numeric values to accommodate `0.41759999999999997`. Both affected
+catalog cases passed after that test correction. The standalone catalog test
+also passed. Desktop and phone cabinet captures and the Demi inspection capture
+were visually reviewed under shared `ignored_generated/blender/canon_demi_ee17/cabinet/20260923-a/`.
+This focused addition does not close the historical cumulative M20 gate below.
+
+The production preview runs from `/workspace/worktrees/paseo/plant-yak` on
+remote port 5202, forwarded to [localhost:5284](http://localhost:5284/?mode=room)
+and [macbook:5284](http://macbook:5284/?mode=room). Both routes returned HTTP 200.
+Choose **Cameras**, then **Canon Demi EE17**. Other services were preserved.
+
+## Earlier cabinet work
+
 Status: M20.1–M20.3 implemented and focused validation passed; M20.4/cumulative acceptance remains open. Human approval: pending.
 
 Implementation commit: **`9ca8a4a`** (`Add camera shelf and shared Mamiya inspection view`), based on `3296430`. Code, catalog, tests and plan are committed; generated models and review images remain ignored.

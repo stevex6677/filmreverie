@@ -6,7 +6,7 @@ import path from 'node:path';
 const root = path.resolve('dist');
 const port = Number(process.env.PORT ?? 5178);
 const hosts = new Set((process.env.FILM_PHOTO_ALLOWED_HOSTS ?? 'localhost,127.0.0.1,[::1],macbook,macbook.tail2b1388.ts.net').split(',').map(host => host.trim()));
-const types = { '.html':'text/html', '.js':'application/javascript', '.css':'text/css', '.json':'application/json', '.webmanifest':'application/manifest+json', '.png':'image/png', '.jpg':'image/jpeg', '.svg':'image/svg+xml', '.ico':'image/x-icon' };
+const types = { '.html':'text/html', '.js':'application/javascript', '.css':'text/css', '.json':'application/json', '.webmanifest':'application/manifest+json', '.png':'image/png', '.jpg':'image/jpeg', '.svg':'image/svg+xml', '.ico':'image/x-icon', '.wasm':'application/wasm' };
 const server = http.createServer(async (request, response) => {
   if (!['GET','HEAD'].includes(request.method)) { response.writeHead(405); response.end(); return; }
   try {

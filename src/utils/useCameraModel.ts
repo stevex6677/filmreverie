@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Group } from 'three';
-import { loadModel } from '../../standalone/model-viewer/model-core.js';
+import { loadCameraModel } from './loadCameraModel';
 import type { CameraEntry } from '../data/cameras';
 
 export function useCameraModel(camera: CameraEntry, enabled: boolean) {
@@ -11,7 +11,7 @@ export function useCameraModel(camera: CameraEntry, enabled: boolean) {
     if (!enabled || model) return;
     let disposed = false;
     setError('');
-    loadModel(camera.url, camera.profile).then(value => {
+    loadCameraModel(camera).then(value => {
       if (!disposed) setModel(value);
     }).catch(() => { if (!disposed) setError(navigator.onLine ? 'The camera model could not be loaded.' : "Camera model isn't available offline."); });
     return () => { disposed = true; };

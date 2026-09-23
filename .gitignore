@@ -17,6 +17,7 @@ AGENTS.md
 *.jpg
 *.jpeg
 /public/assets/film-packaging/*.png
+/public/assets/draco/
 !/public/assets/photos/*.jpg
 !/public/assets/photos/*.thumb.jpg
 !/film_filter_references/**

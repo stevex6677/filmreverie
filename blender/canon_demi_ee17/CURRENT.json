@@ -1,0 +1,210 @@
+{
+  "model_id": "canon-demi-ee17",
+  "source": {
+    "path": "blender/canon_demi_ee17/tripo/ee17.glb",
+    "sha256": "21679ebfe257777b36424eb26ec7783955c11ad38036098b6957df25256419c9"
+  },
+  "limitations": [
+    "Hidden control depths are inferred from exterior photographs; this is a visual reconstruction.",
+    "Small barrel numerals and SEIKO use an approximate vector typeface."
+  ],
+  "viewer": {
+    "model_id": "canon-demi-ee17",
+    "route": "/?model=canon-demi-ee17",
+    "catalog": "standalone/model-viewer/models.json"
+  },
+  "state": "top2-reference-corrected",
+  "source_code_base_revision": "dfb71d4",
+  "references": [
+    {
+      "path": "blender/canon_demi_ee17/references/front.jpg",
+      "sha256": "3da8954ed77186838e048c01c1e1c88b3e22a44fcad683a35ef2bed58e30ac5e"
+    },
+    {
+      "path": "blender/canon_demi_ee17/references/top.jpg",
+      "sha256": "e7cff481e690a9f2955403cd7977aa47aedbf19bc420eb8d12ab0419fbe34086"
+    },
+    {
+      "path": "blender/canon_demi_ee17/references/bottom.jpg",
+      "sha256": "f7fc814ce2ddbbe587032273c6fefc4f14df0e0d2f4b46ce87da2cab472ec3b1"
+    },
+    {
+      "path": "blender/canon_demi_ee17/references/back.jpg",
+      "sha256": "71e9b41353afcd8844c29ce1c4cd9985987ad942cd0e21a7217edd921978adb0"
+    },
+    {
+      "path": "blender/canon_demi_ee17/references/top2.HEIC",
+      "sha256": "d3f739c98c87a720a9d67f44beaca9acae1804098bc9a7d69d8bc2c04a51edcc"
+    }
+  ],
+  "editable_blend": {
+    "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/canon-demi-ee17-refined.blend",
+    "sha256": "83826a45f29ae27d1e4353f9146ee90b267302d2ebd7c0360e1ee5ffe7030ff3",
+    "bytes": 90364059
+  },
+  "browser_glb": {
+    "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/canon-demi-ee17-compact.glb",
+    "sha256": "fef17d78b1357b012bf0771909adfaea893e44f34cf1a6f63476524f791f23ae",
+    "bytes": 8283892,
+    "triangles": 2068411,
+    "embedded_images": 9,
+    "source_blend_sha256": "83826a45f29ae27d1e4353f9146ee90b267302d2ebd7c0360e1ee5ffe7030ff3",
+    "compression": "KHR_draco_mesh_compression",
+    "position_bits": 16,
+    "normal_bits": 12,
+    "uv_bits": 14,
+    "max_texture_dimension": 2048,
+    "jpeg_quality": 90,
+    "decimated": false
+  },
+  "previous_delivery": {
+    "editable_blend": {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-shoulder-compact-b/canon-demi-ee17-refined.blend",
+      "sha256": "fc342f37d47647d892116277fbfa8de6286432b7dc36f687ac5e54a04119171e",
+      "bytes": 88788670
+    },
+    "browser_glb": {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-shoulder-compact-b/canon-demi-ee17-compact.glb",
+      "sha256": "93902192302604e8c23517697e2a1b49e1a5c42e2ad704256cca1aafa796370e",
+      "bytes": 7901472,
+      "triangles": 2005093,
+      "embedded_images": 8,
+      "source_blend_sha256": "fc342f37d47647d892116277fbfa8de6286432b7dc36f687ac5e54a04119171e",
+      "compression": "KHR_draco_mesh_compression",
+      "position_bits": 16,
+      "normal_bits": 12,
+      "uv_bits": 14,
+      "max_texture_dimension": 2048,
+      "jpeg_quality": 90,
+      "decimated": false
+    },
+    "code_revision": "dfb71d4"
+  },
+  "renders": [
+    {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/top2_front.png",
+      "sha256": "927b6da68b2b96677c556e21c8478e5ab9525293dfb9a0e29eed6b14a949e2f8",
+      "bytes": 1790486
+    },
+    {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/top2_top.png",
+      "sha256": "66c47c4f1d6489d1f935aa19bb65c0be422d85a03ecd31687f47f27745b2cdba",
+      "bytes": 1364933
+    },
+    {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/top2_oblique.png",
+      "sha256": "0beb23a56b16915d7f9f02e941f865b5e14ec873e66c5e9715c097f7b5111364",
+      "bytes": 1768037
+    }
+  ],
+  "browser_renders": [
+    {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/compact_front.png",
+      "sha256": "262a51c7806d8ac11384633423dfa0f698710c04631ccb9206c737351c50cfa2",
+      "bytes": 1749680
+    },
+    {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/compact_top.png",
+      "sha256": "f178ad7792c4fb656eec3fff187a996d0dc2827d453ed5b1d32fe72f192b09f0",
+      "bytes": 1347179
+    },
+    {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/compact_bottom.png",
+      "sha256": "b8c08e0aed5569ae78e642d7c09fbfde925bcb1c9df673c8f8d62d9b87c514d3",
+      "bytes": 1266493
+    },
+    {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/compact_back.png",
+      "sha256": "2c3b15cb5c1a8728bd3c19484f95842e9167cb7e2560abe5ea1bc481d1041174",
+      "bytes": 1588363
+    },
+    {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/compact_oblique.png",
+      "sha256": "d49e4f87ccc0a5d4393a32ea1781243779fa6bd5150e3267f7e3cf42911d23f3",
+      "bytes": 1728414
+    }
+  ],
+  "verification": {
+    "saved_master_verified": true,
+    "unchanged_meshes": 94,
+    "other_meshes_geometry_uv_normals_and_transforms_exact": true,
+    "source_body_outside_top_band_backing_coordinates_exact": true,
+    "body_topology_uv_and_materials_exact": true,
+    "body_vertices_modified": 1066,
+    "source_master_triangles": 2068411,
+    "decoded_compact_triangles": 2068411,
+    "triangle_count_preserved": true,
+    "all_images_packed": true
+  },
+  "reports": {
+    "top2_report": {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/top2_report.json",
+      "sha256": "657799b46456a1ad3ffddf25b6ccb4303b8c1eb0a6f8a212ab3406da209d4878",
+      "bytes": 1595
+    },
+    "top2_verification": {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/top2_verification.json",
+      "sha256": "bd2b94bdd167287b3d3babaeb17d0514b5eb88df7502095e799d90f89edfff9e",
+      "bytes": 417
+    },
+    "compact_export_report": {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/compact_export_report.json",
+      "sha256": "efce290c3f3cbf24563842c691ab4c5e1adff1eecd084479584728fc8ca1fc91",
+      "bytes": 678
+    },
+    "browser_verification": {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/browser_verification.json",
+      "sha256": "115c20b98a75de97383910d0dfbe41994e3e3588580bd91af495abc65201ca6d",
+      "bytes": 1106
+    }
+  },
+  "browser_captures": [
+    {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/browser-desktop-home-ready.png",
+      "sha256": "2eb8a925a0fb55b50f8f39cfae6c52c4bb394d38073dab69a6303bf9ebd16640",
+      "bytes": 756727
+    },
+    {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/browser-desktop-front-ready.png",
+      "sha256": "4c7510d946feb522c673a8b4302575954c27c53f6d54bd57431f08b2d5e51c78",
+      "bytes": 699572
+    },
+    {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/browser-ipad-home-ready.png",
+      "sha256": "552d6fdd6c667dda3cf0523c6194c03ed2b1b9a788da93c61c7e59dd93592c6a",
+      "bytes": 813093
+    },
+    {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/browser-ipad-front-ready.png",
+      "sha256": "e5cdb1746afc9ad065b2d7e0b394f1efe2fa8715ad188000a0015049a329c8c3",
+      "bytes": 743372
+    }
+  ],
+  "scripts": {
+    "blender/canon_demi_ee17/correct_shoulder.py": "3d470480e9864a8849af092bcc4ca36f9d500ae34a56fbf5dc9e30ea3cab287c",
+    "blender/canon_demi_ee17/correct_top2.py": "7647a4e99e9079c79a0e567705419b9eb05edf6540ba0acda95e8c67723278dd",
+    "blender/canon_demi_ee17/export_compact.py": "aabfc495ed81ca0b3defd55f05f698ab0497cc81cadbed0d4a03993d0e66e569",
+    "blender/canon_demi_ee17/export_delivery.py": "72610cd3930026b6f9c035416e46b3683b546312d6722f1ea7b9603893e0f7eb",
+    "blender/canon_demi_ee17/inspect_shoulder.py": "9b4f43dce6fdefde6e32722a2d116518387037a46c6c797c25b4af271fed399c",
+    "blender/canon_demi_ee17/inspect_source.py": "b521d0e797d5d17a7df2c0bc6ceb3ca8780b7ff06bc07b56dba2de665d2a1e2f",
+    "blender/canon_demi_ee17/package_compact.py": "954cb688fd49480dcb8ec4ce7596919b7d2e5b864f6c29c12da582655dd7317c",
+    "blender/canon_demi_ee17/package_delivery.py": "8c57b805800aa9d44bc626fbc368f34fa9ec82b4f98bcfbc95d466ad2af06713",
+    "blender/canon_demi_ee17/package_top2.py": "81d024fc7188cc4a8c7bb531b055750d14e7948b28db540cd8fa9c05f95017b1",
+    "blender/canon_demi_ee17/prepare_textures.py": "11b097679d8942de017e403ca9093d19496e3b039c1dc7682d3de21bde927e01",
+    "blender/canon_demi_ee17/prepare_top2.py": "d310a9ed727e7165f4840a2e2602a1453bbac350605e2f2d5828d10209974d55",
+    "blender/canon_demi_ee17/refine_camera.py": "16d1d19e47c74b8d895408eef64ee6cd9f6ffd2c20742ff4229cce2256ec889d",
+    "blender/canon_demi_ee17/render_views.py": "78435df67421d81f459c0b7572effa6d7d8fa8bfe91601206e9c9e28da738145",
+    "blender/canon_demi_ee17/verify_master.py": "e7faaa20116b8bee2dd24eb2d5c759f60a65b5e9c3e9c3d232c8a2f995fcae99",
+    "blender/canon_demi_ee17/verify_shoulder.py": "0e187f35307a9a47d9d0519842c74b3d6b124018780dc312dddd9001aec6ca8c",
+    "blender/canon_demi_ee17/verify_top2.py": "4eb3ef30840fa97a40281689fe0376c0683355610e04ee9dbe698e57d6ca1c1d",
+    "blender/canon_demi_ee17/verify_viewer.mjs": "9aacd1ca9857d33829fa4a2080c46a471072624c7cf9275a0924d77bfe258fd8"
+  },
+  "continuation": {
+    "instructions": "Continue from this packed master. To reproduce the top2 correction, prepare_top2.py decodes the HEIC and creates a rectified text/grain atlas; run correct_top2.py through Blender MCP on the preceding master in a new output run. Run export_compact.py, reopen the master, verify_top2.py, then remote verify_viewer.mjs and package_top2.py. The compact GLB remains below 10 MB; preserve all prior outputs."
+  },
+  "refinements": {
+    "top": "Straightened both wordmark lines from top2.HEIC and integrated them into a continuous textured black ribbon with rounded borders. The black band wraps into the side strips. Lowered only intersecting scan vertices immediately underneath it; preserved other controls and surfaces.",
+    "size": "8,283,892-byte self-contained Draco GLB with all master triangles retained.",
+    "visual_review": "Reviewed top and oblique master renders against the rectified HEIC, plus actual compressed export renders. Desktop and emulated iPad model loading, rear view and mouse/touch controls verified."
+  }
+}

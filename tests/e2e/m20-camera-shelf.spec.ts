@@ -24,21 +24,26 @@ test('catalog cameras occupy independent physical-scale cabinet slots', async ({
   const canvas = page.locator('.canvas-wrapper canvas');
   await expect(canvas).toHaveAttribute('data-camera-model-widths', /minolta-autocord:0\.3024/, { timeout: 180000 });
   await expect(canvas).toHaveAttribute('data-camera-model-widths', /canon-7s:0\.4968/, { timeout: 180000 });
-  await expect(page.getByRole('button', { name: /^Inspect / })).toHaveCount(3);
-  await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-three-camera-shelf.png` });
+  await expect.poll(async () => {
+    const widths = (await canvas.getAttribute('data-camera-model-widths')) ?? '';
+    return Number(widths.split(',').find(value => value.startsWith('canon-demi-ee17:'))?.split(':')[1]);
+  }, { timeout: 180000 }).toBeCloseTo(.4176, 8);
+  await expect(page.getByRole('button', { name: /^Inspect / })).toHaveCount(4);
+  await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-four-camera-shelf.png` });
   for (const [name, id, width, label] of [
     ['Minolta Autocord', 'minolta-autocord', '0.3024', '8.4 cm'],
     ['Canon 7s', 'canon-7s', '0.4968', '13.8 cm'],
+    ['Canon Demi EE17', 'canon-demi-ee17', '0.4176', '11.6 cm'],
   ]) {
     await display(page, name);
     await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-id', id);
-    await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-width', width);
+    expect(Number(await page.locator('.camera-stage canvas').getAttribute('data-model-width'))).toBeCloseTo(Number(width), 8);
     if ((page.viewportSize()?.width ?? 1000) < 700) {
       await expect(page.locator('.camera-info-toggle')).toBeVisible();
       await page.locator('.camera-info-toggle').click();
       await expect(page.locator('.camera-information')).toHaveClass(/is-open/);
     }
-    await expect(page.getByText(label, { exact: false })).toBeVisible();
+    await expect(page.locator('.camera-information dd').filter({ hasText: label })).toBeVisible();
     await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-${id}-display.png` });
     await page.getByRole('button', { name: 'Back to shelf' }).click();
   }

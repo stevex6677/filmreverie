@@ -67,7 +67,7 @@ renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();r
 function resize(){const {width,height}=stage.getBoundingClientRect();renderer.setSize(width,height);camera.aspect=width/height;camera.updateProjectionMatrix();homeDistance=camera.aspect<.8?(selected.camera.portraitDistance||6.4):(selected.camera.distance||5.6);requestRender();}
 new ResizeObserver(resize).observe(stage);resize();setView('home');
 
-loadModel(selected.url,selected.profile).then(source=>{
+loadModel(selected.url,selected.profile,{dracoDecoderPath:'/vendor/three/examples/jsm/libs/draco/gltf/'}).then(source=>{
   const mounted=mountModel(source,selected.rotation);model=mounted.object;scene.add(model);
   floor.position.y=-mounted.size.y/2-.015;
   let triangles=0;
