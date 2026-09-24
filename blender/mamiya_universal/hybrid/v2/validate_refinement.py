@@ -1,4 +1,4 @@
-"""Check saved optics/lettering in a fresh Blender MCP process."""
+"""Check saved optics/lettering in a fresh Blender CLI process."""
 import bpy, bmesh, json, hashlib
 from pathlib import Path
 from mathutils import Vector

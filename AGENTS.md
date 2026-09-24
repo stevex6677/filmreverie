@@ -51,7 +51,7 @@ npm run test:integration
 PLAYWRIGHT_WORKERS=1 npm run test:e2e
 ```
 
-A fresh clone includes the required sample photos, packaging images and all four
+A fresh clone includes the required sample photos, packaging images and all five
 camera GLBs. Development and build do not need private authoring storage, Blender,
 `sips` or `ffmpeg`. `prepare:assets` validates runtime assets and prepares the
 bundled decoder; it does not regenerate authoring media. Install local browser
@@ -86,7 +86,7 @@ acquisition, not a startup step.
 ## 3. Track runtime assets; retain authoring work
 
 - Commit-required runtime files belong in Git, including packaging images,
-  sample photos and all four content-addressed camera GLBs in `public/assets/`.
+  sample photos and all five content-addressed camera GLBs in `public/assets/`.
   Do not exclude them merely because they are binary or generated.
 - Original private inputs remain read-only in main-checkout `ignored_assets/`.
   Retained Blender masters, intermediate authoring work, exports and previews
@@ -106,8 +106,13 @@ acquisition, not a startup step.
 
 ## 4. Blender tasks
 
-- Use the local Blender MCP for Blender-related work. Keep scripts in the active
-  worktree; when using `exec`, supply their actual local `__file__`.
+- Use the local Blender CLI for Blender-related work. Keep scripts in the active
+  worktree and run `blender --background /absolute/path/to/input.blend
+  --python-exit-code 1 --python /absolute/path/to/script.py` from that checkout.
+  For a new scene, use `--factory-startup` instead of an input `.blend`. Set
+  `FILM_PHOTO_OUTPUT_DIR` to a unique durable run when supported by the builder.
+  When using `exec` inside a script, supply the executed script's actual local
+  `__file__`. See [SHARED_ASSETS.md](SHARED_ASSETS.md) for CLI examples.
 - Read [SHARED_ASSETS.md](SHARED_ASSETS.md) before generating media. Keep original
   inputs read-only and save durable work in unique main-checkout model runs.
 - Preserve accepted editable masters. Export browser derivatives non-destructively

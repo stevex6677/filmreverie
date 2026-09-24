@@ -1,4 +1,4 @@
-"""Camera-only v2 export. Run in a fresh MCP process; master stays editable."""
+"""Camera-only v2 export. Run in a fresh Blender CLI process; master stays editable."""
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[4] / 'scripts'))

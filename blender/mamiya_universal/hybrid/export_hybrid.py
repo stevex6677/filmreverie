@@ -1,6 +1,6 @@
 """Export only the hybrid camera to a new GLB, without changing the master.
 
-Run via Blender MCP CLI with mamiya_universal_hybrid.blend open. Conversion
+Run via Blender CLI with mamiya_universal_hybrid.blend open. Conversion
 and physical scale are applied to temporary export copies in this process.
 """
 from pathlib import Path

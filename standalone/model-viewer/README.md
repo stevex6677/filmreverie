@@ -81,7 +81,7 @@ PREVIEW_HOST=127.0.0.1 npm --prefix standalone/model-viewer start
 Open `http://localhost:4180` in your browser. `PREVIEW_HOST` is required:
 the server accepts loopback `127.0.0.1` or the machine's Tailscale IPv4 address,
 not an omitted host or `0.0.0.0`. Set `PREVIEW_PORT` to use another free port.
-All four built-in GLBs are tracked, so no private asset store or authoring tool
+All built-in GLBs are tracked, so no private asset store or authoring tool
 is needed. The server supplies Draco decoders from its installed Three.js package.
 
 For private phone/iPad viewing, inspect existing Tailscale mappings and proxy

@@ -1,6 +1,6 @@
 """Continue the packed master: conform the top inset to its real stepped shoulder.
 
-Execute in an MCP-launched Blender child. Source and prior delivery are read-only.
+Execute in a local Blender CLI background process. Source and prior delivery are read-only.
 """
 from pathlib import Path
 import bpy, bmesh, numpy as np, json, hashlib, sys

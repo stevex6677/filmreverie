@@ -1,4 +1,4 @@
-"""Render the revised lens sequentially; run as a remote Blender MCP child job."""
+"""Render the revised lens sequentially; run as a local Blender CLI background job."""
 from pathlib import Path
 import bpy, bmesh, json, hashlib, traceback
 

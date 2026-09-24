@@ -232,11 +232,11 @@
     "bottom": "Reference-matched slotted cap with two spanner holes, offset open 1/4-20 tripod socket, recessed split circular latch with concentric grooves, and two slotted screws. Nominal thread diameter is 6.35 mm and pitch 1.27 mm; the hidden 7 mm blind depth is an estimate, not a measurement recovered from the photograph."
   },
   "continuation": {
-    "mcp_client": "blender/autocord/mcp_client.py",
+    "execution": "local Blender CLI",
     "scripts_directory": "blender/canon7s",
     "source_inspection_blend": "blender/canon7s/refinement/runs/20260921-canon7s-detail-a/source.blend",
     "source_inspection_sha256": "75ba57cac16f120104e61c649547c6b38529e41fdfcde12b4101f76f6663f603",
-    "instructions": "For continued editing, open editable_blend through local Blender MCP. To reproduce the underside pass, run prepare_bottom_reference.py locally with Pillow/pillow-heif and a new FILM_PHOTO_OUTPUT_DIR. Open the recorded parent_master through local MCP and execute refine_bottom.py using that same output directory. Then execute render_views.py and export_delivery.py on the packed new master; wait for rendering to finish and inspect master and reimported compact-GLB views. Run verify_delivery.py locally with FILM_PHOTO_OUTPUT_DIR and CANON7S_CODE_REVISION. Copy the accepted browser export into public/assets/cameras/<model_id>-<sha256>.glb, retain its authoring path, record published_path and update the public-relative viewer catalog asset. Run npm run prepare:assets to verify the tracked runtime copy. Keep the parent and original HEIC intact.",
+    "instructions": "For continued editing, open editable_blend through local Blender CLI. To reproduce the underside pass, run prepare_bottom_reference.py locally with Pillow/pillow-heif and a new FILM_PHOTO_OUTPUT_DIR. Open the recorded parent_master with the local Blender CLI and execute refine_bottom.py using that same output directory. Then execute render_views.py and export_delivery.py on the packed new master; wait for rendering to finish and inspect master and reimported compact-GLB views. Run verify_delivery.py locally with FILM_PHOTO_OUTPUT_DIR and CANON7S_CODE_REVISION. Copy the accepted browser export into public/assets/cameras/<model_id>-<sha256>.glb, retain its authoring path, record published_path and update the public-relative viewer catalog asset. Run npm run prepare:assets to verify the tracked runtime copy. Keep the parent and original HEIC intact.",
     "path_roots": "Source and references resolve under local main-checkout ignored_assets; authoring media resolve under local main-checkout ignored_generated. browser_glb.published_path is relative to the active repository root. Python source stays in the active worktree."
   },
   "scripts": {

@@ -1,4 +1,7 @@
-"""Call the locally installed Blender MCP server over its stdio transport."""
+"""Legacy Blender MCP transport retained for historical runs.
+
+Current authoring uses the local Blender CLI directly; see SHARED_ASSETS.md.
+"""
 import argparse
 import json
 import subprocess

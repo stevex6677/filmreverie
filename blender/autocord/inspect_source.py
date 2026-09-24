@@ -1,4 +1,4 @@
-"""Inspect the original GLB in an isolated Blender MCP child; never edit input."""
+"""Inspect the original GLB in an isolated Blender CLI background process; never edit input."""
 from pathlib import Path
 import sys
 import bpy

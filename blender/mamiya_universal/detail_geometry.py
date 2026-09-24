@@ -1,4 +1,4 @@
-"""Photo-backed geometry refinements, after detail_materials.py. Execute with Blender MCP."""
+"""Photo-backed geometry refinements, after detail_materials.py. Execute with Blender CLI."""
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))

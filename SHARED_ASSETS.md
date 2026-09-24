@@ -47,9 +47,11 @@ history at commit `55366c3`.
 - The hybrid scripts read preserved donor models from their recorded paths.
   v2 reads the accepted v1 model as its badge/text donor. To adopt a new donor,
   update its explicit script path and record that change with its checksum.
-- Execute Blender scripts locally through Blender MCP and supply the actual
-  local source `__file__` when using `exec`. Code stays in the active worktree;
-  shared authoring paths resolve to the local main checkout.
+- Execute Blender scripts with the local Blender CLI using `--background` and
+  `--python`, with `--python-exit-code 1` before the script so Python failures
+  produce a failing exit status. Code stays in the active worktree; shared
+  authoring paths resolve to the local main checkout. When using `exec` inside
+  a script, supply the executed script's actual local `__file__`.
 - `npm run prepare:assets` validates tracked runtime images and GLBs and prepares
   the bundled Draco decoder from the installed Three.js dependency. Both
   `npm run dev` and `npm run build` perform this preparation. Neither needs
@@ -71,6 +73,39 @@ history at commit `55366c3`.
   reports in their normal ignored worktree locations. Do not move accepted
   authoring runs into disposable cache or treat tracked `public/assets/` as a cache.
 
+### Blender CLI examples
+
+Run from the active checkout with the local `blender` executable on `PATH` (or
+use its absolute path). Replace the example paths with the recorded input master,
+a script in this checkout and a new durable run under the local main checkout:
+
+```sh
+export FILM_PHOTO_OUTPUT_DIR="/absolute/main-checkout/ignored_generated/blender/<model>/runs/<unique-run>"
+blender --background "/absolute/path/to/input.blend" --python-exit-code 1 --python "/absolute/active-checkout/blender/<model>/script.py"
+```
+
+For scripts that create or import a new scene, replace the input `.blend` with
+`--factory-startup`. Keep the same output directory across preparation, editing,
+export and verification steps that belong to one run. Existing builders may
+allocate their own unique run; follow their documented output conventions.
+
+For older render scripts that accept Python globals, use a small local driver
+script and pass that driver to `--python`:
+
+```python
+import runpy
+
+runpy.run_path(
+    "/absolute/active-checkout/blender/mamiya_universal/hybrid/v2/render_refinement.py",
+    init_globals={"VIEW": "rear_detail", "RESOLUTION": 1600, "SAMPLES": 96},
+    run_name="__main__",
+)
+```
+
+`--python` and `runpy.run_path` set the executed script's `__file__` automatically.
+For long renders, allow the local process to finish, retain its log in the output
+run, check its exit status and inspect the saved images before reporting success.
+
 ## Reusable browser preview for 3D models
 
 For GLB viewing, drag-to-rotate previews or private iPad access, reuse
@@ -82,7 +117,7 @@ browser link. The standalone default asset root is the repository's `public/`;
 
 Retain authored GLBs and textures in their durable model run. Publish the selected
 browser derivative, byte-identically, in `public/assets/cameras/` and track it
-with the catalog and manifest. All four current camera GLBs are runtime assets;
+with the catalog and manifest. All five current camera GLBs are runtime assets;
 they must be available from Git without private storage. Do not copy them into
 the standalone module itself. Preserve its independence except for the existing
 Web App integration or explicitly requested changes.

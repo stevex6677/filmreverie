@@ -52,11 +52,13 @@ function CameraCabinetItem({ entry, index, enabled, focused, interactive, portal
         const canvasRect = gl.domElement.getBoundingClientRect(), overlayRect = portal.current?.getBoundingClientRect() ?? canvasRect;
         const projectedX = (point.x + 1) * size.width / 2 + canvasRect.left - overlayRect.left;
         const labelX = projectedX + (focused && size.height < 450 ? Math.min(160, size.width * .2) : 0);
-        const x = focused ? Math.max(90, Math.min(overlayRect.width - 90, labelX)) : labelX;
+        const narrow = overlayRect.width < 700;
+        const x = narrow ? overlayRect.width * (index % 2 ? .75 : .25)
+          : focused ? Math.max(90, Math.min(overlayRect.width - 90, labelX)) : labelX;
         let y = (1 - point.y) * size.height / 2 + canvasRect.top - overlayRect.top + (focused ? (size.width < 700 ? 28 : 40) : 0);
-        // Narrow screens cannot fit adjacent 165 px nameplates side by side.
-        // Stagger catalog entries without moving their physical shelf slots.
-        if (overlayRect.width < 700) y += index * 58;
+        // Five nameplates need staggered desktop rows and a two-column phone grid.
+        // Keep the physical camera positions unchanged.
+        y += (narrow ? Math.floor(index / 2) : index % 2) * 58;
         const toolbar = focused ? document.querySelector('.camera-collection-toolbar')?.getBoundingClientRect() : null;
         if (toolbar && x + 90 > toolbar.left - overlayRect.left && x - 90 < toolbar.right - overlayRect.left) y = Math.min(y, toolbar.top - overlayRect.top - 38);
         return [x, y];

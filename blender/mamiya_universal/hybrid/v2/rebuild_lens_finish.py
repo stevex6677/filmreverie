@@ -1,6 +1,6 @@
 """Replace the noisy front lens assembly and revise optical presentation.
 
-Run via Blender MCP with the approved-lettering refinement open. All earlier
+Run via Blender CLI with the approved-lettering refinement open. All earlier
 objects remain recoverable; output goes into a fresh shared run directory.
 """
 from pathlib import Path

@@ -1339,3 +1339,9 @@ button:disabled { opacity: .4; cursor: default; }
   .darkroom-app-container[data-shelf-id="camera"] .controls-footer { display: none; }
   .darkroom-app-container[data-shelf-id="camera"] .camera-collection-toolbar { bottom: 12px; }
 }
+
+@media (max-width: 699px) {
+  .camera-shelf-target { min-width:148px; padding-inline:10px; }
+  .camera-shelf-target span { font-size:14px; }
+  .camera-shelf-target small { font-size:9px; letter-spacing:.04em; }
+}

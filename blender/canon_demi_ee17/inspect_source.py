@@ -1,12 +1,11 @@
-"""Import the read-only source. Execute through local Blender MCP."""
+"""Import the read-only source. Execute through local Blender CLI."""
 from pathlib import Path
 import sys, json, hashlib
 import bpy
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))
 from shared_assets import asset_path, output_dir
 out = output_dir('blender/canon_demi_ee17/refinement')
-# Run in an MCP-launched background child, so resetting the scene cannot stop
-# the interactive MCP server's add-on.
+# Run in a fresh local Blender CLI background process for an isolated scene.
 bpy.ops.wm.read_factory_settings(use_empty=True)
 source = asset_path('blender/canon_demi_ee17/tripo/ee17.glb')
 bpy.ops.import_scene.gltf(filepath=str(source), import_pack_images=True)

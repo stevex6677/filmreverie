@@ -1,4 +1,4 @@
-"""Refine the accepted v2 through Blender MCP; never overwrite the donor.
+"""Refine the accepted v2 through Blender CLI; never overwrite the donor.
 
 Execute in a fresh background Blender with the accepted v2 open and __file__ set.
 Source and texture editing is limited to a copied v2 object/material. The original

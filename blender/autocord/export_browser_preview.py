@@ -1,6 +1,6 @@
 """Export a compact browser derivative from the accepted Autocord master.
 
-Run through Blender MCP with the editable master open. The source scene and
+Run through Blender CLI with the editable master open. The source scene and
 master file remain unchanged; all evaluated copies live in a temporary scene.
 """
 from pathlib import Path

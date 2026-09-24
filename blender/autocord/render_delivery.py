@@ -1,4 +1,4 @@
-"""Render views from an opened source or refined master through Blender MCP."""
+"""Render views from an opened source or refined master through Blender CLI."""
 from pathlib import Path
 import bpy, json, os, sys
 from mathutils import Vector

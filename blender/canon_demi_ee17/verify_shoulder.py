@@ -1,4 +1,4 @@
-"""Verify saved master scope and actual decoded compact geometry via Blender MCP."""
+"""Verify saved master scope and actual decoded compact geometry via Blender CLI."""
 from pathlib import Path
 import bpy,numpy as np,hashlib,json,sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'scripts'))

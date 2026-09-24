@@ -34,9 +34,9 @@ exported; the accepted v2 GLB still represents the earlier model.
 
 ## Reproduction
 
-Use local Blender MCP's background CLI. Execute scripts from the active local
-worktree with their actual `__file__` in a dedicated namespace. No source
-synchronization or remote execution setup is required.
+Use the local Blender CLI with `--background` and `--python-exit-code 1 --python`
+from the active checkout. For scripts accepting globals, use the driver example
+in [SHARED_ASSETS.md](../../../../SHARED_ASSETS.md).
 
 1. Open the accepted shared `hybrid/v2/mamiya_universal_hybrid_v2.blend` and run
    `refine_optics_labels.py`. It allocates a new unique output run.
@@ -48,11 +48,10 @@ synchronization or remote execution setup is required.
    and the accepted source checksum. It also records render checksums.
 4. Inspect the resulting media in the local main checkout's shared output run.
 
-For final renders longer than the MCP CLI's 120-second call limit, launch
-`render_refinement_delivery.py` as a detached background Blender child through
-Blender MCP, using `bpy.app.binary_path`, the saved master and the active local
-worktree as `cwd`. It renders sequentially, writes `delivery-progress.json`, and
-runs validation after all images finish. Keep its log in the same output run.
+For final renders, run `render_refinement_delivery.py` with the local Blender CLI,
+loading the saved master and using the active checkout as `cwd`. It renders
+sequentially, writes `delivery-progress.json`, and runs validation after all
+images finish. Keep its log in the same output run and wait for process completion.
 
 All binary outputs remain ignored. The original source import and accepted v2
 master are preserved, as are unrelated hood, barrel and leatherette details.

@@ -1,5 +1,5 @@
 """Export full detail and a bounded browser copy; never mutate the saved master.
-Run through Blender MCP with canon7s-refined.blend open. All images are embedded.
+Run through Blender CLI with canon7s-refined.blend open. All images are embedded.
 """
 from pathlib import Path
 import hashlib

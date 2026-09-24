@@ -1,4 +1,4 @@
-"""Detail pass from IMG_1971–1977. Execute locally authored code through Blender MCP."""
+"""Detail pass from IMG_1971–1977. Execute locally authored code through Blender CLI."""
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))

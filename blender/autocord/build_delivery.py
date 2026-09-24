@@ -1,7 +1,8 @@
-"""Blender MCP entrypoint: original source -> local details -> verified GLB and renders.
+"""Blender CLI entrypoint: original source -> local details -> verified GLB and renders.
 
-Run mcp_client.py execute_blender_code --script blender/autocord/build_delivery.py
---blend <source.blend> --output <new shared ignored_generated run directory>.
+Set FILM_PHOTO_OUTPUT_DIR to a new shared ignored_generated run directory.
+Run blender --background <source.blend> --python-exit-code 1
+--python blender/autocord/build_delivery.py from the active checkout.
 Prepare references and detail/upper-front/lower-front textures first with the
 prepare_*.py scripts locally, using the same output directory.
 """

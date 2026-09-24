@@ -1,4 +1,4 @@
-"""Render one revised view through Blender MCP. Globals: VIEW, RESOLUTION, SAMPLES."""
+"""Render one revised view through Blender CLI. Globals: VIEW, RESOLUTION, SAMPLES."""
 from pathlib import Path
 import bpy
 

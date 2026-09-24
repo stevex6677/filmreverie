@@ -1,4 +1,4 @@
-"""Seam-coherent metal smoothing of the accepted Canon master; run via Blender MCP.
+"""Seam-coherent metal smoothing of the accepted Canon master; run via Blender CLI.
 
 Keep the original topology, both UV layers, optics, leather, engraved textures,
 knurled grips and separately constructed top controls. Flatten only measured

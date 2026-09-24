@@ -1,4 +1,4 @@
-"""Scoped photo-based corrections. Always start from source.blend via Blender MCP.
+"""Scoped photo-based corrections. Always start from source.blend via Blender CLI.
 
 Retains source topology/UV0. Coordinates and corner normals change only inside
 recorded front-lettering, rear-label, top-control and underside masks.

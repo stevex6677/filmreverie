@@ -1,4 +1,4 @@
-"""Read the accepted master's shoulder profile in an MCP-launched child."""
+"""Read the accepted master's shoulder profile in a local Blender CLI background process."""
 import bpy, json
 from mathutils import Vector
 ob = max((o for o in bpy.context.scene.objects if o.type == 'MESH'), key=lambda o:len(o.data.vertices))

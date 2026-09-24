@@ -46,13 +46,14 @@ by this revision. All model and render binaries stay in shared ignored storage.
 
 ## Reproduction
 
-Through local Blender MCP, open the input `.blend` and execute
-`rebuild_lens_finish.py` using its actual local `__file__` and the active local
-worktree as `cwd`. It allocates a new unique output folder and preserves the
+With the local Blender CLI, load the input `.blend` using `--background` and run
+`rebuild_lens_finish.py` using `--python-exit-code 1 --python` from the active
+checkout. It allocates a new unique output folder and preserves the
 input checksum. Preserve historical runs when reproducing this revision.
 
-Launch a background Blender child through Blender MCP with the new master and
-`render_lens_finish_delivery.py`. It renders sequentially beyond the MCP CLI's
-120-second per-call timeout, writes `delivery-progress.json`, then validates the
+Run the local Blender CLI with `--background`, the new master and
+`--python-exit-code 1 --python render_lens_finish_delivery.py`, using the script
+path in the active checkout. Wait for the sequential renders to finish. The script
+writes `delivery-progress.json`, then validates the
 saved geometry/materials and records render checksums. Outputs are already in
 the local main checkout's shared generated storage; no transfer is required.
