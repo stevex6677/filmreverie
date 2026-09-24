@@ -1,6 +1,6 @@
 """Create the separate hybrid master from the preserved review import.
 
-Run with Blender MCP CLI, opening tripo_source_review.blend first.
+Run with Blender CLI, opening tripo_source_review.blend first.
 The GLB is read only. Source mesh/UVs stay intact; an object-level Mask hides
 the replaced front regions. Donor geometry is copied before fitting.
 """

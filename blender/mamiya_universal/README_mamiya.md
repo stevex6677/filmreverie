@@ -36,9 +36,10 @@ Outputs:
 - `comparison/before_front.png`, `comparison/before_rear.png` — previous renders.
 
 Reproduction order: `build_mamiya.py`, `refine_mamiya.py`, `detail_materials.py`,
-then `detail_geometry.py` and `detail_finish.py`. These scripts were authored locally and executed
-through Blender MCP on the remote Blender instance. Run each geometry pass
-once. Rendering is a separate step.
+then `detail_geometry.py` and `detail_finish.py`. Run each geometry pass once
+with the local Blender CLI using `--background`, the preceding master and
+`--python-exit-code 1 --python` with the script path in the active checkout.
+Rendering is a separate step.
 
 The latest closeups establish the lens as **100 mm f/2.8**, correcting the first
 pass's f/3.5 marking. Photo details include directional raised leather grain,

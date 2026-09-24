@@ -51,9 +51,11 @@ export use an approximate **0.24 meters per source unit**, not measured dimensio
 
 ## Reproduction
 
-Run through Blender MCP's background CLI tool in the synchronized task checkout:
+Run with the local Blender CLI using `--background` and `--python-exit-code 1
+--python` from the active checkout. For scripts accepting globals, see the driver
+example in [SHARED_ASSETS.md](../../../SHARED_ASSETS.md):
 
-1. Open a donor blend and execute `inspect_source.py` with its real `__file__`.
+1. Open a donor blend and run `inspect_source.py` using `--python`.
    This starts a fresh background scene and writes `tripo_source_review.blend`.
 2. Open that review blend and execute `build_hybrid.py`. Rebuilding always starts
    from the review file, not the previous hybrid, so it does not stack edits.

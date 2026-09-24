@@ -1,6 +1,6 @@
 """Export all triangles with embedded JPEG textures and Draco compression.
 
-Run in a Blender MCP child on the corrected packed master. Never save the
+Run in a Blender CLI background process on the corrected packed master. Never save the
 temporary export scene over that master. Decimal 10 MB is a hard delivery gate.
 """
 from pathlib import Path

@@ -25,9 +25,9 @@ other controls and surfaces are preserved.
 Earlier exports remain historical deliveries; use CURRENT to select the model.
 
 To reproduce this continuation, run `prepare_top2.py` locally, then execute
-`correct_top2.py` through local Blender MCP on the preceding packed master,
+`correct_top2.py` through local Blender CLI on the preceding packed master,
 using a new output directory. Run `export_compact.py`, reopen the corrected
-master and run `verify_top2.py` through MCP. Run `node verify_viewer.mjs` and
+master and run `verify_top2.py` through the local Blender CLI. Run `node verify_viewer.mjs` and
 `python3 package_top2.py` locally; publish the browser GLB to tracked
 `public/assets/cameras/<id>-<sha256>.glb`, update CURRENT and the catalog
 together, then run `python3 package_top2.py --verify`.
@@ -36,15 +36,15 @@ The viewer supplies the Draco decoder from its existing Three.js dependency.
 ## Reproduction
 
 Keep scripts in the active local worktree. Run image preparation and checks with
-local Python/Node; launch Blender scripts through local Blender MCP in a background
-child process so scene resets do not stop the interactive MCP server. Preserve
+local Python/Node; launch Blender scripts directly with the local Blender CLI
+using `--background` and `--python-exit-code 1 --python`. Preserve
 historical run layouts. New runs follow the durable layout in [SHARED_ASSETS.md](../../SHARED_ASSETS.md).
 
 1. Run `inspect_source.py` in a new shared output run. It imports the original
    and saves `source.blend` with its inspection report.
 2. Set `FILM_PHOTO_OUTPUT_DIR` to that run and execute `prepare_textures.py`
    locally (NumPy, Pillow, OpenCV).
-3. Open `source.blend` in the MCP-launched child and run `refine_camera.py`.
+3. Open `source.blend` with the local Blender CLI and run `refine_camera.py`.
 4. Run `render_views.py` on the saved master with `PREFIX='final_'`. Inspect
    front, back, top, bottom and both oblique views against the supplied photos.
 5. Run `verify_master.py` and `export_delivery.py` on the saved master. The

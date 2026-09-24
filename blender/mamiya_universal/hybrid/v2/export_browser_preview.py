@@ -1,4 +1,4 @@
-"""Export an isolated, mobile-sized derivative via Blender MCP. Never save master."""
+"""Export an isolated, mobile-sized derivative via Blender CLI. Never save master."""
 from pathlib import Path
 import bpy, sys, json, hashlib, struct, time
 import numpy as np

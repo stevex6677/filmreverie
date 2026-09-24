@@ -1,4 +1,4 @@
-"""Inspect read-only Tripo geometry through Blender MCP before localized editing."""
+"""Inspect read-only Tripo geometry through Blender CLI before localized editing."""
 from pathlib import Path
 import hashlib
 import json

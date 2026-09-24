@@ -1,6 +1,6 @@
 """Restore Tripo lens, repair the two leatherette scars, refine inscriptions.
 
-Open ../tripo_source_review.blend in a fresh Blender MCP background process.
+Open ../tripo_source_review.blend in a fresh Blender CLI background process.
 Atlas repairs operate on copies, by projecting clean source texture samples
 onto the actual UV triangles. No source GLB, source image or v1 file is written.
 """

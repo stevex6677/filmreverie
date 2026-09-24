@@ -1,4 +1,4 @@
-"""Run through Blender MCP with source.blend open.
+"""Run through Blender CLI with source.blend open.
 
 Retain original geometry/materials outside the strap and five inscription patches.
 Small lettering surfaces are locally leveled; replacement UVs avoid scan-atlas seams.

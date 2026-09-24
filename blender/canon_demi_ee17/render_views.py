@@ -1,4 +1,4 @@
-"""Render orthographic evidence through Blender MCP; source/final share framing."""
+"""Render orthographic evidence through Blender CLI; source/final share framing."""
 from pathlib import Path
 import bpy, math
 from mathutils import Vector

@@ -56,10 +56,11 @@ Existing source irregularities elsewhere on the barrel, finder, rear and hood
 are retained. No wholesale remeshing, lens redesign or decimation is performed.
 The working/export scale remains an approximate 0.24 meters per Tripo unit.
 
-Through Blender MCP's background CLI tool:
+Use the local Blender CLI with `--background` and `--python-exit-code 1 --python`
+from the active checkout. For scripts accepting globals, see the driver example
+in [SHARED_ASSETS.md](../../../../SHARED_ASSETS.md):
 
-1. Open the shared `ignored_generated/blender/mamiya_universal/hybrid/tripo_source_review.blend` and execute `build_v2.py`, setting its
-   actual `__file__`. Always rebuild from that review file, not a previous v2.
+1. Open the shared `ignored_generated/blender/mamiya_universal/hybrid/tripo_source_review.blend` and run `build_v2.py` using `--python`. Always rebuild from that review file, not a previous v2.
 2. Open the v2 master and execute `render_v2.py` once per `INDEX` from 1 to 5.
    Optional globals: `RESOLUTION`, `SAMPLES`; `INDEX=0` is the inspection detail.
 3. Open the v2 master in a fresh process and execute `export_v2.py`.

@@ -1,5 +1,42 @@
 # M20 — Camera shelf and close inspection
 
+## Olympus OM-1 cabinet addition — 2026-09-24
+
+The current `20260924-om1-top3-final` model joins the upper tier as the fifth
+camera, at a 136 mm body width (0.4896 world units). The shared catalog cites the
+Olympus museum and the manufacturer's service manual for its history and size.
+The 6,712,804-byte browser GLB has SHA-256
+`7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06`.
+Cabinet and inspection use the same published binary as the standalone viewer;
+optional camera downloads include it automatically. The editable master remains
+in shared durable authoring storage, selected by `blender/olympus_om1/CURRENT.json`.
+
+Five upper positions preserve each camera's physical scale and leave the lower
+film props clear. Nameplates alternate vertically on desktop and form two
+columns on phones, preventing overlap as the collection grows to five.
+
+Validation: the production build, all 241 integration tests, standalone catalog
+test and CURRENT/master/export checksum verification passed. Desktop browser
+assertions confirmed all five loaded widths, non-overlapping nameplates, and
+OM-1 inspection with its 13.6 cm information label. The cabinet screenshot was
+visually reviewed in `artifacts/m20-candidates/desktop-five-camera-shelf.png`.
+An independent 390 × 844 mobile Chromium check also confirmed five loaded models
+and non-overlapping nameplates within the viewport.
+The complete desktop/mobile browser and stopped-server offline suite did **not**
+pass on this host: screenshot and input timeouts occurred under software WebGL (including
+an OM-1 inspection capture after 60 seconds). An isolated bundled Chromium /
+SwiftShader retry with 60-second assertion waits was also stopped after the
+capture stalled. These checks do not establish physical-phone/iPad acceptance.
+
+The production preview runs locally from the `aloof-walrus` checkout as
+`film-photo-cabinet-20260924` on port 4181. Both
+[localhost](http://localhost:4181/?mode=room) and
+[private Tailscale](http://upcloud.tail2b1388.ts.net:4181/?mode=room) returned HTTP
+200 and the exact current model checksum. Select **Cameras**, then **Olympus
+OM-1**. Port 4180 remains the separate standalone model viewer. These are direct
+local Serve mappings; no SSH tunnel is used.
+
+
 ## Canon Demi EE17 cabinet addition — 2026-09-23
 
 The accepted `20260923T-top2-b` compact model is now the third of four upper-tier

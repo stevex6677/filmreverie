@@ -1,4 +1,4 @@
-"""Render one view from v2 in a fresh Blender MCP background process.
+"""Render one view from v2 in a fresh Blender CLI background process.
 
 Globals: INDEX (1..5; 0 = QA close-up), RESOLUTION (default 1400), SAMPLES (20).
 """

@@ -1,4 +1,4 @@
-"""Render one original/hybrid view in a fresh Blender MCP background process.
+"""Render one original/hybrid view in a fresh Blender CLI background process.
 
 Set globals VARIANT='hybrid'|'source', VIEW='three_quarter'|'detail'|'front'|'side',
 RESOLUTION=1400, SAMPLES=16 before executing this file.

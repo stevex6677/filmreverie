@@ -1,4 +1,4 @@
-"""Reference-matched Canon 7s underside; launch on the recorded master via MCP.
+"""Reference-matched Canon 7s underside; launch on the recorded master via the local Blender CLI.
 
 This stage saves only a packed master and its measured report. It never invokes
 rendering/export, rescales the camera, or changes any source image.

@@ -1,4 +1,4 @@
-"""Orthographic reference and oblique evidence views, executed through Blender MCP."""
+"""Orthographic reference and oblique evidence views, executed through Blender CLI."""
 from pathlib import Path
 import bpy
 import json

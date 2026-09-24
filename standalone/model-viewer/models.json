@@ -112,6 +112,58 @@
         "side": [-3.8, 0.2, 0]
       },
       "exposure": 1.15
+    },
+    {
+      "id": "olympus-om1",
+      "widthMm": 136,
+      "manufacturer": "Olympus",
+      "introduced": 1972,
+      "manufactured": null,
+      "category": "35 mm manual-focus single-lens reflex",
+      "description": "A compact, fully manual 35 mm SLR introduced in 1972 as the M-1 and subsequently renamed OM-1. This display pairs the silver body with an OM-System Zuiko Auto-S 50 mm f/1.8 lens.",
+      "sources": [
+        { "title": "Olympus Camera Museum: OM-1", "url": "https://www.olympus-global.com/technology/museum/camera/products/om/om-1/" },
+        { "title": "Olympus OM-1 service manual: body specifications", "url": "https://www.suaudeau.eu/memo/manuels_rep/reflexes/olympus/Olympus_OM-1_1of4.pdf" }
+      ],
+      "title": "Olympus",
+      "titleAccent": "OM-1",
+      "subtitle": "Corrected ASA dial and uniform top metal finish",
+      "edition": "REFERENCE REFINEMENT",
+      "caption": "OM-SYSTEM ZUIKO AUTO-S",
+      "captionDetail": "50 mm / 1:1.8",
+      "asset": "assets/cameras/olympus-om1-7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06.glb",
+      "sha256": "7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06",
+      "profile": "default",
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "camera": {
+        "distance": 4.8,
+        "portraitDistance": 5.8,
+        "home": [
+          -1.7,
+          1.4,
+          3.2
+        ],
+        "front": [
+          0,
+          0.05,
+          3.8
+        ],
+        "rear": [
+          0,
+          0.15,
+          -3.8
+        ],
+        "side": [
+          -3.8,
+          0.25,
+          0
+        ]
+      },
+      "exposure": 1.05
     }
   ]
 }

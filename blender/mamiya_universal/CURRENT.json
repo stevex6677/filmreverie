@@ -49,7 +49,7 @@
     "render_script": "blender/mamiya_universal/hybrid/v2/render_black_body_delivery.py",
     "export_script": "blender/mamiya_universal/hybrid/v2/export_browser_preview.py",
     "revision_notes": "blender/mamiya_universal/hybrid/v2/README_black_body.md",
-    "instructions": "Read AGENTS.md and SHARED_ASSETS.md first. Open editable_blend in Blender MCP at the specified scene; write new outputs to unique run folders without overwriting current delivery or source assets."
+    "instructions": "Read AGENTS.md and SHARED_ASSETS.md first. Open editable_blend in Blender CLI at the specified scene; write new outputs to unique run folders without overwriting current delivery or source assets."
   },
   "viewer": {
     "readme": "standalone/model-viewer/README.md",

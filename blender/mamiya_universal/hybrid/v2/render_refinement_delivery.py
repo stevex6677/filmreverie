@@ -1,4 +1,4 @@
-"""Long-running delivery renders, launched through Blender MCP as a child job."""
+"""Long-running delivery renders, launched through Blender CLI as a child job."""
 from pathlib import Path
 import bpy, json, traceback
 

@@ -1,4 +1,4 @@
-"""MCP background export: packed full-detail GLB plus separate browser copy."""
+"""Blender CLI background export: packed full-detail GLB plus separate browser copy."""
 from pathlib import Path
 import bpy,hashlib,json,struct
 out=Path(bpy.data.filepath).parent;master=Path(bpy.data.filepath)

@@ -5,7 +5,8 @@ import { CAMERAS, PRIMARY_CAMERA } from '../../src/data/cameras';
 import { CAMERA_SHELF_ORIGIN, CAMERA_SHELF_MM, cameraShelfSlot, mm } from '../../src/data/physicalScale';
 import { ready, screenPoint } from './helpers/shelf';
 import { offlineServer } from './helpers/offlineServer';
-test.use({ actionTimeout: 15000 });
+// Software WebGL can block input while the five detailed models compile.
+test.use({ actionTimeout: 60000 });
 const canon = CAMERAS.find(camera => camera.id === 'canon-7s')!;
 
 async function cameraShelf(page: Page) {
@@ -28,9 +29,18 @@ test('catalog cameras occupy independent physical-scale cabinet slots', async ({
     const widths = (await canvas.getAttribute('data-camera-model-widths')) ?? '';
     return Number(widths.split(',').find(value => value.startsWith('canon-demi-ee17:'))?.split(':')[1]);
   }, { timeout: 180000 }).toBeCloseTo(.4176, 8);
-  await expect(page.getByRole('button', { name: /^Inspect / })).toHaveCount(4);
-  await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-four-camera-shelf.png` });
+  await expect.poll(async () => Number(((await canvas.getAttribute('data-camera-model-widths')) ?? '').split(',').find(value => value.startsWith('olympus-om1:'))?.split(':')[1]), { timeout: 180000 }).toBeCloseTo(.4896, 8);
+  await expect(page.getByRole('button', { name: /^Inspect / })).toHaveCount(5);
+  const nameplates = await page.locator('.camera-shelf-target').evaluateAll(nodes =>
+    nodes.map(node => { const { x, y, width, height } = node.getBoundingClientRect(); return { x, y, width, height }; }));
+  for (let i = 0; i < nameplates.length; i++) for (let j = i + 1; j < nameplates.length; j++) {
+    const a = nameplates[i], b = nameplates[j];
+    expect(a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y,
+      `Camera nameplates ${i} and ${j} must not overlap`).toBe(true);
+  }
+  await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-five-camera-shelf.png`, timeout: 60000 });
   for (const [name, id, width, label] of [
+    ['Olympus OM-1', 'olympus-om1', '0.4896', '13.6 cm'],
     ['Minolta Autocord', 'minolta-autocord', '0.3024', '8.4 cm'],
     ['Canon 7s', 'canon-7s', '0.4968', '13.8 cm'],
     ['Canon Demi EE17', 'canon-demi-ee17', '0.4176', '11.6 cm'],

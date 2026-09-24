@@ -1,4 +1,4 @@
-"""Independent saved-master comparison, executed in Blender through MCP."""
+"""Independent saved-master comparison, executed in Blender through the local CLI."""
 from pathlib import Path
 import bpy,numpy as np,json,hashlib
 out=Path(bpy.data.filepath).parent

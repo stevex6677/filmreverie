@@ -1,4 +1,4 @@
-"""Localized Canon 7s restoration; run from source.blend through Blender MCP.
+"""Localized Canon 7s restoration; run from source.blend through Blender CLI.
 
 Original mesh topology, UVs and materials are retained outside calibrated patches.
 All screen measurements use the 1200px orthographic source evidence. Top view is

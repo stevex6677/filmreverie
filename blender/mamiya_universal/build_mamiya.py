@@ -1,4 +1,4 @@
-"""Photo-referenced Mamiya Universal; execute using Blender MCP. Dimensions in mm."""
+"""Photo-referenced Mamiya Universal; execute using Blender CLI. Dimensions in mm."""
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))
