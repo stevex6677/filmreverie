@@ -44,6 +44,7 @@
   },
   "browser_glb": {
     "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/canon-demi-ee17-compact.glb",
+    "published_path": "public/assets/cameras/canon-demi-ee17-fef17d78b1357b012bf0771909adfaea893e44f34cf1a6f63476524f791f23ae.glb",
     "sha256": "fef17d78b1357b012bf0771909adfaea893e44f34cf1a6f63476524f791f23ae",
     "bytes": 8283892,
     "triangles": 2068411,
@@ -200,7 +201,7 @@
     "blender/canon_demi_ee17/verify_viewer.mjs": "9aacd1ca9857d33829fa4a2080c46a471072624c7cf9275a0924d77bfe258fd8"
   },
   "continuation": {
-    "instructions": "Continue from this packed master. To reproduce the top2 correction, prepare_top2.py decodes the HEIC and creates a rectified text/grain atlas; run correct_top2.py through Blender MCP on the preceding master in a new output run. Run export_compact.py, reopen the master, verify_top2.py, then remote verify_viewer.mjs and package_top2.py. The compact GLB remains below 10 MB; preserve all prior outputs."
+    "instructions": "Continue locally from this packed master. Set one new FILM_PHOTO_OUTPUT_DIR for prepare_top2.py and correct_top2.py; the preparation decodes the HEIC and creates a rectified text/grain atlas. Run correct_top2.py through local Blender MCP on the preceding master, then export_compact.py, reopen the master, verify_top2.py, verify_viewer.mjs and package_top2.py with the same output directory. The compact GLB remains below 10 MB; preserve all prior outputs. Copy the accepted export into public/assets/cameras/<model_id>-<sha256>.glb, retain browser_glb.path relative to ignored_generated, record repository-relative browser_glb.published_path and update the public-relative catalog asset."
   },
   "refinements": {
     "top": "Straightened both wordmark lines from top2.HEIC and integrated them into a continuous textured black ribbon with rounded borders. The black band wraps into the side strips. Lowered only intersecting scan vertices immediately underneath it; preserved other controls and surfaces.",

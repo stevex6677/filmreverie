@@ -1,6 +1,7 @@
 node_modules
 dist
 test-results
+/.cache/
 .DS_Store
 GEMINI.md
 AGENTS.md
@@ -10,17 +11,12 @@ AGENTS.md
 /ignored_assets/
 /ignored_generated/
 
-# Binary, video, and 3D media formats
+# Large authoring files stay outside Git; shipped browser models are tracked.
 *.blend
 *.blend[0-9]
 *.glb
-*.jpg
-*.jpeg
-/public/assets/film-packaging/*.png
+!/public/assets/cameras/*.glb
 /public/assets/draco/
-!/public/assets/photos/*.jpg
-!/public/assets/photos/*.thumb.jpg
-!/film_filter_references/**
 *.heic
 *.HEIC
 *.mp4
@@ -31,6 +27,13 @@ AGENTS.md
 /artifacts/
 /playwright-report/
 /blob-report/
+**/__pycache__/
+.pytest_cache/
+.env
+.env.*
+!.env.example
+/.remote-exec/
+/.remote-setup/
 
 # Blender reference photos & render previews
 blender/**/mamiya_universal_photos/
@@ -40,3 +43,5 @@ blender/**/component_studies/previews/
 blender/**/component_studies/renders/
 blender/**/previews_refined/
 blender/**/*.png
+blender/**/*.jpg
+blender/**/*.jpeg

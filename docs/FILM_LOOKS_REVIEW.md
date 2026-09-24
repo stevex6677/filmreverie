@@ -1,5 +1,9 @@
 # M19 — Film-stock looks and strength
 
+Historical review record: execution paths, preview URLs and evidence locations
+below describe the original run, not the current setup. Follow the
+[repository README](../README.md) for the current local workflow.
+
 Status: **Awaiting human review.** Implementation and cumulative validation complete; human acceptance pending.
 
 ## Result

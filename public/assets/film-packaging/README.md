@@ -23,24 +23,31 @@ cartridge comes from Macodirect. Each entry includes the product page, image URL
 dimensions, source SHA-256, shared source path and measured panel corners.
 The 120 multipack boxes illustrate the stock; they never imply multiple saved rolls.
 
-## Reproduce the assets
+## Runtime assets and optional source acquisition
 
-Follow the root [shared asset workflow](../../../SHARED_ASSETS.md). Run these
-commands in the mapped remote checkout after flushing its Mutagen session:
+The required packaging images and authored SVGs in this directory are tracked
+runtime assets. A fresh clone can run `npm ci`, `npm run dev` and `npm run build`
+without private originals, remote setup or an image converter. `prepare:assets`
+validates the published images against their manifest; startup does not fetch
+or reconstruct them. No product image is hotlinked at runtime.
+
+For authoring, follow the root [shared asset workflow](../../../SHARED_ASSETS.md).
+Run locally from the repository root:
 
 ```sh
+# Optional: acquire pinned originals without replacing existing source bytes.
 npm run fetch:packaging
-npm run prepare:assets
+# Explicitly publish runtime copies from the pinned originals.
+npm run fetch:packaging -- --publish
 ```
 
 Fetching preserves existing source files and rejects changed upstream bytes.
-Originals resolve under the main checkout's
-`ignored_assets/film-packaging/kodak-20260915/`. Preparation validates SHA-256,
-keeps byte-identical copies under
-`ignored_generated/film-packaging/textures/<sha256>/`, and fills the ignored
-`public/assets/film-packaging/` serving cache. Builds prepare these assets too.
-No product image is hotlinked at runtime. Commit the manifest and scripts,
-not downloaded images or generated captures.
+Originals resolve under the discovered local main checkout's
+`ignored_assets/film-packaging/kodak-20260915/`; `FILM_PHOTO_SHARED_ROOT` overrides
+that authoring root. Keep originals read-only and back them up separately.
+Reproducible cache belongs under the active checkout's `.cache/`, not among retained
+authoring runs. Review and commit published runtime images with the manifest
+and scripts; keep private sources and generated review captures out of Git.
 
 ## Rendering and maintenance
 
@@ -94,8 +101,8 @@ When adding a supported stock, add both formats and a matching 35mm cartridge,
 record sources/checksums, measure panels, then check all variants in the room.
 `tests/integration/m18-film-shelf.test.ts` checks stock/format coverage and corner
 projection. `npm run validate:m19` runs the build and full integration/browser
-suites; `PLAYWRIGHT_WORKERS=1` is appropriate on the shared server's current
-process limit.
+suites locally; `PLAYWRIGHT_WORKERS=1` is a sensible starting point on a laptop
+or a host with limited process capacity.
 
 The photographs retain some baked-in lighting. Unseen box sides and cartridge
 reverse faces are simplified, without fabricated lettering. Packaging failure

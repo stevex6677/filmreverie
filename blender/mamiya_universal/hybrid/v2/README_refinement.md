@@ -34,9 +34,9 @@ exported; the accepted v2 GLB still represents the earlier model.
 
 ## Reproduction
 
-Use Blender MCP's background CLI on the remote server. Before execution, flush
-the active worktree Mutagen session and `film-photo`. Change to the mapped remote
-worktree and execute scripts with their actual `__file__` in a dedicated namespace.
+Use local Blender MCP's background CLI. Execute scripts from the active local
+worktree with their actual `__file__` in a dedicated namespace. No source
+synchronization or remote execution setup is required.
 
 1. Open the accepted shared `hybrid/v2/mamiya_universal_hybrid_v2.blend` and run
    `refine_optics_labels.py`. It allocates a new unique output run.
@@ -46,11 +46,11 @@ worktree and execute scripts with their actual `__file__` in a dedicated namespa
 3. In a fresh process run `validate_refinement.py`. It checks positive closed
    glass volumes, full transmission, readable text bounds, packed image resources
    and the accepted source checksum. It also records render checksums.
-4. Flush `film-photo` to retrieve the resulting media to the main Mac checkout.
+4. Inspect the resulting media in the local main checkout's shared output run.
 
 For final renders longer than the MCP CLI's 120-second call limit, launch
 `render_refinement_delivery.py` as a detached background Blender child through
-Blender MCP, using `bpy.app.binary_path`, the saved master and the active remote
+Blender MCP, using `bpy.app.binary_path`, the saved master and the active local
 worktree as `cwd`. It renders sequentially, writes `delivery-progress.json`, and
 runs validation after all images finish. Keep its log in the same output run.
 

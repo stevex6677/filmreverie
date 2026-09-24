@@ -1,4 +1,4 @@
-"""Convert the read-only HEIC underside reference remotely with Pillow/pillow-heif."""
+"""Convert the read-only HEIC underside reference locally with Pillow/pillow-heif."""
 from pathlib import Path
 import hashlib
 import json

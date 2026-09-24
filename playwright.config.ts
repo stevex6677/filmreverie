@@ -14,9 +14,8 @@ if (video !== "off" && video !== "on") {
 }
 
 // Chrome's software WebGL renderer uses multiple CPU threads per worker.
-// Four browsers are a starting point on the 64-logical-CPU remote host;
-// override for the available capacity, including through npm run validate:mN.
-const workerSetting = (process.env.PLAYWRIGHT_WORKERS ?? "4").trim();
+// Default to one local browser worker; increase for the available capacity.
+const workerSetting = (process.env.PLAYWRIGHT_WORKERS ?? "1").trim();
 if (!/^[1-9]\d*%?$/.test(workerSetting)) {
   throw new Error("PLAYWRIGHT_WORKERS must be a positive integer or CPU percentage (for example 4 or 50%).");
 }

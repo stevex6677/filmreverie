@@ -1,5 +1,5 @@
 """Extract photographed pigment without baking photographic lighting into metal.
-Run with remote_exec run python3; Blender operations remain in the MCP builder.
+Run locally with python3; Blender operations remain in the MCP builder.
 Coordinates below refer to 1568x1176 reference previews, not original JPEG pixels.
 """
 from pathlib import Path

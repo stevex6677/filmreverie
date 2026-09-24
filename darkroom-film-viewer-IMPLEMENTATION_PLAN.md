@@ -46,7 +46,7 @@ At closure, M16's latest recorded cumulative run had an intermittent loupe failu
 - Keep room exploration at the fixed standing eye. Preserve heading when returning from an approached object; preserve roll/stock/format, brightness and table viewing state through camera inspection.
 - Use `src/data/physicalScale.ts` for physical dimensions. Fit the viewing camera to objects; do not change object size to fit screens. Film-shelf geometry in current source is authoritative where older prose differs.
 - Runtime assets are served locally. Keep imports browser-local and existing PWA/archive behavior intact. No accounts, uploads, public exposure or deployment in this milestone.
-- Follow applicable project instructions for local editing/Git and mapped remote runtime checks; follow [SHARED_ASSETS.md](SHARED_ASSETS.md) for binary assets. Do not commit generated binaries or approve visual baselines automatically.
+- Follow current project instructions: editing, Git, runtimes, builds and tests all run locally. Follow [SHARED_ASSETS.md](SHARED_ASSETS.md): track required runtime images and GLBs under `public/assets/`, preserve private authoring binaries separately, and do not approve visual baselines automatically.
 
 ## M20 design
 
@@ -124,7 +124,7 @@ Work only on the first unaccepted milestone, M20, once implementation is request
 ## Handoff checklist
 
 - Read this plan, applicable project instructions, CURRENT.json, the standalone viewer README and SHARED_ASSETS.md first. Resume at M20.4 and the review's unresolved validation list; M20.1–M20.3 are implemented.
-- Reverify active checkout, sync endpoint, current asset/checksum, catalog agreement and real model bounds. Planning checkout: Orca `infra`, `/Users/zhangzimou/orca/workspaces/film_photo/infra`; canonical remote counterpart: `/workspace/worktrees/orca/film_photo/infra`. Do not validate a different checkout or assume this checkout is the deployed service.
-- Run runtime/build/tests remotely after verifying and flushing the matching connected, conflict-free session. Follow the user's current environment instructions if they differ from older repository setup prose.
+- Verify the active local checkout, current asset/checksum, catalog agreement and real model bounds. Do not validate a different checkout or assume the active worktree owns an existing preview service.
+- Run runtimes, builds and tests locally. No remote setup or synchronization is required; preserve historical remote evidence without treating it as validation of current changes.
 - Blocking design questions: none; placement, scale convention and responsive page direction are specified under the user's delegated design authority. Actual-device access and any inherited test failures must be recorded if they block validation.
 - Deliver M20 only, its complete gate and review evidence. No deployment or changes to an existing running standalone viewer service are authorized by this plan.

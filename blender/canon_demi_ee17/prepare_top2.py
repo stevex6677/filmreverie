@@ -2,11 +2,14 @@
 from pathlib import Path
 from PIL import Image, ImageOps
 import pillow_heif
-import cv2,numpy as np,json
+import cv2,numpy as np,json,os,sys
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'scripts'))
+from shared_assets import output_dir,asset_path
 pillow_heif.register_heif_opener()
-out=Path('/workspace/film_photo/ignored_generated/blender/canon_demi_ee17/refinement/runs/20260923T-top2-b')
-out.mkdir(parents=True,exist_ok=True)
-source=Path('/workspace/film_photo/ignored_assets/blender/canon_demi_ee17/references/top2.HEIC')
+if not os.environ.get('FILM_PHOTO_OUTPUT_DIR'):
+    raise ValueError('Set FILM_PHOTO_OUTPUT_DIR to the same new run for prepare_top2.py and correct_top2.py')
+out=output_dir('blender/canon_demi_ee17')
+source=asset_path('blender/canon_demi_ee17/references/top2.HEIC')
 im=ImageOps.exif_transpose(Image.open(source)).convert('RGB')
 im.save(out/'top2-decoded.png')
 im.thumbnail((1800,1800));im.save(out/'top2-review.jpg',quality=96)

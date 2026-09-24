@@ -93,7 +93,7 @@ for h in np.arange(.509,.563,.0012):
 o=bpy.data.objects.new(cu.name,cu);finish(o,cu.name,plate)
 
 # Reuse editable typography from the assembled Blender master.
-with bpy.data.libraries.load(str(generated_path('preserved_variants/codex-3296/blender/mamiya_universal/mamiya_universal_refined.blend')),link=False) as (available,loaded):
+with bpy.data.libraries.load(str(generated_path('blender/mamiya_universal/preserved_variants/codex-3296/mamiya_universal_refined.blend')),link=False) as (available,loaded):
     loaded.objects=[n for n in available.objects if n in ['UNIVERSAL badge','MAMIYA badge'] or n.startswith('D • Front engraving ')]
 donor_labels=list(loaded.objects)
 for donor in donor_labels:
@@ -119,7 +119,7 @@ for donor in donor_labels:
         donor['donor']='mamiya_universal_refined.blend / corrected f2.8 engraving'
 
 # Evaluate the existing study's rounded hood slots, then fit independent copies.
-with bpy.data.libraries.load(str(generated_path('preserved_variants/codex-3296/blender/mamiya_universal/component_studies/lens_study.blend')),link=False) as (available,loaded):
+with bpy.data.libraries.load(str(generated_path('blender/mamiya_universal/preserved_variants/codex-3296/component_studies/lens_study.blend')),link=False) as (available,loaded):
     loaded.objects=[n for n in available.objects if n in ['Vented tapered hood','Hood leading rolled rim','Front optical element'] or 'construction' in n.lower()]
 study=list(loaded.objects)
 for o in study:construction.objects.link(o);o.hide_render=True;o.hide_set(False)

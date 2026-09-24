@@ -2,7 +2,7 @@
 
 Before publication, set FILM_PHOTO_OUTPUT_DIR to the candidate run. After adding
 CURRENT.json, the default verifies its paths/checksums against the viewer catalog.
-Run remotely through remote_exec; this script never edits tracked metadata.
+Run locally; this script never edits tracked metadata.
 """
 from pathlib import Path
 import hashlib
@@ -22,7 +22,11 @@ else:
 
 
 def entry(path):
-    return {'path':str(path.relative_to(generated_path(''))),
+    storage = generated_path('')
+    if path.is_absolute() and not path.is_relative_to(storage):
+        # Historical reports retain their original host's absolute paths.
+        path = storage.joinpath(*path.parts[path.parts.index(storage.name) + 1:])
+    return {'path':str(path.relative_to(storage)),
             'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'bytes':path.stat().st_size}
 
 
@@ -128,11 +132,12 @@ if bottom:
         'browser_width_units':exports['browser_reimport']['width_units'],
         'physical_scale':scale,'socket':{key:bottom['socket'][key] for key in
                                       ['nominal_major_diameter_mm','pitch_mm','depth_mm','depth_is_reference_estimate']}}
-(out/'delivery_manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 if current and not os.environ.get('FILM_PHOTO_OUTPUT_DIR'):
     catalog=json.loads((root/'standalone/model-viewer/models.json').read_text())
     model=next(m for m in catalog['models'] if m['id']=='canon-7s')
-    assert model['asset']==current['browser_glb']['path']==files['browser']['path']
+    assert 'public/'+model['asset']==current['browser_glb']['published_path']
+    assert current['browser_glb']['path']==files['browser']['path']
+    assert hashlib.sha256((root/current['browser_glb']['published_path']).read_bytes()).hexdigest()==model['sha256']
     assert model['sha256']==current['browser_glb']['sha256']==files['browser']['sha256']
     assert current['editable_blend']==master
     assert current['full_detail_glb']==files['full_detail']
@@ -144,4 +149,5 @@ if current and not os.environ.get('FILM_PHOTO_OUTPUT_DIR'):
         assert model['widthMm']==bottom['physical_scale']['requested_width_mm']==138
     print(f"CURRENT.json, viewer catalog, source, master, both GLBs, {len(render_files)} master renders and {len(browser_renders)} GLB renders verified.")
 else:
+    (out/'delivery_manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     print(json.dumps(manifest,indent=2))

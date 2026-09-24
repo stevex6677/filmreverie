@@ -46,13 +46,13 @@ by this revision. All model and render binaries stay in shared ignored storage.
 
 ## Reproduction
 
-Flush the active worktree's exact Mutagen session and `film-photo`. Through
-Blender MCP, open the input `.blend` and execute `rebuild_lens_finish.py` using its
-actual remote `__file__` and the active remote worktree as `cwd`. It allocates a
-new unique output folder and preserves the input checksum.
+Through local Blender MCP, open the input `.blend` and execute
+`rebuild_lens_finish.py` using its actual local `__file__` and the active local
+worktree as `cwd`. It allocates a new unique output folder and preserves the
+input checksum. Preserve historical runs when reproducing this revision.
 
 Launch a background Blender child through Blender MCP with the new master and
 `render_lens_finish_delivery.py`. It renders sequentially beyond the MCP CLI's
 120-second per-call timeout, writes `delivery-progress.json`, then validates the
-saved geometry/materials and records render checksums. Flush `film-photo` to
-retrieve the final artifacts to the Mac.
+saved geometry/materials and records render checksums. Outputs are already in
+the local main checkout's shared generated storage; no transfer is required.

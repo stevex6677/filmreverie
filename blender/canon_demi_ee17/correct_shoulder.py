@@ -3,10 +3,12 @@
 Execute in an MCP-launched Blender child. Source and prior delivery are read-only.
 """
 from pathlib import Path
-import bpy, bmesh, numpy as np, json, hashlib
+import bpy, bmesh, numpy as np, json, hashlib, sys
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'scripts'))
+from shared_assets import output_dir
 
-out = Path('/workspace/film_photo/ignored_generated/blender/canon_demi_ee17/refinement/runs/20260923T-shoulder-compact-b')
-out.mkdir(parents=True, exist_ok=False)
+out = output_dir('blender/canon_demi_ee17')
+assert not (out/'canon-demi-ee17-refined.blend').exists()
 source = Path(bpy.data.filepath)
 assert source.name == 'canon-demi-ee17-refined.blend'
 pix = .979248046875*1.12/1200

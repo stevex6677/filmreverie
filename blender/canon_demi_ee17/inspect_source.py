@@ -1,4 +1,4 @@
-"""Import the read-only source. Execute through remote Blender MCP."""
+"""Import the read-only source. Execute through local Blender MCP."""
 from pathlib import Path
 import sys, json, hashlib
 import bpy

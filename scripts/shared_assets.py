@@ -1,7 +1,7 @@
-"""Shared media paths; no Git required on the synchronized remote checkout."""
+"""Local authoring media shared by linked worktrees, separate from shipped assets."""
 import json
 import os
-import platform
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -11,10 +11,17 @@ CONFIG = json.loads((REPO / 'shared-assets.json').read_text())
 
 
 def shared_root():
-    configured = os.environ.get('FILM_PHOTO_SHARED_ROOT') or CONFIG['main_checkout'].get(platform.system())
-    if not configured:
-        raise RuntimeError('Set FILM_PHOTO_SHARED_ROOT to the main checkout on this machine')
-    root = Path(configured).expanduser().resolve()
+    configured = os.environ.get('FILM_PHOTO_SHARED_ROOT')
+    if configured:
+        root = Path(configured).expanduser().resolve()
+    elif (REPO / '.git').exists():
+        common_dir = subprocess.check_output(
+            ['git', 'rev-parse', '--path-format=absolute', '--git-common-dir'],
+            cwd=REPO, text=True,
+        ).strip()
+        root = Path(common_dir).parent.resolve()
+    else:
+        root = REPO
     if not root.is_dir():
         raise FileNotFoundError(f'Shared main checkout is unavailable: {root}')
     return root

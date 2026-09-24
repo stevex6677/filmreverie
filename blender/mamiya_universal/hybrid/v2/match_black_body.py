@@ -1,6 +1,6 @@
 """Match body finishes to the accepted V2.2 black lens without editing its optics.
 
-Run through remote Blender MCP with the accepted lens-finish master loaded.
+Run through local Blender MCP with the accepted lens-finish master loaded.
 Original atlas, comparison scene and previous revisions remain intact.
 """
 from pathlib import Path

@@ -24,11 +24,11 @@ Final shared output directory:
 - `black-body-manifest.json`: source hash, preserved lens parameters and labels.
 - `black-body-validation.json`: saved master verification and rendered file hashes.
 
-Run `match_black_body.py` using Blender MCP CLI with the input master open and
-`__file__` set to the script in the mapped remote worktree. It allocates a unique
-shared output run. Run `render_black_body_delivery.py` on the resulting master
-through a Blender MCP background child process. Flush the worktree Mutagen
-session before executing scripts and `film-photo` before reviewing local renders.
+Run `match_black_body.py` using local Blender MCP CLI with the input master open
+and `__file__` set to the script in the active local worktree. It allocates a
+unique shared output run. Run `render_black_body_delivery.py` on the resulting
+master through a local Blender MCP background child process. Review the saved
+renders directly; no synchronization or remote transfer is required.
 
 Initial preview runs remain available but are superseded by the final run above.
 Binary outputs are ignored and must not be added to Git.

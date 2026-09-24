@@ -15,7 +15,6 @@ class SharedOutputTests(unittest.TestCase):
                 second = output_dir('camera/v3')
                 self.assertNotEqual(first, second)
                 self.assertEqual(output_dir('camera/v3', first / 'model.blend'), first)
-                self.assertEqual(asset_path('source.glb'), Path(folder) / 'ignored_assets/source.glb')
 
     def test_reject_source_and_worktree_outputs(self):
         with tempfile.TemporaryDirectory() as folder:

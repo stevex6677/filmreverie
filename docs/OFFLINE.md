@@ -8,9 +8,9 @@ active worker has the HTML, JS/CSS, stock resources, installation
 icons, and all built-in photo thumbnails and full viewing images. Imported rolls
 and originals remain in the existing `darkroom-rolls` IndexedDB database.
 
-These details separately report server reachability. A stopped server or
-SSH tunnel does not prevent viewing already downloaded content. First visits
-need a working server. Files available only in iCloud or on another server must
+These details separately report server reachability. A stopped local server does
+not prevent viewing already downloaded content. First visits need a working
+server. Files available only in iCloud or on another server must
 be downloaded to the device before importing offline. Browser storage is not a
 backup: clearing site data or storage eviction can remove photos and app caches.
 Use **Protect saved storage** where supported and keep exported backups.
@@ -77,31 +77,43 @@ prepare the current release. Export your library before clearing site data.
 
 ## Private serving
 
-Follow AGENTS.md: build/test in the mapped remote worktree, flush `orca-worktrees`,
-then start a production preview there. Inspect existing port owners and Serve
-mappings before changing them. Use a stable origin, preserve HTTP for migration,
-and never enable Funnel.
-
-On this Mac the connected Tailscale CLI is
-`/Applications/Tailscale.app/Contents/MacOS/Tailscale`; the command at
-`/usr/local/bin/tailscale` may address a different, stopped daemon. Recheck
-`status --json` and `serve status`; do not infer connection state from the wrong CLI.
-
-Example setup after confirming the ports and hostname:
+Build and serve production output locally from the active checkout. The tracked
+runtime images and camera GLBs require no private asset store or authoring
+converter. Inspect existing port owners and Tailscale Serve mappings before
+changing them. Use a stable origin, preserve HTTP for migration, and never enable
+Funnel. No SSH tunnel or remote execution setup is needed.
 
 ```sh
-# The app process runs remotely; localhost is an SSH forward.
-ssh -N -L 5178:127.0.0.1:5178 remote
-/Applications/Tailscale.app/Contents/MacOS/Tailscale serve --bg --http=5178 http://127.0.0.1:5178
-/Applications/Tailscale.app/Contents/MacOS/Tailscale serve --bg --https=443 http://127.0.0.1:5178
+npm ci
+npm run build
+npm run preview -- --host 127.0.0.1 --port 5178
 ```
 
-The stable private origin is `https://macbook.tail2b1388.ts.net`. Its private Serve
-mapping, trusted certificate and app responses were verified on 2026-09-16.
-On a new tailnet, HTTPS may require enabling certificates in the admin settings.
-Keep the verified hostname in Vite's allowlist
-(`FILM_PHOTO_ALLOWED_HOSTS` can override it). Use the full hostname for HTTPS;
-a short `https://macbook` name does not match the certificate.
+Open the actual localhost URL printed by the server. For private device access,
+use the connected local Tailscale CLI and inspect `tailscale status --json` and
+`tailscale serve status` first. On macOS the app-bundled CLI may be
+`/Applications/Tailscale.app/Contents/MacOS/Tailscale`; use it if the command on
+PATH addresses a different or stopped daemon.
+
+In a separate terminal, after confirming the ports and private hostname:
+
+```sh
+# Both mappings proxy directly to the local production app.
+tailscale serve --bg --http=5178 http://127.0.0.1:5178
+tailscale serve --bg --https=443 http://127.0.0.1:5178
+```
+
+Verify localhost and private-hostname responses before sharing links. Retain the
+HTTP mapping only as needed for existing-library migration; use HTTPS for new
+device imports and offline installation.
+
+The previously used private origin is `https://macbook.tail2b1388.ts.net`; its
+mapping, certificate and app responses were verified on 2026-09-16. That is
+historical evidence, not a guarantee of the current host or mapping. Use the
+hostname reported by the connected local tailnet. HTTPS may require enabling
+certificates in tailnet admin settings. Keep the verified hostname in Vite's
+allowlist (`FILM_PHOTO_ALLOWED_HOSTS` can override it). Use the full hostname for
+HTTPS; a short `https://macbook` name does not match the certificate.
 
 Implementation references: [service-worker lifecycle](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers),
 [Tailscale Serve](https://tailscale.com/docs/reference/tailscale-cli/serve).
@@ -115,9 +127,11 @@ isolated HTTP servers allow real server shutdown and interrupted downloads witho
 stopping another worktree's app. A temporary self-signed HTTPS origin tests archive
 migration separately from the real Tailscale certificate/device review.
 
-The build creates installation PNGs and a content-addressed `sw.js`; generated
-binaries and review captures stay untracked. `src/offline/worker.js` is the worker
-source and `scripts/build-offline.mjs` inventories every file in production output.
+The build creates installation PNGs and a content-addressed `sw.js` in ignored
+production output; review captures also stay untracked. Required published
+runtime images and GLBs under `public/assets/` are tracked separately.
+`src/offline/worker.js` is the worker source and `scripts/build-offline.mjs`
+inventories every file in production output.
 
 The Linux Playwright WebKit build rejects even cached worker fetches when
 `context.setOffline(true)` is enabled (confirmed with a controlled page, an

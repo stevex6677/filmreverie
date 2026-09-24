@@ -1,4 +1,4 @@
-"""Call the configured remote Blender MCP server over its stdio transport."""
+"""Call the locally installed Blender MCP server over its stdio transport."""
 import argparse
 import json
 import subprocess
@@ -14,7 +14,7 @@ def main():
     parser.add_argument("--blend", help="Optional existing Blender master")
     parser.add_argument("--prompt", help="Task-specific Blender MCP instruction")
     args = parser.parse_args()
-    process = subprocess.Popen(["/usr/local/bin/blender-mcp"], stdin=subprocess.PIPE,
+    process = subprocess.Popen(["blender-mcp"], stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE, text=True)
     def send(message):
         process.stdin.write(json.dumps(message) + "\n")

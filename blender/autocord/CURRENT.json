@@ -6,7 +6,7 @@
   "state": "complete",
   "path_resolution": {
     "config": "shared-assets.json",
-    "outputs": "Paths below are relative to the main checkout's ignored_generated directory, not the active worktree.",
+    "outputs": "Authoring paths below are relative to the local main checkout's ignored_generated directory. browser_glb.published_path is relative to the active repository root.",
     "source": "The original GLB and HEIC references are under the main checkout's ignored_assets directory."
   },
   "source": {
@@ -21,6 +21,7 @@
   },
   "browser_glb": {
     "path": "blender/autocord/browser_preview/runs/20260921T075000Z-browser-v2/minolta-autocord-browser.glb",
+    "published_path": "public/assets/cameras/minolta-autocord-0fd838994e57a92a54a2ba8a0968e36ce059a425585076dce381bcb3e56cb311.glb",
     "sha256": "0fd838994e57a92a54a2ba8a0968e36ce059a425585076dce381bcb3e56cb311",
     "source_blend_sha256": "43f2abc72cbaeb514db9d3fb32cbcab848081a7adda6fa633f3b762615399f63",
     "bytes": 20002272,
@@ -156,9 +157,9 @@
     "entrypoint": "blender/autocord/build_delivery.py",
     "browser_export": "blender/autocord/export_browser_preview.py",
     "mcp_client": "blender/autocord/mcp_client.py",
-    "instructions": "Use Blender MCP. Open editable_blend to continue modeling. For a clean rebuild, import the original GLB with inspect_source.py. Choose a new shared generated run and use the same FILM_PHOTO_OUTPUT_DIR for prepare_references.py, prepare_detail_textures.py, prepare_upper_front.py and prepare_lower_front.py through remote_exec run. Then run mcp_client.py execute_blender_code --script blender/autocord/build_delivery.py --blend <original source.blend> --output <that run>. Never feed an already-refined master to build_delivery.py. For a browser derivative, run export_browser_preview.py through the same MCP client with editable_blend as --blend and a new browser_preview run as --output. Upper and lower front passes share one UV set so the GLB stays within the viewer texture-coordinate limit.",
+    "instructions": "Use local Blender MCP. Open editable_blend to continue modeling. For a clean rebuild, import the original GLB with inspect_source.py. Choose a new local generated run and use the same FILM_PHOTO_OUTPUT_DIR for prepare_references.py, prepare_detail_textures.py, prepare_upper_front.py and prepare_lower_front.py, running each locally. Then run mcp_client.py execute_blender_code --script blender/autocord/build_delivery.py --blend <original source.blend> --output <that run>. Never feed an already-refined master to build_delivery.py. For a browser derivative, run export_browser_preview.py through the same local MCP client with editable_blend as --blend and a new run as --output. Upper and lower front passes share one UV set so the GLB stays within the viewer texture-coordinate limit. Copy the accepted browser export into public/assets/cameras/<model_id>-<sha256>.glb, retain its authoring path, record published_path and update the public-relative catalog asset.",
     "base_code_revision": "5eeb357",
-    "script_checksums": "Recorded in delivery_manifest.json; generated binaries are not tracked in Git."
+    "script_checksums": "Recorded in delivery_manifest.json as historical provenance; authoring binaries remain ignored and published runtime GLBs are tracked in Git."
   },
   "viewer": {
     "catalog": "standalone/model-viewer/models.json",

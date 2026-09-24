@@ -6,8 +6,8 @@
   "purpose": "Single source of truth for the current delivery: open editable_blend to continue modeling; use browser_glb for browser presentation. Previous READMEs and run records are preserved for history and do not reflect current state.",
   "path_resolution": {
     "config": "shared-assets.json",
-    "asset_base": "main_checkout[platform] / generated_directory; if FILM_PHOTO_SHARED_ROOT is set, it overrides main_checkout[platform].",
-    "asset_paths": "All paths and reports below are relative to shared ignored_generated/, not the active worktree. Code, configs, and docs are relative to repository root."
+    "asset_base": "Local Git main checkout / generated_directory; FILM_PHOTO_SHARED_ROOT explicitly overrides the authoring root.",
+    "asset_paths": "Authoring media paths and reports are relative to ignored_generated/. browser_glb.published_path, code, configs, and docs are relative to the active repository root."
   },
   "editable_blend": {
     "path": "blender/mamiya_universal/hybrid/v2/black_body/runs/20260912T065312Z-d80c8ba1/mamiya_universal_hybrid_v2_black_body.blend",
@@ -18,6 +18,7 @@
   },
   "browser_glb": {
     "path": "blender/mamiya_universal/hybrid/v2/browser_preview/runs/20260912T073337Z-1d792c08/mamiya-black-body.glb",
+    "published_path": "public/assets/cameras/mamiya-universal-6d426487c0a5c5fc59ad969158bee3d2612ce67a6bf6934f82cc78c1bbd96b73.glb",
     "sha256": "6d426487c0a5c5fc59ad969158bee3d2612ce67a6bf6934f82cc78c1bbd96b73",
     "source_blend_sha256": "1d285cd9dd37b95a1882f70fc5c58cc1bca263687f76e081cc93568c4191c805",
     "bytes": 18606972,
@@ -54,9 +55,9 @@
     "readme": "standalone/model-viewer/README.md",
     "catalog": "standalone/model-viewer/models.json",
     "profile": "mamiya",
-    "url": "http://remote.tail2b1388.ts.net:4180/?model=mamiya-universal",
-    "fallback_url": "http://100.127.56.123:4180/?model=mamiya-universal",
-    "access": "Devices must connect to the authorized Tailscale network. Check actual working directory and port before deploying."
+    "url": "http://127.0.0.1:4180/?model=mamiya-universal",
+    "historical_urls": ["http://remote.tail2b1388.ts.net:4180/?model=mamiya-universal", "http://100.127.56.123:4180/?model=mamiya-universal"],
+    "access": "Run locally. Check the actual working directory and port; use the authorized private Tailscale network for other devices. Historical URLs are provenance, not current deployment targets."
   },
-  "update_rule": "On each new delivery, update this file's version, paths, checksums, source relationship, and status. If releasing a new browser GLB, update models.json for the same model_id to preserve stable links. Verify file presence and checksums before committing to Git. Binaries remain in shared directories."
+  "update_rule": "On each new delivery, update this file's version, paths, checksums, source relationship, and status. For a new browser GLB, preserve the authoring path, copy the verified export into tracked public/assets/cameras/<model_id>-<sha256>.glb, record its repository-relative published_path, and update models.json with the public-relative asset path for the same model_id. Verify file presence and checksums before committing. Authoring binaries remain in ignored directories."
 }

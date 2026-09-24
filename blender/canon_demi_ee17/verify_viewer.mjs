@@ -3,12 +3,27 @@ import {chromium, devices} from '../../standalone/model-viewer/node_modules/play
 import {spawn} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
+import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {root, loadCatalog} from '../../standalone/model-viewer/catalog.mjs';
+import {generatedPath} from '../../scripts/shared-assets.js';
 const model=loadCatalog().models.find(m=>m.public.id==='canon-demi-ee17');
-const out=path.dirname(model.file);
-const expectedTriangles=JSON.parse(fs.readFileSync(path.join(out,'compact_export_report.json'),'utf8')).triangles;
-const server=spawn(process.execPath,['server.mjs'],{cwd:root,env:{...process.env,PREVIEW_HOST:'127.0.0.1',PREVIEW_PORT:'0'},stdio:['ignore','pipe','inherit']});
+const current=JSON.parse(fs.readFileSync(new URL('./CURRENT.json',import.meta.url),'utf8'));
+const out=process.env.FILM_PHOTO_OUTPUT_DIR||path.dirname(generatedPath(current.browser_glb.path));
+const expectedExport=JSON.parse(fs.readFileSync(path.join(out,'compact_export_report.json'),'utf8'));
+const expectedTriangles=expectedExport.triangles;
+const serverEnv={...process.env,PREVIEW_HOST:'127.0.0.1',PREVIEW_PORT:'0'};
+let configDir;
+if(process.env.FILM_PHOTO_OUTPUT_DIR){
+  configDir=fs.mkdtempSync(path.join(os.tmpdir(),'demi-preview-'));
+  const catalog=JSON.parse(fs.readFileSync(path.join(root,'models.json'),'utf8'));
+  const candidate={...catalog.models.find(entry=>entry.id===model.public.id),asset:'canon-demi-ee17-compact.glb',sha256:expectedExport.sha256};
+  serverEnv.MODEL_ASSET_ROOT=path.resolve(out);
+  serverEnv.MODEL_CONFIG=path.join(configDir,'models.json');
+  fs.writeFileSync(serverEnv.MODEL_CONFIG,JSON.stringify({defaultModel:candidate.id,models:[candidate]}));
+}
+const server=spawn(process.execPath,['server.mjs'],{cwd:root,env:serverEnv,stdio:['ignore','pipe','inherit']});
 try {
   const base=await new Promise((resolve,reject)=>{
     server.stdout.on('data',chunk=>{const match=chunk.toString().match(/http:\/\/[^\s]+/);if(match)resolve(match[0]);});
@@ -16,11 +31,14 @@ try {
   });
   const asset=await fetch(base+model.public.url,{method:'HEAD'});
   assert.equal(asset.status,200);assert(Number(asset.headers.get('content-length'))<10_000_000);
+  const delivery=await fetch(base+model.public.url);
+  assert.equal(delivery.status,200);
+  assert.equal(createHash('sha256').update(Buffer.from(await delivery.arrayBuffer())).digest('hex'),expectedExport.sha256);
   const wasm=await fetch(base+'/vendor/three/examples/jsm/libs/draco/gltf/draco_decoder.wasm');
   assert.equal(wasm.status,200);assert.equal(wasm.headers.get('content-type'),'application/wasm');
   const reports=[];
   for(const [name,options] of [['desktop',{viewport:{width:1200,height:850}}],['ipad',{...devices['iPad Pro 11'],deviceScaleFactor:1}]]) {
-    const browser=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox','--use-gl=angle','--use-angle=vulkan','--enable-webgl','--ignore-gpu-blocklist']});
+    const browser=await chromium.launch({channel:'chrome',headless:true,args:['--no-sandbox','--use-gl=angle',...(process.platform==='linux'?['--use-angle=vulkan']:[]),'--enable-webgl','--ignore-gpu-blocklist']});
     try {
       const context=await browser.newContext(options);const page=await context.newPage();const errors=[];
       page.on('pageerror',e=>errors.push(e.message));
@@ -52,4 +70,4 @@ try {
   }
   fs.writeFileSync(path.join(out,'browser_verification.json'),JSON.stringify({bytes:Number(asset.headers.get('content-length')),wasm:true,reports},null,2));
   console.log(JSON.stringify({out,reports},null,2));
-} finally {server.kill('SIGTERM');}
+} finally {server.kill('SIGTERM');if(configDir)fs.rmSync(configDir,{recursive:true,force:true});}

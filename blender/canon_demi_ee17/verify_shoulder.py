@@ -1,8 +1,13 @@
 """Verify saved master scope and actual decoded compact geometry via Blender MCP."""
 from pathlib import Path
-import bpy,numpy as np,hashlib,json
+import bpy,numpy as np,hashlib,json,sys
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'scripts'))
+from shared_assets import generated_path
 master=Path(bpy.data.filepath);out=master.parent
-source=out.parent/'20260923T-final-ee17/canon-demi-ee17-refined.blend'
+correction=json.loads((out/'shoulder_report.json').read_text())
+recorded=Path(correction['source_blend'])
+source=generated_path(Path(*recorded.parts[recorded.parts.index('blender'):]))
+assert hashlib.sha256(source.read_bytes()).hexdigest()==correction['source_sha256']
 changed_names={'Top inset continuous enamel plate','demi EE17 inlay','Canon Demi EE17 | original Tripo with scoped repairs'}
 def array(items,field,width,dtype=np.float32):
     a=np.empty(len(items)*width,dtype);items.foreach_get(field,a);return a

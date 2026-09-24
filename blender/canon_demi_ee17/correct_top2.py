@@ -1,9 +1,13 @@
 """Replace only the added top band and wordmark from the top2 HEIC reference."""
 from pathlib import Path
-import bpy,bmesh,numpy as np,json,hashlib,math
+import bpy,bmesh,numpy as np,json,hashlib,math,os,sys
 from mathutils import Vector
 from mathutils.geometry import tessellate_polygon
-out=Path('/workspace/film_photo/ignored_generated/blender/canon_demi_ee17/refinement/runs/20260923T-top2-b')
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'scripts'))
+from shared_assets import output_dir
+if not os.environ.get('FILM_PHOTO_OUTPUT_DIR'):
+    raise ValueError('Set FILM_PHOTO_OUTPUT_DIR to the prepared run from prepare_top2.py')
+out=output_dir('blender/canon_demi_ee17')
 assert not (out/'canon-demi-ee17-refined.blend').exists()
 source=Path(bpy.data.filepath)
 body=max((o for o in bpy.context.scene.objects if o.type=='MESH'),key=lambda o:len(o.data.vertices))

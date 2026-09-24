@@ -49,16 +49,21 @@ The room starts from its center. Its 90 cm, two-tier camera cabinet matches the 
 ## Getting Started
 
 ### Prerequisites
-- **Node.js:** v18 or newer
-- **npm:** v9 or newer
+- **Node.js:** Node 24 LTS recommended. Installed Vite 8 requires Node `^20.19.0 || >=22.12.0`; the Vitest 5 test suite requires `^22.12.0 || ^24.0.0 || >=26.0.0`. Node 18 is unsupported.
+- **npm:** Use the npm supplied with the supported Node installation.
 
 ### Installation
 
 ```bash
 git clone https://github.com/stevex6677/filmreverie.git
 cd filmreverie
-npm install
+npm ci
 ```
+
+Run all commands locally in this checkout. No remote execution setup, SSH tunnel,
+private asset store or external image converter is needed to start or build the
+app. Git includes required packaging images, sample photos and all four camera
+GLBs under `public/assets/`.
 
 ### Running Locally
 
@@ -66,7 +71,7 @@ npm install
 # Start the development server
 npm run dev
 
-# Open http://localhost:5173 in your browser
+# Open the localhost URL printed by Vite (normally http://localhost:5173).
 ```
 
 ### Production Build
@@ -79,9 +84,39 @@ npm run build
 npm run preview
 ```
 
+`prepare:assets`, run automatically by development and build, validates published
+runtime assets and prepares the bundled Draco decoder from Three.js. It does not
+regenerate photo/model source media or require Blender, `ffmpeg` or `sips`.
+
+### Assets and authoring
+
+Published `public/assets/photos/`, `public/assets/film-packaging/` and
+`public/assets/cameras/<id>-<sha256>.glb` files are tracked runtime inputs, not
+disposable serving caches. Commit changed runtime assets with their metadata.
+`npm run prepare:photos` explicitly regenerates photo derivatives from local
+sources/cache; `npm run fetch:packaging` optionally acquires originals, and
+`npm run fetch:packaging -- --publish` updates pinned runtime packaging images.
+These are authoring operations, not fresh-clone startup steps.
+
+Private originals in `ignored_assets/` and retained Blender masters, intermediates,
+exports and previews in `ignored_generated/blender/` are durable and need separate
+backups. Keep `ignored_generated/` Blender-only; disposable caches belong in
+`.cache/` and non-Blender review output in `artifacts/` in the active checkout.
+Helpers discover the local Git main checkout across worktrees;
+`FILM_PHOTO_SHARED_ROOT` overrides authoring storage, not runtime asset lookup.
+See [SHARED_ASSETS.md](SHARED_ASSETS.md) for run layouts and publication rules.
+
+For the separate viewer, follow its [local startup instructions](standalone/model-viewer/README.md#running-locally),
+including `PREVIEW_HOST=127.0.0.1`. For private phone/iPad previews, follow
+[AGENTS.md](AGENTS.md) and [offline HTTPS setup](docs/OFFLINE.md#private-serving).
+
 ---
 
 ## Testing
+
+Install local browser dependencies before E2E tests. The configured projects
+use Google Chrome and Playwright WebKit; see [PLAYWRIGHT.md](PLAYWRIGHT.md).
+Build production output before running E2E tests directly.
 
 ```bash
 # Run unit & integration test suites (Vitest)

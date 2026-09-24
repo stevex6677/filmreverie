@@ -6,9 +6,10 @@ Independent of the main Web App. Supports mouse and touch/iPad orbital rotation,
 
 ## Adding a New Model
 
-1. Prepare a standard GLB file (with embedded textures) and place it under a dedicated directory in `ignored_generated/`.
-2. Add an entry to the `models` array in `models.json`, setting `asset` relative to the asset root.
-3. Sync code and assets, restart the preview server, and navigate to `/?model=<your_model_id>`.
+1. Export a standard GLB with embedded textures into a durable local authoring run. Preserve the editable master and original inputs.
+2. Publish a byte-identical runtime copy at `public/assets/cameras/<id>-<sha256>.glb` and track it in Git. Add an entry to `models.json` with `asset` relative to repository `public/`.
+3. Update the model's `CURRENT.json` checksums and source relation: retain `browser_glb.path` relative to `ignored_generated`, and add `browser_glb.published_path` relative to the repository.
+4. Restart the local preview server and navigate to `/?model=<your_model_id>`.
 
 Example adding a new entry alongside the default Mamiya:
 
@@ -17,9 +18,15 @@ Example adding a new entry alongside the default Mamiya:
   "id": "new-sculpture",
   "title": "New Sculpture",
   "subtitle": "Revision 1",
-  "asset": "blender/new-sculpture/runs/your-run/model.glb"
+  "asset": "assets/cameras/new-sculpture-<sha256>.glb"
 }
 ```
+
+Replace `<sha256>` with the actual file digest. The default asset root is
+repository `public/`, not shared authoring storage. `MODEL_CONFIG` selects a
+custom catalog; `MODEL_ASSET_ROOT` explicitly overrides its asset root. Asset
+paths remain relative to that root. Neither override is needed for the built-in
+catalog; `FILM_PHOTO_SHARED_ROOT` affects authoring tools only.
 
 `defaultModel` controls which model opens on the root page. When multiple models are configured, a dropdown menu automatically appears. Each model link can be bookmarked independently (`/?model=<id>`) and persists on page reload.
 
@@ -62,17 +69,35 @@ consumers need no change.
 
 ## Running Locally
 
+Use the supported Node release from the repository README (Node 24 LTS
+recommended). This module has its own dependency lockfile:
+
 ```sh
-cd standalone/model-viewer
-npm install
-npm start
+# From the repository root:
+npm --prefix standalone/model-viewer ci
+PREVIEW_HOST=127.0.0.1 npm --prefix standalone/model-viewer start
 ```
 
-Open `http://localhost:4180` in your browser.
+Open `http://localhost:4180` in your browser. `PREVIEW_HOST` is required:
+the server accepts loopback `127.0.0.1` or the machine's Tailscale IPv4 address,
+not an omitted host or `0.0.0.0`. Set `PREVIEW_PORT` to use another free port.
+All four built-in GLBs are tracked, so no private asset store or authoring tool
+is needed. The server supplies Draco decoders from its installed Three.js package.
+
+For private phone/iPad viewing, inspect existing Tailscale mappings and proxy
+directly to this local loopback server with
+`tailscale serve --bg --http=4180 http://127.0.0.1:4180`. Verify the actual private
+hostname and both URLs; preserve unrelated services and never enable Funnel.
+See root [AGENTS.md](../../AGENTS.md) for preview safety.
 
 ---
 
 ## Testing
+
+Run these commands in `standalone/model-viewer/` after installing its dependencies.
+The reuse check uses Playwright Chromium; the real-model check uses installed
+Google Chrome on every platform. Install missing browsers locally with
+`PLAYWRIGHT_SKIP_BROWSER_GC=1 npx playwright install chromium chrome`.
 
 ```sh
 npm test
@@ -88,17 +113,19 @@ npm run inspect -- mamiya-universal
 The browser gate starts an isolated server on an ephemeral loopback port in the
 current checkout. It does not test or restart a deployed service. On Linux, the
 real-model browser check uses installed Chrome with Vulkan, matching the app's
-GPU test configuration. Install this module's dependencies remotely; when adding
-Playwright browser versions on a shared host use `PLAYWRIGHT_SKIP_BROWSER_GC=1`.
+GPU test configuration. Install this module's dependencies locally. When adding
+Playwright browser versions used by multiple worktrees, use `PLAYWRIGHT_SKIP_BROWSER_GC=1`.
+Review screenshots and generated reuse fixtures are written under the active
+repository's ignored `artifacts/model-viewer/`, never `ignored_generated/`.
 
 ## Main app camera collection
 
-The main app integrates the same Mamiya asset/profile through `model-core.js`.
+The main app integrates the same catalog assets/profiles through `model-core.js`.
 Camera catalog entries add `widthMm`, `sha256`, `manufacturer`, `introduced`,
 nullable `manufactured`, `category`, `description` and sourced `sources` links.
-`scripts/prepare-camera.js` verifies the current GLB against `CURRENT.json` and
-prepares an ignored content-addressed serving copy. The existing standalone
-model URLs remain unchanged. Physical mounting uses the upright model's X width;
+`scripts/prepare-camera.js` validates the tracked GLB and its checksum against
+`CURRENT.json`; it does not require the private authoring copy. The existing
+standalone model URLs remain unchanged. Physical mounting uses the upright model's X width;
 standalone study framing retains its original normalization.
 
 Large editable camera masters should follow the Mamiya and Autocord pattern:
@@ -109,4 +136,5 @@ at the derivative. Do not decimate or overwrite the accepted editable master.
 The app caches the camera separately from essential offline film resources.
 Opening it downloads it on demand; Backups & offline → Offline & storage also
 offers explicit preparation. An uncached or failed camera download does not
-block saved-roll viewing. Camera binaries and review captures stay out of Git.
+block saved-roll viewing. Published camera GLBs belong in Git; private authoring
+models and review captures remain ignored and are managed separately.

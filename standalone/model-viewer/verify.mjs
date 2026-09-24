@@ -2,9 +2,9 @@ import {chromium,devices} from 'playwright';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import {assetRoot} from './catalog.mjs';
-const base=process.env.PREVIEW_URL||'http://100.127.56.123:4180';
-const out=path.join(assetRoot(),`model-viewer/qa/${new Date().toISOString().replace(/[:.]/g,'-')}`);
+import {root} from './catalog.mjs';
+const base=process.env.PREVIEW_URL||'http://127.0.0.1:4180';
+const out=path.resolve(root,`../../artifacts/model-viewer/${new Date().toISOString().replace(/[:.]/g,'-')}`);
 fs.mkdirSync(out,{recursive:true});
 const reports=[];
 for(const [name,engine,options] of [['desktop',chromium,{viewport:{width:1200,height:850},deviceScaleFactor:1}],['ipad',chromium,{...devices['iPad Pro 11'],deviceScaleFactor:1}]] ){

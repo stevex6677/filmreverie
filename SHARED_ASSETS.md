@@ -1,16 +1,23 @@
-# Shared source assets and generated media
+# Runtime assets and retained authoring media
 
-Durable ignored media belongs in the **main checkout**, shared by every worktree:
+All workflows run locally. A fresh clone contains the runtime files needed by the
+Web App and standalone viewer; private authoring storage is not required to run
+`npm ci`, `npm run dev` or `npm run build`.
 
-| Purpose | Main-checkout directory |
-| --- | --- |
-| Original inputs, read only | `ignored_assets/` |
-| Models, exports, renders, derivatives | `ignored_generated/` |
+| Purpose | Location | Retention |
+| --- | --- | --- |
+| Published packaging images, sample photos and camera GLBs | Active checkout `public/assets/` | Tracked in Git |
+| Original authoring inputs, read only | Main checkout `ignored_assets/` | Durable; back up separately |
+| Blender masters, intermediates, exports and previews | Main checkout `ignored_generated/blender/` | Durable; back up separately |
+| Reproducible conversion/download caches | Active checkout `.cache/` | Disposable |
+| Non-Blender review captures and reports | Active checkout `artifacts/` | Ignored; retain selected evidence separately |
 
-`shared-assets.json` defines the Mac and Linux main checkouts. Override with
-`FILM_PHOTO_SHARED_ROOT` on another machine. Never infer the shared root from
-the current working directory. Python scripts use `scripts/shared_assets.py`;
-Node scripts use `scripts/shared-assets.js`.
+`shared-assets.json` defines shared directory names. Python
+`scripts/shared_assets.py` and Node `scripts/shared-assets.js` discover the local
+Git main checkout, including from linked worktrees; there are no platform-specific
+main paths. `FILM_PHOTO_SHARED_ROOT` explicitly overrides the authoring storage
+root. Do not infer that root from the current working directory. Runtime asset
+resolution uses the active checkout's tracked `public/`, not the authoring root.
 
 Existing media retains its former repository-relative path below its shared
 root. Thus the Tripo input is
@@ -21,101 +28,119 @@ The five renders, GLB and Blender backups are beside that model.
 Duplicate inputs were consolidated only after verifying identical bytes.
 Differing copies get separate destinations. The task's lens study and refined
 donor differed from the main checkout; both versions were preserved, and the
-hybrid builder points to the task's original donor copies under `preserved_variants/`.
+hybrid builder points to those copies under
+`blender/mamiya_universal/preserved_variants/codex-3296/`.
 Historical validation JSON paths describe the original runs. The completed
 migration's file inventory and verification script remain available in Git
 history at commit `55366c3`.
 
 ## Generating and using media
 
-- Read original assets without overwriting them. Write edits and conversions
-  under `ignored_generated/`.
-- Blender builders allocate `runs/<UTC timestamp>-<unique ID>/` under the relevant
-  model/version directory. Render and export scripts use the opened shared
-  `.blend` file's directory. To continue a specific run, explicitly set
-  `FILM_PHOTO_OUTPUT_DIR` to that directory. Outputs outside the shared generated
-  root are rejected. Use separate run folders for simultaneous worktrees.
-- The hybrid scripts read the preserved donor models from their migrated paths.
+- Read original assets without overwriting them. Write durable edits and
+  conversions under the shared generated root, never in the cache as their only copy.
+- New model-authoring pipelines use
+  `ignored_generated/blender/<model>/runs/<run>/{scene.blend,intermediates/,exports/,previews/}`.
+  Give simultaneous worktrees unique run names. Existing builders retain their
+  documented internal filenames and layouts; do not rename accepted deliveries.
+  To continue a specific run, explicitly set `FILM_PHOTO_OUTPUT_DIR` within the
+  shared generated root and follow that builder's output conventions.
+- The hybrid scripts read preserved donor models from their recorded paths.
   v2 reads the accepted v1 model as its badge/text donor. To adopt a new donor,
-  update its explicit path in the script and record that change with its checksum.
-- Execute Blender scripts through Blender MCP and supply the actual source
-  `__file__` when using `exec`. Code stays in the active synchronized worktree;
-  media paths resolve to the main checkout on that same host.
-- `npm run prepare:assets` generates content-addressed photo derivatives directly
-  under shared `ignored_generated/photo-derivatives/`. It copies them into the
-  active worktree's `public/` as a disposable serving cache. Concurrent generation
-  uses unique temporary files and atomic replacement. `npm run build` performs
-  this preparation automatically; `npm run dev` also prepares its serving cache through
-  the `predev` hook. Tracked PNG masters remain in Git at their existing paths.
-- Keep dependency directories, caches, build output and temporary test output
-  in their normal worktree locations. This policy concerns durable ignored media,
-  not every ignored file. Existing tracked images/media were not untracked.
+  update its explicit script path and record that change with its checksum.
+- Execute Blender scripts locally through Blender MCP and supply the actual
+  local source `__file__` when using `exec`. Code stays in the active worktree;
+  shared authoring paths resolve to the local main checkout.
+- `npm run prepare:assets` validates tracked runtime images and GLBs and prepares
+  the bundled Draco decoder from the installed Three.js dependency. Both
+  `npm run dev` and `npm run build` perform this preparation. Neither needs
+  private assets, Blender, `ffmpeg` or `sips`.
+- `npm run prepare:photos` is the explicit local authoring command for regenerating
+  photo derivatives from retained sources. It uses the disposable cache under
+  the active checkout's `.cache/photo-derivatives/` and publishes derivatives to tracked
+  `public/assets/photos/`. Install local `ffmpeg` for thumbnails; full JPEG
+  conversion uses macOS `sips` when available, otherwise `ffmpeg`. These are
+  authoring-only dependencies, not app-startup requirements.
+  Review regenerated images before committing them. Existing tracked PNG masters
+  remain in Git at their existing paths.
+- `npm run fetch:packaging` optionally acquires pinned originals without changing
+  startup requirements. `npm run fetch:packaging -- --publish` deliberately
+  publishes their runtime copies. See the
+  [packaging instructions](public/assets/film-packaging/README.md).
+- Keep `ignored_generated/` Blender-only. Non-Blender review commands write to
+  `artifacts/` in the active checkout. Keep dependencies, build output and browser
+  reports in their normal ignored worktree locations. Do not move accepted
+  authoring runs into disposable cache or treat tracked `public/assets/` as a cache.
 
 ## Reusable browser preview for 3D models
 
-For GLB viewing, drag-to-rotate previews or remote iPad access, reuse
-[`standalone/model-viewer/`](standalone/model-viewer/README.md). Read its README
-before creating a new preview page. Add each new model to
-[`models.json`](standalone/model-viewer/models.json); the `asset` path is relative
-to the shared generated root described above, and `/?model=<id>` is its stable
-browser link. Keep the module independent of the existing Web App unless the
-user asks for integration. The module README covers deployment and checks.
+For GLB viewing, drag-to-rotate previews or private iPad access, reuse
+[`standalone/model-viewer/`](standalone/model-viewer/README.md). Add each model to
+[`models.json`](standalone/model-viewer/models.json); `asset` is public-relative,
+for example `assets/cameras/<id>-<sha256>.glb`, and `/?model=<id>` is its stable
+browser link. The standalone default asset root is the repository's `public/`;
+`MODEL_ASSET_ROOT` remains an explicit override for a custom catalog.
 
-Keep exported GLB files and their textures in unique shared generated run
-folders. Only preview code and model configuration belong in Git. Do not copy
-model binaries into the module directory to make a new model discoverable.
+Retain authored GLBs and textures in their durable model run. Publish the selected
+browser derivative, byte-identically, in `public/assets/cameras/` and track it
+with the catalog and manifest. All four current camera GLBs are runtime assets;
+they must be available from Git without private storage. Do not copy them into
+the standalone module itself. Preserve its independence except for the existing
+Web App integration or explicitly requested changes.
 
-## Synchronization and backups
+## Backups and worktree lifetime
 
-Shared media is transferred on demand using the general local `remote_exec`
-tool, described in [`remote_exec` README](/Users/zhangzimou/Projects/tools/remote_exec/README.md). All source-code
-Mutagen sessions exclude both shared directories.
+Back up `ignored_assets/` and durable `ignored_generated/` authoring runs
+separately. Git does not back up ignored originals, `.blend` files, intermediates,
+exports or previews. Preserve differing variants and verify checksums before
+consolidating byte-identical copies. Include external textures and companion files.
 
-- Mac shared root: `/Users/zhangzimou/Projects/film_photo`
-- Linux shared root: `/workspace/film_photo`
-
-From any worktree, upload a required file with:
-
-```bash
-remote_exec asset ensure ignored_assets/<path>
-```
-
-The same command accepts `ignored_generated/<path>` for an existing model or
-export needed remotely (use optional `--checksum` for SHA-256 verification).
-It skips identical files and refuses to overwrite differing content. Include
-external textures and other required companion files explicitly. There are no
-overlapping asset sessions or worktree copies/symlinks. The old `film-photo`
-session is migrated to code-only coverage; flushing a source session no longer
-transfers media.
-
-Retrieve durable remote outputs before releasing the instance:
-
-```bash
-remote_exec asset fetch ignored_generated/<unique-run>/<file>
-```
-
-Fetch only writes under the local main checkout's `ignored_generated/`. Preserve
-source originals as read-only. Run application commands from the active worktree
-via `remote_exec run` (which automatically flushes source edits before execution).
-
-Back up both shared directories separately: Git and Mutagen are not a versioned
-backup. Removing a temporary worktree must not remove either shared directory.
-Commit scripts and manifests normally; never force-add their binary outputs.
+Removing a temporary worktree must not remove shared durable directories.
+The active checkout's `.cache/` can be recreated and excluded from durable
+backups. Historical non-Blender generated folders were removed recoverably
+to macOS Trash; cleanup inventories are under `artifacts/generated-cleanup/`.
+Required Mamiya donor files were moved under `blender/mamiya_universal/preserved_variants/`
+and their builder references updated. Do not delete unknown Blender runs on the
+assumption that they are cache. Published runtime assets, manifests and scripts
+belong in Git; private media, authoring binaries and review captures remain ignored.
+No asset upload/download service or synchronization health check is needed for
+local work.
 
 ## Model version manifests
 
 The tracked [Mamiya CURRENT.json](blender/mamiya_universal/CURRENT.json) is the
 entry point for the latest editable master, browser GLB, renders and continuation
-state. Resolve its asset paths against the shared generated root, not a worktree.
-Each model should maintain an equivalent current record. Update it on delivery,
-verify file checksums and the GLB's source master, and keep the viewer catalog in
-agreement. Preserve previous run manifests as history; do not select the current
-delivery by file modification time. Commit the records, not the binary assets.
+state. Resolve authoring paths against the shared generated root, not a worktree.
+`browser_glb.path` preserves that provenance; `browser_glb.published_path` is the
+repository-relative runtime path under `public/assets/cameras/`. Each model should
+maintain an equivalent record. Update it on delivery, verify checksums and the
+GLB's source master, and keep the public-relative viewer catalog in agreement.
+Preserve previous run manifests as history; do not select the current delivery
+by file modification time. Commit the records and published runtime GLB, not
+private inputs or editable Blender masters.
 
 New generated versions should have a manifest recording
 their source checksums, source-code revision, settings and output paths/checksums.
 
-## Validation of this setup
+## Local-first migration verification
+
+- Published four byte-identical camera GLBs (70,593,360 bytes total) and 15
+  packaging raster images as tracked runtime assets.
+- The initial migration relocated and hash-verified 35 cache files. The subsequent
+  Blender-only cleanup moved those caches and the old migration inventory into
+  the recovery folder in macOS Trash. Photo caches now regenerate under `.cache/`.
+  Original inputs and retained model runs were preserved.
+- A checkout exported only from the Git index installed dependencies and built
+  locally with a deliberately unavailable authoring root. It required neither
+  ignored directory; corrupted models and missing packaging were rejected.
+- Local verification passed: 241 integration tests, three standalone catalog
+  tests, two shared-output isolation tests, the four-camera shelf/inspection
+  browser scenario, and standalone desktop/tablet-emulation interaction checks.
+  Camera and packaging screenshots were visually inspected.
+- Autocord, Canon 7s and Demi saved-delivery integrity checks passed locally.
+  This migration did not regenerate models or rerun Blender rendering; tablet
+  emulation is not a physical-iPad acceptance claim.
+
+## Historical validation of the earlier storage migration
 
 On 2026-09-11, the active remote worktree verified all 95 shared destinations
 against the 96 original-file records. Both output-isolation tests passed, the

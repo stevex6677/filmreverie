@@ -1,8 +1,13 @@
 """Verify only the two replaced top surfaces changed, plus Draco round trip."""
 from pathlib import Path
-import bpy,numpy as np,hashlib,json
+import bpy,numpy as np,hashlib,json,sys
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'scripts'))
+from shared_assets import generated_path
 master=Path(bpy.data.filepath);out=master.parent
-source=out.parent/'20260923T-shoulder-compact-b/canon-demi-ee17-refined.blend'
+correction=json.loads((out/'top2_report.json').read_text())
+recorded=Path(correction['source_blend'])
+source=generated_path(Path(*recorded.parts[recorded.parts.index('blender'):]))
+assert hashlib.sha256(source.read_bytes()).hexdigest()==correction['source_sha256']
 excluded={'Top inset continuous enamel plate','demi EE17 inlay','Top2 continuous textured black band','Canon Demi EE17 | original Tripo with scoped repairs'}
 def array(items,field,width,dtype=np.float32):
     a=np.empty(len(items)*width,dtype);items.foreach_get(field,a);return a

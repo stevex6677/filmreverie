@@ -39,6 +39,7 @@
   },
   "browser_glb": {
     "path": "blender/canon7s/bottom/runs/20260922-bottom-a/canon7s-browser.glb",
+    "published_path": "public/assets/cameras/canon-7s-46656605d7e5440cea732f7c435c0b30aea60a221df1c83952c3c0ddc291abc9.glb",
     "sha256": "46656605d7e5440cea732f7c435c0b30aea60a221df1c83952c3c0ddc291abc9",
     "bytes": 23700224,
     "triangles": 577256,
@@ -235,8 +236,8 @@
     "scripts_directory": "blender/canon7s",
     "source_inspection_blend": "blender/canon7s/refinement/runs/20260921-canon7s-detail-a/source.blend",
     "source_inspection_sha256": "75ba57cac16f120104e61c649547c6b38529e41fdfcde12b4101f76f6663f603",
-    "instructions": "For continued editing, open editable_blend through Blender MCP. To reproduce the underside pass, first use prepare_bottom_reference.py remotely with Pillow/pillow-heif to prepare bottom_reference.jpg in ignored_generated/blender/canon7s/bottom/runs/20260922-bottom-a/reference. Open the recorded parent_master through MCP and execute refine_bottom.py into a new FILM_PHOTO_OUTPUT_DIR. Then execute render_views.py and export_delivery.py on the packed new master; wait for the render processes to finish and inspect master and reimported compact-GLB views. Run verify_delivery.py remotely with FILM_PHOTO_OUTPUT_DIR and CANON7S_CODE_REVISION. Update CURRENT.json and the shared viewer catalog together, then run npm run prepare:assets to refresh the cabinet copy. Keep the parent and original HEIC intact.",
-    "path_roots": "Source and references resolve under main-checkout ignored_assets; all other media paths resolve under main-checkout ignored_generated. Python source stays in the active worktree."
+    "instructions": "For continued editing, open editable_blend through local Blender MCP. To reproduce the underside pass, run prepare_bottom_reference.py locally with Pillow/pillow-heif and a new FILM_PHOTO_OUTPUT_DIR. Open the recorded parent_master through local MCP and execute refine_bottom.py using that same output directory. Then execute render_views.py and export_delivery.py on the packed new master; wait for rendering to finish and inspect master and reimported compact-GLB views. Run verify_delivery.py locally with FILM_PHOTO_OUTPUT_DIR and CANON7S_CODE_REVISION. Copy the accepted browser export into public/assets/cameras/<model_id>-<sha256>.glb, retain its authoring path, record published_path and update the public-relative viewer catalog asset. Run npm run prepare:assets to verify the tracked runtime copy. Keep the parent and original HEIC intact.",
+    "path_roots": "Source and references resolve under local main-checkout ignored_assets; authoring media resolve under local main-checkout ignored_generated. browser_glb.published_path is relative to the active repository root. Python source stays in the active worktree."
   },
   "scripts": {
     "blender/canon7s/export_delivery.py": "a4055bb0da95dbe69a10bf89b1ea0718bafc716bf4cd9da50fa48222c28c0d64",
@@ -253,7 +254,8 @@
     "model_id": "canon-7s",
     "route": "/?model=canon-7s",
     "catalog": "standalone/model-viewer/models.json",
-    "deployment": "Standalone viewer runs remotely from /workspace/worktrees/paseo/massive-rabbit on loopback port 4182: http://localhost:4182/?model=canon-7s ; phone/iPad: http://macbook:4182/?model=canon-7s . The main app runs from the same checkout on port 5183: http://localhost:5183/?mode=room ; phone/iPad: http://macbook:5183/?mode=room . Select Cameras, then Canon 7s. Private Tailscale access only; existing Mamiya and Autocord entries preserved."
+    "deployment": "Run the standalone viewer and main app locally from the active checkout. Use /?model=canon-7s in the standalone viewer or /?mode=room in the main app and select Cameras, then Canon 7s. Check the actual local host and port; use private Tailscale access for other devices. Existing model IDs and routes are preserved.",
+    "historical_deployment": "At delivery, the standalone viewer ran remotely from /workspace/worktrees/paseo/massive-rabbit on loopback port 4182 and the main app on port 5183. This is historical provenance, not the current execution workflow."
   },
   "parent_master": {
     "path": "blender/canon7s/surface_smoothing/runs/20260922-surface-b/canon7s-refined.blend",

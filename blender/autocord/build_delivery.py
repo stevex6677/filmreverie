@@ -3,7 +3,7 @@
 Run mcp_client.py execute_blender_code --script blender/autocord/build_delivery.py
 --blend <source.blend> --output <new shared ignored_generated run directory>.
 Prepare references and detail/upper-front/lower-front textures first with the
-prepare_*.py scripts through remote_exec run, using the same output directory.
+prepare_*.py scripts locally, using the same output directory.
 """
 from pathlib import Path
 import bpy, hashlib, json, sys

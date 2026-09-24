@@ -1,16 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import {fileURLToPath} from 'node:url';
 export const root=path.dirname(fileURLToPath(import.meta.url));
 export function assetRoot(env=process.env){
   if(env.MODEL_ASSET_ROOT)return path.resolve(env.MODEL_ASSET_ROOT);
-  const file=path.resolve(root,'../../shared-assets.json');
-  if(!fs.existsSync(file))throw new Error('Set MODEL_ASSET_ROOT to your GLB asset directory');
-  const config=JSON.parse(fs.readFileSync(file,'utf8'));
-  const shared=env.FILM_PHOTO_SHARED_ROOT||config.main_checkout[os.type()];
-  if(!shared)throw new Error('No shared asset root for this platform; set MODEL_ASSET_ROOT');
-  return path.resolve(shared,config.generated_directory);
+  return path.resolve(root,'../../public');
 }
 export function validateCatalog(raw,assets){
   if(!raw||!Array.isArray(raw.models)||!raw.models.length)throw new Error('models must be a nonempty array');

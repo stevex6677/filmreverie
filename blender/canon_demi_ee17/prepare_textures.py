@@ -1,4 +1,4 @@
-"""Rectify only the supplied detail photographs; run with remote_exec."""
+"""Rectify only the supplied detail photographs; run locally with python3."""
 from pathlib import Path
 import os, sys
 import numpy as np

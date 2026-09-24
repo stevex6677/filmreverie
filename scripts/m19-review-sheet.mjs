@@ -1,5 +1,5 @@
 // Compose actual browser captures without applying any additional image treatment.
-// Run remotely: node scripts/m19-review-sheet.mjs <Playwright output> <shared output>
+// Run locally: node scripts/m19-review-sheet.mjs <Playwright output> <shared output>
 import { readdir, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createCanvas, loadImage } from '@napi-rs/canvas';

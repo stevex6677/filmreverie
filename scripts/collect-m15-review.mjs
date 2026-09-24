@@ -1,14 +1,13 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { generatedPath } from './shared-assets.js';
 
-// Run after the cumulative gate. Each invocation gets a fresh shared output;
+// Run after the cumulative gate. Each invocation gets a fresh local output;
 // test artifacts stay untracked and no source photograph is modified.
 const run = `${new Date().toISOString().replaceAll(':','-')}-${process.pid}`;
 const [reviewDir='artifacts/m15-candidates',sourceBase='e5850e0',...resultRoots]=process.argv.slice(2);
 if(!resultRoots.length)resultRoots.push('test-results');
-const output = generatedPath(`m15-mobile/runs/${run}`);
+const output = path.resolve('artifacts', 'm15-mobile', 'runs', run);
 await fs.mkdir(output,{recursive:true});
 const copied=[];
 for(const root of resultRoots)for(const entry of await fs.readdir(root,{withFileTypes:true})) {
