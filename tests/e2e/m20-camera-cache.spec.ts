@@ -1,3 +1,4 @@
+import { openCamera } from './helpers/camera';
 import { test, expect } from '@playwright/test';
 import { PRIMARY_CAMERA } from '../../src/data/cameras';
 import { ready } from './helpers/shelf';
@@ -25,7 +26,7 @@ test('failed optional preparation preserves film readiness; uncached inspection 
     if (browserName !== 'webkit') await context.setOffline(true);
     await reload(); await ready(page);
     await page.getByRole('button', { name: 'Cameras', exact: true }).click(); await ready(page);
-    await page.getByRole('button', { name: 'Inspect Mamiya Universal' }).click();
+    await openCamera(page);
     await expect(page.locator('.camera-display [role="alert"]')).toContainText(browserName === 'webkit' ? 'could not be loaded' : "Camera model isn't available offline");
     await expect(page.getByRole('button', { name: 'Back to shelf' })).toBeEnabled();
     await expect(page.getByText('Introduced', { exact: true })).toBeAttached();
@@ -35,7 +36,7 @@ test('failed optional preparation preserves film readiness; uncached inspection 
     if (browserName === 'webkit') await server.stop(); else await context.setOffline(true);
     await reload(); await ready(page);
     await page.getByRole('button', { name: 'Cameras', exact: true }).click(); await ready(page);
-    await page.getByRole('button', { name: 'Inspect Mamiya Universal' }).click();
+    await openCamera(page);
     await expect(page.locator('.camera-display')).toHaveAttribute('data-model-ready', 'true', { timeout: 90000 });
   } finally { await context.setOffline(false); await server.stop(); }
 });

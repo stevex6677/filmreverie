@@ -36,7 +36,7 @@ test('bundled cameras prepare and load from a checkout without authoring storage
  fs.writeFileSync(path.join(checkout,'package.json'),JSON.stringify({type:'module'}));
  for(const file of ['standalone/model-viewer/catalog.mjs','standalone/model-viewer/models.json','scripts/prepare-camera.js'])copy(file);
  const raw=JSON.parse(fs.readFileSync(path.join(checkout,'standalone/model-viewer/models.json'),'utf8'));
- for(const model of raw.models)copy(`public/${model.asset}`);
+ for(const model of raw.models){copy(`public/${model.asset}`);copy(`public/${model.shelf.asset}`);}
  for(const dir of fs.readdirSync(path.join(source,'blender'),{withFileTypes:true})){
   if(dir.isDirectory()&&fs.existsSync(path.join(source,'blender',dir.name,'CURRENT.json')))copy(`blender/${dir.name}/CURRENT.json`);
  }

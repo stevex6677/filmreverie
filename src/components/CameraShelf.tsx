@@ -8,33 +8,40 @@ import { CAMERAS } from '../data/cameras';
 import type { CameraEntry } from '../data/cameras';
 import { mm, CAMERA_SHELF_MM, CAMERA_SHELF_ORIGIN, CAMERA_SHELF_YAW, cameraShelfSlot, CAMERA_PRESENTATION_YAW } from '../data/physicalScale';
 import { useCameraModel } from '../utils/useCameraModel';
+import type { CameraCollectionProgress } from '../utils/loadCameraModel';
+type CameraStatus = { state: 'loading' | 'ready' | 'error'; retry: () => void };
 import { FilmPackage } from './FilmShelf';
 import { getPackaging } from '../data/filmPackaging';
 import { roomCameraModel } from '../utils/roomCameraModel';
 
 type MountedCamera = ReturnType<typeof mountModel> & { object: ReturnType<typeof roomCameraModel>['object'] };
 
-function CameraCabinetItem({ entry, index, enabled, focused, interactive, portal, onMounted, onOpen, onSettled }: {
-  entry: CameraEntry; index: number; enabled: boolean; focused: boolean; interactive: boolean;
+function CameraCabinetItem({ entry, index, enabled, focused, interactive, portal, environment, onMounted, onOpen, onStatus }: {
+  environment: Texture; entry: CameraEntry; index: number; enabled: boolean; focused: boolean; interactive: boolean;
   portal: RefObject<HTMLDivElement>; onMounted: (index: number, mounted: MountedCamera | null) => void;
-  onOpen: (id: string) => void; onSettled?: () => void;
+  onOpen: (id: string) => void; onStatus: (index: number, status: CameraStatus) => void;
 }) {
   const { gl } = useThree();
   const { model, error, retry } = useCameraModel(entry, enabled);
   const mounted = useMemo(() => {
     if (!model) return null;
     const result = mountModel(model, entry.rotation, mm(entry.widthMm));
-    const environment = studioEnvironment(gl), presentation = roomCameraModel(result.object, environment.texture);
-    return { ...result, object: presentation.object, environment, dispose: presentation.dispose };
-  }, [entry, model, gl]);
+    const presentation = roomCameraModel(result.object, environment);
+    return { ...result, object: presentation.object, dispose: presentation.dispose };
+  }, [entry, model, environment]);
   useEffect(() => {
     onMounted(index, mounted);
     return () => onMounted(index, null);
   }, [index, mounted, onMounted]);
-  useEffect(() => () => { mounted?.environment.dispose(); mounted?.dispose(); }, [mounted]);
+  useEffect(() => () => { mounted?.dispose(); }, [mounted]);
   const rendered = useRef(0);
-  useFrame(() => { if (mounted && rendered.current < 2 && ++rendered.current === 2) onSettled?.(); });
-  useEffect(() => { if (error) onSettled?.(); }, [error, onSettled]);
+  useEffect(() => {
+    rendered.current = 0;
+    onStatus(index, { state: error ? 'error' : 'loading', retry });
+  }, [mounted, error, index, onStatus, retry]);
+  useFrame(() => {
+    if (mounted && rendered.current < 2 && ++rendered.current === 2) onStatus(index, { state: 'ready', retry });
+  });
   const focusTarget = useCallback((node: HTMLButtonElement | null) => { if (node && focused && index === 0) node.focus({ preventScroll: true }); }, [focused, index]);
   const pointer = useRef({ x: 0, y: 0, moved: false, contacts: new Set<number>() });
   useEffect(() => { pointer.current.contacts.clear(); pointer.current.moved = false; }, [interactive, focused]);
@@ -83,9 +90,25 @@ function CameraCabinetItem({ entry, index, enabled, focused, interactive, portal
 export function CameraShelf({ focused, interactive, load, portal, onApproach, onOpen, onSettled, textures }: {
   focused: boolean; interactive: boolean; load: boolean; portal: RefObject<HTMLDivElement>;
   onApproach: () => void; onOpen: (id: string) => void;
-  onSettled?: () => void; textures: Record<string, Texture>;
+  onSettled?: (progress: CameraCollectionProgress) => void; textures: Record<string, Texture>;
 }) {
   const { gl, camera } = useThree();
+  const environment = useMemo(() => studioEnvironment(gl), [gl]);
+  useEffect(() => () => environment.dispose(), [environment]);
+  const [statuses, setStatuses] = useState<Map<number, CameraStatus>>(new Map());
+  const updateStatus = useCallback((index: number, status: CameraStatus) => setStatuses(current => {
+    if (current.get(index)?.state === status.state && current.get(index)?.retry === status.retry) return current;
+    const next = new Map(current); next.set(index, status); return next;
+  }), []);
+  useEffect(() => {
+    const values = [...statuses.values()];
+    const loaded = values.filter(item => item.state === 'ready').length;
+    gl.domElement.dataset.cameraModelsReady = String(loaded === CAMERAS.length);
+    gl.domElement.dataset.cameraModelsLoaded = String(loaded);
+    onSettled?.({ loaded, total: CAMERAS.length, failed: values.filter(item => item.state === 'error').length,
+      retry: () => values.filter(item => item.state === 'error').forEach(item => item.retry()) });
+  }, [statuses, onSettled, gl]);
+
   const [mountedCameras, setMountedCameras] = useState<Map<number, MountedCamera>>(new Map());
   const updateMounted = useCallback((index: number, mounted: MountedCamera | null) => setMountedCameras(current => {
     if (current.get(index) === mounted || (!mounted && !current.has(index))) return current;
@@ -167,7 +190,7 @@ export function CameraShelf({ focused, interactive, load, portal, onApproach, on
       </group>
     </group>
     {CAMERAS.map((entry, index) => <CameraCabinetItem key={entry.id} entry={entry} index={index}
-      enabled={load} focused={focused} interactive={interactive} portal={portal}
-      onMounted={updateMounted} onOpen={onOpen} onSettled={index === 0 ? onSettled : undefined} />)}
+      enabled={load} focused={focused} interactive={interactive} portal={portal} environment={environment.texture}
+      onMounted={updateMounted} onOpen={onOpen} onStatus={updateStatus} />)}
   </group>;
 }

@@ -7,6 +7,7 @@ export const CAMERAS = catalog.models.filter((model): model is PhysicalCamera =>
 ).map(model => ({
   ...model, name: [model.title, model.titleAccent].filter(Boolean).join(' '),
   url: `/assets/cameras/${model.id}-${model.sha256}.glb`,
+  shelfUrl: `/${model.shelf.asset}`,
   rotation: model.rotation,
 }));
 export const PRIMARY_CAMERA = CAMERAS[0];

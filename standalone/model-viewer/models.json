@@ -3,56 +3,110 @@
   "models": [
     {
       "id": "mamiya-universal",
-      "sha256": "6d426487c0a5c5fc59ad969158bee3d2612ce67a6bf6934f82cc78c1bbd96b73",
+      "sha256": "442c8d4cb16e430b042d112106ab0cbbcd88874bdb4f7bd79da2fe18338ace1d",
       "widthMm": 210,
       "manufacturer": "Mamiya",
       "introduced": 1969,
       "manufactured": null,
       "category": "Medium-format press rangefinder",
       "description": "A modular camera built around interchangeable lenses and film backs. This display pairs the black body with a Mamiya-Sekor 100 mm f/2.8 lens.",
-      "sources": [{ "title": "Mamiya Universal camera history", "url": "https://mamiya.awane-photo.com/camera/press/universa/index.htm" }],
+      "sources": [
+        {
+          "title": "Mamiya Universal camera history",
+          "url": "https://mamiya.awane-photo.com/camera/press/universa/index.htm"
+        }
+      ],
       "title": "Mamiya",
       "titleAccent": "Universal",
-      "subtitle": "Black Body · Multi-coated Optics",
+      "subtitle": "Black Body \u00b7 Multi-coated Optics",
       "eyebrow": "THE CAMERA STUDY",
       "edition": "HYBRID V2",
-      "caption": "MAMIYA—SEKOR",
+      "caption": "MAMIYA\u2014SEKOR",
       "captionDetail": "100 mm / f 2.8",
-      "asset": "assets/cameras/mamiya-universal-6d426487c0a5c5fc59ad969158bee3d2612ce67a6bf6934f82cc78c1bbd96b73.glb",
+      "asset": "assets/cameras/mamiya-universal-442c8d4cb16e430b042d112106ab0cbbcd88874bdb4f7bd79da2fe18338ace1d.glb",
       "profile": "mamiya",
-      "rotation": [0, 0, 0],
-      "camera": {"distance": 5.2, "portraitDistance": 6, "home": [1.7, 1.5, 3.2]},
-      "exposure": 1.15
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "camera": {
+        "distance": 5.2,
+        "portraitDistance": 6,
+        "home": [
+          1.7,
+          1.5,
+          3.2
+        ]
+      },
+      "exposure": 1.15,
+      "shelf": {
+        "asset": "assets/cameras/mamiya-universal-shelf-49c200d6fab8a602112150a3f513a21886dde407b3e560765469eddeaa6f3fb5.glb",
+        "sha256": "49c200d6fab8a602112150a3f513a21886dde407b3e560765469eddeaa6f3fb5",
+        "bytes": 406508,
+        "triangles": 17980
+      }
     },
     {
       "id": "minolta-autocord",
-      "sha256": "0fd838994e57a92a54a2ba8a0968e36ce059a425585076dce381bcb3e56cb311",
+      "sha256": "e1b366e32dc390fb6e92dbc7209bb44d3e81ab15c4240d02593a070b88d5ceee",
       "widthMm": 84,
       "manufacturer": "Minolta",
       "introduced": 1955,
       "manufactured": null,
       "category": "Medium-format twin-lens reflex",
       "description": "A coupled-meter twin-lens reflex with a focusing lever below the taking lens. This display retains the original body and optics with restored inscriptions, focusing scales and underside details.",
-      "sources": [{ "title": "Minolta Autocord camera history", "url": "https://www.collection-appareils.fr/x/html/camera-798-Minolta_Autocord.html" }],
+      "sources": [
+        {
+          "title": "Minolta Autocord camera history",
+          "url": "https://www.collection-appareils.fr/x/html/camera-798-Minolta_Autocord.html"
+        }
+      ],
       "title": "Minolta",
       "titleAccent": "Autocord",
-      "subtitle": "Refined lens inscriptions · Dual distance scales",
+      "subtitle": "Refined lens inscriptions \u00b7 Dual distance scales",
       "eyebrow": "THE CAMERA STUDY",
       "edition": "FRONT LETTERING REFINEMENT",
       "caption": "MINOLTA AUTOCORD",
-      "captionDetail": "VIEW ROKKOR · CITIZEN-MVL",
-      "asset": "assets/cameras/minolta-autocord-0fd838994e57a92a54a2ba8a0968e36ce059a425585076dce381bcb3e56cb311.glb",
+      "captionDetail": "VIEW ROKKOR \u00b7 CITIZEN-MVL",
+      "asset": "assets/cameras/minolta-autocord-e1b366e32dc390fb6e92dbc7209bb44d3e81ab15c4240d02593a070b88d5ceee.glb",
       "profile": "default",
-      "rotation": [0, 0, 0],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "camera": {
         "distance": 5.2,
         "portraitDistance": 6,
-        "home": [-1.7, 1.2, 3.2],
-        "front": [0, 0.15, 3.8],
-        "rear": [0, 0.4, -3.8],
-        "side": [-3.8, 0.15, 0]
+        "home": [
+          -1.7,
+          1.2,
+          3.2
+        ],
+        "front": [
+          0,
+          0.15,
+          3.8
+        ],
+        "rear": [
+          0,
+          0.4,
+          -3.8
+        ],
+        "side": [
+          -3.8,
+          0.15,
+          0
+        ]
       },
-      "exposure": 1.15
+      "exposure": 1.15,
+      "shelf": {
+        "asset": "assets/cameras/minolta-autocord-shelf-a2ca9ebd762bdade6ef1249e2b9d7821311078489446e702dd1c0ff74a69a4a3.glb",
+        "sha256": "a2ca9ebd762bdade6ef1249e2b9d7821311078489446e702dd1c0ff74a69a4a3",
+        "bytes": 466764,
+        "triangles": 18000
+      }
     },
     {
       "id": "canon-demi-ee17",
@@ -62,26 +116,57 @@
       "manufactured": null,
       "category": "35 mm half-frame zone-focus camera",
       "description": "A compact half-frame camera with a Canon SH 30 mm f/1.7 lens and shutter-priority automatic exposure. Displayed at the owner's specified 11.6 cm width.",
-      "sources": [{ "title": "Canon Camera Museum: Demi EE17", "url": "https://global.canon/en/c-museum/product/film64.html" }],
+      "sources": [
+        {
+          "title": "Canon Camera Museum: Demi EE17",
+          "url": "https://global.canon/en/c-museum/product/film64.html"
+        }
+      ],
       "title": "Canon",
       "titleAccent": "Demi EE17",
       "subtitle": "Front, top, underside and rear reference corrections",
       "edition": "REFERENCE REFINEMENT",
       "caption": "CANON LENS SH",
       "captionDetail": "30 mm / 1:1.7",
-      "asset": "assets/cameras/canon-demi-ee17-fef17d78b1357b012bf0771909adfaea893e44f34cf1a6f63476524f791f23ae.glb",
-      "sha256": "fef17d78b1357b012bf0771909adfaea893e44f34cf1a6f63476524f791f23ae",
+      "asset": "assets/cameras/canon-demi-ee17-3e048ec479b25f272f05cacc390e11ea21c0ac50a8957fad5e252d1203209ac7.glb",
+      "sha256": "3e048ec479b25f272f05cacc390e11ea21c0ac50a8957fad5e252d1203209ac7",
       "profile": "default",
-      "rotation": [0, 0, 0],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "camera": {
         "distance": 4.5,
         "portraitDistance": 5.4,
-        "home": [-1.7, 1.3, 3.2],
-        "front": [0, 0.15, 3.8],
-        "rear": [0, 0.3, -3.8],
-        "side": [-3.8, 0.2, 0]
+        "home": [
+          -1.7,
+          1.3,
+          3.2
+        ],
+        "front": [
+          0,
+          0.15,
+          3.8
+        ],
+        "rear": [
+          0,
+          0.3,
+          -3.8
+        ],
+        "side": [
+          -3.8,
+          0.2,
+          0
+        ]
       },
-      "exposure": 1.15
+      "exposure": 1.15,
+      "shelf": {
+        "asset": "assets/cameras/canon-demi-ee17-shelf-6cc0eecf24851ee124da435b9a033622e3e969060c1b10b93988e8ee2ad88f89.glb",
+        "sha256": "6cc0eecf24851ee124da435b9a033622e3e969060c1b10b93988e8ee2ad88f89",
+        "bytes": 449416,
+        "triangles": 17999
+      }
     },
     {
       "id": "canon-7s",
@@ -90,28 +175,59 @@
       "introduced": 1965,
       "manufactured": null,
       "category": "35 mm focal-plane shutter rangefinder",
-      "description": "Introduced in April 1965 as the successor to the Canon 7, the 7s added a CdS exposure meter and an accessory shoe, and repositioned the tripod socket. This display pairs the body with a Voigtländer Color-Skopar 35 mm f/2.5 lens.",
-      "sources": [{ "title": "Canon Camera Museum: 7S", "url": "https://global.canon/en/c-museum/product/film55.html" }],
+      "description": "Introduced in April 1965 as the successor to the Canon 7, the 7s added a CdS exposure meter and an accessory shoe, and repositioned the tripod socket. This display pairs the body with a Voigtl\u00e4nder Color-Skopar 35 mm f/2.5 lens.",
+      "sources": [
+        {
+          "title": "Canon Camera Museum: 7S",
+          "url": "https://global.canon/en/c-museum/product/film55.html"
+        }
+      ],
       "title": "Canon",
       "titleAccent": "7s",
-      "subtitle": "Voigtländer Color-Skopar · Reference-refined details",
+      "subtitle": "Voigtl\u00e4nder Color-Skopar \u00b7 Reference-refined details",
       "eyebrow": "THE CAMERA STUDY",
       "edition": "REFERENCE REFINEMENT",
-      "caption": "VOIGTLÄNDER COLOR-SKOPAR",
+      "caption": "VOIGTL\u00c4NDER COLOR-SKOPAR",
       "captionDetail": "35 mm / F2.5 MC",
-      "asset": "assets/cameras/canon-7s-46656605d7e5440cea732f7c435c0b30aea60a221df1c83952c3c0ddc291abc9.glb",
-      "sha256": "46656605d7e5440cea732f7c435c0b30aea60a221df1c83952c3c0ddc291abc9",
+      "asset": "assets/cameras/canon-7s-339b7bd857a470d339d4d391187bd88dd5e3dcb2f2ece02dfd95f42420647cf1.glb",
+      "sha256": "339b7bd857a470d339d4d391187bd88dd5e3dcb2f2ece02dfd95f42420647cf1",
       "profile": "default",
-      "rotation": [0, 0, 0],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "camera": {
         "distance": 5.2,
         "portraitDistance": 6,
-        "home": [-1.7, 1.3, 3.2],
-        "front": [0, 0.15, 3.8],
-        "rear": [0, 0.4, -3.8],
-        "side": [-3.8, 0.2, 0]
+        "home": [
+          -1.7,
+          1.3,
+          3.2
+        ],
+        "front": [
+          0,
+          0.15,
+          3.8
+        ],
+        "rear": [
+          0,
+          0.4,
+          -3.8
+        ],
+        "side": [
+          -3.8,
+          0.2,
+          0
+        ]
       },
-      "exposure": 1.15
+      "exposure": 1.15,
+      "shelf": {
+        "asset": "assets/cameras/canon-7s-shelf-4c2c6e7007bbbee7066a71d26db68cf9facfe546824667133b0ce57fc77c5dd0.glb",
+        "sha256": "4c2c6e7007bbbee7066a71d26db68cf9facfe546824667133b0ce57fc77c5dd0",
+        "bytes": 439120,
+        "triangles": 17997
+      }
     },
     {
       "id": "olympus-om1",
@@ -122,8 +238,14 @@
       "category": "35 mm manual-focus single-lens reflex",
       "description": "A compact, fully manual 35 mm SLR introduced in 1972 as the M-1 and subsequently renamed OM-1. This display pairs the silver body with an OM-System Zuiko Auto-S 50 mm f/1.8 lens.",
       "sources": [
-        { "title": "Olympus Camera Museum: OM-1", "url": "https://www.olympus-global.com/technology/museum/camera/products/om/om-1/" },
-        { "title": "Olympus OM-1 service manual: body specifications", "url": "https://www.suaudeau.eu/memo/manuels_rep/reflexes/olympus/Olympus_OM-1_1of4.pdf" }
+        {
+          "title": "Olympus Camera Museum: OM-1",
+          "url": "https://www.olympus-global.com/technology/museum/camera/products/om/om-1/"
+        },
+        {
+          "title": "Olympus OM-1 service manual: body specifications",
+          "url": "https://www.suaudeau.eu/memo/manuels_rep/reflexes/olympus/Olympus_OM-1_1of4.pdf"
+        }
       ],
       "title": "Olympus",
       "titleAccent": "OM-1",
@@ -131,8 +253,8 @@
       "edition": "REFERENCE REFINEMENT",
       "caption": "OM-SYSTEM ZUIKO AUTO-S",
       "captionDetail": "50 mm / 1:1.8",
-      "asset": "assets/cameras/olympus-om1-7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06.glb",
-      "sha256": "7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06",
+      "asset": "assets/cameras/olympus-om1-1a4df213549f61f15e28f9001e41cbf89e45598a120f872a0ad67fc38a6bb4f9.glb",
+      "sha256": "1a4df213549f61f15e28f9001e41cbf89e45598a120f872a0ad67fc38a6bb4f9",
       "profile": "default",
       "rotation": [
         0,
@@ -163,7 +285,13 @@
           0
         ]
       },
-      "exposure": 1.05
+      "exposure": 1.05,
+      "shelf": {
+        "asset": "assets/cameras/olympus-om1-shelf-162991f68aba5b477167856814b0b7900ee13d1af2196e7fe6d65c363eab837b.glb",
+        "sha256": "162991f68aba5b477167856814b0b7900ee13d1af2196e7fe6d65c363eab837b",
+        "bytes": 451772,
+        "triangles": 18000
+      }
     }
   ]
 }

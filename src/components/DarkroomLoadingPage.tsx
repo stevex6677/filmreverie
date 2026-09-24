@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import React, { useEffect, useState, useMemo, useRef } from "react";
 
 export interface LoadingProgress {
@@ -6,6 +7,9 @@ export interface LoadingProgress {
   settled: boolean;
   firstFrameRendered: boolean;
   cameraSettled?: boolean;
+  cameraLoaded?: number;
+  cameraTotal?: number;
+  cameraFailed?: number;
 }
 
 interface DarkroomLoadingPageProps {
@@ -14,6 +18,7 @@ interface DarkroomLoadingPageProps {
   isReducedMotion?: boolean;
   hasError?: boolean;
   onFullyLoaded?: () => void;
+  onRetryCameras?: () => void;
 }
 
 export const DarkroomLoadingPage: React.FC<DarkroomLoadingPageProps> = ({
@@ -22,6 +27,7 @@ export const DarkroomLoadingPage: React.FC<DarkroomLoadingPageProps> = ({
   isReducedMotion = false,
   hasError = false,
   onFullyLoaded,
+  onRetryCameras,
 }) => {
   const [displayPercent, setDisplayPercent] = useState(15);
   const [fadingOut, setFadingOut] = useState(false);
@@ -30,7 +36,7 @@ export const DarkroomLoadingPage: React.FC<DarkroomLoadingPageProps> = ({
 
   // Compute calculated target percentage based on actual milestones
   const targetPercent = useMemo(() => {
-    if (hasError) return 100;
+    if (hasError && progress.cameraSettled !== false) return 100;
     const { loaded, total, settled, firstFrameRendered } = progress;
 
     if (settled && (firstFrameRendered || isDeterministic)) return 100;
@@ -68,6 +74,7 @@ export const DarkroomLoadingPage: React.FC<DarkroomLoadingPageProps> = ({
 
   // Determine current big status message
   const statusMessage = useMemo(() => {
+    if (progress.cameraFailed) return `Camera loading failed (${progress.cameraLoaded} of ${progress.cameraTotal} ready). Please retry.`;
     if (hasError) {
       return "Chemistry error · Switching to recovery mode";
     }
@@ -86,7 +93,7 @@ export const DarkroomLoadingPage: React.FC<DarkroomLoadingPageProps> = ({
       return `Developing photographs (${loaded} of ${total})...`;
     }
 
-    if (progress.cameraSettled === false) return "Arranging the camera collection...";
+    if (progress.cameraSettled === false) return `Arranging cameras (${progress.cameraLoaded ?? 0} of ${progress.cameraTotal ?? 0})...`;
 
     return "Calibrating 5000K light table & film emulsion...";
   }, [displayPercent, progress, hasError]);
@@ -115,7 +122,7 @@ export const DarkroomLoadingPage: React.FC<DarkroomLoadingPageProps> = ({
   // Handle completion and smooth dissolve
   useEffect(() => {
     const isReady =
-      hasError || (progress.settled && (progress.firstFrameRendered || isDeterministic));
+      progress.cameraSettled !== false && (hasError || (progress.settled && (progress.firstFrameRendered || isDeterministic)));
 
     if (isReady && !hasFinishedRef.current) {
       hasFinishedRef.current = true;
@@ -154,6 +161,7 @@ export const DarkroomLoadingPage: React.FC<DarkroomLoadingPageProps> = ({
     }
   }, [
     progress.settled,
+    progress.cameraSettled,
     progress.firstFrameRendered,
     hasError,
     isDeterministic,
@@ -161,8 +169,9 @@ export const DarkroomLoadingPage: React.FC<DarkroomLoadingPageProps> = ({
     onFullyLoaded,
   ]);
 
-  // Safety fallback timeout
+  // A slow or failed camera must never be reported as ready by a timer.
   useEffect(() => {
+    if (progress.cameraSettled === false) return;
     const safetyTimer = setTimeout(() => {
       if (!hasFinishedRef.current) {
         hasFinishedRef.current = true;
@@ -182,13 +191,17 @@ export const DarkroomLoadingPage: React.FC<DarkroomLoadingPageProps> = ({
     }, 12000);
 
     return () => clearTimeout(safetyTimer);
-  }, [onFullyLoaded]);
+  }, [onFullyLoaded, progress.cameraSettled]);
 
   if (dismissed) return null;
 
   // If the static HTML loader exists, do not render a duplicate DOM element
   const hasStaticLoader = typeof document !== "undefined" && !!document.getElementById("darkroom-loader");
-  if (hasStaticLoader) return null;
+  const retry = progress.cameraFailed ? <button type="button" className="camera-loading-retry" onClick={onRetryCameras}>Retry cameras</button> : null;
+  if (hasStaticLoader) {
+    const content = document.querySelector('#darkroom-loader .darkroom-loading-content');
+    return content && retry ? createPortal(retry, content) : null;
+  }
 
   return (
     <aside
@@ -199,6 +212,7 @@ export const DarkroomLoadingPage: React.FC<DarkroomLoadingPageProps> = ({
       aria-label="Loading Film Reverie"
     >
       <div className="darkroom-loading-content">
+        {retry}
         {/* Luminous Safelight Dot */}
         <div className="safelight-beacon" aria-hidden="true">
           <div className="safelight-core" />

@@ -38,13 +38,43 @@
     "source_blend_sha256": "ae80cacbab5b95964083279944089743abba0325307cd5474394f8ffb437b0ea"
   },
   "browser_glb": {
-    "path": "blender/canon7s/bottom/runs/20260922-bottom-a/canon7s-browser.glb",
-    "published_path": "public/assets/cameras/canon-7s-46656605d7e5440cea732f7c435c0b30aea60a221df1c83952c3c0ddc291abc9.glb",
-    "sha256": "46656605d7e5440cea732f7c435c0b30aea60a221df1c83952c3c0ddc291abc9",
-    "bytes": 23700224,
+    "path": "blender/canon7s/runs/20260924-mobile-a/exports/canon-7s-detail.glb",
+    "sha256": "339b7bd857a470d339d4d391187bd88dd5e3dcb2f2ece02dfd95f42420647cf1",
+    "bytes": 3582572,
     "triangles": 577256,
+    "primitives": 51,
     "embedded_images": 12,
-    "source_blend_sha256": "ae80cacbab5b95964083279944089743abba0325307cd5474394f8ffb437b0ea"
+    "source_blend_sha256": "ae80cacbab5b95964083279944089743abba0325307cd5474394f8ffb437b0ea",
+    "source_glb_sha256": "46656605d7e5440cea732f7c435c0b30aea60a221df1c83952c3c0ddc291abc9",
+    "compression": "KHR_draco_mesh_compression",
+    "texture_size": 1536,
+    "jpeg_quality": 82,
+    "source_triangles": 577256,
+    "source_bounds": [
+      [
+        -0.48958835005760193,
+        -0.23863884806632996,
+        -0.00044999999227002263
+      ],
+      [
+        0.4895956814289093,
+        0.23860912024974823,
+        0.5996732115745544
+      ]
+    ],
+    "export_bounds": [
+      [
+        -0.48958835005760193,
+        -0.23863884806632996,
+        -0.00044999999227002263
+      ],
+      [
+        0.4895956814289093,
+        0.23860912024974823,
+        0.5996732115745544
+      ]
+    ],
+    "published_path": "public/assets/cameras/canon-7s-339b7bd857a470d339d4d391187bd88dd5e3dcb2f2ece02dfd95f42420647cf1.glb"
   },
   "renders": [
     {
@@ -147,13 +177,13 @@
           "region": "front fascia",
           "vertices": 3371,
           "rms_before": 0.00023776141735879562,
-          "rms_after": 0.000016483390205932044
+          "rms_after": 1.6483390205932044e-05
         },
         {
           "region": "rear fascia",
           "vertices": 2539,
           "rms_before": 0.0004363255898918859,
-          "rms_after": 0.0000265983775918374
+          "rms_after": 2.65983775918374e-05
         }
       ],
       "parent_master": {
@@ -224,7 +254,7 @@
     ]
   },
   "refinements": {
-    "front": "Photographic VOIGTLÄNDER / COLOR-SKOPAR / 35mm F2.5 MC pigment mask; shallow false inscription relief leveled; glass and chrome retained.",
+    "front": "Photographic VOIGTL\u00c4NDER / COLOR-SKOPAR / 35mm F2.5 MC pigment mask; shallow false inscription relief leveled; glass and chrome retained.",
     "rear": "CANON / CAMERA CO., INC. / MADE IN JAPAN / NO. 103959; re-typeset sans-serif engraving matched to measured reference line widths. Typeface is an approximation, not a recovered original font.",
     "top": "Reference Canon 7s wordmark, shutter speed/ASA/DIN face, colored meter window with modeled bezel, 35 film reminder, folding rewind handle, frame counter, film-plane mark and release markings; continuous satin aluminum plate finish.",
     "preservation": "This underside stage retains all 999,829 parent vertex coordinates. Both UV layers, per-corner colors and encoded custom normals are exact on retained faces; 3,578 local underside faces were removed for the recesses. The 22 added detail meshes contain 113,228 triangles. Prior smoothing and inscription refinements remain intact; the compact GLB is a separate derivative with its base plate protected from decimation.",
@@ -269,5 +299,62 @@
     "asset": "Same browser_glb as the standalone viewer",
     "mounting": "Uniform scaling from the actual upright GLB X bounds; editable master is not rescaled",
     "slot": "Third camera, upper-right cabinet slot"
+  },
+  "browser_history": [
+    {
+      "path": "blender/canon7s/bottom/runs/20260922-bottom-a/canon7s-browser.glb",
+      "published_path": "public/assets/cameras/canon-7s-46656605d7e5440cea732f7c435c0b30aea60a221df1c83952c3c0ddc291abc9.glb",
+      "sha256": "46656605d7e5440cea732f7c435c0b30aea60a221df1c83952c3c0ddc291abc9",
+      "bytes": 23700224,
+      "triangles": 577256,
+      "embedded_images": 12,
+      "source_blend_sha256": "ae80cacbab5b95964083279944089743abba0325307cd5474394f8ffb437b0ea"
+    }
+  ],
+  "shelf_glb": {
+    "path": "blender/canon7s/runs/20260924-mobile-a/exports/canon-7s-shelf-baked-v2.glb",
+    "sha256": "4c2c6e7007bbbee7066a71d26db68cf9facfe546824667133b0ce57fc77c5dd0",
+    "bytes": 439120,
+    "triangles": 17997,
+    "primitives": 1,
+    "embedded_images": 2,
+    "source_blend_sha256": "ae80cacbab5b95964083279944089743abba0325307cd5474394f8ffb437b0ea",
+    "source_glb_sha256": "46656605d7e5440cea732f7c435c0b30aea60a221df1c83952c3c0ddc291abc9",
+    "compression": "KHR_draco_mesh_compression",
+    "texture_size": 1024,
+    "jpeg_quality": 85,
+    "source_triangles": 577256,
+    "source_bounds": [
+      [
+        -0.48958835005760193,
+        -0.23863884806632996,
+        -0.00044999999227002263
+      ],
+      [
+        0.4895956814289093,
+        0.23860912024974823,
+        0.5996732115745544
+      ]
+    ],
+    "export_bounds": [
+      [
+        -0.4883407950401306,
+        -0.2384437918663025,
+        -0.0003782566636800766
+      ],
+      [
+        0.48809778690338135,
+        0.23823878169059753,
+        0.5994678735733032
+      ]
+    ],
+    "baked": true,
+    "voxel_remeshed": true,
+    "published_path": "public/assets/cameras/canon-7s-shelf-4c2c6e7007bbbee7066a71d26db68cf9facfe546824667133b0ce57fc77c5dd0.glb"
+  },
+  "mobile_delivery": {
+    "run": "blender/canon7s/runs/20260924-mobile-a",
+    "report": "blender/canon7s/runs/20260924-mobile-a/exports/report.json",
+    "note": "Non-destructive mobile derivatives of the previous browser delivery. Editable master, previous exports and their historical renders remain preserved. Detail uses Draco and smaller textures; cabinet is decimated separately. See MOBILE_MODELS.md for review and validation."
   }
 }

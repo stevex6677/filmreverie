@@ -41,6 +41,7 @@ Optional fields:
 | `camera.home/front/rear/side` | Preset camera orientation vectors; model automatically centers |
 | `camera.distance`, `camera.portraitDistance` | Landscape / portrait initial camera distance (range 1.15–9) |
 | `exposure` | Scene exposure; default `1.15` |
+| `shelf` | Main-app cabinet GLB asset, checksum, byte size and triangle count; the standalone viewer continues to use the detail `asset` |
 | `profile` | Material adaptation profile; default is `default` (preserves original GLB materials, UVs, and normals) |
 
 Custom material adjustments (e.g. Mamiya-specific optical glass coating) live in `profiles/mamiya.js` and are explicitly opted in. Standard models use `default` without custom shaders.

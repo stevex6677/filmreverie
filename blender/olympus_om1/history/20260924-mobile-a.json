@@ -1,0 +1,355 @@
+{
+  "model_id": "olympus-om1",
+  "state": "top3-dial-and-continuous-metal",
+  "source": {
+    "path": "blender/olympus_om1/tripo/om1.glb",
+    "sha256": "6be533abba34dc0eb91e46f6dd02ce34988b2a1d55ddd103cdb880d4f3ada704",
+    "bytes": 67874120
+  },
+  "references": [
+    {
+      "path": "blender/olympus_om1/references/back.jpg",
+      "sha256": "0a3a1b34bfd6aabd4276ce259ac1b096808908129c27402963409c152a9f8a2a",
+      "bytes": 1774227
+    },
+    {
+      "path": "blender/olympus_om1/references/bottom.jpg",
+      "sha256": "aadeb74192049ab379a0eeeedbca3cdefdbfef481ae49bb4143c4382040a1402",
+      "bytes": 1382821
+    },
+    {
+      "path": "blender/olympus_om1/references/front.jpg",
+      "sha256": "4289f1edbbbfffc20e3f978c1da84ed0874f2b7145c74901b84c70873023b4b8",
+      "bytes": 1667779
+    },
+    {
+      "path": "blender/olympus_om1/references/left.jpg",
+      "sha256": "ed0bf1fb51e588769a26afcab9635593ef0dccf35791b71ee66327982dd04772",
+      "bytes": 1339657
+    },
+    {
+      "path": "blender/olympus_om1/references/lens.jpg",
+      "sha256": "fceae2809da4bc8911ca8afeab6be442db91d2d8ea0e034d6372b10ffabb361d",
+      "bytes": 1948566
+    },
+    {
+      "path": "blender/olympus_om1/references/right.jpg",
+      "sha256": "03f52d400a244e693717416b61ac6fcefbd3a46d4c634476b87d479ff7a80014",
+      "bytes": 1328689
+    },
+    {
+      "path": "blender/olympus_om1/references/top.jpg",
+      "sha256": "dc4cc3154cbe19a29b69e112c847bca56bdf1bdb06bb9685d18b3a2ac24fa615",
+      "bytes": 1706725
+    },
+    {
+      "path": "blender/olympus_om1/references/top2.jpg",
+      "sha256": "58f959743fdce6f75aed520fcff7461ce99868a43ebbab45d15d617af0652b79",
+      "bytes": 1740678
+    },
+    {
+      "path": "blender/olympus_om1/references/top3.HEIC",
+      "sha256": "2d39306bdc87473dfe5c8c8208a60fd804c5cfdcd9685b6d998aadf84fc268d8",
+      "bytes": 1117951
+    }
+  ],
+  "editable_blend": {
+    "path": "blender/olympus_om1/runs/20260924-om1-top3-final/scene.blend",
+    "sha256": "5484716feb1422e0182b0b8f1e27f12e0d22e7a0cf3fcf510f997008b1a376f3",
+    "bytes": 81792791
+  },
+  "browser_glb": {
+    "path": "blender/olympus_om1/runs/20260924-mobile-a/exports/olympus-om1-detail.glb",
+    "sha256": "1a4df213549f61f15e28f9001e41cbf89e45598a120f872a0ad67fc38a6bb4f9",
+    "bytes": 3242292,
+    "triangles": 599729,
+    "primitives": 13,
+    "embedded_images": 3,
+    "source_blend_sha256": "5484716feb1422e0182b0b8f1e27f12e0d22e7a0cf3fcf510f997008b1a376f3",
+    "source_glb_sha256": "7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06",
+    "compression": "KHR_draco_mesh_compression",
+    "texture_size": 1536,
+    "jpeg_quality": 82,
+    "source_triangles": 1947542,
+    "source_bounds": [
+      [
+        -0.4901885986328125,
+        -0.3038111925125122,
+        -0.0026000000070780516
+      ],
+      [
+        0.4901885986328125,
+        0.3038177490234375,
+        0.6305575370788574
+      ]
+    ],
+    "export_bounds": [
+      [
+        -0.4901740252971649,
+        -0.3038286566734314,
+        -0.0025945198722183704
+      ],
+      [
+        0.4901669919490814,
+        0.30380576848983765,
+        0.6305602192878723
+      ]
+    ],
+    "published_path": "public/assets/cameras/olympus-om1-1a4df213549f61f15e28f9001e41cbf89e45598a120f872a0ad67fc38a6bb4f9.glb"
+  },
+  "renders": [
+    {
+      "path": "blender/olympus_om1/runs/20260924-om1-top3-final/previews/final_dial.png",
+      "sha256": "7b0810a4135fd50fca50fcea1d33fa3ec2ba2f09fb0cd2f416950d4621c5b76c",
+      "bytes": 2460608
+    },
+    {
+      "path": "blender/olympus_om1/runs/20260924-om1-top3-final/previews/final_top_detail.png",
+      "sha256": "fecfd9c977a8f93ff7d53dec66026818aa7224b40e19dd5b2ed851d2451b8d5d",
+      "bytes": 2683649
+    },
+    {
+      "path": "blender/olympus_om1/runs/20260924-om1-top3-final/previews/compact_top.png",
+      "sha256": "eef7b359521634748a75b0b8ccaf3e0d43dca4a39dd793cf4f6af0621cd64d6a",
+      "bytes": 1508421
+    },
+    {
+      "path": "blender/olympus_om1/runs/20260924-om1-top3-final/previews/compact_front.png",
+      "sha256": "fcfa92a95bab11319b8f7963a20759145bb149e6c7f5351fd7cfa6bc958c40d8",
+      "bytes": 1664121
+    },
+    {
+      "path": "blender/olympus_om1/runs/20260924-om1-top3-final/previews/compact_back.png",
+      "sha256": "bc39c1f427f114b69e7f800d45882971fc53e47e7b6c7f98a741cb7ee303902f",
+      "bytes": 1576777
+    }
+  ],
+  "verification": {
+    "source_unchanged": true,
+    "source_uvs_preserved_before_socket_boolean": true,
+    "construction_float64_exact_match_outside_masks": false,
+    "saved_master_checks": {
+      "saved_master": "/workspace/film_photo/ignored_generated/blender/olympus_om1/runs/20260924-om1-top3-final/scene.blend",
+      "finite_geometry": true,
+      "preserved_regions": {
+        "leather_body": {
+          "sampled_vertices": 50961,
+          "maximum_nearest_vertex_difference": 0.0,
+          "tolerance": 2e-07
+        },
+        "central_optics": {
+          "sampled_vertices": 9576,
+          "maximum_nearest_vertex_difference": 0.0,
+          "tolerance": 2e-07
+        }
+      },
+      "required_details": [
+        "OLYMPUS front wordmark",
+        "Top OM-1",
+        "Body serial 151067",
+        "Battery cover",
+        "Tripod internal threads",
+        "Meter ON OFF lever",
+        "Rewind folding crank"
+      ],
+      "packed_images": true,
+      "body_vertices": 948498,
+      "body_polygons": 1896745,
+      "font_objects": 116,
+      "note": "Preservation checks sample untouched leather and central optics after the socket Boolean. Construction-stage float64 arithmetic may differ below Blender float32 storage precision."
+    },
+    "export": {
+      "path": "/workspace/film_photo/ignored_generated/blender/olympus_om1/runs/20260924-om1-top3-final/exports/olympus-om1-compact.glb",
+      "sha256": "7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06",
+      "bytes": 6712804,
+      "source_blend_sha256": "5484716feb1422e0182b0b8f1e27f12e0d22e7a0cf3fcf510f997008b1a376f3",
+      "triangles": 1947542,
+      "primitives": 13,
+      "compression": "KHR_draco_mesh_compression",
+      "source_mesh_retention_ratio": 1.0,
+      "max_basecolor_size": 2048,
+      "max_other_texture_size": 1024,
+      "jpeg_quality": 88,
+      "embedded_images": 3,
+      "under_10MB": true,
+      "reimported_meshes": 1,
+      "packed_images": true
+    },
+    "visual_review": "Reviewed against the supplied photos: final_dial.png, final_top_detail.png, compact_top.png, compact_front.png, compact_back.png",
+    "physical_device_tested": false,
+    "top3_revision": {
+      "reference": "top3.HEIC",
+      "material_faces_changed": 125681,
+      "dial_values": [
+        "25",
+        "32",
+        "40",
+        "50",
+        "64",
+        "80",
+        "100",
+        "125",
+        "160",
+        "200",
+        "250",
+        "320",
+        "400",
+        "500",
+        "640",
+        "800",
+        "1000",
+        "1250",
+        "1600"
+      ],
+      "layout": "radial text, constant cap height, shared outer radius, centered release button, arced ASA",
+      "geometry_vertices_changed": 87291,
+      "continuous_shell_faces": 184421
+    },
+    "browser_top_views": {
+      "screenshots": "/root/.paseo/worktrees/06c67bq8/aloof-walrus/artifacts/model-viewer/olympus-om1-top3/",
+      "diagnostics": {
+        "ready": true,
+        "modelId": "olympus-om1",
+        "profile": "default",
+        "triangles": 1947542,
+        "camera": [
+          -0.322,
+          1.6119992189248398,
+          -0.33334032542993813
+        ],
+        "target": [
+          -0.322,
+          0.46199999999999997,
+          -0.33199999999999996
+        ],
+        "autoRotate": false,
+        "renderCalls": 12,
+        "geometries": 14
+      },
+      "errors": []
+    },
+    "viewer_catalog_tests": "passed",
+    "tailscale_download_sha256": "7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06",
+    "render_note": "The supplemental whole-model render pass was interrupted. Completed, visually reviewed master and decoded-export views are explicitly listed in renders; the delivered GLB was additionally inspected in the browser from top, front/top, rear/top and dial close-up views."
+  },
+  "changes": [
+    "Corrected OLYMPUS badge, lens name ring, shutter/aperture/focus scales, ASA dial, OM-1 and ON/OFF markings.",
+    "Restored rewind face/crank, meter lever and accessory-shoe contact.",
+    "Added recessed battery cover coin slot, open tripod socket with internal thread, underside screws, MADE IN JAPAN and serial 151067.",
+    "Smoothed selected metal and lettering surfaces while preserving leather, knurled grips and original optics.",
+    "Rebuilt radial ASA typography, highlighted 25 and full-stop values, centered button and arced ASA from top3.HEIC.",
+    "Replaced mixed scan/PBR patches with continuous top-cover and prism metal; restored metal shoe rails and insulated contact."
+  ],
+  "reports": [
+    {
+      "path": "blender/olympus_om1/runs/20260924-om1-top3-final/intermediates/refinement_report.json",
+      "sha256": "d7b1b930c092e4bcf54496c5821c6b58ed2b1bff5b54f350f4b28534750cb6ce",
+      "bytes": 7972
+    },
+    {
+      "path": "blender/olympus_om1/runs/20260924-om1-top3-final/exports/export_report.json",
+      "sha256": "7e9dab386dfbbb2aa4af421652ea74b2c58347855b1462abdb3610f33a6ca1dd",
+      "bytes": 641
+    },
+    {
+      "path": "blender/olympus_om1/runs/20260924-om1-top3-final/intermediates/master_verification.json",
+      "sha256": "04f04226323dc4e87e4f8e6a4027f88e7a794ea9ce6158d7243b571bebe24d87",
+      "bytes": 953
+    }
+  ],
+  "viewer": {
+    "model_id": "olympus-om1",
+    "route": "/?model=olympus-om1",
+    "catalog": "standalone/model-viewer/models.json",
+    "local_url": "http://localhost:4180/?model=olympus-om1",
+    "tailscale_url": "http://upcloud.tail2b1388.ts.net:4180/?model=olympus-om1&rev=top3"
+  },
+  "continuation": {
+    "instructions": "Use Blender CLI and refine_top3.py on parent_editable_blend in a NEW empty FILM_PHOTO_OUTPUT_DIR to reproduce this revision. The script preserves the parent and builds on it. For further edits use editable_blend, save into another unique run, then verify_master.py, render_views.py, render_top_details.py and export_compact.py. Review master and decoded export before packaging.",
+    "source_inspection_blend": {
+      "path": "blender/olympus_om1/runs/20260924-om1-refinement-a/intermediates/source.blend",
+      "sha256": "f3f4fbd300339412332ac053fba100726e4f9e003f1f399667d16003bcc44434",
+      "bytes": 81828927
+    },
+    "parent_editable_blend": {
+      "path": "blender/olympus_om1/runs/20260924-om1-refinement-d/scene.blend",
+      "sha256": "bc7b34c4dac17508f10eedfa3a0914c78cb86d47e76561a0fe3dd03f2f78b123",
+      "bytes": 81758418
+    }
+  },
+  "limitations": [
+    "Hidden mechanical depths are visual estimates. Lettering uses a close font substitute; source photographs determine wording and placement."
+  ],
+  "code_base_revision": "dd97a2958f745fdf2c1bd1bbbc3c2a7bfe9dba42",
+  "scripts": {
+    "export_compact.py": "eb01efa753f9b320b855bdce8994bc980bb5afb1cdd74fe9ebdb27c3d9341b90",
+    "inspect_source.py": "dacb70df1258f56c158a65e21e2666137206d426b9f875074ff1d96e8e466036",
+    "package_delivery.py": "fd0fc5d525f0553be1448f0f8260335a39fa0f9393e5022d134e2946c195a2d3",
+    "probe_bands.py": "8aa7c6f85c0730fa06022ca8332d0ebad361ba555b0213a8145452893dd951a2",
+    "probe_source.py": "95e0e6666839cc6d4265bf4eba20049de286af7f422d4caad5cf0ce81081d61d",
+    "refine_camera.py": "2fba186c31e05fefa2dc443e8f1731fe8b261c269f90194a3ff9520117d8a1b8",
+    "refine_top3.py": "6da28431f3d651b15261f8729c7dcd226d7539b58e3afce6ae5c028de4df0bfd",
+    "render_top_details.py": "0d643b0d21021120e2e9ea16fe5bfcf4e13b191c5ee75a69038a9bdc01a224d4",
+    "render_views.py": "4bd8514006a724fb4ce0402bb82b61d3a9d6584d6f6f6ef9cd60741d68fccfd0",
+    "verify_master.py": "cdcb87c88b931f2d3756aa8887de677dd858124cd493c216fb376ba0d0a9199f",
+    "verify_top_viewer.mjs": "716c23c712e9bee0fcdbcd7a29cc6386f8361b1b6bcce41865fd153fe43fc357",
+    "verify_viewer.mjs": "be7f5e084ad5e72b594837a24f8a3f007a37b70142bb5d55a238cebba20642ce"
+  },
+  "browser_history": [
+    {
+      "path": "blender/olympus_om1/runs/20260924-om1-top3-final/exports/olympus-om1-compact.glb",
+      "sha256": "7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06",
+      "bytes": 6712804,
+      "published_path": "public/assets/cameras/olympus-om1-7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06.glb",
+      "source_blend_sha256": "5484716feb1422e0182b0b8f1e27f12e0d22e7a0cf3fcf510f997008b1a376f3",
+      "triangles": 1947542,
+      "compression": "KHR_draco_mesh_compression"
+    }
+  ],
+  "shelf_glb": {
+    "path": "blender/olympus_om1/runs/20260924-mobile-a/exports/olympus-om1-shelf-baked-v2.glb",
+    "sha256": "162991f68aba5b477167856814b0b7900ee13d1af2196e7fe6d65c363eab837b",
+    "bytes": 451772,
+    "triangles": 18000,
+    "primitives": 1,
+    "embedded_images": 2,
+    "source_blend_sha256": "5484716feb1422e0182b0b8f1e27f12e0d22e7a0cf3fcf510f997008b1a376f3",
+    "source_glb_sha256": "7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06",
+    "compression": "KHR_draco_mesh_compression",
+    "texture_size": 1024,
+    "jpeg_quality": 85,
+    "source_triangles": 1947542,
+    "source_bounds": [
+      [
+        -0.4901885986328125,
+        -0.3038111925125122,
+        -0.0026000000070780516
+      ],
+      [
+        0.4901885986328125,
+        0.3038177490234375,
+        0.6305575370788574
+      ]
+    ],
+    "export_bounds": [
+      [
+        -0.4885108172893524,
+        -0.3030831515789032,
+        -0.00216504093259573
+      ],
+      [
+        0.48936229944229126,
+        0.30364951491355896,
+        0.6302592754364014
+      ]
+    ],
+    "baked": true,
+    "voxel_remeshed": true,
+    "published_path": "public/assets/cameras/olympus-om1-shelf-162991f68aba5b477167856814b0b7900ee13d1af2196e7fe6d65c363eab837b.glb"
+  },
+  "mobile_delivery": {
+    "run": "blender/olympus_om1/runs/20260924-mobile-a",
+    "report": "blender/olympus_om1/runs/20260924-mobile-a/exports/report.json",
+    "note": "Non-destructive mobile derivatives of the previous browser delivery. Editable master, previous exports and their historical renders remain preserved. Detail uses Draco and smaller textures; cabinet is decimated separately. See MOBILE_MODELS.md for review and validation."
+  }
+}

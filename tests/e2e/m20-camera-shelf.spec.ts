@@ -1,3 +1,4 @@
+import { openCamera } from './helpers/camera';
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -5,7 +6,7 @@ import { CAMERAS, PRIMARY_CAMERA } from '../../src/data/cameras';
 import { CAMERA_SHELF_ORIGIN, CAMERA_SHELF_MM, cameraShelfSlot, mm } from '../../src/data/physicalScale';
 import { ready, screenPoint } from './helpers/shelf';
 import { offlineServer } from './helpers/offlineServer';
-// Software WebGL can block input while the five detailed models compile.
+// Allow local software WebGL time to compile an opened detail model.
 test.use({ actionTimeout: 60000 });
 const canon = CAMERAS.find(camera => camera.id === 'canon-7s')!;
 
@@ -15,7 +16,7 @@ async function cameraShelf(page: Page) {
   await expect(page.locator('.canvas-wrapper canvas')).toHaveAttribute('data-camera-model-width', '0.756', { timeout: 90000 });
 }
 async function display(page: Page, name = PRIMARY_CAMERA.name) {
-  await page.getByRole('button', { name: `Inspect ${name}`, exact: true }).click();
+  await openCamera(page, name);
   await expect(page.locator('.camera-display')).toBeVisible();
   await expect(page.locator('.camera-display')).toHaveAttribute('data-model-ready', 'true', { timeout: 90000 });
 }
@@ -23,15 +24,18 @@ async function display(page: Page, name = PRIMARY_CAMERA.name) {
 test('catalog cameras occupy independent physical-scale cabinet slots', async ({ page }, info) => {
   await page.goto('/?mode=room&reduced_motion=true'); await ready(page); await cameraShelf(page);
   const canvas = page.locator('.canvas-wrapper canvas');
-  await expect(canvas).toHaveAttribute('data-camera-model-widths', /minolta-autocord:0\.3024/, { timeout: 180000 });
-  await expect(canvas).toHaveAttribute('data-camera-model-widths', /canon-7s:0\.4968/, { timeout: 180000 });
+  for (const entry of CAMERAS) await expect.poll(async () => {
+    const widths = (await canvas.getAttribute('data-camera-model-widths')) ?? '';
+    return Number(widths.split(',').find(value => value.startsWith(`${entry.id}:`))?.split(':')[1]);
+  }).toBeCloseTo(mm(entry.widthMm), 8);
   await expect.poll(async () => {
     const widths = (await canvas.getAttribute('data-camera-model-widths')) ?? '';
     return Number(widths.split(',').find(value => value.startsWith('canon-demi-ee17:'))?.split(':')[1]);
   }, { timeout: 180000 }).toBeCloseTo(.4176, 8);
   await expect.poll(async () => Number(((await canvas.getAttribute('data-camera-model-widths')) ?? '').split(',').find(value => value.startsWith('olympus-om1:'))?.split(':')[1]), { timeout: 180000 }).toBeCloseTo(.4896, 8);
-  await expect(page.getByRole('button', { name: /^Inspect / })).toHaveCount(5);
-  const nameplates = await page.locator('.camera-shelf-target').evaluateAll(nodes =>
+  const tagsHidden = await page.evaluate(() => matchMedia('(max-width: 699px), (max-height: 500px)').matches);
+  await expect(page.getByRole('button', { name: /^Inspect / })).toHaveCount(tagsHidden ? 0 : 5);
+  const nameplates = await page.locator('.camera-shelf-target:visible').evaluateAll(nodes =>
     nodes.map(node => { const { x, y, width, height } = node.getBoundingClientRect(); return { x, y, width, height }; }));
   for (let i = 0; i < nameplates.length; i++) for (let j = i + 1; j < nameplates.length; j++) {
     const a = nameplates[i], b = nameplates[j];
@@ -113,7 +117,8 @@ test('physical shelf, all rendered sides, orbit, zoom, reset, history and preser
   await page.goBack(); await expect(page.locator('.camera-display')).toHaveCount(0);
   await page.goForward(); await expect(page.locator('.camera-display')).toHaveAttribute('data-model-ready', 'true');
   await page.getByRole('button', { name: 'Back to shelf' }).click();
-  await expect(page.getByRole('button', { name: 'Inspect Mamiya Universal' })).toBeFocused();
+  const primaryLabel = page.getByRole('button', { name: 'Inspect Mamiya Universal' });
+  if (await primaryLabel.isVisible()) await expect(primaryLabel).toBeFocused();
   await page.getByRole('button', { name: 'Back to room' }).click(); await ready(page);
   await expect(app).toHaveAttribute('data-room-pose', pose!);
   expect(errors).toEqual([]);
@@ -123,15 +128,16 @@ test('third physical camera opens from its shelf slot; shelf drag exits without 
   await page.goto('/?mode=room&reduced_motion=true'); await ready(page);
   // A toolbar approach also works when the object is outside the initial view.
   await cameraShelf(page);
-  await expect(page.locator('.canvas-wrapper canvas')).toHaveAttribute('data-camera-model-widths', /canon-7s:0\.4968/, { timeout: 180000 });
+  await expect(page.locator('.canvas-wrapper canvas')).toHaveAttribute('data-camera-model-widths', /canon-7s:/);
   const slot = cameraShelfSlot(CAMERAS.indexOf(canon));
   const point = await screenPoint(page, [CAMERA_SHELF_ORIGIN[0] - slot.z, CAMERA_SHELF_ORIGIN[1] + slot.y + mm(60), CAMERA_SHELF_ORIGIN[2] + slot.x]);
   await page.mouse.click(point.x, point.y);
   await expect(page.locator('.camera-display')).toHaveAttribute('data-model-ready', 'true', { timeout: 90000 });
   await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-id', 'canon-7s');
-  await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-width', '0.4968');
+  expect(Number(await page.locator('.camera-stage canvas').getAttribute('data-model-width'))).toBeCloseTo(.4968, 8);
   await page.getByRole('button', { name: 'Back to shelf' }).click();
-  const target = await page.getByRole('button', { name: 'Inspect Canon 7s' }).boundingBox();
+  const label = page.getByRole('button', { name: 'Inspect Canon 7s' });
+  const target = (await label.isVisible() ? await label.boundingBox() : null) ?? { x: point.x - 25, y: point.y - 20 };
   await page.mouse.move(target!.x + 25, target!.y + 20); await page.mouse.down(); await page.mouse.move(target!.x + 75, target!.y + 30, { steps: 4 }); await page.mouse.up();
   await expect(page.locator('main')).toHaveAttribute('data-shelf-focused', 'false');
   await expect(page.locator('.camera-display')).toHaveCount(0);
@@ -143,7 +149,7 @@ test('Canon model failure can retry and all prepared cameras reopen with the ser
     server.fail(canon.url);
     await page.goto(`${server.url}/?mode=room&reduced_motion=true`); await ready(page);
     await page.getByRole('button', { name: 'Cameras', exact: true }).click(); await ready(page);
-    await page.getByRole('button', { name: 'Inspect Canon 7s' }).click();
+    await openCamera(page, 'Canon 7s');
     await expect(page.locator('.camera-display [role="alert"]')).toBeVisible({ timeout: 90000 });
     server.fail('');
     await page.getByRole('button', { name: 'Retry model', exact: true }).click();

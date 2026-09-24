@@ -1,5 +1,85 @@
 # M20 — Camera shelf and close inspection
 
+## Detail preloading after room entry — 2026-09-24
+
+Following the mobile delivery, inspection models now preload automatically after
+the room is ready and the loading overlay has finished fading. A single background
+queue downloads and decodes them sequentially. It uses the existing inspection
+cache, so opening a camera reuses completed or in-flight work. A selected camera
+can start immediately even when another background request is still pending.
+Preload failures do not block readiness or later models; inspection retries a
+failed model normally. The five lightweight cabinet models remain the readiness
+requirement. Runtime GLBs and cabinet rendering are unchanged.
+
+The production preview is updated in the same local checkout on port 4181.
+Localhost and private Tailscale served identical JavaScript and release
+`145309b492e14bbaab20`. The build and all 248 integration tests passed.
+Browser validation covers no detail requests before cabinet readiness, sequential
+background work, immediate inspection while a preload is delayed, cache reuse,
+cabinet failure/retry, and recovery from failed detail preloads.
+All six desktop/mobile Chrome scenarios passed using the local SwiftShader test
+configuration. Log: `artifacts/mobile-model-review/browser-detail-preload.log`.
+These are browser-emulation checks, not physical-device measurements.
+
+## Mobile derivatives and complete cabinet readiness — 2026-09-24
+
+The cabinet now uses five separate baked models totaling **2,213,580 bytes and
+89,976 triangles**, replacing 77,306,164 bytes of detail downloads at startup.
+Each cabinet model has one material/primitive. Every inspection model is below
+5,000,000 bytes; this initial delivery loaded it only when opened (superseded by
+the post-entry preloading follow-up above). The old startup prefetch of the
+Mamiya detail model has been removed. Exact sizes, authoring commands and
+provenance are in [MOBILE_MODELS.md](../blender/MOBILE_MODELS.md).
+
+Readiness requires all five cabinet models to load and enter the render loop.
+Failures remain unready, with a visible count and a retry action that retries
+only failed models. A 12-second timeout cannot bypass this condition. Cabinet
+downloads/decodes are limited to two concurrently, and all five share one studio
+environment. The required offline shell includes cabinet GLBs and the decoder;
+detail-model offline downloads remain optional. Physical positions and controls
+are unchanged. The separately requested small-screen nameplate hiding remains.
+
+The original editable masters, previous exports and original media are retained.
+Current records now select the new content-addressed detail and cabinet GLBs,
+while `browser_history` retains the previous delivery. Model reviews rejected
+early Mamiya/Autocord simplifications with missing body surfaces; the final
+closed, baked versions were reviewed again before publication.
+
+The production build and **248 integration tests / 33 files** passed, including
+actual Draco decoding, valid geometry, physical fit, byte budgets and checksums
+for all ten GLBs. The standalone catalog/clean-checkout tests passed, and the
+standalone reuse assertions passed with installed Chrome (the older standalone
+package's default bundled Chromium revision is absent on this host).
+
+All **10 focused desktop/mobile Chrome scenarios passed**: delayed fifth-model
+readiness, failure/retry, catalog/inspection, physical selection/drag exit and
+stopped-server offline reopening. The long combined process was terminated
+after eight passing cases; the remaining two mobile cases passed in a shorter
+run. Logs are `artifacts/mobile-model-review/browser-core-part{1,2}.log`.
+The mobile drag test now avoids waiting for a hidden nameplate before using the
+physical-model target. These focused results do not reclassify historical full
+suite failures below or establish physical iPhone/iPad acceptance.
+Two additional desktop regressions passed: normal loading-page dismissal and
+initial-room camera readiness. Their log is
+`artifacts/mobile-model-review/browser-startup.log` (12 focused cases total).
+
+Desktop and 390 × 844 mobile cabinet screenshots show all five cameras and were
+visually inspected. Desktop nameplates remain legible; mobile nameplates are
+hidden and the models remain tappable. Captures are in
+`artifacts/m20-candidates/{desktop,mobile-chrome}-five-camera-shelf.png`.
+The earlier test attempt found an obsolete Mamiya detail prefetch and exposed
+string comparisons of Draco-rounded widths; both were corrected. Local browser
+review uses Chrome/SwiftShader because the host's Vulkan path was unsuitable for
+these captures. No physical-phone performance claim is made.
+
+The app runs locally from `aloof-walrus`, with the updated build verified at
+[localhost:4181](http://localhost:4181/?mode=room) and
+[private Tailscale](http://upcloud.tail2b1388.ts.net:4181/?mode=room).
+Both routes returned release `3139db7fc78801f14b90` and exact cabinet checksums.
+The existing standalone viewer on port 4180 was reloaded; all five detail hashes
+were verified through localhost and the same private hostname. Existing direct
+Serve mappings remain intact, with no SSH tunnel.
+
 ## Olympus OM-1 cabinet addition — 2026-09-24
 
 The current `20260924-om1-top3-final` model joins the upper tier as the fifth

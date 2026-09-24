@@ -24,9 +24,11 @@ async function inventory(dir) {
 }
 const assets = [];
 const optional = [];
+const catalog = JSON.parse(await readFile('standalone/model-viewer/models.json', 'utf8'));
+const detailModels = new Set(catalog.models.map(model => '/' + model.asset));
 for (const file of (await inventory(root)).sort()) {
   const asset = { url: '/' + path.relative(root, file).split(path.sep).join('/'), hash: hash(await readFile(file)) };
-  (asset.url.startsWith('/assets/cameras/') ? optional : assets).push(asset);
+  (detailModels.has(asset.url) ? optional : assets).push(asset);
 }
 const template = await readFile('src/offline/worker.js', 'utf8');
 const version = hash(JSON.stringify({ assets, optional }) + template + (process.env.FILM_PHOTO_RELEASE ?? '')).slice(0, 20);

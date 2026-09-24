@@ -59,13 +59,43 @@
     "bytes": 81792791
   },
   "browser_glb": {
-    "path": "blender/olympus_om1/runs/20260924-om1-top3-final/exports/olympus-om1-compact.glb",
-    "sha256": "7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06",
-    "bytes": 6712804,
-    "published_path": "public/assets/cameras/olympus-om1-7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06.glb",
+    "path": "blender/olympus_om1/runs/20260924-mobile-a/exports/olympus-om1-detail.glb",
+    "sha256": "1a4df213549f61f15e28f9001e41cbf89e45598a120f872a0ad67fc38a6bb4f9",
+    "bytes": 3242292,
+    "triangles": 599729,
+    "primitives": 13,
+    "embedded_images": 3,
     "source_blend_sha256": "5484716feb1422e0182b0b8f1e27f12e0d22e7a0cf3fcf510f997008b1a376f3",
-    "triangles": 1947542,
-    "compression": "KHR_draco_mesh_compression"
+    "source_glb_sha256": "7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06",
+    "compression": "KHR_draco_mesh_compression",
+    "texture_size": 1536,
+    "jpeg_quality": 82,
+    "source_triangles": 1947542,
+    "source_bounds": [
+      [
+        -0.4901885986328125,
+        -0.3038111925125122,
+        -0.0026000000070780516
+      ],
+      [
+        0.4901885986328125,
+        0.3038177490234375,
+        0.6305575370788574
+      ]
+    ],
+    "export_bounds": [
+      [
+        -0.4901740252971649,
+        -0.3038286566734314,
+        -0.0025945198722183704
+      ],
+      [
+        0.4901669919490814,
+        0.30380576848983765,
+        0.6305602192878723
+      ]
+    ],
+    "published_path": "public/assets/cameras/olympus-om1-1a4df213549f61f15e28f9001e41cbf89e45598a120f872a0ad67fc38a6bb4f9.glb"
   },
   "renders": [
     {
@@ -264,5 +294,62 @@
     "verify_master.py": "cdcb87c88b931f2d3756aa8887de677dd858124cd493c216fb376ba0d0a9199f",
     "verify_top_viewer.mjs": "716c23c712e9bee0fcdbcd7a29cc6386f8361b1b6bcce41865fd153fe43fc357",
     "verify_viewer.mjs": "be7f5e084ad5e72b594837a24f8a3f007a37b70142bb5d55a238cebba20642ce"
+  },
+  "browser_history": [
+    {
+      "path": "blender/olympus_om1/runs/20260924-om1-top3-final/exports/olympus-om1-compact.glb",
+      "sha256": "7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06",
+      "bytes": 6712804,
+      "published_path": "public/assets/cameras/olympus-om1-7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06.glb",
+      "source_blend_sha256": "5484716feb1422e0182b0b8f1e27f12e0d22e7a0cf3fcf510f997008b1a376f3",
+      "triangles": 1947542,
+      "compression": "KHR_draco_mesh_compression"
+    }
+  ],
+  "shelf_glb": {
+    "path": "blender/olympus_om1/runs/20260924-mobile-a/exports/olympus-om1-shelf-baked-v2.glb",
+    "sha256": "162991f68aba5b477167856814b0b7900ee13d1af2196e7fe6d65c363eab837b",
+    "bytes": 451772,
+    "triangles": 18000,
+    "primitives": 1,
+    "embedded_images": 2,
+    "source_blend_sha256": "5484716feb1422e0182b0b8f1e27f12e0d22e7a0cf3fcf510f997008b1a376f3",
+    "source_glb_sha256": "7f34a969985e61aead361a4bb4af4eb4175307bcaddac4bdad65625fa1b70e06",
+    "compression": "KHR_draco_mesh_compression",
+    "texture_size": 1024,
+    "jpeg_quality": 85,
+    "source_triangles": 1947542,
+    "source_bounds": [
+      [
+        -0.4901885986328125,
+        -0.3038111925125122,
+        -0.0026000000070780516
+      ],
+      [
+        0.4901885986328125,
+        0.3038177490234375,
+        0.6305575370788574
+      ]
+    ],
+    "export_bounds": [
+      [
+        -0.4885108172893524,
+        -0.3030831515789032,
+        -0.00216504093259573
+      ],
+      [
+        0.48936229944229126,
+        0.30364951491355896,
+        0.6302592754364014
+      ]
+    ],
+    "baked": true,
+    "voxel_remeshed": true,
+    "published_path": "public/assets/cameras/olympus-om1-shelf-162991f68aba5b477167856814b0b7900ee13d1af2196e7fe6d65c363eab837b.glb"
+  },
+  "mobile_delivery": {
+    "run": "blender/olympus_om1/runs/20260924-mobile-a",
+    "report": "blender/olympus_om1/runs/20260924-mobile-a/exports/report.json",
+    "note": "Non-destructive mobile derivatives of the previous browser delivery. Editable master, previous exports and their historical renders remain preserved. Detail uses Draco and smaller textures; cabinet is decimated separately. See MOBILE_MODELS.md for review and validation."
   }
 }
