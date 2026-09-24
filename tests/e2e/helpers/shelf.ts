@@ -2,6 +2,7 @@ import { expect, Page } from '@playwright/test';
 import { PerspectiveCamera, Vector3 } from 'three';
 import { SHELF_CAMERA } from '../../../src/data/physicalScale';
 export const ready = async (page: Page) => {
+  await expect(page.locator('main')).toHaveAttribute('data-app-ready', 'true', { timeout: 90000 });
   await expect(page.locator('main')).toHaveAttribute('data-assets-ready', 'true', { timeout: 60000 });
   await expect(page.locator('main')).toHaveAttribute('data-is-transitioning', 'false');
 };

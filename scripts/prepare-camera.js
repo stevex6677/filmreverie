@@ -25,6 +25,12 @@ export function prepareCamera() {
     const bytes = fs.readFileSync(models[index].file);
     const hash = createHash('sha256').update(bytes).digest('hex');
     if (hash !== entry.sha256 || bytes.length !== current.browser_glb.bytes) throw new Error(`Camera checksum or size mismatch: ${entry.id}`);
+
+    if (bytes.length >= 5_000_000) throw new Error(`Detail camera exceeds 5 MB: ${entry.id}`);
+    const shelf = current.shelf_glb;
+    if (!shelf || !entry.shelf || entry.shelf.asset !== `assets/cameras/${entry.id}-shelf-${entry.shelf.sha256}.glb` || shelf.published_path !== `public/${entry.shelf.asset}` || shelf.sha256 !== entry.shelf.sha256 || shelf.source_blend_sha256 !== current.editable_blend.sha256) throw new Error(`Cabinet model provenance mismatch: ${entry.id}`);
+    const shelfBytes = fs.readFileSync(new URL(`../public/${entry.shelf.asset}`, import.meta.url));
+    if (createHash('sha256').update(shelfBytes).digest('hex') !== shelf.sha256 || shelfBytes.length !== shelf.bytes || shelfBytes.length !== entry.shelf.bytes || shelfBytes.length >= 1_000_000 || shelf.triangles >= 25_000 || shelf.triangles !== entry.shelf.triangles) throw new Error(`Cabinet model budget/checksum mismatch: ${entry.id}`);
     console.log(`Camera asset verified: ${entry.id} (${hash})`);
   }
 }

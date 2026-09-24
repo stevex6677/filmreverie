@@ -1,0 +1,328 @@
+{
+  "schema_version": 1,
+  "model_id": "minolta-autocord",
+  "updated": "2026-09-21",
+  "revision": "Browser-optimized derivative of the accepted front-detail master",
+  "state": "complete",
+  "path_resolution": {
+    "config": "shared-assets.json",
+    "outputs": "Authoring paths below are relative to the local main checkout's ignored_generated directory. browser_glb.published_path is relative to the active repository root.",
+    "source": "The original GLB and HEIC references are under the main checkout's ignored_assets directory."
+  },
+  "source": {
+    "path": "blender/autocord/tripo/tripo_autocord.glb",
+    "sha256": "a10ce046a5e9e8db20ed324ee4cb18ceca6cf58c1e24e2758db796a94e9a01fb",
+    "unchanged": true
+  },
+  "editable_blend": {
+    "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/autocord-refined.blend",
+    "sha256": "43f2abc72cbaeb514db9d3fb32cbcab848081a7adda6fa633f3b762615399f63",
+    "textures": "Packed; no external texture dependencies"
+  },
+  "browser_glb": {
+    "path": "blender/autocord/runs/20260924-mobile-a/exports/minolta-autocord-detail.glb",
+    "sha256": "e1b366e32dc390fb6e92dbc7209bb44d3e81ab15c4240d02593a070b88d5ceee",
+    "bytes": 3438796,
+    "triangles": 395646,
+    "primitives": 18,
+    "embedded_images": 17,
+    "source_blend_sha256": "43f2abc72cbaeb514db9d3fb32cbcab848081a7adda6fa633f3b762615399f63",
+    "source_glb_sha256": "0fd838994e57a92a54a2ba8a0968e36ce059a425585076dce381bcb3e56cb311",
+    "compression": "KHR_draco_mesh_compression",
+    "texture_size": 1536,
+    "jpeg_quality": 82,
+    "source_triangles": 395646,
+    "source_bounds": [
+      [
+        -0.30921947956085205,
+        -0.31159329414367676,
+        0.00021897746773902327
+      ],
+      [
+        0.3092033267021179,
+        0.31309670209884644,
+        0.871612548828125
+      ]
+    ],
+    "export_bounds": [
+      [
+        -0.30921947956085205,
+        -0.31159329414367676,
+        0.00021897746773902327
+      ],
+      [
+        0.3092033267021179,
+        0.31309670209884644,
+        0.871612548828125
+      ]
+    ],
+    "published_path": "public/assets/cameras/minolta-autocord-e1b366e32dc390fb6e92dbc7209bb44d3e81ab15c4240d02593a070b88d5ceee.glb"
+  },
+  "full_detail_glb": {
+    "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/minolta-autocord.glb",
+    "sha256": "50133c409360bd8a106ebc5d659a31eabe622f6d3c24ad75749e027ee6166077",
+    "source_blend_sha256": "43f2abc72cbaeb514db9d3fb32cbcab848081a7adda6fa633f3b762615399f63",
+    "bytes": 105709964,
+    "triangles": 1779953,
+    "embedded_textures": 17,
+    "no_decimation": true
+  },
+  "current_changes": [
+    "Added a 20.0 MB browser derivative (down from 105.7 MB) with 395,646 triangles, 2048 px maximum textures and JPEG quality 85. The accepted editable master and full-detail GLB remain unchanged.",
+    "Removed the two strap cords and red/black anchors, including detached residual anchor fragments; retained camera mounting hardware and the closed finder lid.",
+    "Clarified minolta and AUTOCORD using the supplied front-logo photograph.",
+    "Clarified winding-side pressure-plate instructions, distance and depth-of-field markings using the supplied side photograph; preserved crank and central hub.",
+    "Reconstructed the six rear serial digits 457647 on a small clean inscription surface, replacing overlapping scanned lettering triangles.",
+    "Replaced the separate side text-patch finish with continuous black enamel and isolated reference-derived cream ink. Preserved chrome controls, indicator, mounting bracket, crank and dial.",
+    "Reconstructed the underside concentric silver tripod mount, recessed helical socket and two round flanged feet from bottom.HEIC and bottom_close.HEIC. Replaced the distorted scan feet and restored continuous reference-derived leather grain; retained the front hinge and body outline.",
+    "Restored upper viewing-lens ivory inscriptions VIEW ROKKOR 1:3.2 f=75mm from upper_lens.HEIC, with a clean dark inscription annulus and locally corrected surface shading.",
+    "Restored taking-lens MINOLTA ROKKOR 1:3.5 f=75mm and serial 1136765 from lower_lens.HEIC; retained original glass and bezel geometry.",
+    "Restored CITIZEN-MVL and the red 3 / black 4–18 shutter EV markings. Leveled shallow false scanned letter relief only inside the shutter inscription face; retained its boundary and adjacent controls.",
+    "Restored the curved metric and green feet focusing scales from front_lower_details.HEIC on the original strip geometry."
+  ],
+  "preservation": {
+    "scope": "Original body and optics retained outside prior strap/inscription/underside corrections and the localized shutter-letter depth repair. Front materials and shading changed only on calibrated inscription strips. No global smoothing, remeshing or decimation.",
+    "removed_strap_vertices": 62152,
+    "side_panel_coordinates_exactly_preserved": true,
+    "underside_coordinates_outside_local_geometry_repairs_exactly_preserved": true,
+    "underside_leveled_original_vertices": 9192,
+    "underside_removed_original_faces": 412,
+    "underside_added_triangles": 49568,
+    "note": "Underside leather UV/materials were rebuilt locally to prevent repair patches around the feet. Socket depth and thread pitch are visual estimates from perspective references, not measured CAD dimensions. Original GLB and previous delivery remain untouched. Front typography is reconstructed from the supplied photographs using an approximate contemporary font, not an exact historical font match.",
+    "front_topology_and_original_uv_layers_unchanged": true,
+    "front_all_x_z_coordinates_unchanged": true,
+    "front_coordinates_outside_shutter_ink_surface_exact": true,
+    "upper_and_taking_lens_geometry_exactly_preserved": true,
+    "focus_strip_geometry_exactly_preserved": true,
+    "shutter_ink_surface_leveled_vertices": 18112,
+    "maximum_shutter_depth_adjustment_model_units": 0.003939151763916016
+  },
+  "renders": [
+    {
+      "view": "upper_lens",
+      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/upper_lens.png",
+      "sha256": "f299ff41e28f19fc7711e858806480989d571d054af625de2b286fb1668a9a2d"
+    },
+    {
+      "view": "lower_lens",
+      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/lower_lens.png",
+      "sha256": "0a98e91b4d5330c461247d25f889b393a98ef7650311648af74fe9babf1348be"
+    },
+    {
+      "view": "front_lower_details",
+      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/front_lower_details.png",
+      "sha256": "961e45bcf7d548960a4c2c85eba215a2487d1bffd1da121eddf605860cb36b90"
+    },
+    {
+      "view": "front_oblique",
+      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/front_oblique.png",
+      "sha256": "ce465ef0bb482e3d22c27ec4b52e0bc7c39f008fcf6b789dc8eef9d81b3e5c5f"
+    },
+    {
+      "view": "front",
+      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/front.png",
+      "sha256": "d9fc5a7c4df16954f887a6138d06ac4529c00c6565857d3e020042d4d858614e"
+    },
+    {
+      "view": "right",
+      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/right.png",
+      "sha256": "91959db484347b0811574b1bea4caf0e479d501e67b40934b5adae7299fa1f34"
+    },
+    {
+      "view": "rear",
+      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/rear.png",
+      "sha256": "0cccc326b91e9449b53cf95982a15a6072256f6e239f0314270dab7a1eb963a1"
+    },
+    {
+      "view": "front_logo",
+      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/front_logo.png",
+      "sha256": "3b0c5dce5d87c757c3bdfe2e17ad551c97c6b3d703867c008e0f11a096c2e5ff"
+    },
+    {
+      "view": "right_details",
+      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/right_details.png",
+      "sha256": "0e04987bee34344286656578f813cca09aa2340caa2815436404f0f6503532e1"
+    },
+    {
+      "view": "rear_serial",
+      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/rear_serial.png",
+      "sha256": "b137412a0ac2a67e7f7ea5e27f622b12d06d2c3448adc6415f0f2cda26312187"
+    },
+    {
+      "view": "three_quarter",
+      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/three_quarter.png",
+      "sha256": "8a7cb7e8c5507ac1e89d277c2aeb0f18f4d4400c2ae818d1f4df55c3779dd769"
+    },
+    {
+      "view": "bottom",
+      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/bottom.png",
+      "sha256": "57057b9680e9b4b50e8d636de020a0e4de0cfeaba15794a1834828534ee11a13"
+    },
+    {
+      "view": "bottom_details",
+      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/bottom_details.png",
+      "sha256": "ccc6095c8b4e09c8517fedaea76cd39e8a3c6eb78b13613b1c69d542a6df473d"
+    },
+    {
+      "view": "bottom_socket",
+      "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/bottom_socket.png",
+      "sha256": "783abf5d8b1592ff2a7c92c470c71ba37498b33773884f68dbfd7e8d54981b60"
+    }
+  ],
+  "reports": {
+    "manifest": "blender/autocord/detail_refinement/runs/20260921-front-c3/delivery_manifest.json",
+    "geometry": "blender/autocord/detail_refinement/runs/20260921-front-c3/refinement_report.json",
+    "export": "blender/autocord/detail_refinement/runs/20260921-front-c3/export_report.json",
+    "browser_export": "blender/autocord/browser_preview/runs/20260921T075000Z-browser-v2/browser-export.json",
+    "comparisons": "Five comparison_*.jpg sheets compare the prior B3 delivery and this revision with matched cameras and lighting. Prior closeups are preserved in 20260921-front-c1/before."
+  },
+  "continuation": {
+    "entrypoint": "blender/autocord/build_delivery.py",
+    "browser_export": "blender/autocord/export_browser_preview.py",
+    "execution": "local Blender CLI",
+    "instructions": "Use local Blender CLI. Open editable_blend to continue modeling. For a clean rebuild, import the original GLB with inspect_source.py. Choose a new local generated run and use the same FILM_PHOTO_OUTPUT_DIR for prepare_references.py, prepare_detail_textures.py, prepare_upper_front.py and prepare_lower_front.py, running each locally. Then run blender --background <original source.blend> --python-exit-code 1 --python blender/autocord/build_delivery.py with FILM_PHOTO_OUTPUT_DIR set to that run. Never feed an already-refined master to build_delivery.py. For a browser derivative, run blender --background <editable_blend> --python-exit-code 1 --python blender/autocord/export_browser_preview.py with FILM_PHOTO_OUTPUT_DIR set to a new run. Upper and lower front passes share one UV set so the GLB stays within the viewer texture-coordinate limit. Copy the accepted browser export into public/assets/cameras/<model_id>-<sha256>.glb, retain its authoring path, record published_path and update the public-relative catalog asset.",
+    "base_code_revision": "5eeb357",
+    "script_checksums": "Recorded in delivery_manifest.json as historical provenance; authoring binaries remain ignored and published runtime GLBs are tracked in Git."
+  },
+  "viewer": {
+    "catalog": "standalone/model-viewer/models.json",
+    "profile": "default",
+    "localhost_url": "http://localhost:5179/?mode=room",
+    "ipad_url": "http://macbook.tail2b1388.ts.net:5179/?mode=room",
+    "process_host": "local Mac",
+    "working_directory": "active application checkout",
+    "access": "Private Tailscale network. Existing model IDs and stable routes are preserved.",
+    "verification": "Optimized derivative visually inspected in the main app through remote Chrome desktop and mobile WebKit. Cabinet scale, silhouette, AUTOCORD badge, lenses, controls, leather and chrome materials remain intact; no holes, missing parts, severe faceting or layout defects observed. Targeted desktop/mobile interaction tests passed. Physical iPad hardware was not used."
+  },
+  "previous_delivery": {
+    "editable_blend": {
+      "path": "blender/autocord/detail_refinement/runs/20260921-panel-bottom-b3/autocord-refined.blend",
+      "sha256": "1af13c743dfeed4d53672e2519b52fed570f41b03b284b6c8cc80fa81a439b40",
+      "textures": "Packed; no external texture dependencies"
+    },
+    "browser_glb": {
+      "path": "blender/autocord/detail_refinement/runs/20260921-panel-bottom-b3/minolta-autocord.glb",
+      "sha256": "69c9c1edf1dd68e2ef5262b957ab5ac88d05569ebc557090fd8c3b48d5c428cd",
+      "source_blend_sha256": "1af13c743dfeed4d53672e2519b52fed570f41b03b284b6c8cc80fa81a439b40",
+      "bytes": 91892092,
+      "triangles": 1779953,
+      "embedded_textures": 9,
+      "no_decimation": true
+    }
+  },
+  "references": [
+    {
+      "path": "blender/autocord/reference/front_logo.HEIC",
+      "sha256": "9fe00a62d3d1302c6225a64a2dfd932a35bbe22e3684e875aed7f09c0c72d708"
+    },
+    {
+      "path": "blender/autocord/reference/right_side_text.HEIC",
+      "sha256": "004fe506b85c80849d17e9588b91d6f76ec304c401726b23c4f42ebfa8f2de8b"
+    },
+    {
+      "path": "blender/autocord/reference/back_numbers.HEIC",
+      "sha256": "3b6c33bbd83c70c4f440614c6bb3ca701336907a9f25afda7d9d8c8025f3c6db"
+    },
+    {
+      "path": "blender/autocord/reference/bottom.HEIC",
+      "sha256": "ef7038ce08431523f8e6533bbee3c25f298a853f09510f25525abf95567ca4db"
+    },
+    {
+      "path": "blender/autocord/reference/bottom_close.HEIC",
+      "sha256": "a4bc02b93b7d915c6728968f4c7dbe6f98eb1705e135d741e1714db75597d5ce"
+    },
+    {
+      "path": "blender/autocord/reference/upper_lens.HEIC",
+      "sha256": "d683e4905e32a37a56e594012db77ad592eb5a5c5592e105bb094d179e6035f8"
+    },
+    {
+      "path": "blender/autocord/reference/lower_lens.HEIC",
+      "sha256": "8ab41ac21f108a6ec024571a2c01840b0fdc8994619c261a76d661c644d0b81a"
+    },
+    {
+      "path": "blender/autocord/reference/front_lower_details.HEIC",
+      "sha256": "d7675adee23178c261602aeb14287751232d910ee06bdf2df1873490a92f9654"
+    }
+  ],
+  "browser_evidence": [
+    {
+      "view": "app-desktop-inspection",
+      "path": "blender/autocord/browser_preview/runs/20260921T075000Z-browser-v2/evidence/app-desktop.png",
+      "sha256": "7951641e538cd7c14cd238633bbd6da0617f3c61010acda44992d3a66fa6a220"
+    },
+    {
+      "view": "app-mobile-cabinet",
+      "path": "blender/autocord/browser_preview/runs/20260921T075000Z-browser-v2/evidence/app-mobile-shelf.png",
+      "sha256": "d929fe7ad320de17b58893aae53e6cb8c1f14087b940d944dabb283dca38eee6"
+    },
+    {
+      "view": "app-mobile-inspection",
+      "path": "blender/autocord/browser_preview/runs/20260921T075000Z-browser-v2/evidence/app-mobile-inspection.png",
+      "sha256": "dd58305c70e0c8becad9e9c9a82c9f64ff9ca58bcb212cf5233dadb07085e04b"
+    }
+  ],
+  "browser_history": [
+    {
+      "path": "blender/autocord/browser_preview/runs/20260921T075000Z-browser-v2/minolta-autocord-browser.glb",
+      "published_path": "public/assets/cameras/minolta-autocord-0fd838994e57a92a54a2ba8a0968e36ce059a425585076dce381bcb3e56cb311.glb",
+      "sha256": "0fd838994e57a92a54a2ba8a0968e36ce059a425585076dce381bcb3e56cb311",
+      "source_blend_sha256": "43f2abc72cbaeb514db9d3fb32cbcab848081a7adda6fa633f3b762615399f63",
+      "bytes": 20002272,
+      "triangles": 395646,
+      "embedded_textures": 17,
+      "maximum_texture_dimension": 2048,
+      "texture_format": "JPEG",
+      "jpeg_quality": 85,
+      "maximum_texture_coordinate_set": 3,
+      "source_triangles": 1779953,
+      "body_decimation_ratio": 0.2,
+      "note": "Non-destructive browser derivative. Detail meshes are retained; only the dense scanned body is decimated. The accepted full-detail GLB remains recorded below."
+    }
+  ],
+  "shelf_glb": {
+    "path": "blender/autocord/runs/20260924-mobile-a/exports/minolta-autocord-shelf-baked-v4.glb",
+    "sha256": "a2ca9ebd762bdade6ef1249e2b9d7821311078489446e702dd1c0ff74a69a4a3",
+    "bytes": 466764,
+    "triangles": 18000,
+    "primitives": 1,
+    "embedded_images": 2,
+    "source_blend_sha256": "43f2abc72cbaeb514db9d3fb32cbcab848081a7adda6fa633f3b762615399f63",
+    "source_glb_sha256": "0fd838994e57a92a54a2ba8a0968e36ce059a425585076dce381bcb3e56cb311",
+    "compression": "KHR_draco_mesh_compression",
+    "texture_size": 1024,
+    "jpeg_quality": 85,
+    "source_triangles": 395646,
+    "source_bounds": [
+      [
+        -0.30921947956085205,
+        -0.31159329414367676,
+        0.00021897746773902327
+      ],
+      [
+        0.3092033267021179,
+        0.31309670209884644,
+        0.871612548828125
+      ]
+    ],
+    "export_bounds": [
+      [
+        -0.30875226855278015,
+        -0.3156757652759552,
+        0.0003554127470124513
+      ],
+      [
+        0.3082088232040405,
+        0.3114030361175537,
+        0.871549665927887
+      ]
+    ],
+    "baked": true,
+    "voxel_remeshed": true,
+    "published_path": "public/assets/cameras/minolta-autocord-shelf-a2ca9ebd762bdade6ef1249e2b9d7821311078489446e702dd1c0ff74a69a4a3.glb"
+  },
+  "mobile_delivery": {
+    "run": "blender/autocord/runs/20260924-mobile-a",
+    "report": "blender/autocord/runs/20260924-mobile-a/exports/report.json",
+    "note": "Non-destructive mobile derivatives of the previous browser delivery. Editable master, previous exports and their historical renders remain preserved. Detail uses Draco and smaller textures; cabinet is decimated separately. See MOBILE_MODELS.md for review and validation."
+  }
+}

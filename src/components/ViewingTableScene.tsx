@@ -22,6 +22,7 @@ import { FilmShelfState } from '../utils/useFilmShelf';
 import { ShelfNavigation } from './ShelfNavigation';
 import { roomHitTarget } from '../utils/roomHitTarget';
 import { CameraShelf } from './CameraShelf';
+import type { CameraCollectionProgress } from '../utils/loadCameraModel';
 
 interface ViewingTableSceneProps {
   onEditShelfRoll: (id: string) => void;
@@ -35,7 +36,7 @@ interface ViewingTableSceneProps {
   isReducedMotion?: boolean;
   onLoadProgress?: (progress: { loaded: number; total: number; settled: boolean }) => void;
   onFirstFrameRendered?: () => void;
-  onCameraSettled?: () => void;
+  onCameraSettled?: (progress: CameraCollectionProgress) => void;
 }
 
 export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({

@@ -117,7 +117,7 @@ browser link. The standalone default asset root is the repository's `public/`;
 
 Retain authored GLBs and textures in their durable model run. Publish the selected
 browser derivative, byte-identically, in `public/assets/cameras/` and track it
-with the catalog and manifest. All five current camera GLBs are runtime assets;
+with the catalog and manifest. Both GLB variants of all five current cameras are runtime assets;
 they must be available from Git without private storage. Do not copy them into
 the standalone module itself. Preserve its independence except for the existing
 Web App integration or explicitly requested changes.
@@ -141,6 +141,15 @@ No asset upload/download service or synchronization health check is needed for
 local work.
 
 ## Model version manifests
+
+See [the model version/location index](blender/MODEL_HISTORY.md) for current
+editable masters, both runtime variants, retained large GLBs and historical
+masters. Each model's `history/` contains immutable JSON delivery snapshots.
+Before replacing CURRENT, archive it as `history/before-<new-run>.json`; after
+publication, archive the new record as `history/<new-run>.json`. The mobile
+packager does this automatically. Run `python3 blender/update_model_history.py`
+to refresh the index or add `--check` to verify it without writing. These checks
+require retained authoring storage and are not app-startup prerequisites.
 
 The tracked [Mamiya CURRENT.json](blender/mamiya_universal/CURRENT.json) is the
 entry point for the latest editable master, browser GLB, renders and continuation

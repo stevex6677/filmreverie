@@ -43,20 +43,43 @@
     "bytes": 90364059
   },
   "browser_glb": {
-    "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/canon-demi-ee17-compact.glb",
-    "published_path": "public/assets/cameras/canon-demi-ee17-fef17d78b1357b012bf0771909adfaea893e44f34cf1a6f63476524f791f23ae.glb",
-    "sha256": "fef17d78b1357b012bf0771909adfaea893e44f34cf1a6f63476524f791f23ae",
-    "bytes": 8283892,
-    "triangles": 2068411,
+    "path": "blender/canon_demi_ee17/runs/20260924-mobile-a/exports/canon-demi-ee17-detail.glb",
+    "sha256": "3e048ec479b25f272f05cacc390e11ea21c0ac50a8957fad5e252d1203209ac7",
+    "bytes": 4031728,
+    "triangles": 599675,
+    "primitives": 103,
     "embedded_images": 9,
     "source_blend_sha256": "83826a45f29ae27d1e4353f9146ee90b267302d2ebd7c0360e1ee5ffe7030ff3",
+    "source_glb_sha256": "fef17d78b1357b012bf0771909adfaea893e44f34cf1a6f63476524f791f23ae",
     "compression": "KHR_draco_mesh_compression",
-    "position_bits": 16,
-    "normal_bits": 12,
-    "uv_bits": 14,
-    "max_texture_dimension": 2048,
-    "jpeg_quality": 90,
-    "decimated": false
+    "texture_size": 1536,
+    "jpeg_quality": 82,
+    "source_triangles": 2068411,
+    "source_bounds": [
+      [
+        -0.4896240234375,
+        -0.22947058081626892,
+        0.009499999694526196
+      ],
+      [
+        0.4896240234375,
+        0.22946929931640625,
+        0.68975830078125
+      ]
+    ],
+    "export_bounds": [
+      [
+        -0.48962292075157166,
+        -0.22946640849113464,
+        0.009499999694526196
+      ],
+      [
+        0.4896385669708252,
+        0.22947992384433746,
+        0.68975830078125
+      ]
+    ],
+    "published_path": "public/assets/cameras/canon-demi-ee17-3e048ec479b25f272f05cacc390e11ea21c0ac50a8957fad5e252d1203209ac7.glb"
   },
   "previous_delivery": {
     "editable_blend": {
@@ -207,5 +230,69 @@
     "top": "Straightened both wordmark lines from top2.HEIC and integrated them into a continuous textured black ribbon with rounded borders. The black band wraps into the side strips. Lowered only intersecting scan vertices immediately underneath it; preserved other controls and surfaces.",
     "size": "8,283,892-byte self-contained Draco GLB with all master triangles retained.",
     "visual_review": "Reviewed top and oblique master renders against the rectified HEIC, plus actual compressed export renders. Desktop and emulated iPad model loading, rear view and mouse/touch controls verified."
+  },
+  "browser_history": [
+    {
+      "path": "blender/canon_demi_ee17/refinement/runs/20260923T-top2-b/canon-demi-ee17-compact.glb",
+      "published_path": "public/assets/cameras/canon-demi-ee17-fef17d78b1357b012bf0771909adfaea893e44f34cf1a6f63476524f791f23ae.glb",
+      "sha256": "fef17d78b1357b012bf0771909adfaea893e44f34cf1a6f63476524f791f23ae",
+      "bytes": 8283892,
+      "triangles": 2068411,
+      "embedded_images": 9,
+      "source_blend_sha256": "83826a45f29ae27d1e4353f9146ee90b267302d2ebd7c0360e1ee5ffe7030ff3",
+      "compression": "KHR_draco_mesh_compression",
+      "position_bits": 16,
+      "normal_bits": 12,
+      "uv_bits": 14,
+      "max_texture_dimension": 2048,
+      "jpeg_quality": 90,
+      "decimated": false
+    }
+  ],
+  "shelf_glb": {
+    "path": "blender/canon_demi_ee17/runs/20260924-mobile-a/exports/canon-demi-ee17-shelf-baked-v2.glb",
+    "sha256": "6cc0eecf24851ee124da435b9a033622e3e969060c1b10b93988e8ee2ad88f89",
+    "bytes": 449416,
+    "triangles": 17999,
+    "primitives": 1,
+    "embedded_images": 2,
+    "source_blend_sha256": "83826a45f29ae27d1e4353f9146ee90b267302d2ebd7c0360e1ee5ffe7030ff3",
+    "source_glb_sha256": "fef17d78b1357b012bf0771909adfaea893e44f34cf1a6f63476524f791f23ae",
+    "compression": "KHR_draco_mesh_compression",
+    "texture_size": 1024,
+    "jpeg_quality": 85,
+    "source_triangles": 2068411,
+    "source_bounds": [
+      [
+        -0.4896240234375,
+        -0.22947058081626892,
+        0.009499999694526196
+      ],
+      [
+        0.4896240234375,
+        0.22946929931640625,
+        0.68975830078125
+      ]
+    ],
+    "export_bounds": [
+      [
+        -0.48919710516929626,
+        -0.2291966676712036,
+        0.009496201761066914
+      ],
+      [
+        0.4894462525844574,
+        0.22919073700904846,
+        0.6873833537101746
+      ]
+    ],
+    "baked": true,
+    "voxel_remeshed": true,
+    "published_path": "public/assets/cameras/canon-demi-ee17-shelf-6cc0eecf24851ee124da435b9a033622e3e969060c1b10b93988e8ee2ad88f89.glb"
+  },
+  "mobile_delivery": {
+    "run": "blender/canon_demi_ee17/runs/20260924-mobile-a",
+    "report": "blender/canon_demi_ee17/runs/20260924-mobile-a/exports/report.json",
+    "note": "Non-destructive mobile derivatives of the previous browser delivery. Editable master, previous exports and their historical renders remain preserved. Detail uses Draco and smaller textures; cabinet is decimated separately. See MOBILE_MODELS.md for review and validation."
   }
 }

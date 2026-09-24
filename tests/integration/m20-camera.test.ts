@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { Box3, Mesh, MeshPhysicalMaterial, Ray, Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { nodeDraco } from '../helpers/draco';
 import { mountModel, fittedDistance } from '../../standalone/model-viewer/model-core.js';
 import { CAMERAS, PRIMARY_CAMERA } from '../../src/data/cameras';
 import { mm, CAMERA_SHELF_MM, CAMERA_SHELF_ORIGIN, SHELF_HEIGHT, SHELF_ORIGIN, CAMERA_PRESENTATION_YAW, cameraShelfSlot } from '../../src/data/physicalScale';
@@ -16,19 +17,27 @@ describe('M20 current camera and physical shelf', () => {
     ['mamiya-universal', .756],
     ['minolta-autocord', .3024],
     ['canon-7s', .4968],
-  ] as const)('loads %s geometry at its physical width and fits its cabinet slot', async (id, width) => {
+    ['canon-demi-ee17', .4176],
+    ['olympus-om1', .4896],
+  ].flatMap(([id, width]) => ['detail', 'shelf'].map(variant => ({ id: String(id), width: Number(width), variant }))))('loads $id $variant geometry at its physical width and fits its cabinet slot', async ({ id, width, variant }) => {
     const index = CAMERAS.findIndex(camera => camera.id === id), entry = CAMERAS[index];
-    const bytes = readFileSync(`public${entry.url}`);
-    expect(createHash('sha256').update(bytes).digest('hex')).toBe(entry.sha256);
+    const bytes = readFileSync(`public${variant === 'shelf' ? entry.shelfUrl : entry.url}`);
+    expect(bytes.length).toBeLessThan(variant === 'shelf' ? 1_000_000 : 5_000_000);
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(variant === 'shelf' ? entry.shelf.sha256 : entry.sha256);
     // Node has no image decoder. Keep the real geometry/node transforms and
     // binary buffers, omitting only materials; browser tests render all textures.
     const jsonLength = bytes.readUInt32LE(12);
     const data = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString());
+    if (variant === 'shelf') {
+      const primitives = data.meshes.flatMap((mesh: any) => mesh.primitives);
+      expect(primitives).toHaveLength(1);
+      expect(primitives.reduce((sum: number, p: any) => sum + data.accessors[p.indices].count / 3, 0)).toBeLessThan(25_000);
+    }
     data.images = []; data.textures = []; data.materials = [];
     for (const mesh of data.meshes) for (const primitive of mesh.primitives) delete primitive.material;
     data.buffers[0].uri = `data:application/octet-stream;base64,${bytes.subarray(28 + jsonLength).toString('base64')}`;
     if (!globalThis.ProgressEvent) Object.assign(globalThis, { ProgressEvent: class { constructor(public type: string) {} } });
-    const gltf = await new GLTFLoader().parseAsync(JSON.stringify(data), '');
+    const gltf = await new GLTFLoader().setDRACOLoader(nodeDraco).parseAsync(JSON.stringify(data), '');
     const original = new Box3().setFromObject(gltf.scene).getSize(new Vector3());
     const mounted = mountModel(gltf.scene, entry.rotation, mm(entry.widthMm));
     const measured = new Box3().setFromObject(mounted.object).getSize(new Vector3());
@@ -53,11 +62,19 @@ describe('M20 current camera and physical shelf', () => {
     }
     const sourceMeshes: Mesh[] = [];
     mounted.object.traverse(node => { if (node instanceof Mesh) sourceMeshes.push(node); });
+    for (const mesh of sourceMeshes) {
+      const positions = mesh.geometry.attributes.position;
+      expect(positions.array.every(Number.isFinite)).toBe(true);
+      expect(mesh.geometry.index?.array.every(index => index >= 0 && index < positions.count)).toBe(true);
+    }
     const opaque = new MeshPhysicalMaterial(), glass = new MeshPhysicalMaterial({ transmission: 1 });
     sourceMeshes.forEach((mesh, index) => { mesh.material = index < 3 ? glass : opaque; });
     const environment = new Texture(), presentation = roomCameraModel(mounted.object, environment);
     const size = new Box3().setFromObject(presentation.object).getSize(new Vector3());
-    for (const axis of ['x', 'y', 'z'] as const) expect(size[axis]).toBeCloseTo(mounted.size[axis], 6);
+    // Draco accessor bounds precede quantization. Compare actual decoded vertices
+    // when checking that baking world transforms preserves the geometry.
+    const decodedSize = new Box3().setFromObject(mounted.object, true).getSize(new Vector3());
+    for (const axis of ['x', 'y', 'z'] as const) expect(size[axis]).toBeCloseTo(decodedSize[axis], 6);
     const triangles = (meshes: Mesh[]) => meshes.reduce((n, mesh) => n + (mesh.geometry.index?.count ?? mesh.geometry.attributes.position.count) / 3, 0);
     expect(triangles(presentation.object.children as Mesh[])).toBe(triangles(sourceMeshes));
     for (const mesh of presentation.object.children as Mesh[]) expect((mesh.material as MeshPhysicalMaterial).transmission).toBe(0);

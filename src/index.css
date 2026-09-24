@@ -1340,8 +1340,9 @@ button:disabled { opacity: .4; cursor: default; }
   .darkroom-app-container[data-shelf-id="camera"] .camera-collection-toolbar { bottom: 12px; }
 }
 
-@media (max-width: 699px) {
-  .camera-shelf-target { min-width:148px; padding-inline:10px; }
-  .camera-shelf-target span { font-size:14px; }
-  .camera-shelf-target small { font-size:9px; letter-spacing:.04em; }
+/* Hide cabinet nameplates when the screen cannot accommodate them. */
+@media (max-width: 699px), (max-height: 500px) {
+  .camera-shelf-target { display:none; }
 }
+
+.camera-loading-retry { margin-top:20px; padding:10px 20px; min-height:44px; border:1px solid #c7ba9d; border-radius:5px; background:#27291f; color:#f0e4c9; cursor:pointer; pointer-events:auto; }

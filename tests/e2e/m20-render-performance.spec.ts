@@ -1,3 +1,4 @@
+import { openCamera } from './helpers/camera';
 import { test, expect } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 test.use({ actionTimeout: 15000 });
@@ -15,7 +16,7 @@ test('camera rotation keeps one render chain and settles to idle', async ({ page
   await page.goto('/?mode=room&reduced_motion=true');
   await expect(page.locator('main')).toHaveAttribute('data-app-ready', 'true', { timeout: 60000 });
   await page.getByRole('button', { name: 'Cameras', exact: true }).click();
-  await page.getByRole('button', { name: 'Inspect Mamiya Universal', exact: true }).click();
+  await openCamera(page);
   await expect(page.locator('.camera-display')).toHaveAttribute('data-model-ready', 'true', { timeout: 60000 });
   await page.waitForTimeout(1200);
   await page.evaluate(() => { (window as any).__measureRaf = true; });

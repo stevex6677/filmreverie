@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Group } from 'three';
-import { loadCameraModel } from './loadCameraModel';
+import { loadShelfCameraModel } from './loadCameraModel';
 import type { CameraEntry } from '../data/cameras';
 
 export function useCameraModel(camera: CameraEntry, enabled: boolean) {
@@ -11,10 +11,11 @@ export function useCameraModel(camera: CameraEntry, enabled: boolean) {
     if (!enabled || model) return;
     let disposed = false;
     setError('');
-    loadCameraModel(camera).then(value => {
+    loadShelfCameraModel(camera).then(value => {
       if (!disposed) setModel(value);
     }).catch(() => { if (!disposed) setError(navigator.onLine ? 'The camera model could not be loaded.' : "Camera model isn't available offline."); });
     return () => { disposed = true; };
   }, [camera, enabled, model, attempt]);
-  return { model, error, retry: () => { setError(''); setAttempt(value => value + 1); } };
+  const retry = useCallback(() => { setError(''); setAttempt(value => value + 1); }, []);
+  return { model, error, retry };
 }

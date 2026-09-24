@@ -13,6 +13,13 @@ is required. Do not use a remote execution wrapper or alter remote services.
   not select the current version. Preserve paths, checksums and source/export
   relationships, and update the record and viewer catalog together on delivery.
   Link new model records from the repository README.
+- Keep [blender/MODEL_HISTORY.md](blender/MODEL_HISTORY.md) in sync with model
+  deliveries. Archive the previous full CURRENT record under the model's
+  `history/before-<new-run>.json`, and the new record as `history/<new-run>.json`.
+  Never overwrite a differing historical snapshot. Run
+  `python3 blender/update_model_history.py` after updating CURRENT and the catalog;
+  `--check` verifies the index and retained model checksums. History JSON is
+  metadata only; keep authoring binaries in shared durable storage.
 - For 3D model previews, drag-to-rotate pages or iPad model viewing, first read
   [standalone/model-viewer/README.md](standalone/model-viewer/README.md). Reuse
   that viewer instead of creating a one-off page. Keep it independent of the Web
@@ -51,8 +58,9 @@ npm run test:integration
 PLAYWRIGHT_WORKERS=1 npm run test:e2e
 ```
 
-A fresh clone includes the required sample photos, packaging images and all five
-camera GLBs. Development and build do not need private authoring storage, Blender,
+A fresh clone includes the required sample photos, packaging images, and detail
+and cabinet GLBs for all five cameras. Development and build do not need private
+authoring storage, Blender,
 `sips` or `ffmpeg`. `prepare:assets` validates runtime assets and prepares the
 bundled decoder; it does not regenerate authoring media. Install local browser
 binaries before browser tests; see [PLAYWRIGHT.md](PLAYWRIGHT.md).
@@ -86,7 +94,7 @@ acquisition, not a startup step.
 ## 3. Track runtime assets; retain authoring work
 
 - Commit-required runtime files belong in Git, including packaging images,
-  sample photos and all five content-addressed camera GLBs in `public/assets/`.
+  sample photos and all content-addressed camera detail and cabinet GLBs in `public/assets/`.
   Do not exclude them merely because they are binary or generated.
 - Original private inputs remain read-only in main-checkout `ignored_assets/`.
   Retained Blender masters, intermediate authoring work, exports and previews

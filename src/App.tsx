@@ -31,6 +31,8 @@ import { TableControls } from "./components/TableControls";
 import { useFilmShelf } from './utils/useFilmShelf';
 import { ShelfRollCard } from './components/ShelfRollCard';
 import { CameraDisplayView } from './components/CameraDisplayView';
+import { CAMERAS } from './data/cameras';
+import { preloadCameraDetails, type CameraCollectionProgress } from './utils/loadCameraModel';
 import { useCameraNavigation } from './utils/useCameraNavigation';
 
 function LoadingFallback() {
@@ -114,8 +116,9 @@ export function App() {
   const handleFullyLoaded = useCallback(() => {
     setAppReady(true);
   }, []);
-  const [cameraSettled, setCameraSettled] = useState(false);
-  const handleCameraSettled = useCallback(() => setCameraSettled(true), []);
+  const [cameraProgress, setCameraProgress] = useState<CameraCollectionProgress>({ loaded: 0, total: CAMERAS.length, failed: 0, retry: () => {} });
+  const cameraSettled = cameraProgress.loaded === cameraProgress.total;
+  const handleCameraSettled = useCallback((progress: CameraCollectionProgress) => setCameraProgress(progress), []);
 
   const [state, dispatch] = useReducer(
     viewerReducer,
@@ -133,6 +136,13 @@ export function App() {
   useEffect(() => {
     try { localStorage.setItem('darkroom-loupe-preferences', JSON.stringify({ opticalEffects: state.loupe.opticalEffects, magnification: state.loupe.magnification })); } catch { /* Optional preference. */ }
   }, [state.loupe.opticalEffects, state.loupe.magnification]);
+
+  useEffect(() => {
+    if (!appReady || !cameraSettled || state.roomMode !== 'room') return;
+    // Let the loading overlay finish its dissolve before background decoding.
+    const timer = window.setTimeout(() => { void preloadCameraDetails(CAMERAS); }, 800);
+    return () => window.clearTimeout(timer);
+  }, [appReady, cameraSettled, state.roomMode]);
 
   const roll = state.roll;
   useCameraNavigation(state, dispatch);
@@ -324,7 +334,8 @@ export function App() {
         await saveView();
       }} />
       <DarkroomLoadingPage
-        progress={{ ...loadingProgress, cameraSettled, settled: loadingProgress.settled && (initialRoomMode !== 'room' || cameraSettled) }}
+        progress={{ ...loadingProgress, cameraSettled, cameraLoaded: cameraProgress.loaded, cameraTotal: cameraProgress.total, cameraFailed: cameraProgress.failed, settled: loadingProgress.settled && cameraSettled }}
+        onRetryCameras={cameraProgress.retry}
         isDeterministic={isDeterministic}
         isReducedMotion={isReducedMotion}
         hasError={injectedError || !!state.error}
@@ -338,7 +349,8 @@ export function App() {
       data-inspection-level={state.inspectionLevel}
       data-selected-frame={state.activeFrameIndex + 1}
       data-assets-ready={!state.assetsLoading}
-      data-app-ready={appReady ? "true" : "false"}
+      data-app-ready={appReady && cameraSettled ? "true" : "false"}
+      data-cameras-ready={cameraSettled ? "true" : "false"}
       data-inspect-zoom={state.inspectZoom}
       data-table-angle={`${state.tableAngle.tilt},${state.tableAngle.yaw}`}
       data-adjusting-view={state.adjustingView}

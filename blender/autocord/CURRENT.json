@@ -20,20 +20,43 @@
     "textures": "Packed; no external texture dependencies"
   },
   "browser_glb": {
-    "path": "blender/autocord/browser_preview/runs/20260921T075000Z-browser-v2/minolta-autocord-browser.glb",
-    "published_path": "public/assets/cameras/minolta-autocord-0fd838994e57a92a54a2ba8a0968e36ce059a425585076dce381bcb3e56cb311.glb",
-    "sha256": "0fd838994e57a92a54a2ba8a0968e36ce059a425585076dce381bcb3e56cb311",
-    "source_blend_sha256": "43f2abc72cbaeb514db9d3fb32cbcab848081a7adda6fa633f3b762615399f63",
-    "bytes": 20002272,
+    "path": "blender/autocord/runs/20260924-mobile-a/exports/minolta-autocord-detail.glb",
+    "sha256": "e1b366e32dc390fb6e92dbc7209bb44d3e81ab15c4240d02593a070b88d5ceee",
+    "bytes": 3438796,
     "triangles": 395646,
-    "embedded_textures": 17,
-    "maximum_texture_dimension": 2048,
-    "texture_format": "JPEG",
-    "jpeg_quality": 85,
-    "maximum_texture_coordinate_set": 3,
-    "source_triangles": 1779953,
-    "body_decimation_ratio": 0.2,
-    "note": "Non-destructive browser derivative. Detail meshes are retained; only the dense scanned body is decimated. The accepted full-detail GLB remains recorded below."
+    "primitives": 18,
+    "embedded_images": 17,
+    "source_blend_sha256": "43f2abc72cbaeb514db9d3fb32cbcab848081a7adda6fa633f3b762615399f63",
+    "source_glb_sha256": "0fd838994e57a92a54a2ba8a0968e36ce059a425585076dce381bcb3e56cb311",
+    "compression": "KHR_draco_mesh_compression",
+    "texture_size": 1536,
+    "jpeg_quality": 82,
+    "source_triangles": 395646,
+    "source_bounds": [
+      [
+        -0.30921947956085205,
+        -0.31159329414367676,
+        0.00021897746773902327
+      ],
+      [
+        0.3092033267021179,
+        0.31309670209884644,
+        0.871612548828125
+      ]
+    ],
+    "export_bounds": [
+      [
+        -0.30921947956085205,
+        -0.31159329414367676,
+        0.00021897746773902327
+      ],
+      [
+        0.3092033267021179,
+        0.31309670209884644,
+        0.871612548828125
+      ]
+    ],
+    "published_path": "public/assets/cameras/minolta-autocord-e1b366e32dc390fb6e92dbc7209bb44d3e81ab15c4240d02593a070b88d5ceee.glb"
   },
   "full_detail_glb": {
     "path": "blender/autocord/detail_refinement/runs/20260921-front-c3/minolta-autocord.glb",
@@ -54,7 +77,7 @@
     "Reconstructed the underside concentric silver tripod mount, recessed helical socket and two round flanged feet from bottom.HEIC and bottom_close.HEIC. Replaced the distorted scan feet and restored continuous reference-derived leather grain; retained the front hinge and body outline.",
     "Restored upper viewing-lens ivory inscriptions VIEW ROKKOR 1:3.2 f=75mm from upper_lens.HEIC, with a clean dark inscription annulus and locally corrected surface shading.",
     "Restored taking-lens MINOLTA ROKKOR 1:3.5 f=75mm and serial 1136765 from lower_lens.HEIC; retained original glass and bezel geometry.",
-    "Restored CITIZEN-MVL and the red 3 / black 4–18 shutter EV markings. Leveled shallow false scanned letter relief only inside the shutter inscription face; retained its boundary and adjacent controls.",
+    "Restored CITIZEN-MVL and the red 3 / black 4\u201318 shutter EV markings. Leveled shallow false scanned letter relief only inside the shutter inscription face; retained its boundary and adjacent controls.",
     "Restored the curved metric and green feet focusing scales from front_lower_details.HEIC on the original strip geometry."
   ],
   "preservation": {
@@ -237,5 +260,69 @@
       "path": "blender/autocord/browser_preview/runs/20260921T075000Z-browser-v2/evidence/app-mobile-inspection.png",
       "sha256": "dd58305c70e0c8becad9e9c9a82c9f64ff9ca58bcb212cf5233dadb07085e04b"
     }
-  ]
+  ],
+  "browser_history": [
+    {
+      "path": "blender/autocord/browser_preview/runs/20260921T075000Z-browser-v2/minolta-autocord-browser.glb",
+      "published_path": "public/assets/cameras/minolta-autocord-0fd838994e57a92a54a2ba8a0968e36ce059a425585076dce381bcb3e56cb311.glb",
+      "sha256": "0fd838994e57a92a54a2ba8a0968e36ce059a425585076dce381bcb3e56cb311",
+      "source_blend_sha256": "43f2abc72cbaeb514db9d3fb32cbcab848081a7adda6fa633f3b762615399f63",
+      "bytes": 20002272,
+      "triangles": 395646,
+      "embedded_textures": 17,
+      "maximum_texture_dimension": 2048,
+      "texture_format": "JPEG",
+      "jpeg_quality": 85,
+      "maximum_texture_coordinate_set": 3,
+      "source_triangles": 1779953,
+      "body_decimation_ratio": 0.2,
+      "note": "Non-destructive browser derivative. Detail meshes are retained; only the dense scanned body is decimated. The accepted full-detail GLB remains recorded below."
+    }
+  ],
+  "shelf_glb": {
+    "path": "blender/autocord/runs/20260924-mobile-a/exports/minolta-autocord-shelf-baked-v4.glb",
+    "sha256": "a2ca9ebd762bdade6ef1249e2b9d7821311078489446e702dd1c0ff74a69a4a3",
+    "bytes": 466764,
+    "triangles": 18000,
+    "primitives": 1,
+    "embedded_images": 2,
+    "source_blend_sha256": "43f2abc72cbaeb514db9d3fb32cbcab848081a7adda6fa633f3b762615399f63",
+    "source_glb_sha256": "0fd838994e57a92a54a2ba8a0968e36ce059a425585076dce381bcb3e56cb311",
+    "compression": "KHR_draco_mesh_compression",
+    "texture_size": 1024,
+    "jpeg_quality": 85,
+    "source_triangles": 395646,
+    "source_bounds": [
+      [
+        -0.30921947956085205,
+        -0.31159329414367676,
+        0.00021897746773902327
+      ],
+      [
+        0.3092033267021179,
+        0.31309670209884644,
+        0.871612548828125
+      ]
+    ],
+    "export_bounds": [
+      [
+        -0.30875226855278015,
+        -0.3156757652759552,
+        0.0003554127470124513
+      ],
+      [
+        0.3082088232040405,
+        0.3114030361175537,
+        0.871549665927887
+      ]
+    ],
+    "baked": true,
+    "voxel_remeshed": true,
+    "published_path": "public/assets/cameras/minolta-autocord-shelf-a2ca9ebd762bdade6ef1249e2b9d7821311078489446e702dd1c0ff74a69a4a3.glb"
+  },
+  "mobile_delivery": {
+    "run": "blender/autocord/runs/20260924-mobile-a",
+    "report": "blender/autocord/runs/20260924-mobile-a/exports/report.json",
+    "note": "Non-destructive mobile derivatives of the previous browser delivery. Editable master, previous exports and their historical renders remain preserved. Detail uses Draco and smaller textures; cabinet is decimated separately. See MOBILE_MODELS.md for review and validation."
+  }
 }
