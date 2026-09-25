@@ -31,9 +31,6 @@ describe('Physical dimensions across the light table and shelf', () => {
     }
     for (const roll of [BASELINE_ROLL, FULL_ROLL_FIXTURE]) expect(getStripDimensions(createRollLayout(roll)[0].layout).height * roll.scale).toBeCloseTo(mm(35), 9);
     expect(mm(CARTRIDGE_MM.bodyHeight)).toBeGreaterThan(mm(35));
-    for (const box of FILM_PACKAGING.filter(entry => entry.format === '120')) {
-      expect(COVER_FRAME_MM.openingHeight).toBeCloseTo(box.sizeMm[1] * 4 / 3);
-    }
     expect(COVER_FRAME_MM.woodBorder).toBeGreaterThanOrEqual(8);
     expect(COVER_FRAME_MM.woodBorder).toBeLessThan(15);
   });

@@ -7,8 +7,11 @@ export type PanelCorners = [number, number][];
 export interface PackagingSource { asset: string; sha256: string; imageUrl: string; source: string }
 export interface FilmPackaging {
   id: string; stockId: FilmStockId; format: PackagingFormat;
-  box: PackagingSource; front: PanelCorners; top: PanelCorners;
+  box: PackagingSource; front: PanelCorners; top?: PanelCorners;
+  bodyColor?: string; // Unphotographed carton faces; never borrow another stock's color.
   cartridge?: PackagingSource; cartridgePanel?: PanelCorners;
+  cartridgeProjection?: 'photographic'; // A photographed cylinder, not a flat unwrapped label.
+  cartridgeCurvature?: [number, number]; // Top/bottom center sag, normalized to the photographed panel height.
   sizeMm: [number, number, number]; multipack: boolean;
   singleRollArtwork?: string; // Authored compact carton face; original source remains documented.
 }

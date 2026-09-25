@@ -69,7 +69,7 @@ describe('M18 packaging coverage and texture projection', () => {
     expect(placeholderPackaging(12)).toBe(placeholderPackaging(12));
   });
   it('maps every face corner into the measured photograph without diagonal texture seams', () => {
-    for (const entry of FILM_PACKAGING) for (const corners of [entry.front, entry.top, ...(entry.cartridgePanel ? [entry.cartridgePanel] : [])]) {
+    for (const entry of FILM_PACKAGING) for (const corners of [entry.front, ...(entry.top ? [entry.top] : []), ...(entry.cartridgePanel ? [entry.cartridgePanel] : [])]) {
       const matrix = panelProjection(corners);
       [[0, 0], [1, 0], [1, 1], [0, 1]].forEach(([x, y], i) => {
         const p = new Vector3(x, y, 1).applyMatrix3(matrix);
