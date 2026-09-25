@@ -106,7 +106,9 @@ export function CameraDisplayView({ id, onBack, reducedMotion }: { id: string; o
         controls.minDistance = size.length() * .24; controls.maxDistance = fitted * 3;
         gl.domElement.dataset.modelWidth = String(size.x);
         gl.domElement.dataset.modelId = entry.id;
-        setView('home'); setReady(true);
+        setView('home');
+        controls.autoRotate = !reducedMotion; setAuto(controls.autoRotate);
+        setReady(true); render();
       }).catch(() => { if (!disposed) setError(navigator.onLine ? 'The camera model could not be loaded. Check the connection and try again.' : "Camera model isn't available offline. Download it when connected."); });
     } catch { setError('The 3D view is unavailable. You can still read about this camera or return to the shelf.'); }
     return () => { disposed = true; cleanup(); if (renderer && renderer.domElement.parentNode) { renderer.dispose(); renderer.domElement.remove(); } };
@@ -136,8 +138,7 @@ export function CameraDisplayView({ id, onBack, reducedMotion }: { id: string; o
       <button className="camera-info-close" onClick={() => setInfo(false)}>Close information</button>
       <span className="camera-kicker">{entry.manufacturer.toUpperCase()}</span><h1>{entry.title}<br /><em>{entry.titleAccent}</em></h1><p className="camera-intro">A camera built for possibilities.</p>
       <p>{entry.description}</p>
-      <dl><div><dt>Introduced</dt><dd>{entry.introduced}</dd></div><div><dt>Manufactured</dt><dd>{entry.manufactured ?? 'Unknown'}</dd></div><div><dt>Type</dt><dd>{entry.category}</dd></div><div><dt>Lens shown</dt><dd>{entry.captionDetail}</dd></div><div><dt>Width</dt><dd>{entry.widthMm / 10} cm <small>physical display scale</small></dd></div></dl>
-      <p className="camera-note">The introduction year describes the model. The manufacture year of this individual camera has not been documented.</p>
+      <dl><div><dt>Introduced</dt><dd>{entry.introduced}</dd></div><div><dt>Type</dt><dd>{entry.category}</dd></div><div><dt>Lens shown</dt><dd>{entry.captionDetail}</dd></div></dl>
       {entry.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a>)}
     </aside>
   </section>;

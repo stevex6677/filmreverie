@@ -43,11 +43,11 @@ test('catalog cameras occupy independent physical-scale cabinet slots', async ({
       `Camera nameplates ${i} and ${j} must not overlap`).toBe(true);
   }
   await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-five-camera-shelf.png`, timeout: 60000 });
-  for (const [name, id, width, label] of [
-    ['Olympus OM-1', 'olympus-om1', '0.4896', '13.6 cm'],
-    ['Minolta Autocord', 'minolta-autocord', '0.3024', '8.4 cm'],
-    ['Canon 7s', 'canon-7s', '0.4968', '13.8 cm'],
-    ['Canon Demi EE17', 'canon-demi-ee17', '0.4176', '11.6 cm'],
+  for (const [name, id, width] of [
+    ['Olympus OM-1', 'olympus-om1', '0.4896'],
+    ['Minolta Autocord', 'minolta-autocord', '0.3024'],
+    ['Canon 7s', 'canon-7s', '0.4968'],
+    ['Canon Demi EE17', 'canon-demi-ee17', '0.4176'],
   ]) {
     await display(page, name);
     await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-id', id);
@@ -57,7 +57,8 @@ test('catalog cameras occupy independent physical-scale cabinet slots', async ({
       await page.locator('.camera-info-toggle').click();
       await expect(page.locator('.camera-information')).toHaveClass(/is-open/);
     }
-    await expect(page.locator('.camera-information dd').filter({ hasText: label })).toBeVisible();
+    await expect(page.getByText('Manufactured', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Width', { exact: true })).toHaveCount(0);
     await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-${id}-display.png` });
     await page.getByRole('button', { name: 'Back to shelf' }).click();
   }
@@ -111,7 +112,7 @@ test('physical shelf, all rendered sides, orbit, zoom, reset, history and preser
   await expect(page.locator('.camera-display')).toHaveAttribute('data-preset', 'free');
   if (await page.locator('.camera-info-toggle').isVisible()) {
     await page.locator('.camera-info-toggle').click();
-    await expect(page.getByText('Manufactured', { exact: true })).toBeVisible();
+    await expect(page.getByText('Manufactured', { exact: true })).toHaveCount(0);
     await page.keyboard.press('Escape'); await expect(page.locator('.camera-information')).not.toBeVisible();
   }
   await page.goBack(); await expect(page.locator('.camera-display')).toHaveCount(0);
@@ -122,6 +123,27 @@ test('physical shelf, all rendered sides, orbit, zoom, reset, history and preser
   await page.getByRole('button', { name: 'Back to room' }).click(); await ready(page);
   await expect(app).toHaveAttribute('data-room-pose', pose!);
   expect(errors).toEqual([]);
+});
+
+test('camera details open with auto rotate and link to the camera wiki', async ({ page }, info) => {
+  await page.goto('/?mode=room'); await ready(page); await cameraShelf(page); await display(page);
+  const autoRotate = page.getByRole('button', { name: 'Auto rotate', exact: true });
+  await expect(autoRotate).toHaveAttribute('aria-pressed', 'true');
+  const canvas = page.locator('.camera-stage canvas');
+  const initial = await canvas.getAttribute('data-view-position');
+  await expect(canvas).not.toHaveAttribute('data-view-position', initial!);
+  if ((page.viewportSize()?.width ?? 1000) <= 850) {
+    await expect(page.locator('.camera-info-toggle')).toBeVisible();
+    await page.locator('.camera-info-toggle').click();
+    await expect(page.locator('.camera-information')).toHaveClass(/is-open/);
+    await expect(page.locator('.camera-information')).toBeVisible();
+  }
+  const wiki = page.getByRole('link', { name: /Mamiya Universal on Camera-wiki\.org/ });
+  await expect(wiki).toHaveAttribute('href', 'https://camera-wiki.org/wiki/Mamiya_Universal');
+  await expect(page.getByText('Manufactured', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Width', { exact: true })).toHaveCount(0);
+  await mkdir('artifacts/m20-candidates', { recursive: true });
+  await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-camera-details-auto-rotate.png` });
 });
 
 test('third physical camera opens from its shelf slot; shelf drag exits without opening', async ({ page }) => {
