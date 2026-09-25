@@ -82,6 +82,8 @@ def render_index():
             lines.append(row('原始输入（只读）', current['source'], 'A'))
         for index, item in enumerate(current.get('browser_history', []), 1):
             lines.append(row(f'历史网页大模型 {index}（保留原件）', item))
+        for index, item in enumerate(current.get('shelf_history', []), 1):
+            lines.append(row(f'历史柜内轻量模型 {index}（保留原件）', item))
         older = current.get('previous_delivery', {})
         for key, label in [('editable_blend', '更早的可编辑母版'), ('browser_glb', '更早的 GLB')]:
             if key in older:
@@ -109,6 +111,8 @@ def render_index():
             lines += ['', f'本次压缩工作目录：`G/{run}/`。其中 `scene.blend` 为压缩工作副本，',
                       '`intermediates/parent-current.json` 保存压缩前完整记录，`exports/report.json` 保存导出及候选信息。',
                       '这些工作副本不替代上表中的可编辑母版。']
+        if current.get('shelf_delivery'):
+            lines += ['', f'当前柜内模型工作目录：`G/{current["shelf_delivery"]["run"]}/`；详情版与母版未改变。']
         lines += ['', f'其余历史 run / 实验文件保留在 `G/blender/{folder}/`，本索引不宣称列出全部实验。', '']
     lines += ['## 以后如何修改、发布或恢复', '',
               '1. 先读对应 `CURRENT.json`，打开 `editable_blend.path` 指定的母版，通过 Blender CLI 修改。',

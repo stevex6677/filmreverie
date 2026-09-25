@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "model_id": "mamiya-universal",
-  "updated": "2026-09-25",
-  "revision": "Hybrid v2 — black body; component-preserving cabinet LOD",
+  "updated": "2026-09-12",
+  "revision": "Hybrid v2 — black body",
   "purpose": "Single source of truth for the current delivery: open editable_blend to continue modeling; use browser_glb for browser presentation. Previous READMEs and run records are preserved for history and do not reflect current state.",
   "path_resolution": {
     "config": "shared-assets.json",
@@ -105,76 +105,49 @@
     }
   ],
   "shelf_glb": {
-    "path": "blender/mamiya_universal/runs/20260925-cabinet-detail-d/exports/mamiya-universal-shelf.glb",
-    "sha256": "5f106d45743bd1dfca63617a40f31ba642ef14b9f698b95b6452ddb64683887d",
-    "bytes": 1393344,
-    "triangles": 171136,
-    "primitives": 19,
-    "embedded_images": 4,
-    "texture_size": 1024,
-    "jpeg_quality": 88,
+    "path": "blender/mamiya_universal/runs/20260924-mobile-a/exports/mamiya-universal-shelf-baked-final.glb",
+    "sha256": "49c200d6fab8a602112150a3f513a21886dde407b3e560765469eddeaa6f3fb5",
+    "bytes": 406508,
+    "triangles": 17980,
+    "primitives": 1,
+    "embedded_images": 2,
     "source_blend_sha256": "1d285cd9dd37b95a1882f70fc5c58cc1bca263687f76e081cc93568c4191c805",
     "source_glb_sha256": "6d426487c0a5c5fc59ad969158bee3d2612ce67a6bf6934f82cc78c1bbd96b73",
     "compression": "KHR_draco_mesh_compression",
-    "export_blend": {
-      "path": "blender/mamiya_universal/runs/20260925-cabinet-detail-d/scene.blend",
-      "sha256": "9fa11a86c5bd68f458cff01006c5dcb0ff2aa4bda369c027bf5d3ba84d56a9e6"
-    },
-    "method": "Per-component simplification; original UVs, lettering geometry and material separation retained.",
-    "published_path": "public/assets/cameras/mamiya-universal-shelf-5f106d45743bd1dfca63617a40f31ba642ef14b9f698b95b6452ddb64683887d.glb"
+    "texture_size": 1024,
+    "jpeg_quality": 85,
+    "source_triangles": 670713,
+    "source_bounds": [
+      [
+        -0.11768920719623566,
+        -0.11551222205162048,
+        -8.326926035806537e-06
+      ],
+      [
+        0.11769494414329529,
+        0.11752941459417343,
+        0.19522704184055328
+      ]
+    ],
+    "export_bounds": [
+      [
+        -0.11761821061372757,
+        -0.11558622121810913,
+        -0.00011550996714504436
+      ],
+      [
+        0.11763922870159149,
+        0.11751313507556915,
+        0.19529420137405396
+      ]
+    ],
+    "baked": true,
+    "voxel_remeshed": true,
+    "published_path": "public/assets/cameras/mamiya-universal-shelf-49c200d6fab8a602112150a3f513a21886dde407b3e560765469eddeaa6f3fb5.glb"
   },
   "mobile_delivery": {
     "run": "blender/mamiya_universal/runs/20260924-mobile-a",
     "report": "blender/mamiya_universal/runs/20260924-mobile-a/exports/report.json",
     "note": "Non-destructive mobile derivatives of the previous browser delivery. Editable master, previous exports and their historical renders remain preserved. Detail uses Draco and smaller textures; cabinet is decimated separately. See MOBILE_MODELS.md for review and validation."
-  },
-  "shelf_history": [
-    {
-      "path": "blender/mamiya_universal/runs/20260924-mobile-a/exports/mamiya-universal-shelf-baked-final.glb",
-      "sha256": "49c200d6fab8a602112150a3f513a21886dde407b3e560765469eddeaa6f3fb5",
-      "bytes": 406508,
-      "triangles": 17980,
-      "primitives": 1,
-      "embedded_images": 2,
-      "source_blend_sha256": "1d285cd9dd37b95a1882f70fc5c58cc1bca263687f76e081cc93568c4191c805",
-      "source_glb_sha256": "6d426487c0a5c5fc59ad969158bee3d2612ce67a6bf6934f82cc78c1bbd96b73",
-      "compression": "KHR_draco_mesh_compression",
-      "texture_size": 1024,
-      "jpeg_quality": 85,
-      "source_triangles": 670713,
-      "source_bounds": [
-        [
-          -0.11768920719623566,
-          -0.11551222205162048,
-          -8.326926035806537e-06
-        ],
-        [
-          0.11769494414329529,
-          0.11752941459417343,
-          0.19522704184055328
-        ]
-      ],
-      "export_bounds": [
-        [
-          -0.11761821061372757,
-          -0.11558622121810913,
-          -0.00011550996714504436
-        ],
-        [
-          0.11763922870159149,
-          0.11751313507556915,
-          0.19529420137405396
-        ]
-      ],
-      "baked": true,
-      "voxel_remeshed": true,
-      "published_path": "public/assets/cameras/mamiya-universal-shelf-49c200d6fab8a602112150a3f513a21886dde407b3e560765469eddeaa6f3fb5.glb"
-    }
-  ],
-  "shelf_delivery": {
-    "run": "blender/mamiya_universal/runs/20260925-cabinet-detail-d",
-    "report": "blender/mamiya_universal/runs/20260925-cabinet-detail-d/exports/report.json",
-    "builder": "blender/mamiya_universal/build_cabinet.py",
-    "note": "Cabinet-only revision: preserve lettering and separate PBR materials; retain more body geometry. Editable master and detail export unchanged."
   }
 }

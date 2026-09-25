@@ -41,10 +41,10 @@
       },
       "exposure": 1.15,
       "shelf": {
-        "asset": "assets/cameras/mamiya-universal-shelf-49c200d6fab8a602112150a3f513a21886dde407b3e560765469eddeaa6f3fb5.glb",
-        "sha256": "49c200d6fab8a602112150a3f513a21886dde407b3e560765469eddeaa6f3fb5",
-        "bytes": 406508,
-        "triangles": 17980
+        "asset": "assets/cameras/mamiya-universal-shelf-5f106d45743bd1dfca63617a40f31ba642ef14b9f698b95b6452ddb64683887d.glb",
+        "sha256": "5f106d45743bd1dfca63617a40f31ba642ef14b9f698b95b6452ddb64683887d",
+        "bytes": 1393344,
+        "triangles": 171136
       }
     },
     {

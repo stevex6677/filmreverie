@@ -1,5 +1,45 @@
 # M20 — Camera shelf and close inspection
 
+## Mamiya cabinet detail and tablet labels — 2026-09-25
+
+The Mamiya cabinet derivative now preserves all 79 lettering objects (38,477
+triangles), native UVs and 19 separate material primitives. Body geometry has a
+larger budget, procedural lens parts are simplified separately, and normals are
+smoothed after simplification. The old whole-model voxel bake is retained in
+shared authoring storage and CURRENT's `shelf_history`.
+
+The new shelf GLB is 1,393,344 bytes / 171,136 triangles, with four 1024 px images.
+Its SHA-256 begins `5f106d45743b`; the editable master and 3.15 MB inspection GLB
+are unchanged. The five cabinet downloads now total 3,200,416 bytes. Run
+`20260925-cabinet-detail-d` includes the derivative scene, original-source hashes,
+per-object triangle counts and script snapshot. Immutable before/after records
+and the verified model history index link both cabinet versions.
+
+Nameplates share a common projected rail height. Their actual DOM widths determine
+horizontal collision adjustment; if they cannot fit with spacing and edge margins,
+the whole row is hidden. The existing phone/short-screen CSS hiding rule remains.
+Physical model positions, label wording and styling are unchanged.
+
+Validation for this revision:
+
+- Production build passed; all 250 integration tests passed, including actual
+  Draco decoding, bounds, finite geometry, material separation and variant budgets.
+- Model history check passed: retained masters, old/new exports and published
+  hashes agree. `git diff --check` passed.
+- Final Chrome and mobile WebKit browser tests passed (2/2): 1024×768 and 1180×820 show five level,
+  non-overlapping labels; 768×1024, 390×844 and 1024×450 hide them. Returning to
+  landscape restores the row and clicking Mamiya loads inspection.
+- Cabinet screenshots were visually reviewed: restored badge lettering, lens
+  rings, and separated metal/leather surfaces. Artifacts are under
+  `artifacts/mamiya-repair/` (ignored); `candidate.png` and `desktop-1024-row.png`
+  show the final GLB and aligned row.
+- Local preview port 4181 and private Tailscale hostname
+  `upcloud.tail2b1388.ts.net:4181` serve identical HTML and the verified new GLB.
+  Production release: `aafbc641d026c7904676`.
+
+Browser viewport emulation does not establish physical iPad acceptance. The model
+remains a shelf derivative; inspection retains the more detailed variant.
+
 ## Detail preloading after room entry — 2026-09-24
 
 Following the mobile delivery, inspection models now preload automatically after

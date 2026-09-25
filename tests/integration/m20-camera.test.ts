@@ -22,7 +22,7 @@ describe('M20 current camera and physical shelf', () => {
   ].flatMap(([id, width]) => ['detail', 'shelf'].map(variant => ({ id: String(id), width: Number(width), variant }))))('loads $id $variant geometry at its physical width and fits its cabinet slot', async ({ id, width, variant }) => {
     const index = CAMERAS.findIndex(camera => camera.id === id), entry = CAMERAS[index];
     const bytes = readFileSync(`public${variant === 'shelf' ? entry.shelfUrl : entry.url}`);
-    expect(bytes.length).toBeLessThan(variant === 'shelf' ? 1_000_000 : 5_000_000);
+    expect(bytes.length).toBeLessThan(variant === 'shelf' ? (id === 'mamiya-universal' ? 1_500_000 : 1_000_000) : 5_000_000);
     expect(createHash('sha256').update(bytes).digest('hex')).toBe(variant === 'shelf' ? entry.shelf.sha256 : entry.sha256);
     // Node has no image decoder. Keep the real geometry/node transforms and
     // binary buffers, omitting only materials; browser tests render all textures.
@@ -30,8 +30,12 @@ describe('M20 current camera and physical shelf', () => {
     const data = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString());
     if (variant === 'shelf') {
       const primitives = data.meshes.flatMap((mesh: any) => mesh.primitives);
-      expect(primitives).toHaveLength(1);
-      expect(primitives.reduce((sum: number, p: any) => sum + data.accessors[p.indices].count / 3, 0)).toBeLessThan(25_000);
+      expect(primitives.length).toBeLessThanOrEqual(id === 'mamiya-universal' ? 20 : 1);
+      if (id === 'mamiya-universal') {
+        expect(data.materials.some((material: any) => /ink|engraving/i.test(material.name))).toBe(true);
+        expect(primitives.length).toBeGreaterThan(1);
+      }
+      expect(primitives.reduce((sum: number, p: any) => sum + data.accessors[p.indices].count / 3, 0)).toBeLessThan(id === 'mamiya-universal' ? 190_000 : 25_000);
     }
     data.images = []; data.textures = []; data.materials = [];
     for (const mesh of data.meshes) for (const primitive of mesh.primitives) delete primitive.material;
