@@ -184,7 +184,7 @@ have identical dimensions in saved and gray blocks; compact compartments fit
 the 143×115.3 mm picture frame, with a 2 mm wood edge and a narrow mat. Film no longer shrinks with roll
 length. Carton dimensions are documented nominal envelopes; see the
 [dimension audit](public/assets/film-packaging/README.md#physical-scale-and-dimension-audit-2026-09-16).
-The photo opening is 105.3 mm tall, one-third taller than a 120 carton;
+The photo opening is 105.3 mm tall, one-third taller than a nominal Kodak 120 carton;
 wide covers fit within the opening while preserving their saved crop.
 Compartments measure 310×135×85 mm. Film packages and cover frames all turn
 10° in the same direction, with spacing based on their rotated footprints.
@@ -196,8 +196,11 @@ when it is first added; their photographs and timestamps are preserved. Editing
 or deleting the example persists across reloads. There is no separate archive
 grid or built-in-example button. All records and photographs stay in this browser.
 
-Real packaging photographs cover all five supported Kodak stocks in 35mm and
-120. See the [packaging manifest and preparation instructions](public/assets/film-packaging/README.md)
+Real packaging photographs cover all five supported Kodak stocks plus Fujifilm
+Provia 100F, Velvia 50 and Velvia 100, each in 35mm and 120. Fuji uses separate
+single-roll and five-roll reference editions, photographed panel mapping, and
+green unseen faces. Its 135 cassette labels use separate real photographs with
+cylindrical projection correction. See the [packaging manifest and preparation instructions](public/assets/film-packaging/README.md)
 and [shelf review record](docs/SHELF_REVIEW.md) for sources and validation.
 
 Use **Backups & offline** on the shelf for all-roll or selected-roll export,

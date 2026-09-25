@@ -39,12 +39,34 @@ export function FilmPackage({ entry, owned, textures, standalone = false }: { en
   const [w, h, d] = entry.sizeMm;
   const materials = useMemo(() => ({
     front: packagingMaterial(textures[entry.singleRollArtwork ?? entry.box.asset], entry.singleRollArtwork ? [[0, 0], [1, 0], [1, 1], [0, 1]] : entry.front, owned),
-    top: packagingMaterial(entry.singleRollArtwork ? undefined : textures[entry.box.asset], entry.top, owned),
-    body: packagingMaterial(undefined, undefined, owned, '#c3942c'),
+    top: packagingMaterial(!entry.singleRollArtwork && entry.top ? textures[entry.box.asset] : undefined, entry.top, owned, entry.bodyColor),
+    side: entry.bodyColor
+      ? packagingMaterial(undefined, undefined, owned, entry.bodyColor)
+      : new THREE.MeshStandardMaterial({ color: owned ? '#d9aa40' : '#666561', roughness: .85 }),
+    body: packagingMaterial(undefined, undefined, owned, entry.bodyColor ?? '#c3942c'),
     cartridge: packagingMaterial(entry.cartridge ? textures[entry.cartridge.asset] : undefined, entry.cartridgePanel, owned, '#161719'),
   }), [entry, textures, owned]);
   useEffect(() => () => Object.values(materials).forEach(material => material.dispose()), [materials]);
   const small = entry.format === '135';
+  const cartridgeGeometry = useMemo(() => {
+    if (!small) return null;
+    const geometry = new THREE.CylinderGeometry(12.6, 12.6, 37, 40, 1, true, -1.45, 2.9);
+    if (entry.cartridgeProjection === 'photographic') {
+      // Undo the photographed cylinder's horizontal foreshortening and bowed
+      // label edges before the real 3D surface supplies its own perspective.
+      const uv = geometry.getAttribute('uv');
+      const span = 2 * Math.sin(1.45), edgeCos = Math.cos(1.45);
+      const topSag = entry.cartridgeCurvature?.[0] ?? 0;
+      const bottomSag = entry.cartridgeCurvature?.[1] ?? 0;
+      for (let i = 0; i < uv.count; i++) {
+        const theta = (uv.getX(i) - .5) * 2.9, v = uv.getY(i);
+        const sag = (bottomSag + (topSag - bottomSag) * v) * (Math.cos(theta) - edgeCos) / (1 - edgeCos);
+        uv.setXY(i, .5 + Math.sin(theta) / span, v - sag);
+      }
+    }
+    return geometry;
+  }, [small, entry.cartridgeProjection, entry.cartridgeCurvature]);
+  useEffect(() => () => cartridgeGeometry?.dispose(), [cartridgeGeometry]);
   const arrangement = shelfArrangement(w, small, owned && !standalone, d);
   const boxX = arrangement.boxX;
   return <group position={[0, standalone ? 0 : SHELF_FLOOR, 0]}>
@@ -53,13 +75,13 @@ export function FilmPackage({ entry, owned, textures, standalone = false }: { en
         <mesh castShadow receiveShadow material={materials.body}><boxGeometry args={[w, h, d]} /></mesh>
         <mesh position={[0, 0, d / 2 + .08]} material={materials.front}><planeGeometry args={[w, h]} /></mesh>
         <mesh position={[0, h / 2 + .08, 0]} rotation={[-Math.PI / 2, 0, 0]} material={materials.top}><planeGeometry args={[w, d]} /></mesh>
-        <mesh position={[w / 2 + .08, 0, 0]} rotation={[0, Math.PI / 2, 0]}><planeGeometry args={[d * .90, h * .94]} /><meshStandardMaterial color={owned ? '#d9aa40' : '#666561'} roughness={.85} /></mesh>
+        <mesh position={[w / 2 + .08, 0, 0]} rotation={[0, Math.PI / 2, 0]} material={materials.side}><planeGeometry args={[entry.bodyColor ? d : d * .90, entry.bodyColor ? h : h * .94]} /></mesh>
       </group>
     </group>
     {small && <group name="film-cartridge" position={[arrangement.filmX, 0, 0]} rotation={[0, SHELF_FILM_YAW, 0]} scale={WORLD_UNITS_PER_MM}>
       <group position={[0, 21.25, 0]} rotation={[0, -.06, 0]}>
         <mesh castShadow><cylinderGeometry args={[CARTRIDGE_MM.diameter / 2, CARTRIDGE_MM.diameter / 2, CARTRIDGE_MM.bodyHeight, 32]} /><meshStandardMaterial color="#111313" roughness={.35} metalness={.45} /></mesh>
-        <mesh material={materials.cartridge}><cylinderGeometry args={[12.6, 12.6, 37, 40, 1, true, -1.45, 2.9]} /></mesh>
+        <mesh material={materials.cartridge} geometry={cartridgeGeometry!} />
         {[-20.5, 20.5].map(y => <mesh key={y} position={[0, y, 0]} castShadow><cylinderGeometry args={[CARTRIDGE_MM.capDiameter / 2, CARTRIDGE_MM.capDiameter / 2, 1.5, 32]} /><meshStandardMaterial color="#151719" roughness={.3} metalness={.6} /></mesh>)}
         <mesh position={[0, 22.75, 0]} castShadow><cylinderGeometry args={[5.5, 5.5, 6, 24]} /><meshStandardMaterial color="#0b0d0e" roughness={.36} metalness={.3} /></mesh>
         <mesh position={[0, 25.76, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[2.5, 5.4, 24]} /><meshStandardMaterial color="#333638" roughness={.3} metalness={.65} /></mesh>

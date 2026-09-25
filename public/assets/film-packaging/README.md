@@ -11,17 +11,96 @@ fits the whole cabinet to the viewport and respects reduced motion.
 
 ## Artwork coverage
 
-[manifest.json](manifest.json) records all five supported Kodak stocks in 35mm
-and 120: Ektachrome E100, Ektar 100, Portra 160, Portra 400 and Portra 800.
-Eight boxes and five matching 35mm cartridges use original product photographs.
+[manifest.json](manifest.json) records eight stocks in 35mm and 120: Kodak
+Ektachrome E100, Ektar 100, Portra 160/400/800 and Fujifilm Provia 100F,
+Velvia 50/100. Fourteen box fronts and all eight 35mm cartridge labels use original
+photographs. Fuji cartons and cassette labels were corrected from separate
+references on 2026-09-25; the cassette artwork is not a shrunken carton face.
 Portra 160/400 35mm use authored SVG single-roll adaptations at 60×40×38 mm,
 with reflowed typography and no five-roll label. These are display designs, not
 claims of a retail packaging edition; their original multipack source records
 remain in the manifest for provenance.
-Box images and four cartridge images come from Kodak Photo Systems; the E100
+Kodak box images and four cartridge images come from Kodak Photo Systems; the E100
 cartridge comes from Macodirect. Each entry includes the product page, image URL,
 dimensions, source SHA-256, shared source path and measured panel corners.
 The 120 multipack boxes illustrate the stock; they never imply multiple saved rolls.
+
+### Fuji carton reference correction (2026-09-25)
+
+Six simplified SVG carton faces were replaced with unchanged product photographs.
+These selected green/blue/black/gold editions preserve the actual stock lettering,
+FUJICHROME branding and format-specific layout, rather than assigning Velvia an
+invented purple or magenta stripe. Sources:
+
+| Stock | 135-36 single-roll carton | 120 five-roll carton |
+| --- | --- | --- |
+| Provia 100F | [Macodirect](https://www.macodirect.de/film/farbdiafilm/fuji-provia-100-f-135-36) | [Retrospekt](https://retrospekt.com/products/fujifilm-fujichrome-provia-100f-color-120-film-5-pack) |
+| Velvia 50 | [Macodirect](https://www.macodirect.de/film/farbdiafilm/fuji-velvia-50-135-36) | [Retrospekt](https://retrospekt.com/products/fujichrome-velvia-50-color-120-film-5-pack) |
+| Velvia 100 | [Macodirect](https://www.macodirect.de/film/farbdiafilm/fuji-velvia-100-135-36) | [WAFUU](https://wafuu.com/en-us/products/fujifilm-fujichrome-velvia-100-120-reversal-film-12-exp-5-pack) |
+
+The 135 photos are 1240×1000; Provia/Velvia 50 120 photos are 3000×3000;
+Velvia 100 120 is 2048×1070 and depicts the Japanese five-pack edition.
+Measured front/top quadrilaterals remove the source camera's perspective.
+Unphotographed right faces are solid Fuji green, not Kodak yellow or mirrored
+left panels. Velvia 100 120 has no visible top in its source: its top is plain
+green, not another copy of its front. These are documented simplifications,
+not a claim of a fully photographed six-sided box. Source glare and curved
+flaps remain, particularly on the shallow-angle 120 top panels.
+
+Fuji 120 cartons use a nominal 135×72×28 mm envelope. Approximately 1.88:1
+front proportions are supported by the nearly frontal
+[Provia reference](https://reformedfilmlab.com/products/fuji-provia-100f-120-5-pack)
+and the WAFUU Velvia 100 photograph. This corrects the previous 135×79 front's
+vertical stretching; it is not a measured dimension claim. Single-roll cartons
+remain nominal 60×40×38 mm. Existing Kodak dimensions and cover frames are unchanged.
+
+Verification: production build and 13 targeted packaging/physical-scale integration
+tests passed. The actual cabinet was reviewed with all six saved Fuji variants;
+full and close-up captures are under ignored `artifacts/fuji-packaging/`.
+All six published files and retained source copies have matching SHA-256 records.
+
+### Fuji 135 cassette reference correction (2026-09-25)
+
+The three invented cassette SVGs were replaced with separately sourced photographs:
+
+| Cassette | Source | Visible edition |
+| --- | --- | --- |
+| Provia 100F | [Fujichrome Provia 100F - 02.jpg, DYVER / Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Fujichrome_Provia_100F_-_02.jpg) | Green header/footer, blue PROVIA 100F center, dark process band, white 36 / RDP III strip |
+| Velvia 50 | [Macodirect alternate product photograph](https://www.macodirect.de/media/image/44/d8/a2/FV5011_1.jpg), [listing](https://www.macodirect.de/film/farbdiafilm/fuji-velvia-50-135-36) | Green/white body, black Velvia 50 lettering on the white lower band |
+| Velvia 100 | [Macodirect alternate product photograph](https://www.macodirect.de/media/image/19/bd/a1/FV1011_1.jpg), [listing](https://www.macodirect.de/film/farbdiafilm/fuji-velvia-100-135-36) | Green body, white Velvia lettering, blue 100 and DAYLIGHT band; not Velvia 100F |
+
+**Photograph credit:** “Fujichrome Provia 100F - 02.jpg” by
+[DYVER](https://commons.wikimedia.org/wiki/User:DYVER), Wikimedia Commons,
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+The original JPEG is retained unchanged. The displayed label and review captures
+crop and geometrically project the photographic material; those photographic
+adaptations are offered under CC BY-SA 4.0. This attribution and license apply to
+the photograph, not to unrelated application code or other product imagery.
+Macodirect photographs retain the existing third-party-product-imagery status;
+provenance is not a license grant.
+
+The renderer opts these three references into `cartridgeProjection: "photographic"`.
+Vertex UVs sample by projected cylinder position rather than arc length, avoiding
+a second squeeze of already-photographed lettering. `cartridgeCurvature` stores
+the top/bottom center sag, as fractions of the photographed panel height; a cosine
+profile follows the label's bowed boundaries without importing the photographed
+black caps. These curved samples can extend beyond the straight `cartridgePanel`
+quadrilateral while remaining inside the source image. Do not clamp them to the
+quadrilateral. The existing modeled black caps, spindle and physical dimensions
+remain unchanged. Kodak mapping and all six Fuji carton photographs are unchanged.
+
+This is an approximate correction of near-frontal photographs, not a calibrated
+360° unwrap: source lighting, some edge foreshortening and asymmetric curvature
+remain. Unseen reverse/DX contacts are not invented. Published sources are
+3920×2613 for Provia and 1240×1000 for each Velvia, with pinned hashes and byte-identical
+retained originals under `film-packaging/fuji-cartridge-20260925/`.
+
+Verification: production build and 13 packaging/physical-scale integration checks
+passed. All three photographed labels loaded in the actual cabinet. Live geometry
+inspection confirmed sine-distributed horizontal UVs and measured center sag.
+The normal cabinet view and close-up renders of the mounted scene were visually
+reviewed under ignored `artifacts/fuji-cartridge/`; close-ups use an inspection
+camera, not a new application zoom control.
 
 ## Runtime assets and optional source acquisition
 
@@ -42,9 +121,11 @@ npm run fetch:packaging -- --publish
 ```
 
 Fetching preserves existing source files and rejects changed upstream bytes.
-Originals resolve under the discovered local main checkout's
-`ignored_assets/film-packaging/kodak-20260915/`; `FILM_PHOTO_SHARED_ROOT` overrides
-that authoring root. Keep originals read-only and back them up separately.
+Originals resolve under the discovered local main checkout's `ignored_assets/`:
+`film-packaging/kodak-20260915/`, `film-packaging/fuji-20260925/` and
+`film-packaging/fuji-cartridge-20260925/`.
+`FILM_PHOTO_SHARED_ROOT` overrides that authoring root. Keep originals read-only
+and back them up separately.
 Reproducible cache belongs under the active checkout's `.cache/`, not among retained
 authoring runs. Review and commit published runtime images with the manifest
 and scripts; keep private sources and generated review captures out of Git.
@@ -65,8 +146,9 @@ factor or compressed depth. Camera fitting changes the view, never these sizes.
 | 120 negative | 61 film width; image gate follows selected format | Existing film-format definition |
 | 35mm cartridge | 25 body diameter, 41 body height, 47 including spindle | Nominal cassette envelope; 26.5 cap diameter |
 | Single 35mm carton | 60 × 40 × 38 | Nominal retail carton envelope |
-| Five-roll 120 carton | 135 × 79 × 28 | Nominal multipack envelope |
-| Picture frame | 143.03 × 115.33 × 6.6 | Photo opening one-third taller than a 120 carton; 2 mm wood surround, 6 mm core + 0.3 mm bevels |
+| Kodak five-roll 120 carton | 135 × 79 × 28 | Nominal multipack envelope |
+| Fuji five-roll 120 carton | 135 × 72 × 28 | Photograph-supported front ratio; nominal width/depth, not caliper measurements |
+| Picture frame | 143.03 × 115.33 × 6.6 | Photo opening one-third taller than the nominal Kodak 120 carton; 2 mm wood surround, 6 mm core + 0.3 mm bevels |
 | Mat opening | Up to 133.03 × 105.33 | 3 mm mat border; inset further as needed to preserve the roll's saved crop |
 | Compartment pitch | 310 × 135, depth 85 | Fits a 120 carton and enlarged frame, or a 35mm cartridge, carton and frame; 12 mm gaps between rotated footprints |
 
