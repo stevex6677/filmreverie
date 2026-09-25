@@ -107,18 +107,23 @@
 | **当前可编辑母版（后续修改入口）** | `G/blender/mamiya_universal/hybrid/v2/black_body/runs/20260912T065312Z-d80c8ba1/mamiya_universal_hybrid_v2_black_body.blend` | 205.35 | `1d285cd9dd37` |
 | 当前详情版 GLB | `G/blender/mamiya_universal/runs/20260924-mobile-a/exports/mamiya-universal-detail.glb` | 3.15 | `442c8d4cb16e` |
 | 当前详情版 GLB · 网页副本 | `R/public/assets/cameras/mamiya-universal-442c8d4cb16e430b042d112106ab0cbbcd88874bdb4f7bd79da2fe18338ace1d.glb` | 3.15 | `442c8d4cb16e` |
-| 当前柜内轻量 GLB | `G/blender/mamiya_universal/runs/20260924-mobile-a/exports/mamiya-universal-shelf-baked-final.glb` | 0.41 | `49c200d6fab8` |
-| 当前柜内轻量 GLB · 网页副本 | `R/public/assets/cameras/mamiya-universal-shelf-49c200d6fab8a602112150a3f513a21886dde407b3e560765469eddeaa6f3fb5.glb` | 0.41 | `49c200d6fab8` |
+| 当前柜内轻量 GLB | `G/blender/mamiya_universal/runs/20260925-cabinet-detail-d/exports/mamiya-universal-shelf.glb` | 1.39 | `5f106d45743b` |
+| 当前柜内轻量 GLB · 网页副本 | `R/public/assets/cameras/mamiya-universal-shelf-5f106d45743bd1dfca63617a40f31ba642ef14b9f698b95b6452ddb64683887d.glb` | 1.39 | `5f106d45743b` |
 | 历史网页大模型 1（保留原件） | `G/blender/mamiya_universal/hybrid/v2/browser_preview/runs/20260912T073337Z-1d792c08/mamiya-black-body.glb` | 18.61 | `6d426487c0a5` |
+| 历史柜内轻量模型 1（保留原件） | `G/blender/mamiya_universal/runs/20260924-mobile-a/exports/mamiya-universal-shelf-baked-final.glb` | 0.41 | `49c200d6fab8` |
 
 元数据快照（仅列有记录的交付版本，不将实验 run 自动视为已接受版本）：
 
 - [20260924-mobile-a](mamiya_universal/history/20260924-mobile-a.json)：母版与当前相同，未改变；详情导出 `442c8d4cb16e`。
+- [20260925-cabinet-detail-d](mamiya_universal/history/20260925-cabinet-detail-d.json)：母版与当前相同，未改变；详情导出 `442c8d4cb16e`。
 - [before-20260924-mobile-a](mamiya_universal/history/before-20260924-mobile-a.json)：母版与当前相同，未改变；详情导出 `6d426487c0a5`。
+- [before-20260925-cabinet-detail-d](mamiya_universal/history/before-20260925-cabinet-detail-d.json)：母版与当前相同，未改变；详情导出 `442c8d4cb16e`。
 
 本次压缩工作目录：`G/blender/mamiya_universal/runs/20260924-mobile-a/`。其中 `scene.blend` 为压缩工作副本，
 `intermediates/parent-current.json` 保存压缩前完整记录，`exports/report.json` 保存导出及候选信息。
 这些工作副本不替代上表中的可编辑母版。
+
+当前柜内模型工作目录：`G/blender/mamiya_universal/runs/20260925-cabinet-detail-d/`；详情版与母版未改变。
 
 其余历史 run / 实验文件保留在 `G/blender/mamiya_universal/`，本索引不宣称列出全部实验。
 

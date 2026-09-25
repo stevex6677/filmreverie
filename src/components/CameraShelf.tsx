@@ -13,6 +13,7 @@ type CameraStatus = { state: 'loading' | 'ready' | 'error'; retry: () => void };
 import { FilmPackage } from './FilmShelf';
 import { getPackaging } from '../data/filmPackaging';
 import { roomCameraModel } from '../utils/roomCameraModel';
+import { cameraLabelRow } from '../utils/cameraLabelRow';
 
 type MountedCamera = ReturnType<typeof mountModel> & { object: ReturnType<typeof roomCameraModel>['object'] };
 
@@ -55,20 +56,19 @@ function CameraCabinetItem({ entry, index, enabled, focused, interactive, portal
     </mesh>
     {interactive && focused && <Html position={[slot.x, slot.y + mm(30), mm(CAMERA_SHELF_MM.depth + 5)]} center portal={{ current: portal.current ?? gl.domElement.parentElement! }} zIndexRange={[3, 2]}
       calculatePosition={(object, view, size) => {
-        const point = new Vector3().setFromMatrixPosition(object.matrixWorld).project(view);
         const canvasRect = gl.domElement.getBoundingClientRect(), overlayRect = portal.current?.getBoundingClientRect() ?? canvasRect;
-        const projectedX = (point.x + 1) * size.width / 2 + canvasRect.left - overlayRect.left;
-        const labelX = projectedX + (focused && size.height < 450 ? Math.min(160, size.width * .2) : 0);
-        const narrow = overlayRect.width < 700;
-        const x = narrow ? overlayRect.width * (index % 2 ? .75 : .25)
-          : focused ? Math.max(90, Math.min(overlayRect.width - 90, labelX)) : labelX;
-        let y = (1 - point.y) * size.height / 2 + canvasRect.top - overlayRect.top + (focused ? (size.width < 700 ? 28 : 40) : 0);
-        // Five nameplates need staggered desktop rows and a two-column phone grid.
-        // Keep the physical camera positions unchanged.
-        y += (narrow ? Math.floor(index / 2) : index % 2) * 58;
-        const toolbar = focused ? document.querySelector('.camera-collection-toolbar')?.getBoundingClientRect() : null;
-        if (toolbar && x + 90 > toolbar.left - overlayRect.left && x - 90 < toolbar.right - overlayRect.left) y = Math.min(y, toolbar.top - overlayRect.top - 38);
-        return [x, y];
+        const project = (x: number) => new Vector3(x, object.position.y, object.position.z)
+          .applyMatrix4(object.parent!.matrixWorld).project(view);
+        const centers = CAMERAS.map((_, i) => (project(cameraShelfSlot(i).x).x + 1) * size.width / 2 + canvasRect.left - overlayRect.left);
+        const buttons = Array.from((portal.current ?? gl.domElement.parentElement!).querySelectorAll<HTMLButtonElement>('.camera-shelf-target'));
+        const positions = cameraLabelRow(centers, buttons.map(button => button.offsetWidth), overlayRect.width);
+        // A shared rail height keeps all labels level, even while the view moves.
+        let y = (1 - project(0).y) * size.height / 2 + canvasRect.top - overlayRect.top + 40;
+        const toolbar = document.querySelector('.camera-collection-toolbar')?.getBoundingClientRect();
+        const height = Math.max(0, ...buttons.map(button => button.offsetHeight));
+        if (toolbar) y = Math.min(y, toolbar.top - overlayRect.top - height / 2 - 8);
+        if (buttons[index]) buttons[index].style.visibility = positions ? 'visible' : 'hidden';
+        return [positions?.[index] ?? centers[index], y];
       }}>
       <button ref={focusTarget} className="camera-shelf-target" aria-label={`Inspect ${entry.name}`}
         onPointerDown={event => {

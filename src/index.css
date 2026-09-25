@@ -1300,8 +1300,6 @@ button:disabled { opacity: .4; cursor: default; }
 .camera-information dl > div { display:flex; gap:15px; justify-content:space-between; padding:12px 0; border-top:1px solid #a8a88c25; font-size:12px; line-height:1.5; }
 .camera-information dt { color:#929e8a; flex-shrink:0; }
 .camera-information dd { text-align:right; margin:0; max-width:155px; }
-.camera-information dd small { display:block; color:#929e8a; }
-.camera-information .camera-note { font-size:11px; color:#929e8a; }
 .camera-information a { color:#c6b98f; font-size:11px; line-height:1.5; }
 .camera-info-toggle, .camera-info-close { display:none; }
 .camera-load-status { position:absolute; top:40%; left:calc((100% - 310px)/2); transform:translate(-50%,-50%); max-width:330px; text-align:center; font-size:14px; }
