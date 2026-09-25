@@ -8,6 +8,8 @@ A desktop, iPhone and iPad experience for exploring a 3D darkroom, inspecting ph
 
 **M20 is implemented through M20.3 under the user's “do it” instruction.** M20.4 remains open: the cumulative gate exposed inherited failures and timing-sensitive regressions; see [camera shelf review](docs/CAMERA_SHELF_REVIEW.md) for comparisons, corrections and current evidence. Human acceptance remains pending.
 
+**M21 is planned, not started:** Owner-managed cloud photo publishing at `filmreverie.app`, with account-free, browser-local visitor libraries. This records the hosting discussion only; it does not authorize deployment, DNS changes or implementation ahead of M20 acceptance.
+
 ## Progress TODO
 
 - [x] **M1–M8 — Core film viewer:** Five-photo viewer, room/table journey, realistic film and loupe, zoom/pan, and light-table dimming. Accepted 2026-09-11.
@@ -36,6 +38,18 @@ A desktop, iPhone and iPad experience for exploring a 3D darkroom, inspecting ph
   - **Evidence:** Original implementation commit `9ca8a4a`; [docs/CAMERA_SHELF_REVIEW.md](docs/CAMERA_SHELF_REVIEW.md). Latest room revision: build, 239 integration tests and 36 scoped browser checks pass. Shelf rendering batches static geometry and avoids full-scene transmission; inspection maintains one animation chain. Review candidates remain ignored; cumulative failures and intermittent film-shelf timing behavior are retained in the review.
   - **Human approval:** Pending.
 
+- [ ] **M21 — Owner cloud gallery and visitor-local darkroom**
+  - **Outcome:** The owner uploads and publishes photographic rolls without putting those photographs in GitHub or rebuilding the app; visitors can browse published work and use their own private browser-local rolls without accounts or uploads.
+  - **Dependencies:** M20 acceptance unless the user explicitly changes priority; existing roll editor/viewer, IndexedDB, archive and offline contracts; owner identity, hosting/storage accounts and control of `filmreverie.app`.
+  - **Hosting decision:** All Cloudflare: Pages for the React + Vite app, Worker for owner-only APIs, Access for owner authentication, R2 for photographs/catalog data, and Cloudflare DNS for the application/photo domains. Registration and renewal remain at Porkbun. No Vercel services or multi-provider abstraction.
+  - [ ] **M21.1 — Establish hosting and owner-only authorization:** Configure Cloudflare Pages, Worker, Access, R2 and production HTTPS; enforce owner authorization on every private read and upload/publish mutation.
+  - [ ] **M21.2 — Upload and prepare private drafts:** Upload directly to object storage using scoped, short-lived authorization; retain private originals, create sanitized display derivatives/thumbnails, and organize draft rolls with the existing editing conventions.
+  - [ ] **M21.3 — Publish and browse the gallery:** Preview and explicitly publish complete roll revisions; expose only published derivatives and metadata, support withdrawal, and keep local visitor libraries independent.
+  - [ ] **M21.4 — Preserve local privacy, offline use and migration:** Keep visitor imports entirely browser-local, add opt-in offline downloads for published rolls, preserve archives and safe updates, and migrate the owner's existing local library by explicit backup import.
+  - [ ] **M21.5 — Validate production and prepare review:** Exercise actual storage, authorization, public/private delivery, local-only visitor imports, offline behavior and responsive viewing; record costs/limits, recovery instructions and evidence for human review.
+  - **Acceptance:** All M21 design and validation requirements below pass; anonymous visitors cannot upload or retrieve private content; publishing requires neither a Git commit nor an app redeploy.
+  - **Human approval:** Pending; planning only.
+
 ### Historical validation limitations
 
 At closure, M16's latest recorded cumulative run had an intermittent loupe failure; M17's recorded browser pass was focused; M19's cumulative gate was not clean because of older regressions and shared-server resource failures. Physical iOS evidence was incomplete. Keep those facts in the review history. User closure does not establish that the failures were fixed; M20 must report and resolve failures encountered by its cumulative gate rather than silently excluding them.
@@ -45,7 +59,7 @@ At closure, M16's latest recorded cumulative run had an intermittent loupe failu
 - Reuse React, TypeScript, Vite, Three.js, React Three Fiber and Drei. Preserve saved rolls, originals, crops, table framing, film borders and accepted loupe behavior.
 - Keep room exploration at the fixed standing eye. Preserve heading when returning from an approached object; preserve roll/stock/format, brightness and table viewing state through camera inspection.
 - Use `src/data/physicalScale.ts` for physical dimensions. Fit the viewing camera to objects; do not change object size to fit screens. Film-shelf geometry in current source is authoritative where older prose differs.
-- Runtime assets are served locally. Keep imports browser-local and existing PWA/archive behavior intact. No accounts, uploads, public exposure or deployment in this milestone.
+- During M20, runtime assets are served locally; no accounts, uploads, public exposure or deployment are in scope. M21 separately plans owner-only cloud publishing. Visitor imports remain browser-local in both milestones, with existing PWA/archive behavior preserved.
 - Follow current project instructions: editing, Git, runtimes, builds and tests all run locally. Follow [SHARED_ASSETS.md](SHARED_ASSETS.md): track required runtime images and GLBs under `public/assets/`, preserve private authoring binaries separately, and do not approve visual baselines automatically.
 
 ## M20 design
@@ -116,6 +130,54 @@ Read [standalone/model-viewer/README.md](standalone/model-viewer/README.md). Thi
 - **Visual / device evidence:** Inspect actual shelf placement, scale relative to film objects, grounding, occlusion, material readability and all six sides. Capture desktop/phone/iPad review candidates and record loading/interaction observations with device details. Physical iPhone/iPad Safari and Home Screen checks are distinct from browser emulation; report missing device evidence explicitly. Do not claim motion review from an uninspected video.
 
 Record results, commit IDs, source/checksum verification, screenshots and limitations in proposed `docs/CAMERA_SHELF_REVIEW.md`. After the complete gate passes, set M20 to **Awaiting human review**, leave its top-level checkbox open, provide review steps, and stop for acceptance.
+
+## M21 design
+
+### Product and data boundaries
+
+- Provide distinct **Gallery / 展厅** and **My darkroom / 我的暗房** entry points. The gallery contains owner-published rolls; the darkroom contains the current browser's own rolls. Reuse the film/table viewer and editing conventions instead of building a second viewer.
+- Only the owner needs an account. Visitors can browse published work and import, edit, reopen and export their own photographs without logging in. No visitor cloud library, visitor upload endpoint, automatic synchronization or general account system is in scope.
+- Keep visitor originals and edits in the existing IndexedDB library. Clearly state that photographs are not uploaded, libraries do not automatically cross devices, and browser clearing/eviction can remove them. Retain portable backups and storage-protection controls.
+- Owner originals and unpublished drafts are private cloud data; only deliberately published display derivatives, thumbnails and selected roll metadata are public. Publicly viewable images can be downloaded or captured; hiding controls is not original-file protection.
+- Store uploaded photographs and the editable/published roll catalog outside GitHub and the app build. Preserve required tracked runtime models, packaging and existing sample assets; this milestone does not move private authoring masters or remove existing runtime assets.
+
+### Hosting and storage decision
+
+- **Selected: Cloudflare Pages + Worker + Access + R2.** Keep the existing React + Vite app on Pages. Use a Worker for upload authorization, private reads and catalog publication; protect management access with an owner-only Access policy and validate Access tokens in the Worker, including issuer, audience and authorized identity. Public gallery reads remain account-free.
+- Store photographs and roll catalog data in R2. Keep originals/drafts in a private bucket without public access; publish only approved derivatives and public metadata to a separate public bucket served through a photo custom domain. Configure CORS for required browser operations; CORS is not authorization.
+- Use Worker-authorized, short-lived presigned R2 uploads so photo bytes travel directly from the owner's browser to storage. Keep R2 signing credentials exclusively in Worker secrets; use R2 bindings for server-side storage operations. Serve published images directly from the photo domain rather than proxying every public image through the API Worker.
+- Recheck Pages, Workers, Access and R2 pricing/limits before provisioning against expected stored originals, publishing activity and display traffic. Start with free plans/allowances where suitable, but do not promise permanently free hosting or encode today's quotas as product behavior. No Vercel or Blob integration is planned.
+- Keep registration/renewal at Porkbun and move authoritative DNS to Cloudflare for the Pages apex domain. Configure `https://filmreverie.app` as the stable application origin, redirect `www`, configure the photo domain, and verify certificates. Preserve existing DNS/email records and handle DNSSEC/DS records using the documented migration procedure before changing nameservers.
+- Recording this selected architecture does not itself authorize account creation, billing, public uploads or DNS changes. Record Cloudflare account, owner identity and domain-access prerequisites before deployment; keep development and verification local except for explicitly authorized hosted smoke checks.
+
+### Owner workflow and publication
+
+`Owner login → Direct upload → Private draft roll → Preview → Explicit publish → Public gallery`
+
+- Enforce owner identity server-side for upload authorization, private reads, catalog edits, publication and withdrawal; a hidden management link is not access control. Upload grants restrict destination, lifetime, allowed media and size. Validate uploaded media before publication.
+- Preserve private original bytes. Generate separate thumbnails and viewing images with orientation applied and GPS/sensitive metadata removed. Do not expose original URLs or private metadata in public catalogs, HTML, logs or client bundles.
+- Support roll metadata, frame order and cover selection using existing app conventions. Changes stay private until publication; updating an already published roll must not expose partially uploaded or incomplete revisions.
+- Publish immutable/versioned image references with a complete catalog revision only after all required derivatives are ready. Failed uploads or publication must leave the last published revision readable.
+- Allow withdrawal from the current gallery. Explain that withdrawal prevents future authorized/public delivery as configured but cannot revoke screenshots, downloaded files or previously saved offline copies.
+- Owner photo publication is independent of app releases and must work without a source commit or rebuild. Keep durable originals and catalog backups separate from disposable previews and browser caches.
+
+### Offline and origin migration
+
+- Preserve existing essential app/sample offline preparation and the separate camera-download behavior. Do not add the entire cloud gallery to the build inventory or automatically download it at first visit.
+- Fetch gallery thumbnails first and viewing images on demand. Offer an explicit per-roll **Save for offline viewing** action with download state, required storage and removal controls. A complete offline copy must use one published revision, not a mixture of old metadata and new images.
+- Keep downloaded gallery copies distinguishable from user-authored local rolls; removing a gallery download must never delete visitor imports. Interrupted downloads, quota errors and gallery unavailability must leave local editing/viewing and existing complete offline copies usable.
+- Do not persist authenticated private originals, draft responses or upload credentials in public/shared service-worker caches. Preserve content-hash verification and safe app updates; avoid response rewriting that changes verified release bytes.
+- Before moving to the production domain, export rolls from the exact old origin and import the archive at the new HTTPS origin. Verify photos, ordering, crops, cover and saved view before retiring the old address. Never clear the old library as part of deployment.
+
+## M21 validation and review
+
+- **Owner and authorization:** Use an authenticated owner and a separate anonymous browser against actual configured storage. Prove successful upload/preview/publish/withdrawal, denial of anonymous writes and private reads, denial of expired upload grants, and absence of storage secrets/private references in public responses. Logged-out management access must not grant API access.
+- **Publication:** Show a private draft is not discoverable or readable anonymously; publish a complete roll and inspect its images and metadata from the public domain. Publish a revision without a Git commit or app redeploy; interrupted publication must preserve the prior complete version. Check public derivatives for sensitive EXIF removal.
+- **Visitor privacy:** Import identifiable local photographs, edit and reopen them while inspecting browser network requests and storage. No original bytes, thumbnails, filenames or derived photo data may be sent to hosting/storage APIs. Verify another browser has a separate library and no automatic synchronization.
+- **Offline/regression:** Reopen an explicitly downloaded gallery roll and visitor-local rolls without network access; verify incomplete-download/quota handling, cache removal isolation, app updates and archive round trips. A first visit must not fetch the entire gallery. Preserve existing room/camera navigation, Focus/Overview and loupe behavior.
+- **Production and devices:** Verify canonical HTTPS and redirects at `filmreverie.app`, direct image delivery/CORS, owner login, upload and public viewing on desktop and phone/iPad-sized browsers. Inspect actual rendered photographs and controls. Record physical Safari/Home Screen evidence separately from emulation.
+- **Verification gate:** At implementation time add `npm run validate:m21` for the production build, cumulative integration/E2E suites and existing standalone viewer gates, with deterministic behavior/security regression coverage. This command is planned, not currently implemented. Hosted smoke checks remain a separate requirement; mocked storage alone is not deployment evidence.
+- **Delivery:** Update deployment/privacy/offline instructions for Cloudflare Pages, Worker, Access, R2 and DNS, including secret names (never values), backups, restore/withdrawal behavior, current quota/cost expectations and origin migration steps. Record actual commands, hosted checks, screenshots and unresolved limitations; leave M21 open as **Awaiting human review** until accepted.
 
 ## Progress protocol
 
