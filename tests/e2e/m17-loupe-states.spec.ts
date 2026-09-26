@@ -10,7 +10,7 @@ const ready=async(page:Page)=>{await expect(page.locator('main')).toHaveAttribut
 const display=async(page:Page)=>(await page.locator('canvas').getAttribute('data-loupe-display'))!.split(',').map(Number);
 const sample=async(page:Page)=>(await page.locator('canvas').getAttribute('data-loupe-sample'))!.split(',').map(Number);
 const pose=async(page:Page)=>(await page.locator('canvas').getAttribute('data-camera-position'))!.split(',').map(Number);
-const open=async(page:Page)=>{await page.goto('/?mode=inspect');await ready(page);await page.getByRole('button',{name:'Choose frame',exact:true}).click();await page.getByRole('button',{name:'Open frame 3',exact:true}).click();await ready(page);await page.getByTestId('loupe-activate').click();await page.waitForTimeout(350);};
+const open=async(page:Page)=>{await page.goto('/guest?mode=inspect');await ready(page);await page.getByRole('button',{name:'Choose frame',exact:true}).click();await page.getByRole('button',{name:'Open frame 3',exact:true}).click();await ready(page);await page.getByTestId('loupe-activate').click();await page.waitForTimeout(350);};
 
 // Chromium exercises native contacts through CDP; WebKit exercises its Pointer
 // Event path with dispatched contacts (physical Safari ergonomics remain review).
@@ -108,11 +108,11 @@ test('M17 approach can reverse; keyboard movement and reduced-motion keep the th
   await page.keyboard.press('Escape');await ready(page);await expect(page.locator('main')).toHaveAttribute('data-loupe-state','activated');expect(await pose(page)).toEqual(before);
   await page.keyboard.press('Enter');await ready(page);const sampleBefore=await sample(page);await page.keyboard.press('ArrowRight');await page.waitForTimeout(100);expect((await sample(page))[0]).toBeGreaterThan(sampleBefore[0]);
   await page.keyboard.press('Escape');await ready(page);await page.keyboard.press('Escape');await expect(page.locator('main')).toHaveAttribute('data-loupe-state','inactivated');
-  await page.goto('/?mode=inspect&reduced_motion=true');await ready(page);await page.getByTestId('loupe-activate').click();await page.getByTestId('inspect-loupe').click();await ready(page);await expect(page.locator('main')).toHaveAttribute('data-loupe-state','inspection');
+  await page.goto('/guest?mode=inspect&reduced_motion=true');await ready(page);await page.getByTestId('loupe-activate').click();await page.getByTestId('inspect-loupe').click();await ready(page);await expect(page.locator('main')).toHaveAttribute('data-loupe-state','inspection');
 });
 
 test('M17 scene optics inspect photographs, perforations and bare table with transmitted illumination',async({page},info)=>{
-  await page.setViewportSize({width:1280,height:800});await page.goto('/?mode=inspect&deterministic=true');await ready(page);await page.getByTestId('loupe-activate').click();await page.waitForTimeout(150);
+  await page.setViewportSize({width:1280,height:800});await page.goto('/guest?mode=inspect&deterministic=true');await ready(page);await page.getByTestId('loupe-activate').click();await page.waitForTimeout(150);
   const canvas=page.locator('canvas');
   const place=async(x:number,y:number)=>{
     const [cx,cy]=await display(page),[sx,sy]=await sample(page);

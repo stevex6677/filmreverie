@@ -28,7 +28,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     page.on("requestfailed", (req) => failedRequests.push(req.url()));
 
     // 1. Load production app in room mode
-    await page.goto("/?deterministic=true&mode=room");
+    await page.goto("/guest?deterministic=true&mode=room");
 
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible({ timeout: 15000 });

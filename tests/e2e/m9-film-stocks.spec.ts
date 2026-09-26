@@ -43,7 +43,7 @@ function readablePhotos(png: ReturnType<typeof parsePng>) {
 test("M9: every stock, physical borders, allowed views and keyboard restrictions", async ({page}) => {
   test.setTimeout(600000);
   const errors = observeErrors(page);
-  await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
+  await page.goto("/guest?deterministic=true&mode=inspect"); await openViewingTools(page);
   await expect(page.locator("canvas")).toBeVisible();
   await waitForFilm(page);
   const selector = page.getByLabel("Film stock", {exact: true});
@@ -104,7 +104,7 @@ test("M9: every stock, physical borders, allowed views and keyboard restrictions
 test("M9: macro stock lettering through the scene-capture loupe, rapid changes and room journeys", async ({page}) => {
   test.setTimeout(600000);
   const errors = observeErrors(page);
-  await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
+  await page.goto("/guest?deterministic=true&mode=inspect"); await openViewingTools(page);
   const canvas = page.locator("canvas");
   await expect(canvas).toBeVisible();
   await waitForFilm(page);

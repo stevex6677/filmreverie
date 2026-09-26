@@ -25,7 +25,7 @@ test.describe("M4 E2E — Darkroom Realism & Production Hardening", () => {
     }
 
     // 1. Error boundary & retry recovery journey
-    await page.goto("/?test_error=1");
+    await page.goto("/guest?test_error=1");
     const errorBanner = page.locator("[data-testid=error-banner]");
     await expect(errorBanner).toBeVisible({ timeout: 10000 });
     await expect(errorBanner).toContainText("Darkroom Emulsion Failure");
@@ -43,7 +43,7 @@ test.describe("M4 E2E — Darkroom Realism & Production Hardening", () => {
     await expect(canvas).toBeVisible({ timeout: 15000 });
 
     // 2. Reduced motion path
-    await page.goto("/?reduced_motion=true&mode=room");
+    await page.goto("/guest?reduced_motion=true&mode=room");
     await expect(canvas).toBeVisible({ timeout: 15000 });
     const appContainer = page.locator(".darkroom-app-container");
     await expect(appContainer).toHaveAttribute("data-reduced-motion", "true");

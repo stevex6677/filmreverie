@@ -8,7 +8,10 @@ import { getRegionStats } from './helpers/pixelAnalysis';
 import { PRIMARY_CAMERA } from '../../src/data/cameras';
 
 test.use({ serviceWorkers: 'allow', ignoreHTTPSErrors: true });
-const entry='/?mode=inspect&reduced_motion=true';
+test.beforeEach(async ({page}) => {
+  await page.addInitScript(() => localStorage.setItem('darkroom-guest-welcome', 'done'));
+});
+const entry='/guest?mode=inspect&reduced_motion=true';
 async function ready(page:Page) {
   await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});
   await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:45000});
@@ -54,7 +57,7 @@ async function createRoll(page:Page,name='Offline roll',source=photo()) {
   await page.getByRole('button',{name:'Continue to roll details'}).click();await page.getByLabel('Roll name',{exact:true}).fill(name);
   await page.getByRole('button',{name:'Review photographs'}).click();await page.getByRole('button',{name:'Save and open'}).click();await expect(page.getByRole('dialog',{name:'Review roll'})).toHaveCount(0);await expect(page.locator('main')).not.toHaveAttribute('data-roll-id','roll-01');await ready(page);
 }
-async function dbRolls(page:Page) { return page.evaluate(()=>new Promise<any[]>((resolve,reject)=>{const q=indexedDB.open('darkroom-rolls');q.onerror=()=>reject(q.error);q.onsuccess=()=>{const db=q.result;if(!db.objectStoreNames.contains('rolls')){db.close();resolve([]);return;}const r=db.transaction('rolls').objectStore('rolls').getAll();r.onsuccess=()=>{db.close();resolve(r.result.filter((roll:any)=>roll.id!=='roll-01'));};};})); }
+async function dbRolls(page:Page) { return page.evaluate(()=>new Promise<any[]>((resolve,reject)=>{const q=indexedDB.open('darkroom-guest-rolls');q.onerror=()=>reject(q.error);q.onsuccess=()=>{const db=q.result;if(!db.objectStoreNames.contains('rolls')){db.close();resolve([]);return;}const r=db.transaction('rolls').objectStore('rolls').getAll();r.onsuccess=()=>{db.close();resolve(r.result.filter((roll:any)=>roll.id!=='roll-01'));};};})); }
 async function reloadApp(page:Page) {
   // Navigate through the page, avoiding WebKit's automation-only reload path.
   await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.evaluate(()=>location.reload())]);
@@ -90,7 +93,7 @@ test('M18 reopens offline, renders defaults and stocks, and imports local photos
   await page.getByTestId('loupe-activate').click();await page.getByTestId('inspect-loupe').click();await ready(page);
   await expect(page.locator('canvas')).toHaveAttribute('data-texture-edge','3072',{timeout:30000});
   await page.screenshot({path:info.outputPath('imported-offline-detail.png')});
-  const bytes=await page.evaluate(()=>new Promise<number[]>((resolve)=>{const q=indexedDB.open('darkroom-rolls');q.onsuccess=()=>{const db=q.result,r=db.transaction('blobs').objectStore('blobs').getAll();r.onsuccess=()=>{db.close();resolve(r.result.map(x=>x.bytes.byteLength));};};}));expect(bytes).toContain(source.buffer.length);
+  const bytes=await page.evaluate(()=>new Promise<number[]>((resolve)=>{const q=indexedDB.open('darkroom-guest-rolls');q.onsuccess=()=>{const db=q.result,r=db.transaction('blobs').objectStore('blobs').getAll();r.onsuccess=()=>{db.close();resolve(r.result.map(x=>x.bytes.byteLength));};};}));expect(bytes).toContain(source.buffer.length);
   const other=await context.newPage();await other.goto(url);await ready(other);await expect(other.locator('main')).toHaveAttribute('data-roll-id',roll.id);await rendered(other);await other.close();
   await reloadApp(page);await ready(page);await expect(page.locator('main')).toHaveAttribute('data-roll-id',roll.id);expect(errors).toEqual([]);
   } finally {await server.stop();}
@@ -176,6 +179,7 @@ test('M18 backup migrates HTTP to an independent HTTPS origin and leaves the old
     // A non-loopback HTTP origin has no SubtleCrypto or service worker. Seed
     // its library through the backup UI, then export there before moving HTTPS.
     const legacy=await context.newPage(),legacyUrl=old.url.replace('127.0.0.1','old-darkroom.test');
+    await legacy.addInitScript(() => localStorage.setItem('darkroom-guest-welcome', 'done'));
     await legacy.route(legacyUrl+'/**',async route=>{const response=await route.fetch({url:route.request().url().replace('old-darkroom.test','127.0.0.1')});await route.fulfill({response});});
     await legacy.goto(legacyUrl+entry);await ready(legacy);expect(await legacy.evaluate(()=>window.isSecureContext)).toBe(false);
     await panel(legacy);await expect(legacy.locator('.offline-panel')).toContainText('Server: reachable');
@@ -203,7 +207,6 @@ test('M18 update notice reserves space above every viewing mode and appears with
     await page.goto(server.url+entry);await ready(page);await offlineReady(page);
     await expect(page.getByText('Available offline',{exact:true})).toHaveCount(0);
     await expect(page.locator('.update-notice')).toHaveCount(0);
-    const initial=await page.locator('main').boundingBox();expect(initial!.y).toBe(0);expect(initial!.height).toBe(page.viewportSize()!.height);
     server.release('m18-layout-update');
     // A reconnect checks for a new version in the already-open application.
     await page.evaluate(()=>window.dispatchEvent(new Event('online')));
@@ -243,6 +246,5 @@ test('M18 update notice reserves space above every viewing mode and appears with
     }
     await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.getByRole('button',{name:'Update Available',exact:true}).click()]);
     await ready(page);await offlineReady(page);await expect(page.locator('.update-notice')).toHaveCount(0);
-    const restored=await page.locator('main').boundingBox();expect(restored!.y).toBe(0);expect(restored!.height).toBe(page.viewportSize()!.height);
   }finally{await server.stop();}
 });

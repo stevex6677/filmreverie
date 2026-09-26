@@ -67,7 +67,8 @@ self.addEventListener('message', event => {
 });
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-  if (event.request.method !== 'GET' || url.origin !== self.location.origin || url.pathname === '/offline-health.json') return;
+  // Access login navigations and private APIs must reach the network, never the app shell/cache.
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin || url.pathname === '/offline-health.json' || url.pathname.startsWith('/api/') || url.pathname.startsWith('/cdn-cgi/')) return;
   const key = event.request.mode === 'navigate' ? '/index.html' : url.pathname;
   const optional = OPTIONAL.find(asset => asset.url === key);
   if (optional) {

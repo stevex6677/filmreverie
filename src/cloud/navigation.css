@@ -1,0 +1,31 @@
+.owner-nav-actions { display:flex; flex:none; align-items:center; gap:6px; }
+.owner-nav-actions button, .owner-nav-actions a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:7px 12px; border:1px solid #a18c67; border-radius:6px; background:#302b25; color:#f4e4c8; font:inherit; font-size:13px; text-decoration:none; white-space:nowrap; cursor:pointer; }
+.owner-nav-actions button:focus-visible, .owner-nav-actions a:focus-visible { outline:2px solid #efcb8f; outline-offset:2px; }
+.owner-nav-actions a { background:#e4c391; color:#211b13; }
+.controls-header:has(.owner-nav-actions) { flex-wrap:wrap; gap:10px; }
+.controls-header:has(.owner-nav-actions) .action-buttons { flex:1 1 950px; flex-wrap:wrap; align-items:center; }
+.mobile-header:has(.owner-nav-actions) { flex-wrap:wrap; }
+.mobile-header .mobile-header-actions { display:flex; flex:0 0 auto; align-items:center; gap:6px; margin-left:auto; }
+.mobile-header .owner-nav-actions a { min-height:44px; }
+.empty-table-controls:has(.owner-nav-actions) { flex-wrap:wrap; }
+.empty-table-controls .owner-nav-actions { margin-left:auto; }
+.cloud-viewing-label { position:absolute; bottom:12px; right:12px; max-width:calc(100% - 32px); z-index:11; pointer-events:none; text-align:center; padding:3px 9px; border-radius:5px; background:#171a1ee8; color:#dfceb0; font-size:11px; }
+@media(max-width:600px) { .owner-nav-actions button, .owner-nav-actions a { padding:6px 9px; font-size:12px; } .cloud-viewing-label { bottom:calc(110px + env(safe-area-inset-bottom)); font-size:10px; } }
+.guest-welcome { width:min(480px,calc(100vw - 32px)); margin:auto; padding:28px; }
+.guest-welcome p { line-height:1.55; }
+.guest-welcome button { min-height:44px; margin-top:12px; }
+@media(max-width:759px) {
+  .darkroom-app-container.mobile-layout .guest-welcome {
+    inset:auto 0;
+    top:50%;
+    transform:translateY(-50%);
+    margin:auto;
+    width:min(480px,calc(100vw - 32px));
+    max-width:calc(100vw - 32px);
+    height:auto;
+    max-height:calc(var(--visible-height,100dvh) - 32px);
+    padding:24px;
+    border:1px solid #bdb6a8;
+    border-radius:10px;
+  }
+}

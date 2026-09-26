@@ -38,7 +38,7 @@ async function drag(page: Page, touch: boolean, browserName: string, dx: number,
 
 test('M18 angle drag owns input, restores browsing posture, and resets only angle', async ({ page, browserName }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/?fixture=36&mode=inspect'); await ready(page);
+  await page.goto('/guest?fixture=36&mode=inspect'); await ready(page);
   const main = page.locator('main'), canvas = page.locator('canvas');
   const pan = await main.getAttribute('data-inspect-pan'), zoom = await main.getAttribute('data-inspect-zoom');
   await page.getByRole('button', { name: 'Adjust view', exact: true }).click();
@@ -73,7 +73,7 @@ test('M18 angle drag owns input, restores browsing posture, and resets only angl
 });
 
 test('M18 keyboard and Shift-drag adjust angle; ordinary dragging pans', async ({ page }) => {
-  await page.goto('/?fixture=36&mode=inspect&deterministic=true'); await ready(page);
+  await page.goto('/guest?fixture=36&mode=inspect&deterministic=true'); await ready(page);
   const main = page.locator('main');
   await page.keyboard.down('Shift'); await drag(page, false, 'chromium', -80, 90); await page.keyboard.up('Shift');
   const angle = await angles(page);
@@ -94,7 +94,7 @@ test('M18 keyboard and Shift-drag adjust angle; ordinary dragging pans', async (
 });
 
 test('M18 pinch zoom in angle mode preserves angle and cannot open a frame', async ({ page, browserName }) => {
-  await page.goto('/?fixture=36&mode=inspect'); await ready(page);
+  await page.goto('/guest?fixture=36&mode=inspect'); await ready(page);
   await page.getByRole('button', { name: 'Adjust view', exact: true }).click();
   await drag(page, true, browserName, 55, 90);
   const angle = await angles(page), main = page.locator('main');

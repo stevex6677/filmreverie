@@ -31,7 +31,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
       }
     });
 
-    await page.goto("/?deterministic=true"); await openViewingTools(page);
+    await page.goto("/guest?deterministic=true"); await openViewingTools(page);
 
     const modeToggle = page.locator("#mode-toggle");
     await expect(modeToggle).toBeVisible({ timeout: 15000 });
@@ -61,7 +61,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
     });
     page.on("requestfailed", (req) => failedRequests.push(req.url()));
 
-    await page.goto("/?deterministic=true"); await openViewingTools(page);
+    await page.goto("/guest?deterministic=true"); await openViewingTools(page);
 
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible();
@@ -210,7 +210,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
     });
     page.on("requestfailed", (req) => failedRequests.push(req.url()));
 
-    await page.goto("/?deterministic=true"); await openViewingTools(page);
+    await page.goto("/guest?deterministic=true"); await openViewingTools(page);
 
     const modeToggle = page.locator("#mode-toggle");
     const loupeToggle = page.locator("#loupe-toggle");
@@ -252,7 +252,7 @@ test.describe("M1 E2E — Five-Photo Darkroom Film Viewer", () => {
       if (msg.type() === "error") consoleErrors.push(msg.text());
     });
 
-    await page.goto("/?deterministic=true"); await openViewingTools(page);
+    await page.goto("/guest?deterministic=true"); await openViewingTools(page);
 
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible();

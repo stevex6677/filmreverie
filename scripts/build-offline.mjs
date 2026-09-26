@@ -18,7 +18,7 @@ async function inventory(dir) {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const file = path.join(dir, entry.name);
     if (entry.isDirectory()) files.push(...await inventory(file));
-    else if (!['sw.js', 'offline-health.json'].includes(entry.name)) files.push(file);
+    else if (!['sw.js', 'offline-health.json', '_headers', '_redirects'].includes(entry.name)) files.push(file);
   }
   return files;
 }

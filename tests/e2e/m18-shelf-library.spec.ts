@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 const OUT = process.env.M18_REVIEW_DIR || 'artifacts/m18-candidates';
 
 test('M18 shelf replaces the archive, with the five-photo example in slot 01 and no hover frame', async ({page}, info) => {
-  await page.goto('/?mode=room&reduced_motion=true'); await ready(page);
+  await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page);
   await expect(page.locator('[data-shelf-slot="0"]')).toHaveAttribute('data-owned','true');
   await expect(page.locator('[data-owned="false"]')).toHaveCount(15);
   await expect(page.getByRole('button',{name:'Open built-in example'})).toHaveCount(0);
@@ -49,7 +49,7 @@ test('M18 shelf replaces the archive, with the five-photo example in slot 01 and
 });
 
 test('M18 new rolls and cancelled drafts return to the shelf', async ({page}) => {
-  await page.goto('/?mode=inspect&reduced_motion=true'); await ready(page); await focusShelf(page);
+  await page.goto('/guest?mode=inspect&reduced_motion=true'); await ready(page); await focusShelf(page);
   await page.getByRole('button',{name:'New roll',exact:true}).click();
   await page.getByRole('button',{name:'Cancel draft',exact:true}).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();

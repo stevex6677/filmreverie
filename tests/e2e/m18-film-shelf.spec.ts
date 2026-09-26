@@ -6,7 +6,7 @@ const OUT = process.env.M18_REVIEW_DIR || 'artifacts/m18-candidates';
 test('M18 first example roll shares the cabinet with inert gray placeholders', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto('/?mode=room&reduced_motion=true'); await ready(page);
+  await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page);
   await expect(page.locator('canvas')).toHaveAttribute('data-packaging-loaded', '24');
   await expect(page.locator('[data-shelf-slot]')).toHaveCount(16);
   await expect(page.locator('[data-owned="false"]')).toHaveCount(15);
@@ -21,7 +21,7 @@ test('M18 first example roll shares the cabinet with inert gray placeholders', a
 });
 test('M18 saved 35mm and 120 rolls reveal their real cover, open, and persist', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
-  await page.goto('/?mode=room&reduced_motion=true'); await ready(page);
+  await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page);
   await add(page, 'Harbor morning');
   await expect(page.locator('[data-owned="true"]')).toHaveCount(2);
   await expect(page.locator('[data-shelf-slot="0"]')).toHaveAttribute('data-packaging', 'portra-400-135');
@@ -57,7 +57,7 @@ test('M18 saved 35mm and 120 rolls reveal their real cover, open, and persist', 
 });
 
 test('M18 card fits phone landscape and iPad rotations, and a dragged package never opens a roll', async ({ page }, info) => {
-  await page.goto('/?mode=room&reduced_motion=true'); await ready(page); await add(page, 'Shelf interaction');
+  await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page); await add(page, 'Shelf interaction');
   for (const viewport of [{ width: 820, height: 1180 }, { width: 1180, height: 820 }, { width: 844, height: 390 }, { width: 375, height: 667 }]) {
     await page.setViewportSize(viewport); await page.waitForTimeout(300);
     const button = page.getByRole('button', { name: 'Show saved roll Shelf interaction', exact: true });
@@ -84,7 +84,7 @@ test('M18 card fits phone landscape and iPad rotations, and a dragged package ne
 
 test('M18 unavailable packaging does not prevent saving or opening photographs', async ({ page }) => {
   await page.route('**/assets/film-packaging/*', route => route.abort());
-  await page.goto('/?mode=room&reduced_motion=true'); await ready(page);
+  await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page);
   await add(page, 'Offline packaging');
   const button = page.getByRole('button', { name: 'Show saved roll Offline packaging' });
   await button.focus(); await page.keyboard.press('ArrowDown');
@@ -94,7 +94,7 @@ test('M18 unavailable packaging does not prevent saving or opening photographs',
 
 
 test('M18 cabinet click or tap approaches the shelf and Back restores the room pose', async ({ page }, info) => {
-  await page.goto('/?mode=room'); await ready(page);
+  await page.goto('/guest?mode=room'); await ready(page);
   await page.locator('.canvas-wrapper').focus(); await page.keyboard.press('ArrowLeft');
   const app = page.locator('main'), canvas = page.locator('canvas');
   let pose = await app.getAttribute('data-room-pose');

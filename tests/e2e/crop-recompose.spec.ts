@@ -4,7 +4,7 @@ import { PNG } from 'pngjs';
 import fs from 'node:fs/promises';
 
 test('crop drag follows the image and persists through save, reload, cancellation and rotation',async({page})=>{
-  await page.goto('/?mode=inspect&reduced_motion=true');
+  await page.goto('/guest?mode=inspect&reduced_motion=true');
   await page.getByRole('button',{name:'Rolls',exact:true}).click();
   await page.getByRole('button',{name:'New roll',exact:true}).click();
   const png=new PNG({width:900,height:300});

@@ -1,0 +1,14 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+/sw.js
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/guest
+  Cache-Control: no-cache
+/guest/
+  Cache-Control: no-cache
+/offline-health.json
+  Cache-Control: no-store

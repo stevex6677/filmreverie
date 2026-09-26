@@ -4,7 +4,27 @@ import { ensureExampleRoll } from '../storage/exampleRoll';
 import { shelfPageCount } from './shelfLayout';
 
 export interface ShelfSelection { id: string; anchor: HTMLElement; pinned: boolean }
-export function useFilmShelf(repository: RollRepository, visible: boolean) {
+export interface FilmShelfState {
+  rolls: StoredRoll[];
+  allRolls: StoredRoll[];
+  loaded: boolean;
+  trash: boolean;
+  changeTrash: (next: boolean) => void;
+  retry: () => void;
+  savedCount: number;
+  trashCount: number;
+  error: string;
+  page: number;
+  pages: number;
+  changePage: (next: number) => void;
+  selection: ShelfSelection | null;
+  selectedRoll?: StoredRoll;
+  show: (roll: StoredRoll, anchor: HTMLElement, pinned?: boolean) => void;
+  leave: () => void;
+  keep: () => void;
+  close: () => void;
+}
+export function useFilmShelf(repository: RollRepository, visible: boolean, enabled = true): FilmShelfState {
   const [allRolls, setAllRolls] = useState<StoredRoll[]>([]), [error, setError] = useState('');
   const [trash, setTrash] = useState(false), [loaded, setLoaded] = useState(false), [revision, setRevision] = useState(0);
   const rolls = trash ? allRolls.filter(r => r.trashedAt !== null).sort((a,b) => b.trashedAt! - a.trashedAt!).map((r, shelfSlot) => ({ ...r, shelfSlot })) : allRolls.filter(r => r.trashedAt === null);
@@ -22,6 +42,7 @@ export function useFilmShelf(repository: RollRepository, visible: boolean) {
     keep(); timer.current = setTimeout(() => setSelection(current => current?.pinned ? current : null), 220);
   }, [keep]);
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false, sequence = 0;
     const refresh = async () => {
       const request = ++sequence;
@@ -41,11 +62,10 @@ export function useFilmShelf(repository: RollRepository, visible: boolean) {
     const focus = () => { if (visible) void refresh(); };
     window.addEventListener('focus', focus);
     return () => { cancelled = true; unsubscribe(); window.removeEventListener('focus', focus); };
-  }, [repository, visible, trash, revision]);
+  }, [repository, visible, trash, revision, enabled]);
   useEffect(() => { if (!visible) close(); }, [visible, close]);
   useEffect(() => () => clearTimeout(timer.current), []);
   const changePage = (next: number) => { close(); setPage(Math.max(0, Math.min(next, pages - 1))); };
   const changeTrash = (next: boolean) => { close(); setPage(0); setTrash(next); };
   return { rolls, allRolls, loaded, trash, changeTrash, retry: () => setRevision(r => r + 1), savedCount: allRolls.filter(r => r.trashedAt === null).length, trashCount: allRolls.filter(r => r.trashedAt !== null).length, error, page, pages, changePage, selection, selectedRoll: rolls.find(r => r.id === selection?.id), show, leave, keep, close };
 }
-export type FilmShelfState = ReturnType<typeof useFilmShelf>;

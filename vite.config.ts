@@ -12,6 +12,9 @@ const allowedHosts = process.env.FILM_PHOTO_ALLOWED_HOSTS?.split(',') ?? [
 ];
 const https = process.env.FILM_PHOTO_TLS_CERT && process.env.FILM_PHOTO_TLS_KEY
   ? {cert:readFileSync(process.env.FILM_PHOTO_TLS_CERT),key:readFileSync(process.env.FILM_PHOTO_TLS_KEY)} : undefined;
+const proxy = process.env.FILM_PHOTO_CLOUD_API
+  ? { '/api': { target: process.env.FILM_PHOTO_CLOUD_API } }
+  : undefined;
 
 export default defineConfig({
   plugins: [react()],
@@ -27,6 +30,7 @@ export default defineConfig({
     port: 5178,
     strictPort: true,
     allowedHosts,
+    proxy,
   },
   preview: {
     host,
@@ -34,5 +38,6 @@ export default defineConfig({
     port: 5178,
     strictPort: true,
     allowedHosts,
+    proxy,
   },
 });

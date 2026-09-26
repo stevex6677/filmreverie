@@ -2,7 +2,7 @@ import { ShelfTools } from "./components/ShelfTools";
 import { RollEditor } from "./components/RollEditor";
 import { UpdateNotice } from "./components/UpdateNotice";
 import { createRuntimeRoll } from "./storage/rollRuntime";
-import { SavedView, StoredRoll, rollRepository, storageMessage } from "./storage/rollRepository";
+import { SavedView, StoredRoll, storageMessage } from "./storage/rollRepository";
 import { BASELINE_ROLL, FULL_ROLL_FIXTURE, LOCAL_ROLL, validateRoll } from "./utils/rollLayout";
 import { useReducer, useEffect, useMemo, useState, useRef, useCallback, Suspense } from "react";
 import * as THREE from "three";
@@ -34,18 +34,38 @@ import { CameraDisplayView } from './components/CameraDisplayView';
 import { CAMERAS } from './data/cameras';
 import { preloadCameraDetails, type CameraCollectionProgress } from './utils/loadCameraModel';
 import { useCameraNavigation } from './utils/useCameraNavigation';
+import { OwnerPanel, type OwnerPreview } from './cloud/OwnerPanel';
+import { usePublishedShelf } from './cloud/publicShelf';
+import { guestRollRepository, guestActiveRollKey, guestWelcomeKey } from './storage/guestRolls';
+import { GuestWelcome } from './components/GuestWelcome';
+import './cloud/navigation.css';
+const guestCoverSource = guestRollRepository.thumbnail.bind(guestRollRepository);
 
 function LoadingFallback() {
   return (
     <div className="darkroom-loading" data-testid="loading-indicator">
       <div className="loading-spinner" />
-      <p>Developing film roll 01...</p>
+      <p>Preparing the darkroom...</p>
       <span className="loading-sub">Calibrating emulsion density & light table...</span>
     </div>
   );
 }
 
+function OwnerActions({ onAdmin }: { onAdmin: () => void }) {
+  return <div className="owner-nav-actions">
+    <button onClick={onAdmin}>Admin</button>
+    <a href="/guest?welcome=1" target="_blank" rel="noopener noreferrer">Create Your Own ↗</a>
+  </div>;
+}
+
 export function App() {
+  const isGuest = /^\/guest\/?$/.test(window.location.pathname);
+  const repository = guestRollRepository;
+  const [guestWelcome, setGuestWelcome] = useState(() => {
+    if (!isGuest) return false;
+    if (new URLSearchParams(window.location.search).get('welcome') === '1') return true;
+    try { return localStorage.getItem(guestWelcomeKey) !== 'done'; } catch { return true; }
+  });
   const mobile = useMobileLayout();
   const [sheet,setSheet]=useState<MobileSheet>(null);
   const [hidden,setHidden]=useState(document.hidden);
@@ -149,46 +169,69 @@ export function App() {
   const closeCamera = useCallback(() => dispatch({ type: 'CLOSE_CAMERA' }), []);
   useEffect(()=>setSheet(null),[state.roomMode]);
   useEffect(()=>{if(mobile)dispatch({type:'INPUT_TOUCH',active:true});else setSheet(null);},[mobile]);
-  useEffect(() => { document.title = roll.imported ? `${roll.label} — Darkroom Film Viewer` : "Darkroom Film Viewer — Roll 01"; }, [roll]);
+  useEffect(() => { document.title = isGuest ? (roll.imported ? `${roll.label} — Your darkroom` : 'Your darkroom — Film Reverie') : 'Film Reverie — Published photographs'; }, [isGuest, roll]);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [cloudPanel, setCloudPanel] = useState<'owner' | null>(null);
+  const [ownerPreviewActive, setOwnerPreviewActive] = useState(false);
+  const [cloudSource, setCloudSource] = useState<'gallery' | 'owner' | null>(null);
+  const cloudDialogOpen = cloudPanel === 'owner' && !ownerPreviewActive || guestWelcome;
   const [editorOpen, setEditorOpen] = useState(false), [libraryError, setLibraryError] = useState("");
   const [editingRollId, setEditingRollId] = useState<string | undefined>();
   const [deletedRoll, setDeletedRoll] = useState<StoredRoll | null>(null);
   const shelfPortal = useRef<HTMLDivElement>(null);
-  const shelfVisible = state.roomMode === 'room' && !state.cameraDisplay && !editorOpen && !toolsOpen && !sheet && !hidden && !contextLost;
-  const shelf = useFilmShelf(rollRepository, shelfVisible);
+  const shelfVisible = state.roomMode === 'room' && !state.cameraDisplay && !editorOpen && !toolsOpen && !cloudDialogOpen && !sheet && !hidden && !contextLost;
+  const guestShelf = useFilmShelf(repository, shelfVisible && isGuest, isGuest);
+  const published = usePublishedShelf(!isGuest);
+  const shelf = isGuest ? guestShelf : published.shelf;
   useEffect(() => { if (!state.shelfFocused && shelf.trash) shelf.changeTrash(false); }, [state.shelfFocused, shelf.trash]);
-  const tableRollAvailable = !shelf.allRolls.some(r => r.id === roll.rollId && r.trashedAt !== null);
+  const tableRollAvailable = isGuest
+    ? (!guestShelf.loaded || guestShelf.allRolls.some(saved => saved.id === roll.rollId && saved.trashedAt === null))
+    : cloudSource !== null;
+  const emptyRollMessage = tableRollAvailable ? undefined
+    : isGuest ? 'No roll on the light table'
+      : published.loading ? 'Loading published photographs…' : published.error || 'No published roll on the light table';
+  const ownerActions = isGuest ? null : <OwnerActions onAdmin={() => {
+    shelf.close(); setSheet(null); setOwnerPreviewActive(false); setCloudPanel('owner');
+  }} />;
   const openShelf = () => {
     void saveView().catch(error => setLibraryError(storageMessage(error)));
-    shelf.close(); shelf.retry(); setSheet(null); dispatch({ type: 'APPROACH_SHELF' });
+    shelf.close();
+    if (isGuest) guestShelf.retry(); else published.refresh();
+    setSheet(null); dispatch({ type: 'APPROACH_SHELF' });
   };
-  const openEditor = (id?: string) => { openShelf(); shelf.changeTrash(false); setEditingRollId(id); setEditorOpen(true); };
+  const openEditor = (id?: string) => {
+    if (!isGuest) return;
+    openShelf(); shelf.changeTrash(false); setEditingRollId(id); setEditorOpen(true);
+  };
   const openCameras = () => { void saveView().catch(error => setLibraryError(storageMessage(error))); shelf.close(); setSheet(null); dispatch({ type: 'APPROACH_CAMERA_SHELF' }); };
   const deleteRoll = async (removed: StoredRoll) => {
-    await rollRepository.trash(removed.id); shelf.close(); setDeletedRoll(removed);
-    if (removed.id === roll.rollId) { try { localStorage.removeItem('darkroom-active-roll'); } catch { /* Optional preference. */ } }
+    if (!isGuest) return;
+    await repository.trash(removed.id); shelf.close(); setDeletedRoll(removed);
+    if (removed.id === roll.rollId) {
+      try { localStorage.removeItem(guestActiveRollKey); } catch { /* Optional preference. */ }
+    }
   };
-  const restoreRoll = async (id: string) => { await rollRepository.trash(id, false); shelf.close(); setDeletedRoll(null); };
+  const restoreRoll = async (id: string) => { if (!isGuest) return; await repository.trash(id, false); shelf.close(); setDeletedRoll(null); };
   const ownedRuntime = useRef<ReturnType<typeof createRuntimeRoll> | null>(null), switchRequest = useRef(0);
   const stateRef = useRef(state); stateRef.current = state;
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
   const saveView = () => {
     const current = stateRef.current;
-    if (!current.roll.imported || current.cameraMoving || current.isTransitioning || current.assetsLoading) return Promise.resolve();
+    if (!isGuest || !current.roll.imported || current.cameraMoving || current.isTransitioning || current.assetsLoading) return Promise.resolve();
     const rollId = current.roll.rollId;
     const stockId = current.filmStockId;
     const filmStrength = current.filmStrength;
     const roomMode = current.roomMode;
     const view: SavedView = { filmScale: current.roll.scale, frameId: current.roll.frames[current.activeFrameIndex].id, level: current.inspectionLevel, mode: current.filmMode, brightness: current.tableBrightness, magnification: current.loupe.magnification, zoom: current.inspectZoom, pan: current.inspectPan, overview: current.savedOverview };
-    const queued = saveQueue.current.catch(() => {}).then(() => rollRepository.update(rollId, r => ({ ...r, stockId, filmStrength, view: roomMode === "inspect" ? view : r.view })));
+    const queued = saveQueue.current.catch(() => {}).then(() => repository.update(rollId, r => ({ ...r, stockId, filmStrength, view: roomMode === "inspect" ? view : r.view })));
     saveQueue.current = queued;
     return queued;
   };
   const openSaved = async (id: string) => {
+    if (!isGuest) throw new Error('Local rolls are available only in Your darkroom.');
     const request = ++switchRequest.current;
     if (id !== stateRef.current.roll.rollId) await saveView();
-    const bundle = await rollRepository.read(id);
+    const bundle = await repository.read(id);
     if (bundle.roll.trashedAt !== null) throw new Error("This roll is in Trash. Restore it to open it.");
     const runtime = createRuntimeRoll(bundle);
     try {
@@ -197,13 +240,27 @@ export function App() {
       if (request !== switchRequest.current) { runtime.dispose(); return; }
       const previous = ownedRuntime.current; ownedRuntime.current = runtime;
       dispatch({ type: "LOAD_ROLL", roll: runtime.definition, stockId: bundle.roll.stockId, filmStrength: bundle.roll.filmStrength, view: runtime.view });
-      previous?.dispose(); setLibraryError("");
+      previous?.dispose(); setLibraryError(""); setCloudSource(null);
       const url = new URL(location.href); for (const key of ["fixture", "roll", "example"]) url.searchParams.delete(key); history.replaceState({}, "", url);
-      try { localStorage.setItem("darkroom-active-roll", id); } catch { /* IndexedDB remains authoritative. */ }
+      try { localStorage.setItem(guestActiveRollKey, id); } catch { /* IndexedDB remains authoritative. */ }
+    } catch (error) { runtime.dispose(); throw error; }
+  };
+  const openCloudRoll = async (runtime: OwnerPreview, source: 'gallery' | 'owner') => {
+    const request = ++switchRequest.current;
+    try {
+      await saveView();
+      if (request !== switchRequest.current) { runtime.dispose(); return; }
+      const previous = ownedRuntime.current;
+      ownedRuntime.current = runtime;
+      dispatch({ type: 'LOAD_ROLL', roll: { ...runtime.definition, imported: false }, stockId: runtime.stockId, filmStrength: runtime.filmStrength, view: runtime.view });
+      previous?.dispose();
+      setCloudSource(source); setLibraryError(''); shelf.close(); setSheet(null);
+      if (source === 'gallery') setCloudPanel(null);
     } catch (error) { runtime.dispose(); throw error; }
   };
   useEffect(() => {
-    let id: string | null = null; try { id = localStorage.getItem("darkroom-active-roll"); } catch { /* Library reports availability when opened. */ }
+    if (!isGuest) return () => { ++switchRequest.current; ownedRuntime.current?.dispose(); };
+    let id: string | null = null; try { id = localStorage.getItem(guestActiveRollKey); } catch { /* Library reports availability when opened. */ }
     const params = new URLSearchParams(location.search);
     if (id && !["fixture", "roll", "example"].some(key => params.has(key))) void openSaved(id).catch(error => setLibraryError(storageMessage(error)));
     return () => { ++switchRequest.current; ownedRuntime.current?.dispose(); };
@@ -248,7 +305,7 @@ export function App() {
   // Keyboard shortcut support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (state.cameraDisplay || editorOpen || toolsOpen || sheet==='frames') return;
+      if (state.cameraDisplay || editorOpen || toolsOpen || cloudDialogOpen || sheet==='frames') return;
       if(sheet==='tools' && e.key==='Escape'){setSheet(null);return;}
       // Ignore when typing in input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
@@ -322,10 +379,13 @@ export function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.cameraDisplay, state.roomMode, state.adjustingView, state.shelfFocused, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, state.loupe, roll, editorOpen, toolsOpen, sheet]);
+  }, [state.cameraDisplay, state.roomMode, state.adjustingView, state.shelfFocused, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, state.loupe, roll, editorOpen, toolsOpen, cloudDialogOpen, sheet]);
 
   const localError = new URLSearchParams(window.location.search).get("roll") === "local" ? validateRoll(LOCAL_ROLL) : null;
-  if (localError) return <main className="darkroom-error-fallback"><div className="error-card" role="alert"><h2>Local roll unavailable</h2><p>{localError}</p><a href="/?mode=room">Return to shelf</a></div></main>;
+  if (localError) return <>
+    <DarkroomLoadingPage progress={loadingProgress} hasError />
+    <main className="darkroom-error-fallback"><div className="error-card" role="alert"><h2>Local roll unavailable</h2><p>{localError}</p><a href={isGuest ? "/guest?mode=room" : "/?mode=room"}>Return to shelf</a></div></main>
+  </>;
 
   return (
     <div className="app-shell">
@@ -333,6 +393,7 @@ export function App() {
         if (stateRef.current.cameraMoving || stateRef.current.isTransitioning || stateRef.current.assetsLoading) throw new Error("Wait for the photograph to finish opening before updating.");
         await saveView();
       }} />
+      {!isGuest && cloudSource && <div className="cloud-viewing-label" role="status">{cloudSource === 'owner' ? 'Private admin preview — not published' : 'Published photograph'}</div>}
       <DarkroomLoadingPage
         progress={{ ...loadingProgress, cameraSettled, cameraLoaded: cameraProgress.loaded, cameraTotal: cameraProgress.total, cameraFailed: cameraProgress.failed, settled: loadingProgress.settled && cameraSettled }}
         onRetryCameras={cameraProgress.retry}
@@ -344,7 +405,7 @@ export function App() {
     <main
       className={`darkroom-app-container ${roll !== BASELINE_ROLL ? "full-roll" : ""} ${mobile?'mobile-layout':''} ${state.roomMode==='inspect'?'table-layout':''}`}
       data-table-mode={state.focusMode?'focus':'overview'}
-      data-roll-id={roll.rollId}
+      data-roll-id={tableRollAvailable ? roll.rollId : ''}
       data-film-format={roll.format ?? "135"}
       data-inspection-level={state.inspectionLevel}
       data-selected-frame={state.activeFrameIndex + 1}
@@ -398,7 +459,7 @@ export function App() {
           <div className="canvas-wrapper" tabIndex={state.cameraDisplay ? -1 : 0} aria-hidden={!!state.cameraDisplay} aria-label="Film viewer">
             <Canvas shadows key={canvasVersion}
               onCreated={({gl})=>{gl.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();setContextLost(true);});gl.domElement.addEventListener('webglcontextrestored',()=>setContextLost(false));}}
-              frameloop={state.cameraDisplay || editorOpen || toolsOpen || sheet === 'frames' || hidden || contextLost ? "never" : "always"}
+              frameloop={state.cameraDisplay || editorOpen || toolsOpen || cloudDialogOpen || sheet === 'frames' || hidden || contextLost ? "never" : "always"}
               camera={initialCamera}
               dpr={[1, Math.min(typeof window !== "undefined" ? window.devicePixelRatio : 1, 1.5)]}
               gl={{
@@ -413,9 +474,11 @@ export function App() {
               <ViewingTableScene
                 onEditShelfRoll={openEditor}
                 showRoll={tableRollAvailable}
+                readOnlyShelf={!isGuest}
+                coverSource={isGuest ? guestCoverSource : published.cover}
                 shelf={shelf}
                 shelfPortal={shelfPortal}
-                inputBlocked={!!state.cameraDisplay || editorOpen || toolsOpen || sheet==='frames' || (state.roomMode==='room' && !!sheet) || hidden || contextLost}
+                inputBlocked={!!state.cameraDisplay || editorOpen || toolsOpen || cloudDialogOpen || sheet==='frames' || (state.roomMode==='room' && !!sheet) || hidden || contextLost}
                 state={state}
                 dispatch={dispatch}
                 isDeterministic={isDeterministic}
@@ -434,20 +497,46 @@ export function App() {
       {shelfVisible && state.shelfId === 'camera' && <div className="shelf-toolbar camera-collection-toolbar" aria-label="Camera shelf controls"><button onClick={() => dispatch({ type: 'RETURN_TO_ROOM' })}>← Back to room</button><div><span className="shelf-eyebrow">YOUR CAMERAS</span><span>One camera, many perspectives</span></div><button onClick={openShelf}>Film shelf</button></div>}
       {shelfVisible && state.shelfId !== 'camera' && <div className="shelf-toolbar" aria-label="Shelf controls">
         {state.shelfFocused && <button onClick={() => { shelf.close(); dispatch({ type: "RETURN_TO_ROOM" }); }}>← Back to room</button>}
-        <div><span className="shelf-eyebrow">{shelf.trash ? "TRASH" : "YOUR COLLECTION"}</span><span>{shelf.trash ? `${shelf.trashCount} deleted rolls` : `${shelf.savedCount} saved ${shelf.savedCount === 1 ? "roll" : "rolls"}`}</span></div>
+        <div><span className="shelf-eyebrow">{!isGuest ? "PUBLISHED GALLERY" : shelf.trash ? "TRASH" : "YOUR COLLECTION"}</span><span>{!isGuest ? `${shelf.savedCount} published ${shelf.savedCount === 1 ? "roll" : "rolls"}` : shelf.trash ? `${shelf.trashCount} deleted rolls` : `${shelf.savedCount} saved ${shelf.savedCount === 1 ? "roll" : "rolls"}`}</span></div>
         {shelf.pages > 1 && <nav aria-label="Shelf pages"><button aria-label="Previous shelf page" disabled={shelf.page === 0} onClick={() => shelf.changePage(shelf.page - 1)}>‹</button><span aria-live="polite">{shelf.page + 1} / {shelf.pages}</span><button aria-label="Next shelf page" disabled={shelf.page + 1 === shelf.pages} onClick={() => shelf.changePage(shelf.page + 1)}>›</button></nav>}
-        <button onClick={() => { shelf.close(); setToolsOpen(true); }}>Backups &amp; offline</button>
-        <button className="shelf-add" onClick={() => openEditor()}>New roll</button>
-        {state.shelfFocused && <button onClick={() => shelf.changeTrash(!shelf.trash)}>{shelf.trash ? "Saved rolls" : `Trash (${shelf.trashCount})`}</button>}
-        {deletedRoll && <div className="shelf-deleted-notice" role="status"><span>{deletedRoll.name} moved to Trash</span><button onClick={() => { void restoreRoll(deletedRoll.id).catch(error => setLibraryError(storageMessage(error))); }}>Undo</button><button aria-label="Dismiss deletion notice" onClick={() => setDeletedRoll(null)}>×</button></div>}
+        {isGuest && <button onClick={() => { shelf.close(); setToolsOpen(true); }}>Backups &amp; offline</button>}
+        {isGuest && <button className="shelf-add" onClick={() => openEditor()}>New roll</button>}
+        {isGuest && state.shelfFocused && <button onClick={() => shelf.changeTrash(!shelf.trash)}>{shelf.trash ? "Saved rolls" : `Trash (${shelf.trashCount})`}</button>}
+        {isGuest && deletedRoll && <div className="shelf-deleted-notice" role="status"><span>{deletedRoll.name} moved to Trash</span><button onClick={() => { void restoreRoll(deletedRoll.id).catch(error => setLibraryError(storageMessage(error))); }}>Undo</button><button aria-label="Dismiss deletion notice" onClick={() => setDeletedRoll(null)}>×</button></div>}
         {shelf.error && <p role="alert">{shelf.error}<button onClick={shelf.retry}>Retry</button></p>}
       </div>}
-      {shelfVisible && shelf.selectedRoll && shelf.selection && <ShelfRollCard key={shelf.selectedRoll.id} shelf={shelf} roll={shelf.selectedRoll} repository={rollRepository} activeId={tableRollAvailable ? roll.rollId : ""} onOpen={openSaved} onEdit={openEditor} onDelete={deleteRoll} onRestore={restoreRoll} />}
-      {!state.cameraDisplay && (!tableRollAvailable ? <div className="empty-table-controls"><button onClick={openShelf}>Rolls</button><button onClick={openCameras}>Cameras</button><span>No roll on the light table</span>{state.roomMode === 'inspect' && <button onClick={() => openEditor()}>New roll</button>}</div> : state.roomMode==='inspect'?<TableControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} sheet={sheet} setSheet={setSheet}/>:mobile ? <MobileControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet}/> : <Controls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenCameras={openCameras} />)}
+      {shelfVisible && shelf.selectedRoll && shelf.selection && <ShelfRollCard
+        key={shelf.selectedRoll.id}
+        shelf={shelf}
+        roll={shelf.selectedRoll}
+        repository={isGuest ? repository : undefined}
+        readOnly={!isGuest}
+        thumbnailUrl={!isGuest ? published.thumbnail(shelf.selectedRoll.id) : undefined}
+        activeId={isGuest ? tableRollAvailable ? roll.rollId : "" : cloudSource === 'gallery' ? shelf.rolls.find(item => roll.rollId.startsWith(`gallery:${item.id}:`))?.id ?? '' : ''}
+        onOpen={isGuest ? openSaved : async id => openCloudRoll(await published.open(id), 'gallery')}
+        onEdit={isGuest ? openEditor : undefined}
+        onDelete={isGuest ? deleteRoll : undefined}
+        onRestore={isGuest ? restoreRoll : undefined}
+      />}
+      {!state.cameraDisplay && (state.roomMode === 'room'
+        ? mobile
+          ? <MobileControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} emptyRollMessage={emptyRollMessage} ownerActions={ownerActions} />
+          : <Controls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenCameras={openCameras} emptyRollMessage={emptyRollMessage} ownerActions={ownerActions} />
+        : !tableRollAvailable
+          ? <div className="empty-table-controls">
+              <button onClick={openShelf}>Rolls</button>
+              <button onClick={openCameras}>Cameras</button>
+              <span>{emptyRollMessage}</span>
+              {isGuest && <button onClick={() => openEditor()}>New roll</button>}
+              {ownerActions}
+            </div>
+          : <TableControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} sheet={sheet} setSheet={setSheet} ownerActions={ownerActions} />)}
       {state.cameraDisplay && <CameraDisplayView id={state.cameraDisplay} onBack={closeCamera} reducedMotion={isReducedMotion} />}
       {libraryError && <div className="library-notice" role="alert">{libraryError}<button onClick={() => { setLibraryError(""); openShelf(); }}>Open shelf</button></div>}
-      {toolsOpen && <ShelfTools onClose={() => setToolsOpen(false)} beforeExport={saveView} />}
-      {editorOpen && <RollEditor onDelete={deleteRoll} editId={editingRollId} onClose={() => { setEditorOpen(false); setEditingRollId(undefined); }} onOpen={openSaved} />}
+      {isGuest && toolsOpen && <ShelfTools repository={repository} showLegacyImport onClose={() => setToolsOpen(false)} beforeExport={saveView} />}
+      {isGuest && editorOpen && <RollEditor repository={repository} onDelete={deleteRoll} editId={editingRollId} onClose={() => { setEditorOpen(false); setEditingRollId(undefined); }} onOpen={openSaved} />}
+      {isGuest && guestWelcome && <GuestWelcome onClose={() => { try { localStorage.setItem(guestWelcomeKey, 'done'); } catch { /* Browsing can continue when localStorage is blocked. */ } setGuestWelcome(false); }} />}
+      {!isGuest && cloudPanel === 'owner' && <OwnerPanel onClose={() => { setCloudPanel(null); setOwnerPreviewActive(false); published.refresh(); }} onPreviewActiveChange={setOwnerPreviewActive} onPreview={runtime => openCloudRoll(runtime, 'owner')} />}
     </main>
     </div>
   );

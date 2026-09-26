@@ -1,5 +1,5 @@
 import { FilmStrengthControl } from "./FilmStrengthControl";
-import { useEffect, useRef, useState, Dispatch } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type ReactNode } from 'react';
 import { ViewerAction, ViewerState } from '../state/viewerState';
 import { FILM_STOCKS, getFilmStock, isFilmStockId } from '../data/filmStocks';
 import { focusFrameLayout, fitRollView } from '../utils/rollLayout';
@@ -7,7 +7,7 @@ import { photoCropPreview } from '../utils/photoFraming';
 import { MobileSheet } from './MobileControls';
 import { DEFAULT_INSPECT_DISTANCE } from '../utils/cameraBounds';
 
-export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet}:{state:ViewerState;dispatch:Dispatch<ViewerAction>;onOpenLibrary:()=>void;sheet:MobileSheet;setSheet:(sheet:MobileSheet)=>void}) {
+export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet,ownerActions}:{state:ViewerState;dispatch:Dispatch<ViewerAction>;onOpenLibrary:()=>void;sheet:MobileSheet;setSheet:(sheet:MobileSheet)=>void;ownerActions?:ReactNode}) {
   const root=useRef<HTMLDivElement>(null), panel=useRef<HTMLDialogElement>(null);
   const [quiet,setQuiet]=useState(false);
   const stock=getFilmStock(state.filmStockId);
@@ -47,7 +47,7 @@ export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet}:{sta
     {!inspecting&&<header className="table-header">
       {focus?<button className="table-back" onClick={()=>dispatch({type:'SHOW_OVERVIEW'})}>← Overview</button>:<div className="table-entry"><button onClick={onOpenLibrary}>Rolls</button><button data-testid="return-room-btn" onClick={()=>dispatch({type:'RETURN_TO_ROOM'})}>← Room</button></div>}
       <div className="table-identity"><span className="table-eyebrow">{focus?'FOCUS':'LIGHT TABLE'}</span><h1>{state.roll.label}</h1><span>{focus?`Frame ${String(number).padStart(2,'0')}`:`${state.roll.frames.length} frames · ${state.roll.format==='135'||!state.roll.format?'35 mm':'120'}`}</span></div>
-      <div className="table-actions">{!focus && <button aria-pressed={state.adjustingView} onClick={()=>{setSheet(null);dispatch({type:'SET_ADJUSTING_VIEW',active:!state.adjustingView});}}>{state.adjustingView?'Done':'Adjust view'}</button>}{!state.loupe.isActive&&<button data-testid="loupe-activate" onClick={()=>dispatch({type:'SET_LOUPE_ACTIVE',active:true})}>Loupe</button>}<button className="table-adjust" aria-haspopup="dialog" onClick={()=>setSheet('tools')}>Adjust</button></div>
+      <div className="table-actions">{!focus && <button aria-pressed={state.adjustingView} onClick={()=>{setSheet(null);dispatch({type:'SET_ADJUSTING_VIEW',active:!state.adjustingView});}}>{state.adjustingView?'Done':'Adjust view'}</button>}{!state.loupe.isActive&&<button data-testid="loupe-activate" onClick={()=>dispatch({type:'SET_LOUPE_ACTIVE',active:true})}>Loupe</button>}<button className="table-adjust" aria-haspopup="dialog" onClick={()=>setSheet('tools')}>Adjust</button>{ownerActions}</div>
     </header>}
 
     {state.adjustingView && <nav className="table-navigation table-angle-controls" aria-label="View angle">

@@ -3,21 +3,38 @@ import { photoCropPreview } from '../utils/photoFraming';
 import { useEffect, useRef, useState } from 'react';
 import { FILM_STOCKS, DEFAULT_FILM_STOCK_ID, FilmStockId, getFilmStock } from '../data/filmStocks';
 import { EXTRA_FILM_ALLOWANCE, FILM_FORMATS, FilmFormat, FrameSizing, frameAspect, filmLengthUsage, rollFormatLabel } from '../data/filmFormats';
-import { RollBundle, StoredRoll, storageMessage, rollRepository } from '../storage/rollRepository';
+import { RollBundle, RollRepository, StoredRoll, storageMessage, rollRepository } from '../storage/rollRepository';
 import { DraftPhoto, processPhotos, releaseDraft } from '../storage/importPhotos';
 import { generateUuid } from '../storage/crypto';
 import { CropInspector } from './CropInspector';
-interface Props { onDelete:(roll:StoredRoll)=>Promise<void>;editId?:string;onClose:()=>void;onOpen:(id:string)=>Promise<void> }
+interface Props { onDelete:(roll:StoredRoll)=>Promise<void>;editId?:string;onClose:()=>void;onOpen:(id:string)=>Promise<void>;repository?:RollRepository }
 type Step='photos'|'details'|'review';
-export function RollEditor({editId,onClose,onOpen,onDelete}:Props) {
+export function RollEditor({editId,onClose,onOpen,onDelete,repository=rollRepository}:Props) {
   const dialog=useRef<HTMLDialogElement>(null),abort=useRef<AbortController|null>(null),draftRef=useRef<DraftPhoto[]>([]),mounted=useRef(true),loadRequest=useRef(0);
   const [error,setError]=useState(''),[busy,setBusy]=useState(false),[progress,setProgress]=useState(''),[loading,setLoading]=useState(true);
   const [draft,setDraft]=useState<DraftPhoto[]|null>(null),[editing,setEditing]=useState<StoredRoll|null>(null),[rollId,setRollId]=useState(''),[step,setStep]=useState<Step>('photos'),[selected,setSelected]=useState('');
   const [name,setName]=useState(''),[stock,setStock]=useState<FilmStockId>(DEFAULT_FILM_STOCK_ID),[format,setFormat]=useState<FilmFormat>('135'),[sizing,setSizing]=useState<FrameSizing>('fixed'),[cover,setCover]=useState('');
+  // Capture before the opening commit removes the shelf toolbar and roll card.
+  const [opener]=useState(()=>document.activeElement instanceof HTMLElement?document.activeElement:null);
   useEffect(() => { blockUpdate('roll-editor', true); return () => blockUpdate('roll-editor', false); }, []);
   const drag=useRef<number|null>(null);
   const run=async(fn:()=>Promise<void>)=>{setError('');setBusy(true);try{await fn();}catch(e){setError(storageMessage(e));}finally{setBusy(false);setLoading(false);}};
-  useEffect(()=>{mounted.current=true;const previous=document.activeElement as HTMLElement;dialog.current?.showModal();return()=>{mounted.current=false;++loadRequest.current;abort.current?.abort();releaseDraft(draftRef.current);requestAnimationFrame(()=>{if(previous?.isConnected)previous.focus();else document.querySelector<HTMLElement>('.shelf-toolbar .shelf-add')?.focus();});};},[]);
+  useEffect(()=>{
+    mounted.current=true;
+    dialog.current?.showModal();
+    return()=>{
+      mounted.current=false;++loadRequest.current;abort.current?.abort();releaseDraft(draftRef.current);
+      requestAnimationFrame(()=>{
+        if(mounted.current)return;
+        // Saving opens the table; cancelling returns to the remounted shelf.
+        for(const target of [opener,document.querySelector<HTMLElement>('.shelf-toolbar .shelf-add'),document.querySelector<HTMLElement>('.canvas-wrapper')]){
+          if(!target?.isConnected||target===document.body||!target.getClientRects().length)continue;
+          target.focus({preventScroll:true});
+          if(document.activeElement===target)break;
+        }
+      });
+    };
+  },[]);
   useEffect(()=>{if(draft!==null){dialog.current?.querySelector<HTMLElement>('[data-step-title]')?.focus();dialog.current?.scrollTo(0,0);}},[step,draft===null]);
   const updateDraft=(photos:DraftPhoto[]|null)=>{draftRef.current=photos??[];setDraft(photos);};
   const reset=()=>{abort.current?.abort();releaseDraft(draftRef.current);updateDraft(null);setEditing(null);setError('');setProgress('');};
@@ -28,7 +45,7 @@ export function RollEditor({editId,onClose,onOpen,onDelete}:Props) {
     catch(e){if(!controller.signal.aborted)throw e;setProgress('Processing cancelled. Your earlier photographs are retained.');}
   });
   useEffect(()=>{if(editId)edit(editId);else{start();setLoading(false);}},[]);
-  const edit=(id:string)=>void run(async()=>{const request=++loadRequest.current,b=await rollRepository.read(id);if(!mounted.current||request!==loadRequest.current)return;setEditing(b.roll);setRollId(id);setName(b.roll.name);setStock(b.roll.stockId);setFormat(b.roll.format);setSizing(b.roll.sizing??'fixed');setCover(b.roll.coverId);setSelected(b.frames[0]?.id??'');setStep('details');updateDraft(b.roll.frameIds.map(id=>{const frame=b.frames.find(f=>f.id===id)!;return {id,filename:frame.filename,frame,blobs:[],duplicate:false,keepDuplicate:true,preview:URL.createObjectURL(b.blobs.find(x=>x.key===frame.thumbnailKey)!.blob),reviewPreview:URL.createObjectURL(b.blobs.find(x=>x.key===frame.viewingKey)!.blob)};}));});
+  const edit=(id:string)=>void run(async()=>{const request=++loadRequest.current,b=await repository.read(id);if(!mounted.current||request!==loadRequest.current)return;setEditing(b.roll);setRollId(id);setName(b.roll.name);setStock(b.roll.stockId);setFormat(b.roll.format);setSizing(b.roll.sizing??'fixed');setCover(b.roll.coverId);setSelected(b.frames[0]?.id??'');setStep('details');updateDraft(b.roll.frameIds.map(id=>{const frame=b.frames.find(f=>f.id===id)!;return {id,filename:frame.filename,frame,blobs:[],duplicate:false,keepDuplicate:true,preview:URL.createObjectURL(b.blobs.find(x=>x.key===frame.thumbnailKey)!.blob),reviewPreview:URL.createObjectURL(b.blobs.find(x=>x.key===frame.viewingKey)!.blob)};}));});
   const move=(from:number,to:number)=>{if(!draft||to<0||to>=draft.length)return;const next=[...draft], [p]=next.splice(from,1);next.splice(to,0,p);updateDraft(next);};
   const length=filmLengthUsage(format,sizing,draft?.flatMap(p=>p.frame?[p.frame]:[])??[]);
   const valid=!!draft?.length&&!draft.some(p=>!p.frame||p.duplicate&&!p.keepDuplicate);
@@ -36,7 +53,7 @@ export function RollEditor({editId,onClose,onOpen,onDelete}:Props) {
     if(!valid||!draft)throw new Error('Resolve failed files and duplicates before saving.');
     const frames=draft.map(p=>p.frame!),ids=frames.map(f=>f.id),now=Date.now();
     const roll:StoredRoll={filmStrength:editing?.filmStrength,id:rollId,name,stockId:stock,format,sizing,frameIds:ids,coverId:ids.includes(cover)?cover:ids[0],createdAt:editing?.createdAt??now,updatedAt:now,trashedAt:null,view:editing?.view?{...editing.view,zoom:NaN,overview:null}:undefined};
-    const bundle:RollBundle={roll,frames,blobs:draft.flatMap(p=>p.blobs)};abort.current=new AbortController();setProgress('Saving roll…');await rollRepository.save(bundle,abort.current.signal);void navigator.storage?.persist?.().catch(()=>false);setProgress('Opening photographs…');await onOpen(rollId);reset();onClose();
+    const bundle:RollBundle={roll,frames,blobs:draft.flatMap(p=>p.blobs)};abort.current=new AbortController();setProgress('Saving roll…');await repository.save(bundle,abort.current.signal);void navigator.storage?.persist?.().catch(()=>false);setProgress('Opening photographs…');await onOpen(rollId);reset();onClose();
   });
   const removePhoto=(id:string)=>{const i=draft!.findIndex(p=>p.id===id);releaseDraft([draft![i]]);const next=draft!.filter(p=>p.id!==id);updateDraft(next);if(cover===id)setCover(next.find(p=>p.frame)?.id??'');if(selected===id)setSelected(next[Math.min(i,next.length-1)]?.id??'');};
   const active=draft?.find(p=>p.id===selected)??draft?.[0],index=draft?.findIndex(p=>p.id===active?.id)??0;
@@ -55,6 +72,7 @@ export function RollEditor({editId,onClose,onOpen,onDelete}:Props) {
       {!editing && <nav className="import-steps" aria-label="Import progress">{(['photos','details','review'] as Step[]).filter(s=>!editing||s!=='photos').map((s,i)=><button key={s} aria-label={s==='photos'?'Photographs':s==='details'?'Roll details':'Review'} aria-current={step===s?'step':undefined} disabled={busy||(s!=='photos'&&!draft.length)||(s==='review'&&!name.trim())} onClick={()=>go(s)}><span>{i+1}</span>{s==='photos'?'Photographs':s==='details'?'Roll details':'Review'}</button>)}</nav>}
       {!editing && <h2 tabIndex={-1} data-step-title>{step==='photos'?'Choose your photographs':step==='details'?'Give this roll an identity':'Review every frame'}</h2>}
       {step==='photos'&&<>
+        <p>Your photographs are not uploaded. This library belongs to this browser only and does not sync across devices. Clearing site data or storage eviction can remove it; export portable backups from Backups &amp; offline.</p>
         <div className="photo-drop" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();if(!busy)choose(Array.from(e.dataTransfer.files));}}><h3>{draft.length?'Add to this roll':'Bring your scans into the darkroom'}</h3><p>Drop JPEG or PNG positive scans here</p><label className="choose-photos">{draft.length?'Add photographs':'Choose photographs'}<input aria-label="Choose photographs" type="file" accept="image/jpeg,image/png" multiple disabled={busy} onChange={e=>{choose(Array.from(e.target.files??[]));e.target.value='';}}/></label></div>
         <p>{draft.length} photographs selected · Your order and edits are retained when adding another batch.</p><details><summary>Supported files and limits</summary><p>JPEG/PNG positive scans. Up to 300 MB per draft. Roll capacity depends on image width and film length; 40 MB and 40 megapixels per file. Partial rolls are welcome.</p></details>
         {!!draft.length&&<div className="import-filmline">{draft.map(p=><div key={p.id}>{p.preview&&<img src={p.preview} alt={p.filename}/>}<span>{p.filename}</span>{p.error&&<span role="alert">{p.error}</span>}{p.duplicate&&<span>Duplicate — resolve in Review</span>}</div>)}</div>}

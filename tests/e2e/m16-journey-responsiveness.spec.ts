@@ -5,7 +5,7 @@ test.describe("Journey transition responsiveness (room <-> table)", () => {
     page,
   }, info) => {
     // 1. Load app in room mode
-    await page.goto("/?mode=room");
+    await page.goto("/guest?mode=room");
     const app = page.locator("main");
     await expect(app).toHaveAttribute("data-assets-ready", "true", { timeout: 30000 });
     await expect(app).toHaveAttribute("data-room-mode", "room");

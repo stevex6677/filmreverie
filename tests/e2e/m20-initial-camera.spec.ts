@@ -8,7 +8,7 @@ test('initial room prepares camera alongside photographs and reveals it with the
   const pending = new Promise<void>(resolve => { release = resolve; });
   let cameraRequested = false;
   await page.route(`**${PRIMARY_CAMERA.shelfUrl}`, async route => { cameraRequested = true; await pending; await route.continue(); });
-  await page.goto('/?mode=room&reduced_motion=true');
+  await page.goto('/guest?mode=room&reduced_motion=true');
   await expect.poll(() => cameraRequested).toBe(true);
   await expect(page.locator('main')).toHaveAttribute('data-assets-ready', 'true');
   await expect(page.locator('main')).toHaveAttribute('data-app-ready', 'false');

@@ -4,7 +4,7 @@ import { CAMERA_SHELF_ORIGIN, CAMERA_SHELF_MM, PRIMARY_CAMERA_SLOT, mm } from '.
 
 test.use({ hasTouch: true, viewport: { width: 1024, height: 768 }, actionTimeout: 15000 });
 test('iPad direct camera taps survive repeated visits without compatibility clicks', async ({ page }, info) => {
-  await page.goto('/?mode=room&reduced_motion=true');
+  await page.goto('/guest?mode=room&reduced_motion=true');
   await expect(page.locator('main')).toHaveAttribute('data-app-ready', 'true', { timeout: 60000 });
   await page.locator('.canvas-wrapper').focus();
   for (let i = 0; i < 16; i++) await page.keyboard.press('ArrowRight');

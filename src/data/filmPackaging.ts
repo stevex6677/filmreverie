@@ -1,4 +1,4 @@
-import manifest from '../../public/assets/film-packaging/manifest.json';
+import manifest from '../../public/assets/film-packaging/manifest.json' with { type: 'json' };
 import { FilmStockId } from './filmStocks';
 import { FilmFormat } from './filmFormats';
 

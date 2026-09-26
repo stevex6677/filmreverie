@@ -4,7 +4,7 @@ import { PNG } from "pngjs";
 import fs from "node:fs/promises";
 
 for (const format of ["135", "67"]) test(`${format} photo edges stay aligned with the curved film`, async ({ page }) => {
-  await page.goto("/?mode=inspect&reduced_motion=true");
+  await page.goto("/guest?mode=inspect&reduced_motion=true");
   await page.getByRole("button", { name: "Rolls", exact: true }).click();
   await page.getByRole("button", { name: "New roll", exact: true }).click();
   const png = new PNG({ width: 600, height: 400 });

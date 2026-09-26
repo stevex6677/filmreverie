@@ -10,7 +10,8 @@ test('failed optional preparation preserves film readiness; uncached inspection 
   const reload = () => Promise.all([page.waitForNavigation({ waitUntil: 'load' }), page.evaluate(() => location.reload())]);
   try {
     server.fail(PRIMARY_CAMERA.url);
-    await page.goto(`${server.url}/?mode=room&reduced_motion=true`); await ready(page);
+    await page.addInitScript(() => localStorage.setItem('darkroom-guest-welcome', 'done'));
+    await page.goto(`${server.url}/guest?mode=room&reduced_motion=true`); await ready(page);
     await page.waitForFunction(() => !!navigator.serviceWorker.controller, { timeout: 90000 });
     await page.getByRole('button', { name: 'Rolls', exact: true }).click(); await ready(page);
     await page.getByRole('button', { name: 'Backups & offline' }).click();

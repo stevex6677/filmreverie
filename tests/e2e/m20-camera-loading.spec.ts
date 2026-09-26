@@ -16,7 +16,7 @@ test('cabinet waits for all five models, then preloads details serially without 
   await page.route(`**${last.shelfUrl}`, async route => { await gate; await route.continue(); });
   await page.route(`**${CAMERAS[0].url}`, async route => { await detailGate; await route.continue(); });
   try {
-    await page.goto('/?mode=room&reduced_motion=true');
+    await page.goto('/guest?mode=room&reduced_motion=true');
     await expect(page.locator('.canvas-wrapper canvas')).toHaveAttribute('data-camera-models-loaded', '4', { timeout: 90000 });
     // Exercise the old unconditional 12-second bypass while the fifth GLB is held.
     await page.waitForTimeout(13000);
@@ -51,7 +51,7 @@ test('a failed cabinet model keeps readiness false and retries only the failed c
   const counts = new Map<string, number>();
   page.on('request', request => { const url = new URL(request.url()).pathname; if (CAMERAS.some(camera => camera.shelfUrl === url)) counts.set(url, (counts.get(url) ?? 0) + 1); });
   await page.route(`**${last.shelfUrl}`, route => failing ? route.fulfill({ status: 503, body: 'test failure' }) : route.continue());
-  await page.goto('/?mode=room&reduced_motion=true');
+  await page.goto('/guest?mode=room&reduced_motion=true');
   await expect(page.getByRole('button', { name: 'Retry cameras', exact: true })).toBeVisible({ timeout: 90000 });
   await expect(page.locator('main')).toHaveAttribute('data-app-ready', 'false');
   const previous = new Map(counts); failing = false;
@@ -69,7 +69,7 @@ test('a failed detail preload leaves the room ready, continues the queue and ret
     if (CAMERAS.some(camera => camera.url === url)) requested.push(url);
   });
   await page.route(`**${first.url}`, route => failing ? route.fulfill({ status: 503, body: 'test preload failure' }) : route.continue());
-  await page.goto('/?mode=room&reduced_motion=true');
+  await page.goto('/guest?mode=room&reduced_motion=true');
   await ready(page);
   await expect.poll(() => requested.slice().sort(), { timeout: 90000 }).toEqual(CAMERAS.map(camera => camera.url).sort());
   await expect(page.locator('main')).toHaveAttribute('data-app-ready', 'true');

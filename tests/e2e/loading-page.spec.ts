@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Darkroom Loading Page', () => {
   test('displays simple, clean loading page with Film Reverie and big loading status', async ({ page }) => {
     // Navigate to webapp
-    await page.goto('/?mode=room');
+    await page.goto('/guest?mode=room');
 
     // The loading screen should be present
     const loader = page.getByTestId('darkroom-loader');

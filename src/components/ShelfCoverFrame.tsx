@@ -4,8 +4,15 @@ import * as THREE from 'three';
 import { mm, WORLD_UNITS_PER_MM, COVER_FRAME_MM, SHELF_FLOOR, SHELF_FRAME_YAW, shelfArrangement } from '../data/physicalScale';
 import { getPackaging } from '../data/filmPackaging';
 import { frameAspect } from '../data/filmFormats';
-import { rollRepository, StoredRoll } from '../storage/rollRepository';
+import { rollRepository, type StoredFrame, type StoredRoll } from '../storage/rollRepository';
 import { photoCropOffset, photoCropScale } from '../utils/photoFraming';
+
+export type ShelfCoverSource = (id: string, frameId: string) => Promise<{
+  blob: Blob;
+  frame: Pick<StoredFrame, 'id' | 'width' | 'height' | 'rotation' | 'cropPosition'>;
+  rotation: number;
+}>;
+const localCoverSource: ShelfCoverSource = (id, frameId) => rollRepository.thumbnail(id, frameId);
 
 // A small tabletop frame. Its opening preserves the editor's crop, including
 // free-sized images, rather than imposing another portrait crop on the cover.
@@ -40,13 +47,13 @@ function rectangularHole(width: number, height: number) {
   return path;
 }
 
-function useCover(roll: StoredRoll) {
+function useCover(roll: StoredRoll, coverSource: ShelfCoverSource) {
   const [cover, setCover] = useState<{ texture: THREE.CanvasTexture; aspect: number; revision: string } | null>(null);
   const revision = `${roll.id}/${roll.coverId}/${roll.updatedAt}/${roll.format}/${roll.sizing}`;
   useEffect(() => {
     let cancelled = false, texture: THREE.CanvasTexture | undefined;
     const load = async () => {
-      const { blob, frame } = await rollRepository.thumbnail(roll.id, roll.coverId);
+      const { blob, frame } = await coverSource(roll.id, roll.coverId);
       if (cancelled) return;
       const url = URL.createObjectURL(blob);
       try {
@@ -70,12 +77,12 @@ function useCover(roll: StoredRoll) {
     };
     void load().catch(() => { /* Keep the empty mat visible; the roll remains editable. */ });
     return () => { cancelled = true; texture?.dispose(); };
-  }, [roll.id, roll.coverId, roll.updatedAt, roll.format, roll.sizing, revision]);
+  }, [coverSource, roll.id, roll.coverId, roll.updatedAt, roll.format, roll.sizing, revision]);
   return cover?.revision === revision ? cover : null;
 }
 
-export function ShelfCoverFrame({ roll }: { roll: StoredRoll }) {
-  const cover = useCover(roll);
+export function ShelfCoverFrame({ roll, coverSource = localCoverSource }: { roll: StoredRoll; coverSource?: ShelfCoverSource }) {
+  const cover = useCover(roll, coverSource);
   const { gl } = useThree();
   useEffect(() => {
     // Cover thumbnails load independently of the film on the light table.

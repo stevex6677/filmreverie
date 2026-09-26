@@ -28,7 +28,7 @@ test.beforeEach(async({page}) => {
   page.on('response',r=>{if(r.status()>=400)errors.push(`${r.status()} ${r.url()}`);});
   page.on('requestfailed',r=>{if(r.failure()?.errorText!=='net::ERR_ABORTED')errors.push(r.url());});
   (page as Page & {filmErrors:string[]}).filmErrors=errors;
-  await page.goto('/?mode=inspect&deterministic=true&reduced_motion=true');await ready(page);
+  await page.goto('/guest?mode=inspect&deterministic=true&reduced_motion=true');await ready(page);
 });
 test.afterEach(async({page})=>expect((page as Page & {filmErrors:string[]}).filmErrors).toEqual([]));
 
@@ -113,7 +113,7 @@ test('M19 actual photograph import preserves strength through edits, all film fo
   await expect(page.locator('main')).not.toHaveAttribute('data-roll-id','roll-01');await ready(page);
   const rollId=(await page.locator('main').getAttribute('data-roll-id'))!;
   await strength(page,0);
-  await expect.poll(()=>page.evaluate(id=>new Promise<number|undefined>(resolve=>{const request=indexedDB.open('darkroom-rolls');request.onsuccess=()=>{const db=request.result,get=db.transaction('rolls').objectStore('rolls').get(id);get.onsuccess=()=>{resolve(get.result?.filmStrength);db.close();};};request.onerror=()=>resolve(undefined);}),rollId)).toBe(0);
+  await expect.poll(()=>page.evaluate(id=>new Promise<number|undefined>(resolve=>{const request=indexedDB.open('darkroom-guest-rolls');request.onsuccess=()=>{const db=request.result,get=db.transaction('rolls').objectStore('rolls').get(id);get.onsuccess=()=>{resolve(get.result?.filmStrength);db.close();};};request.onerror=()=>resolve(undefined);}),rollId)).toBe(0);
   await page.reload();await expect(page.locator('main')).toHaveAttribute('data-roll-id',rollId);await ready(page);await expect(page.locator('main')).toHaveAttribute('data-film-strength','0');
   for(const format of ['135','645','66','67','69']) {
     await closeViewingTools(page);await page.getByRole('button',{name:'Rolls',exact:true}).click();

@@ -28,7 +28,7 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
     page.on("requestfailed", (req) => failedRequests.push(req.url()));
 
     // 1. Load production app directly into table inspection mode
-    await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
+    await page.goto("/guest?deterministic=true&mode=inspect"); await openViewingTools(page);
 
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible({ timeout: 15000 });

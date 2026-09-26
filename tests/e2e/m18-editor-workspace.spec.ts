@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 const OUT = process.env.M18_REVIEW_DIR || 'artifacts/m18-candidates';
 
 test('M18 dragging the cabinet moves the room view, and a click still approaches it', async ({page,context,browserName}) => {
-  await page.goto('/?mode=room&reduced_motion=true'); await ready(page);
+  await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page);
   const app = page.locator('main'), cabinet = page.getByRole('button',{name:'View film shelf',exact:true});
   const pose = async () => (await app.getAttribute('data-room-pose'))!.split(',').map(Number);
   const before = await pose(), box = (await cabinet.boundingBox())!, x = box.x+box.width/2, y = box.y+box.height/2;
@@ -24,7 +24,7 @@ test('M18 dragging the cabinet moves the room view, and a click still approaches
 });
 
 test('M18 package opens one editor with details left, frames above crop, and persistent changes', async ({page},info) => {
-  await page.goto('/?mode=room&reduced_motion=true'); await ready(page); await focusShelf(page);
+  await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page); await focusShelf(page);
   const packageButton = page.getByRole('button',{name:'Show saved roll Roll 01',exact:true});
   if (info.project.use.hasTouch) await packageButton.tap(); else await packageButton.click();
   const editor = page.getByRole('dialog',{name:'Review roll',exact:true});

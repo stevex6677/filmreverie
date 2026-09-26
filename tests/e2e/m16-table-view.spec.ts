@@ -7,7 +7,7 @@ const ready=async(page:Page)=>{await expect(page.locator('main')).toHaveAttribut
 const open=async(page:Page,n:number)=>{await page.getByRole('button',{name:'Choose frame',exact:true}).click();await page.getByRole('button',{name:`Open frame ${n}`,exact:true}).click();await ready(page);};
 test('M16 zooms the same table with neighboring images visible and restores Overview',async({page},info)=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('/?fixture=36&mode=inspect');await ready(page);
+  await page.goto('/guest?fixture=36&mode=inspect');await ready(page);
   const initialPan=await page.locator('main').getAttribute('data-inspect-pan');
   const viewport=page.viewportSize()!;await page.mouse.move(viewport.width/2,viewport.height/2);await page.mouse.down({button:'right'});await page.mouse.move(viewport.width/2+45,viewport.height/2+35,{steps:6});await page.mouse.up({button:'right'});if(info.project.use.browserName!=='webkit')await page.mouse.wheel(0,-180);await page.waitForTimeout(700);
   expect(await page.locator('main').getAttribute('data-inspect-pan')).not.toBe(initialPan);
@@ -52,7 +52,7 @@ test('M16 zooms the same table with neighboring images visible and restores Over
   expect(errors).toEqual([]);
 });
 test('M16 Focus keeps live settings and keyboard ownership without changing photographic framing',async({page},info)=>{
-  await page.goto('/?mode=inspect&deterministic=true');await ready(page);await open(page,3);
+  await page.goto('/guest?mode=inspect&deterministic=true');await ready(page);await open(page,3);
   const canvas=page.locator('canvas'),pose=await canvas.getAttribute('data-camera-position');
   await page.getByRole('button',{name:'Adjust',exact:true}).click();await expect(page.getByRole('dialog',{name:'Viewing tools'})).toBeVisible();
   const before=PNG.sync.read(await captureCanvas(page));
@@ -68,7 +68,7 @@ test('M16 Focus keeps live settings and keyboard ownership without changing phot
 });
 
  test('M16 quiet controls reveal without reframing and retain keyboard access',async({page})=>{
-  await page.goto('/?mode=inspect&deterministic=true');await ready(page);await open(page,3);
+  await page.goto('/guest?mode=inspect&deterministic=true');await ready(page);await open(page,3);
   const controls=page.getByTestId('controls-panel');await page.locator('.canvas-wrapper').focus();
   await expect(controls).toHaveAttribute('data-quiet','true',{timeout:6000});
   const pose=await page.locator('canvas').getAttribute('data-camera-position');

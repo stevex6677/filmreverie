@@ -8,7 +8,7 @@ test('M18 all stock packaging, full shelf, overflow, edit, trash and restore thr
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   const external: string[] = []; page.on('request', request => { if (request.url().startsWith('http') && !new URL(request.url()).hostname.match(/127\.0\.0\.1|localhost/)) external.push(request.url()); });
-  await page.goto('/?mode=room&reduced_motion=true'); await ready(page);
+  await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page);
   for (let i = 0; i < 16; i++) {
     await add(page, `Roll ${String(i + 2).padStart(2, '0')}`, FILM_STOCKS[i % 5].id, i >= 5 && i < 10 ? ['645', '66', '67', '69', '645'][i - 5] : '135');
     if (i === 9) { await fs.mkdir(OUT, { recursive: true }); await page.screenshot({ path: `${OUT}/all-ten-packaging.png` }); }
@@ -49,7 +49,7 @@ test('M18 all stock packaging, full shelf, overflow, edit, trash and restore thr
 });
 
 test('M18 cabinet leaves the overhead light-table surface clear and neutral', async ({ page }) => {
-  await page.goto('/?deterministic=true&mode=inspect'); await ready(page);
+  await page.goto('/guest?deterministic=true&mode=inspect'); await ready(page);
   await expect(page.locator('canvas')).toHaveAttribute('data-packaging-loaded', '24');
   const { captureCanvas } = await import('./helpers/viewing');
   const { parsePng, getRegionStats } = await import('./helpers/pixelAnalysis');

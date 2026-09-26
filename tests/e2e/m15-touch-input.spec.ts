@@ -8,7 +8,7 @@ test('M15 native multi-touch navigates across strips, anchors zoom, pins a loupe
   const cdp=await context.newCDPSession(page);
   const touch=(type:'touchStart'|'touchMove'|'touchEnd'|'touchCancel',points:{x:number;y:number;id:number}[])=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:points.map(p=>({...p,radiusX:3,radiusY:3,force:1}))});
   const drag=async(x:number,y:number,dx:number,dy:number)=>{await touch('touchStart',[{x,y,id:1}]);for(let i=1;i<=8;i++){await touch('touchMove',[{x:x+dx*i/8,y:y+dy*i/8,id:1}]);await page.waitForTimeout(40);}await touch('touchEnd',[]);};
-  await page.goto('/?fixture=36&mode=inspect');await ready(page);
+  await page.goto('/guest?fixture=36&mode=inspect');await ready(page);
   await page.getByRole('button',{name:'Choose frame',exact:true}).tap();await page.getByRole('button',{name:'Open frame 6',exact:true}).tap();await ready(page);
   const canvas=page.locator('canvas'),rect=(await canvas.boundingBox())!,x=rect.x+rect.width/2,y=rect.y+rect.height/2;
   const before=PNG.sync.read(await captureCanvas(page));await drag(x+60,y,-120,0);await ready(page);await expect(page.locator('main')).toHaveAttribute('data-selected-frame','7');

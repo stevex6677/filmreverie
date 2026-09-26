@@ -8,7 +8,7 @@ import { getRegionMeanDifference } from './helpers/pixelAnalysis';
 test('M15 iPad tools preserve scene brightness and show lighting, mode and framing changes while open',async({page},info)=>{
   await page.setViewportSize({width:1180,height:820});
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('/?fixture=36&mode=room&deterministic=true');
+  await page.goto('/guest?fixture=36&mode=room&deterministic=true');
   const ready=async()=>{await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true');await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');};
   // Compare the actually visible scene, excluding the right-hand tools panel.
   const shot=async()=>PNG.sync.read(await page.screenshot({clip:{x:40,y:90,width:680,height:630}}));

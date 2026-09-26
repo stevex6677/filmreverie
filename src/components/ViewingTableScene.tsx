@@ -18,6 +18,7 @@ import { TouchNavigation } from "./TouchNavigation";
 import { LoupeNavigation } from './LoupeNavigation';
 import { loupeInspectionView } from '../utils/loupeView';
 import { FilmShelf, usePackagingTextures } from './FilmShelf';
+import type { ShelfCoverSource } from './ShelfCoverFrame';
 import { FilmShelfState } from '../utils/useFilmShelf';
 import { ShelfNavigation } from './ShelfNavigation';
 import { roomHitTarget } from '../utils/roomHitTarget';
@@ -27,6 +28,8 @@ import type { CameraCollectionProgress } from '../utils/loadCameraModel';
 interface ViewingTableSceneProps {
   onEditShelfRoll: (id: string) => void;
   showRoll?: boolean;
+  readOnlyShelf?: boolean;
+  coverSource?: ShelfCoverSource;
   shelf: FilmShelfState;
   shelfPortal: React.RefObject<HTMLDivElement>;
   inputBlocked?: boolean;
@@ -40,7 +43,7 @@ interface ViewingTableSceneProps {
 }
 
 export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
-  shelf, shelfPortal, onEditShelfRoll, showRoll = true,
+  shelf, shelfPortal, onEditShelfRoll, showRoll = true, readOnlyShelf = false, coverSource,
   inputBlocked = false,
   state,
   dispatch,
@@ -156,7 +159,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         interactive={state.roomMode === 'room' && !inputBlocked && state.shelfId !== 'film'}
         onApproach={() => { shelf.close(); dispatch({ type: 'APPROACH_CAMERA_SHELF' }); }}
         onOpen={id => dispatch({ type: 'OPEN_CAMERA', id })} />
-      <group visible={!cabinetOnly}><FilmShelf textures={packagingTextures} onEdit={onEditShelfRoll} focused={state.shelfId === 'film'} onApproach={point => {
+      <group visible={!cabinetOnly}><FilmShelf textures={packagingTextures} onEdit={onEditShelfRoll} readOnly={readOnlyShelf} coverSource={coverSource} focused={state.shelfId === 'film'} onApproach={point => {
         const target = point ? roomHitTarget(camera, gl.domElement, point.x, point.y, tableSize) : 'shelf';
         if (!target) return;
         shelf.close(); dispatch({ type: target === 'table' ? 'APPROACH_TABLE' : target === 'camera' ? 'APPROACH_CAMERA_SHELF' : 'APPROACH_SHELF' });

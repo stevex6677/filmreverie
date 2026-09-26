@@ -9,11 +9,13 @@ import { DEFAULT_INSPECT_DISTANCE, TABLE_CENTER_Z } from "../utils/cameraBounds"
 interface ControlsProps {
   onOpenLibrary?: () => void;
   onOpenCameras?: () => void;
+  emptyRollMessage?: string;
+  ownerActions?: React.ReactNode;
   state: ViewerState;
   dispatch: React.Dispatch<ViewerAction>;
 }
 
-export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibrary, onOpenCameras }) => {
+export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibrary, onOpenCameras, emptyRollMessage, ownerActions }) => {
   const stock = getFilmStock(state.filmStockId);
   const multi = state.roll !== BASELINE_ROLL;
   const currentFrame = state.roll.frames[state.loupe.frameIndex] || state.roll.frames[0];
@@ -32,7 +34,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
           {isRoomMode && onOpenCameras && <button className="rolls-button" onClick={onOpenCameras}>Cameras</button>}
           <span className="dot" />
           <h1>DARKROOM FILM VIEWER</h1>
-          <span className="roll-id">{state.roll.imported ? `${state.roll.frames.length} FRAMES · ${state.roll.format === "135" ? "35MM" : "120"}` : multi ? "36-SLOT FIXTURE" : "ROLL 01 — 35MM"}</span>
+          <span className="roll-id">{emptyRollMessage ?? (state.roll.imported ? `${state.roll.frames.length} FRAMES · ${state.roll.format === "135" ? "35MM" : "120"}` : multi ? "36-SLOT FIXTURE" : "ROLL 01 — 35MM")}</span>
         </div>
 
         <div className="action-buttons">
@@ -52,6 +54,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
               <input aria-label="Room brightness" type="range" min="0" max="100" step="1" value={Math.round(state.roomBrightness * 100)} onChange={e => dispatch({ type: "SET_ROOM_BRIGHTNESS", brightness: Number(e.target.value) / 100 })} />
               <output>{Math.round(state.roomBrightness * 100)}%</output>
             </div>
+            {ownerActions}
           </>}
           {/* Room navigation */}
           {isRoomMode ? (
@@ -218,7 +221,7 @@ export const Controls: React.FC<ControlsProps> = ({ state, dispatch, onOpenLibra
           {isRoomMode ? (
             <div className="status-item room-hint-wrapper">
               <span className="room-nav-hint">
-                {state.shelfId === 'camera' ? 'Click the camera to inspect • Drag or press Escape to return to room' : state.shelfFocused ? 'Click a roll to edit • Drag or press Escape to return to room' : 'Drag or use arrow keys to look • 0 faces table • Enter approaches'}
+                {state.shelfId === 'camera' ? 'Click the camera to inspect • Drag or press Escape to return to room' : state.shelfFocused ? 'Click a roll to open • Drag or press Escape to return to room' : 'Drag or use arrow keys to look • 0 faces table • Enter approaches'}
               </span>
             </div>
           ) : (

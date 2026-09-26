@@ -15,7 +15,7 @@ test('room dragging remains bounded when the camera collection is visible', asyn
       }
     }
   });
-  await page.goto('/?mode=room&reduced_motion=true');
+  await page.goto('/guest?mode=room&reduced_motion=true');
   await expect(page.locator('main')).toHaveAttribute('data-app-ready', 'true', { timeout: 60000 });
   await ready(page);
   // Both catalog cameras remain below a compact collection-wide batch budget.

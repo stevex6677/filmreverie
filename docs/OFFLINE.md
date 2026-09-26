@@ -1,12 +1,14 @@
 # Offline use and portable roll backups
 
-Use the production app. Development/HMR deliberately does not install a worker.
-Opening a secure production address online automatically downloads the app.
-There is no persistent offline badge. **Rolls → Backups & offline → Offline & storage** contains
-download details, recovery and storage options. Completed preparation means the
-active worker has the HTML, JS/CSS, stock resources, installation
-icons, and all built-in photo thumbnails and full viewing images. Imported rolls
-and originals remain in the existing `darkroom-rolls` IndexedDB database.
+Use `/guest` for personal rolls. Development/HMR deliberately does not install a
+worker. Opening a secure production address online automatically downloads the
+app. There is no persistent offline badge. In the guest darkroom, **Rolls →
+Backups & offline → Offline & storage** contains download details, recovery and
+storage options. Completed preparation means the active worker has the HTML,
+JS/CSS, stock resources, installation icons, and all built-in photo thumbnails
+and full viewing images. New guest rolls and originals remain in the
+`darkroom-guest-rolls` IndexedDB database. Older `darkroom-rolls` data is
+preserved separately, not read by the public home and not automatically copied.
 
 These details separately report server reachability. A stopped local server does
 not prevent viewing already downloaded content. First visits need a working
@@ -21,22 +23,25 @@ Protocol, hostname and port are all part of an origin. `http://macbook:5178`,
 `http://localhost:5178`, and `https://macbook.tail2b1388.ts.net` have separate
 libraries. Adding HTTPS does not transfer or delete the old library.
 
-1. Open the **exact old address** in the same browser/profile where the rolls live.
-   The production app with backup controls must be served there first. Do not
-   clear its site data or uninstall its browser profile.
-2. In **Rolls**, choose **Export all rolls**, or **Actions → Export [roll]**.
-   Save the `.darkroom` download in Files. Exports include Trash, original bytes,
-   viewing images, thumbnails, crop/rotation, frame order, stock/format/sizing,
-   timestamps, cover and saved view. Each file is limited to 512 MB; export
-   individual rolls when a library is larger. Photos stay on the device.
-3. Open the new HTTPS address. In **Rolls → Import backup**, select the file.
-   All rolls are imported atomically as independent copies with fresh IDs.
-   Importing twice creates two copies. Existing rolls are never overwritten.
-   Damaged, truncated or unsupported backups are rejected before writing.
-4. Open the imported rolls and verify photos, frame order, crop and saved views.
-   Check Trash separately. Keep both the old library and backup until verified.
-5. In **Rolls → Backups & offline → Offline & storage**, confirm that the app and built-in photographs
-   have downloaded at the new origin before disconnecting.
+1. Open the **exact old address** in the same browser/profile where the rolls
+   live. Do not clear its site data or uninstall its browser profile.
+2. If the old version still runs there, export a `.darkroom` backup first.
+   Export includes Trash, original bytes, viewing images, thumbnails, edits,
+   frame order, stock/format/sizing, timestamps, cover and saved view. A file
+   is limited to 512 MB; export individual rolls if needed.
+3. On the **same origin**, open `/guest`, enter the guest darkroom and choose
+   **Rolls → Backups & offline → Copy previous darkroom rolls**. This copies
+   all old rolls as independent guest copies without changing the old database;
+   no migration happens merely by visiting `/` or `/guest`. Repeating the
+   action creates duplicates. Export the new guest rolls and verify frames,
+   views and Trash before clearing anything.
+4. For a **different origin**, export the `.darkroom` file at the old exact
+   address first. At the new address, open `/guest` and choose **Rolls →
+   Backups & offline → Import backup**. Imported rolls have fresh IDs and
+   existing rolls are not overwritten. You cannot copy an old browser database
+   across origins without exporting it at the old origin.
+5. In **Rolls → Backups & offline → Offline & storage**, confirm that the app
+   and built-in photographs downloaded at the new origin before disconnecting.
 
 Backup exports also work at the old insecure HTTP address. New photo import and
 service-worker offline access require HTTPS or loopback localhost. In particular,
@@ -147,3 +152,30 @@ bundler worker pool. The static server binds only loopback and uses the same
 hostname allowlist (`FILM_PHOTO_ALLOWED_HOSTS`). `PORT=5178 node
 scripts/serve-production.mjs` can also serve the private production preview.
 Keep development on a different origin/port from the installed production PWA.
+
+## Published gallery and guest offline storage
+
+The app/sample offline inventory and optional camera download remain separate
+from published owner photographs. The public home requests catalog metadata
+and cover thumbnails, not every viewing image. Opening a published roll requests
+its viewing derivatives. The public shelf is read-only and offers no browser
+download/edit action. Previously saved `darkroom-gallery` offline copies remain
+in browser storage but are not surfaced by this route; do not clear the old
+origin if those downloads matter. A withdrawn public image may remain in
+screenshots, caches or old offline copies.
+
+Guest rolls are browser-local, not synchronized or uploaded. Their backups
+include originals and Trash. Browser eviction or site clearing can erase both
+guest rolls and retained earlier `darkroom-rolls`/`darkroom-gallery` data.
+
+Owner drafts, authenticated originals, Access navigation and upload credentials
+are excluded from the service-worker cache. The Admin workspace blocks app
+updates while open. Owner browser memory is not cloud backup; follow
+[cloud backup and recovery](CLOUD_GALLERY.md).
+
+Before moving to `https://filmreverie.app`, export at the exact old origin and
+import at the new one using the migration steps above. For owner cloud migration,
+choose the backup explicitly in Owner; opening it prepares an independent draft
+without reading or changing the visitor library, and uploads only on **Save
+private draft**. Verify order, crops, rotation, cover and saved view before
+publication. Never clear or retire the old origin until its backup is verified.

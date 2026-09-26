@@ -20,7 +20,7 @@ test.describe("M8 E2E — Continuous Light Table Dimmer & Physical Optical Loupe
     page.on("requestfailed", (req) => failedRequests.push(req.url()));
 
     // 1. Load production application directly into table inspection mode
-    await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
+    await page.goto("/guest?deterministic=true&mode=inspect"); await openViewingTools(page);
 
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible({ timeout: 15000 });

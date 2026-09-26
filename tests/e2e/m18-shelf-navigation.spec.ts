@@ -17,7 +17,7 @@ async function screenPoint(page: Page, point: [number, number, number]) {
 }
 
 test('M18 room clicks select the physical table or shelf across viewing angles', async ({ page }, info) => {
-  await page.goto('/?mode=room&reduced_motion=true'); await ready(page);
+  await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page);
   const app = page.locator('main');
   // The centered room eye brings the near table edge behind the desktop
   // collection toolbar. Use a visible center patch for the third physical hit.
@@ -36,7 +36,7 @@ test('M18 room clicks select the physical table or shelf across viewing angles',
 });
 
 test('M18 shelf drags return smoothly from owned and gray blocks without opening the editor', async ({ page, context, browserName }, info) => {
-  await page.goto('/?mode=room'); await ready(page); await focusShelf(page);
+  await page.goto('/guest?mode=room'); await ready(page); await focusShelf(page);
   const app = page.locator('main'), canvas = page.locator('canvas');
   const pose = await app.getAttribute('data-room-pose');
   // Sample real rendered positions throughout the journey, without video.
@@ -75,7 +75,7 @@ test('M18 shelf drags return smoothly from owned and gray blocks without opening
 });
 
 test('M18 shelf transitions keep navigation enabled and accept dragging before settling', async ({ page, context, browserName }, info) => {
-  await page.goto('/?mode=room'); await ready(page);
+  await page.goto('/guest?mode=room'); await ready(page);
   const app = page.locator('main'), approach = page.getByTestId('approach-table-btn');
   if (info.project.name === 'desktop') {
     await page.getByRole('button', { name: 'Rolls', exact: true }).click();

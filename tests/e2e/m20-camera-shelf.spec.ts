@@ -22,7 +22,7 @@ async function display(page: Page, name = PRIMARY_CAMERA.name) {
 }
 
 test('catalog cameras occupy independent physical-scale cabinet slots', async ({ page }, info) => {
-  await page.goto('/?mode=room&reduced_motion=true'); await ready(page); await cameraShelf(page);
+  await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page); await cameraShelf(page);
   const canvas = page.locator('.canvas-wrapper canvas');
   for (const entry of CAMERAS) await expect.poll(async () => {
     const widths = (await canvas.getAttribute('data-camera-model-widths')) ?? '';
@@ -66,7 +66,7 @@ test('catalog cameras occupy independent physical-scale cabinet slots', async ({
 
 test('physical shelf, all rendered sides, orbit, zoom, reset, history and preserved room pose', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/?mode=room&reduced_motion=true'); await ready(page);
+  await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page);
   const app = page.locator('main'), pose = await app.getAttribute('data-room-pose');
   await cameraShelf(page);
   const [x, y, z] = CAMERA_SHELF_ORIGIN;
@@ -126,7 +126,7 @@ test('physical shelf, all rendered sides, orbit, zoom, reset, history and preser
 });
 
 test('camera details open with auto rotate and link to the camera wiki', async ({ page }, info) => {
-  await page.goto('/?mode=room'); await ready(page); await cameraShelf(page); await display(page);
+  await page.goto('/guest?mode=room'); await ready(page); await cameraShelf(page); await display(page);
   const autoRotate = page.getByRole('button', { name: 'Auto rotate', exact: true });
   await expect(autoRotate).toHaveAttribute('aria-pressed', 'true');
   const canvas = page.locator('.camera-stage canvas');
@@ -147,7 +147,7 @@ test('camera details open with auto rotate and link to the camera wiki', async (
 });
 
 test('third physical camera opens from its shelf slot; shelf drag exits without opening', async ({ page }) => {
-  await page.goto('/?mode=room&reduced_motion=true'); await ready(page);
+  await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page);
   // A toolbar approach also works when the object is outside the initial view.
   await cameraShelf(page);
   await expect(page.locator('.canvas-wrapper canvas')).toHaveAttribute('data-camera-model-widths', /canon-7s:/);
@@ -169,7 +169,8 @@ test('Canon model failure can retry and all prepared cameras reopen with the ser
   const server = await offlineServer();
   try {
     server.fail(canon.url);
-    await page.goto(`${server.url}/?mode=room&reduced_motion=true`); await ready(page);
+    await page.addInitScript(() => localStorage.setItem('darkroom-guest-welcome', 'done'));
+    await page.goto(`${server.url}/guest?mode=room&reduced_motion=true`); await ready(page);
     await page.getByRole('button', { name: 'Cameras', exact: true }).click(); await ready(page);
     await openCamera(page, 'Canon 7s');
     await expect(page.locator('.camera-display [role="alert"]')).toBeVisible({ timeout: 90000 });
@@ -198,7 +199,7 @@ test('Canon model failure can retry and all prepared cameras reopen with the ser
 });
 
 test('physical room entry and reversible camera shelf flights', async ({ page }, info) => {
-  await page.goto('/?mode=room'); await ready(page);
+  await page.goto('/guest?mode=room'); await ready(page);
   await expect(page.getByText('Explore the collection', { exact: true })).toHaveCount(0);
   await expect(page.locator('.camera-shelf-target')).toHaveCount(0);
   await page.locator('.canvas-wrapper').focus();
@@ -231,7 +232,7 @@ test('responsive inspection, touch gestures, graphics recovery and repeated entr
   const requests: string[] = [];
   page.on('request', request => { if (request.url().includes(PRIMARY_CAMERA.url)) requests.push(request.url()); });
   await page.setViewportSize({ width: 1024, height: 768 });
-  await page.goto('/?mode=room&reduced_motion=true'); await ready(page); await cameraShelf(page); await display(page);
+  await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page); await cameraShelf(page); await display(page);
   await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-1024-inspection.png` });
   let canvas = page.locator('.camera-stage canvas');
   await expect.poll(async () => Number(await canvas.getAttribute('data-geometries'))).toBeGreaterThan(0);

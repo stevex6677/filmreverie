@@ -33,7 +33,7 @@ test.describe("M3 E2E — Realistic Viewing Table, 35mm Film & Loupe Optics", ()
     }
 
     // 1. Load app in deterministic inspect mode
-    await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
+    await page.goto("/guest?deterministic=true&mode=inspect"); await openViewingTools(page);
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible({ timeout: 15000 });
 

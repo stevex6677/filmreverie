@@ -20,7 +20,7 @@ test.describe("M7 E2E — Deep Macro Zoom (1000%) & Light Table Dimmer Calibrati
     page.on("requestfailed", (req) => failedRequests.push(req.url()));
 
     // 1. Load production app directly into table inspect mode
-    await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
+    await page.goto("/guest?deterministic=true&mode=inspect"); await openViewingTools(page);
 
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible({ timeout: 15000 });

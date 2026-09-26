@@ -7,7 +7,7 @@ import { StoredRoll } from '../storage/rollRepository';
 import { FilmShelfState } from '../utils/useFilmShelf';
 import { packagingMaterial } from '../utils/packagingMaterial';
 import { placeholderPackaging, SHELF_CAPACITY } from '../utils/shelfLayout';
-import { ShelfCoverFrame } from './ShelfCoverFrame';
+import { ShelfCoverFrame, type ShelfCoverSource } from './ShelfCoverFrame';
 
 import { mm, WORLD_UNITS_PER_MM, CARTRIDGE_MM, SHELF_CELL_MM, SHELF_WIDTH, SHELF_HEIGHT, SHELF_FLOOR, SHELF_ORIGIN, SHELF_FILM_YAW, shelfArrangement } from '../data/physicalScale';
 export { SHELF_ORIGIN } from '../data/physicalScale';
@@ -91,8 +91,8 @@ export function FilmPackage({ entry, owned, textures, standalone = false }: { en
   </group>;
 }
 
-function CellLabel({ position, roll, slot, active, portal, shelf, focused, onApproach, onEdit }: {
-  onEdit: (id: string) => void; focused: boolean; onApproach?: (point?: { x: number; y: number }) => void;
+function CellLabel({ position, roll, slot, active, portal, shelf, focused, onApproach, onEdit, readOnly }: {
+  onEdit: (id: string) => void; focused: boolean; onApproach?: (point?: { x: number; y: number }) => void; readOnly: boolean;
   position: [number, number, number]; roll?: StoredRoll; slot: number; active: boolean; portal: RefObject<HTMLDivElement>; shelf: FilmShelfState;
 }) {
   const { gl, size, camera } = useThree();
@@ -130,23 +130,24 @@ function CellLabel({ position, roll, slot, active, portal, shelf, focused, onApp
     return [(point.x + 1) * viewport.width / 2 + rect.left - (root?.left ?? 0), (1 - point.y) * viewport.height / 2 + rect.top - (root?.top ?? 0)];
   }}>
     <div ref={label} className={`shelf-cell-label ${roll ? 'is-owned' : 'is-placeholder'}`} data-shelf-slot={onApproach ? undefined : slot} data-packaging={onApproach ? undefined : roll ? getPackaging(roll.stockId, roll.format).id : placeholderPackaging(slot).id} data-owned={onApproach ? undefined : !!roll}>
-      {(roll && focused) || onApproach ? <button className={`shelf-roll-target ${onApproach ? 'shelf-approach-target' : ''}`} aria-label={onApproach ? "View film shelf" : `Show saved roll ${roll!.name}`} aria-haspopup={onApproach ? undefined : "dialog"} aria-keyshortcuts={onApproach ? undefined : "ArrowDown"} aria-expanded={onApproach ? undefined : shelf.selection?.id === roll?.id} aria-current={active ? 'true' : undefined}
+      {(roll && focused) || onApproach ? <button className={`shelf-roll-target ${onApproach ? 'shelf-approach-target' : ''}`} aria-label={onApproach ? "View film shelf" : `${readOnly ? 'Show published roll' : 'Show saved roll'} ${roll!.name}`} aria-haspopup={onApproach ? undefined : "dialog"} aria-keyshortcuts={onApproach ? undefined : "ArrowDown"} aria-expanded={onApproach ? undefined : shelf.selection?.id === roll?.id} aria-current={active ? 'true' : undefined}
         onPointerEnter={event => { if (roll && !onApproach && event.pointerType === 'mouse') shelf.show(roll, event.currentTarget); }} onPointerLeave={shelf.leave}
         onFocus={event => { if (roll && !onApproach && event.currentTarget.matches(':focus-visible') && !(event.relatedTarget instanceof Element && event.relatedTarget.closest('.shelf-roll-card'))) shelf.show(roll, event.currentTarget, true); }}
         onKeyDown={event => { if (event.key === 'ArrowDown' && roll && !onApproach) { event.preventDefault(); event.stopPropagation(); shelf.show(roll, event.currentTarget, true); } }}
         onPointerDown={event => { event.stopPropagation(); const p = pointer.current; p.ids.add(event.pointerId); p.x = event.clientX; p.y = event.clientY; p.type = event.pointerType; p.moved = p.ids.size > 1; }}
         onPointerMove={event => { if (pointer.current.ids.size && Math.hypot(event.clientX - pointer.current.x, event.clientY - pointer.current.y) > 7) pointer.current.moved = true; }}
         onPointerUp={event => pointer.current.ids.delete(event.pointerId)} onPointerCancel={() => { pointer.current.ids.clear(); pointer.current.moved = true; }}
-        onClick={event => { event.stopPropagation(); if (event.detail > 0 && pointer.current.moved) return; if (onApproach) { onApproach(event.detail ? { x: event.clientX, y: event.clientY } : undefined); return; } if (!roll) return; if (roll.trashedAt !== null) shelf.show(roll, event.currentTarget, true); else onEdit(roll.id); }}>
+        onClick={event => { event.stopPropagation(); if (event.detail > 0 && pointer.current.moved) return; if (onApproach) { onApproach(event.detail ? { x: event.clientX, y: event.clientY } : undefined); return; } if (!roll) return; if (readOnly || roll.trashedAt !== null) shelf.show(roll, event.currentTarget, true); else onEdit(roll.id); }}>
         {!onApproach && <><span className="shelf-slot-number">{String(slot + 1).padStart(2, '0')}</span><span className="shelf-roll-caption">{roll?.name}</span>{active && <span className="shelf-active-dot" aria-label="On the light table" />}</>}
       </button> : <span className="shelf-slot-number" aria-hidden="true">{String(slot + 1).padStart(2, '0')}</span>}
     </div>
   </Html>;
 }
 
-export function FilmShelf({ shelf, activeId, interactive, portal, focused, onApproach, onEdit, textures }: {
+export function FilmShelf({ shelf, activeId, interactive, portal, focused, onApproach, onEdit, textures, readOnly = false, coverSource }: {
   onEdit: (id: string) => void; focused: boolean; onApproach: (point?: { x: number; y: number }) => void;
   shelf: FilmShelfState; activeId: string; interactive: boolean; portal: RefObject<HTMLDivElement>; textures: Record<string, THREE.Texture>;
+  readOnly?: boolean; coverSource?: ShelfCoverSource;
 }) {
   const wood = useMemo(() => {
     const material = new THREE.MeshStandardMaterial({ color: '#705841', roughness: .72 });
@@ -167,10 +168,10 @@ export function FilmShelf({ shelf, activeId, interactive, portal, focused, onApp
     {[-2, -1, 0, 1, 2].map(i => <mesh key={`col-${i}`} position={[i * WIDTH, 0, 0]} castShadow receiveShadow material={wood}><boxGeometry args={[mm(Math.abs(i) === 2 ? 18 : 8), HEIGHT * 4, DEPTH]} /></mesh>)}
     {[-WIDTH * 2, WIDTH * 2].flatMap(x => [-HEIGHT * 2, HEIGHT * 2].map(y => <mesh key={`${x}-${y}`} position={[x, y, DEPTH / 2 + .001]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[.009, .009, .004, 12]} /><meshStandardMaterial color="#8f8065" roughness={.35} metalness={.8} /></mesh>))}
     {cells.map(({ slot, position, roll }) => <group key={slot}>
-      <group name={`shelf-cell:${slot}`} position={[position[0], position[1], 0]}><FilmPackage entry={roll ? getPackaging(roll.stockId, roll.format) : placeholderPackaging(slot)} owned={!!roll} textures={textures} />{roll && <ShelfCoverFrame roll={roll} />}</group>
-      {interactive && <CellLabel focused={focused} position={position} roll={roll} slot={slot} active={roll?.id === activeId} portal={portal} shelf={shelf} onEdit={onEdit} />}
+      <group name={`shelf-cell:${slot}`} position={[position[0], position[1], 0]}><FilmPackage entry={roll ? getPackaging(roll.stockId, roll.format) : placeholderPackaging(slot)} owned={!!roll} textures={textures} />{roll && <ShelfCoverFrame roll={roll} coverSource={coverSource} />}</group>
+      {interactive && <CellLabel focused={focused} position={position} roll={roll} slot={slot} active={roll?.id === activeId} portal={portal} shelf={shelf} onEdit={onEdit} readOnly={readOnly} />}
     </group>)}
-    {interactive && !focused && <CellLabel focused={false} position={[0, 0, DEPTH / 2]} slot={-1} active={false} portal={portal} shelf={shelf} onEdit={onEdit} onApproach={onApproach} />}
+    {interactive && !focused && <CellLabel focused={false} position={[0, 0, DEPTH / 2]} slot={-1} active={false} portal={portal} shelf={shelf} onEdit={onEdit} onApproach={onApproach} readOnly={readOnly} />}
     {/* A narrow light strip brightens only the cabinet; no spill on the table. */}
     <mesh position={[0, HEIGHT * 2 - mm(12), DEPTH / 2 - mm(4)]}><boxGeometry args={[SHELF_WIDTH - mm(40), mm(2), mm(4)]} /><meshBasicMaterial color="#d1c7aa" /></mesh>
   </group>;

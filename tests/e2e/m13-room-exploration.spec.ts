@@ -1,8 +1,12 @@
-import { openViewingTools, captureCanvas } from "./helpers/viewing";
+import { openViewingTools, captureCanvas, placeLoupeAtScreenPoint } from "./helpers/viewing";
 import { test, expect, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import { parsePng, getRegionStats, getRegionMeanDifference } from "./helpers/pixelAnalysis";
+import { PerspectiveCamera, Vector3 } from "three";
+import { BASELINE_ROLL, locateFrame } from "../../src/utils/rollLayout";
+import { ROOM_ENVELOPE, TABLE_CENTER_Z, TABLE_SURFACE_Y } from "../../src/utils/cameraBounds";
+import { LOUPE_LENS_RADIUS, LOUPE_RADIUS } from "../../src/utils/loupeView";
 const output = path.resolve(process.env.M13_CANDIDATE_DIR || "artifacts/m13-candidates");
 const ready = async (page: Page) => { await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true'); await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false'); await page.waitForTimeout(350); };
 const pose = async (page: Page) => (await page.locator('main').getAttribute('data-room-pose'))!.split(',').map(Number);
@@ -10,10 +14,22 @@ async function light(page: Page, n: number) { const slider=page.getByRole('slide
 async function turn(page: Page, yaw: number, pitch=0) { const x=yaw>0?200:1050; await page.mouse.move(x,400); await page.mouse.down(); await page.mouse.move(x+yaw/.0035,400-pitch/.0035,{steps:16}); await page.mouse.up(); await page.waitForTimeout(250); }
 async function face(page: Page) { await page.getByRole('button',{name:'Face table',exact:true}).click(); await page.getByRole('button',{name:'Face table',exact:true}).blur(); await page.waitForTimeout(250); }
 async function shot(page: Page, name: string) { fs.mkdirSync(output,{recursive:true}); const buffer=await captureCanvas(page); fs.writeFileSync(path.join(output,`${name}.png`),buffer);return parsePng(buffer); }
+async function sampleGeometry(page: Page) {
+  const canvas = page.locator("canvas"), box = (await canvas.boundingBox())!;
+  const camera = new PerspectiveCamera(Number(await canvas.getAttribute("data-camera-fov")), box.width / box.height);
+  camera.position.fromArray((await canvas.getAttribute("data-camera-position"))!.split(",").map(Number));
+  camera.quaternion.fromArray((await canvas.getAttribute("data-camera-quaternion"))!.split(",").map(Number));
+  camera.updateMatrixWorld();
+  const project = (x: number, y: number, z: number) => {
+    const point = new Vector3(x, y, z).project(camera);
+    return [Math.round((point.x + 1) * box.width / 2), Math.round((1 - point.y) * box.height / 2)] as const;
+  };
+  return { box, project };
+}
 
 for (const reduced of [false,true]) test(`M13 fixed-eye full turns, six views and restored journeys ${reduced?'reduced':'animated'}`,async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(`/?mode=room&example=1${reduced?'&reduced_motion=true':''}`); await ready(page);
+  await page.goto(`/guest?mode=room&example=1${reduced?'&reduced_motion=true':''}`); await ready(page);
   const canvas=page.locator('canvas'); const position=await canvas.getAttribute('data-camera-position'); const fov=await canvas.getAttribute('data-camera-fov');
   const initial=await pose(page);
   // Drag right/down pulls the scene right/down, turning the eye left/up.
@@ -66,9 +82,15 @@ for (const reduced of [false,true]) test(`M13 fixed-eye full turns, six views an
 });
 
 test('M13 room illumination is ordered and switch remembers level',async({page})=>{
-  await page.goto('/?mode=room&example=1');await ready(page);
+  await page.goto('/guest?mode=room&example=1');await ready(page);
+  const { project } = await sampleGeometry(page);
+  // Sample actual surfaces: back wall above the cabinet, exposed diffuser
+  // behind the film, and the safelight's luminous filter (not its housing).
+  const wallRegion = [...project(0, 2, ROOM_ENVELOPE.front), 45] as const;
+  const tableRegion = [...project(0, TABLE_SURFACE_Y + .001, TABLE_CENTER_Z - .4 * BASELINE_ROLL.scale), 30] as const;
+  const redRegion = [...project(-3.6, 2.7, -1.30 + .071), 12] as const;
   const measurements:Record<string,unknown>={};const levels:number[]=[];
-  for(const n of [0,25,50,100]){await light(page,n);const png=await shot(page,`room-light-${n}`);const wall=getRegionStats(png,920,280,45);levels.push(wall.meanLum);const table=getRegionStats(png,640,430,30), red=getRegionStats(png,410,157,12); measurements[n]={wall,table,red}; if(n===0){expect(table.meanLum).toBeGreaterThan(100);expect(red.meanLum).toBeGreaterThan(30);}}
+  for(const n of [0,25,50,100]){await light(page,n);const png=await shot(page,`room-light-${n}`);const wall=getRegionStats(png,...wallRegion);levels.push(wall.meanLum);const table=getRegionStats(png,...tableRegion), red=getRegionStats(png,...redRegion); measurements[n]={wall,table,red}; if(n===0){expect(table.meanLum).toBeGreaterThan(100);expect(red.meanLum).toBeGreaterThan(30);}}
   // Predefined visual gate: at least 3 luminance levels per step, bright wall >25.
   for(let i=1;i<levels.length;i++)expect(levels[i]-levels[i-1]).toBeGreaterThan(3);expect(levels[3]).toBeGreaterThan(25);
   await light(page,50);await page.getByRole('switch',{name:'Room lights',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-room-brightness','0');await page.getByRole('switch',{name:'Room lights',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-room-brightness','0.5');
@@ -77,24 +99,40 @@ test('M13 room illumination is ordered and switch remembers level',async({page})
 
 test.describe.parallel('M13 photo independence', () => {
 for(const stock of ['ektachrome-e100','ektar-100','portra-160','portra-400','portra-800']) test(`${stock} retains photo and loupe response across room-light endpoints`,async({page})=>{
-  await page.goto('/?mode=room&example=1&deterministic=true');await ready(page);
+  await page.goto('/guest?mode=room&example=1&deterministic=true');await ready(page);
   const measurements:unknown[]=[];
     await openViewingTools(page);await page.getByTestId('film-stock-selector').selectOption(stock);
     for(const mode of stock==='ektachrome-e100'?['positive']:['negative','positive'])for(const table of [30,100]){
       const captures:ReturnType<typeof parsePng>[]=[];
+      let photoRegion: readonly [number, number, number], loupeRegion: readonly [number, number, number], lensDetailSize: number;
       for(const room of [0,100]){
         await light(page,room);await page.getByTestId('approach-table-btn').click();await ready(page);
+        // Normalize overview framing before comparing the same photo pixels;
+        // room return fits the current viewport, unlike the initial overview.
+        await page.getByTestId('reset-view-btn').click();await ready(page);
         await openViewingTools(page);
         if(await page.locator('main').getAttribute('data-film-mode')!==mode)await page.getByTestId('mode-toggle').click();
         const dim=page.getByTestId('brightness-slider');await dim.press(table===30?'Home':'End');await dim.blur();
-        await openViewingTools(page);await page.getByTestId('loupe-toggle').click();await page.mouse.move(640,400);await page.waitForTimeout(350);
+        // Compare active glass at both endpoints, never the rested loupe.
+        if(await page.locator('main').getAttribute('data-loupe-active')!=='true')await page.getByTestId('loupe-toggle').click();
+        const { box, project } = await sampleGeometry(page);
+        const source = locateFrame(BASELINE_ROLL, 1), magnified = locateFrame(BASELINE_ROLL, 2);
+        const height = .006 * BASELINE_ROLL.scale;
+        photoRegion = [...project(source.x, TABLE_SURFACE_Y + height, TABLE_CENTER_Z - source.y), 28];
+        const [x, y] = project(magnified.x, TABLE_SURFACE_Y + height, TABLE_CENTER_Z - magnified.y);
+        const center = await placeLoupeAtScreenPoint(page, box.x + x, box.y + y, height);
+        loupeRegion = [center.x, center.y, 30];
+        const radius = Number((await page.locator('canvas').getAttribute('data-loupe-display'))!.split(',')[2]);
+        // Detail is a property of the magnified field, not a tiny dark patch.
+        // Use an inscribed square inside the glass, excluding housing and rim.
+        lensDetailSize = Math.floor(radius * LOUPE_LENS_RADIUS / LOUPE_RADIUS * Math.SQRT2 * .9);
         captures.push(await shot(page,`${stock}-${mode}-table${table}-room${room}`));
         await expect(page.getByTestId('brightness-badge')).toHaveText(`${table}%`);
         await page.getByTestId('return-room-btn').click();await ready(page);
       }
-      const photo=getRegionMeanDifference(captures[0],captures[1],430,400,28),loupe=getRegionMeanDifference(captures[0],captures[1],640,400,30);
+      const photo=getRegionMeanDifference(captures[0],captures[1],...photoRegion!),loupe=getRegionMeanDifference(captures[0],captures[1],...loupeRegion!);
       expect(photo).toBeLessThan(1);expect(loupe).toBeLessThan(1);
-      expect(getRegionStats(captures[1],640,400,30).stdDev).toBeGreaterThan(4);
+      expect(getRegionStats(captures[1],loupeRegion![0],loupeRegion![1],lensDetailSize!).stdDev).toBeGreaterThan(4);
       measurements.push({stock,mode,table,photoDifference:photo,loupeDifference:loupe});
     }
   fs.writeFileSync(path.join(output,`photo-independence-${stock}.json`),JSON.stringify(measurements,null,2));

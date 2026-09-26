@@ -13,7 +13,7 @@ test('camera rotation keeps one render chain and settles to idle', async ({ page
       callback(time);
     });
   });
-  await page.goto('/?mode=room&reduced_motion=true');
+  await page.goto('/guest?mode=room&reduced_motion=true');
   await expect(page.locator('main')).toHaveAttribute('data-app-ready', 'true', { timeout: 60000 });
   await page.getByRole('button', { name: 'Cameras', exact: true }).click();
   await openCamera(page);

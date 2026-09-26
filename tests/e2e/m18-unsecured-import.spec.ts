@@ -11,7 +11,7 @@ test('New roll creation and photo import succeed on unsecured connections withou
     }
   });
 
-  await page.goto('/?mode=inspect&reduced_motion=true');
+  await page.goto('/guest?mode=inspect&reduced_motion=true');
   await ready(page);
   await focusShelf(page);
 

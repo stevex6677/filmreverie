@@ -48,6 +48,35 @@ The [Canon 7s delivery](blender/canon7s/CURRENT.json) preserves the supplied Tri
 ### 6. Camera Collection
 The room starts from its center. Its 90 cm, two-tier camera cabinet matches the film cabinet's height and replaces the right-wall chemistry shelf. The complete developing bench, chemicals and drying equipment sit beside the door, where the box shelf was removed. The camera cabinet sits closer to the light table and displays the current Mamiya Universal, Minolta Autocord, Canon Demi EE17, Canon 7s and Olympus OM-1 on its upper tier at their respective 21 cm, 8.4 cm, 11.6 cm, 13.8 cm and 13.6 cm physical widths. Five upper positions provide clearance for the cameras without changing their scale. Three film boxes and two cartridges occupy the lower tier. The cabinet uses separate lightweight models, with preserved lettering and materials on Mamiya; after the room is ready, detailed models below 5 MB preload sequentially in the background for inspection. Startup waits for every cabinet model to load successfully, with retry for failed models. Select **Cameras** for a tightly framed cabinet-only view, then any camera to inspect every side with rotation, zoom, pan and directional presets. Detailed camera downloads are optional in **Backups & offline**; lightweight cabinet models and the compressed-model decoder are included in the required offline shell. See [mobile model delivery](blender/MOBILE_MODELS.md) and [camera shelf review](docs/CAMERA_SHELF_REVIEW.md) for validation and remaining acceptance work; asset preparation verifies each camera's `CURRENT.json` against the shared viewer catalog.
 
+### 7. Public Gallery and Guest Darkroom
+The home page (`/`) displays only owner-published cloud rolls on the physical
+darkroom shelf. Browsing needs no account; visitors cannot add, edit or delete
+rolls there. Its room header shares the guest darkroom's controls; **Admin**
+and **Create Your Own** sit immediately after **Room lights** (or **Lights**
+on phones), wrapping within the same header on narrow screens. **Admin**
+opens the Access-protected owner workspace for explicit JPEG/PNG or `.darkroom`
+import, saved private drafts, preview and confirmed publication. Cloudflare
+Access JWT verification, short-lived key-scoped direct R2 uploads of browser-re-encoded
+JPEG derivatives (never originals), versioned R2 catalog publication and withdrawal
+live in `cloudflare/`. Admin performs metadata removal locally before uploading;
+the Worker does not decode image content. Hosted Cloudflare Free CPU/subrequest
+measurements are pending account setup.
+
+**Create Your Own** opens `/guest?welcome=1` in a new tab and shows the guest
+introduction on every click; direct `/guest` visits show it only until dismissed.
+The guest darkroom starts with one removable example roll; imports, edits, Trash
+and backups stay in this browser only, without accounts, uploads or
+synchronization. Its separate `darkroom-guest-rolls` database does not read the
+earlier `darkroom-rolls` library automatically. On the same origin, explicitly
+choose **Backups & offline → Copy previous darkroom rolls** to copy earlier rolls;
+export and verify a backup before changing origins or clearing site data.
+
+**Production is not provisioned or deployed.** See
+[deployment/privacy/recovery instructions](docs/CLOUD_GALLERY.md) and
+[M21 validation and blockers](docs/M21_REVIEW.md).
+`npm run validate:m21` includes the app/Worker builds, cumulative integration/E2E
+suites and all three standalone viewer gates; hosted checks remain separate.
+
 ---
 
 ## Getting Started

@@ -8,7 +8,7 @@ function photo(i:number,aspect=1.5){
   return {name:`scan${i+1}.png`,mimeType:'image/png',buffer:PNG.sync.write(png)};
 }
 async function begin(page:Page,count:number,aspects:number[]=[1.5]){
-  await page.goto('/?mode=inspect&reduced_motion=true');
+  await page.goto('/guest?mode=inspect&reduced_motion=true');
   await page.getByRole('button',{name:'Rolls',exact:true}).click();
   await page.getByRole('button',{name:'New roll',exact:true}).click();
   await page.getByLabel('Choose photographs').setInputFiles(Array.from({length:count},(_,i)=>photo(i,aspects[i%aspects.length])));
@@ -63,7 +63,7 @@ for(const film of ['35mm','120']) test(`${film} free frames preserve proportions
   await openFrame(page,last);
   // View persistence waits for camera/asset settlement; reload after the write commits.
   await expect.poll(()=>page.evaluate(async(index)=>new Promise<boolean>((resolve,reject)=>{
-    const request=indexedDB.open('darkroom-rolls');
+    const request=indexedDB.open('darkroom-guest-rolls');
     request.onerror=()=>reject(request.error);
     request.onsuccess=()=>{const db=request.result,read=db.transaction('rolls').objectStore('rolls').getAll();read.onsuccess=()=>{db.close();resolve(read.result.find((r:any)=>r.id!=='roll-01')?.view?.frameId===read.result.find((r:any)=>r.id!=='roll-01')?.frameIds[index]);};read.onerror=()=>{db.close();reject(read.error);};};
   }),last-1)).toBe(true);

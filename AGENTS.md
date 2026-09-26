@@ -76,17 +76,20 @@ acquisition, not a startup step.
 - Start the application process locally in the active checkout. Check working
   directory and port ownership; preserve existing services. If a port is occupied,
   use another available port and report the actual URL.
-- Provide a clickable localhost URL after startup. For phone/iPad previews, also
-  provide a verified private Tailscale URL when available, and state that the app
-  process runs locally. If device access cannot be verified, say so.
+- After every application startup, provide clickable localhost and private
+  Tailscale URLs, and state that the app process runs locally. Use the actual
+  hostname and Serve mapping reported by Tailscale; do not guess a URL. Opening
+  or requesting the Tailscale URL is not required. If its response or device
+  access was not checked, label the link unverified. If Tailscale is unavailable,
+  say so explicitly rather than inventing a link.
 - Inspect `tailscale status --json` and `tailscale serve status` before changing
-  mappings. Verify the current hostname/IP; do not assume the example `macbook`
-  hostname exists. Use `tailscale serve --bg --http=<port> http://127.0.0.1:<port>`
-  to proxy directly to the local app; no SSH tunnel is needed.
-- Preserve unrelated Serve mappings and verify responses through localhost and
-  the shared hostname. Devices must use the same tailnet. Include the verified
-  hostname in Vite's allowlist through `FILM_PHOTO_ALLOWED_HOSTS` when necessary.
-  Never use Funnel or expose the app publicly.
+  mappings. Use the current hostname/IP; do not assume the example `macbook`
+  hostname exists. If the app port has no mapping, use
+  `tailscale serve --bg --http=<port> http://127.0.0.1:<port>` to proxy directly
+  to the local app; no SSH tunnel is needed.
+- Preserve unrelated Serve mappings. Devices must use the same tailnet. Include
+  the current hostname in Vite's allowlist through `FILM_PHOTO_ALLOWED_HOSTS`
+  when necessary. Never use Funnel or expose the app publicly.
 - Offline installation and new photo import on non-loopback devices require
   HTTPS. Follow [docs/OFFLINE.md](docs/OFFLINE.md); preserve existing browser
   libraries and export backups before changing origins.

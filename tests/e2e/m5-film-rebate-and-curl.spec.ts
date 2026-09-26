@@ -25,7 +25,7 @@ test.describe("M5 E2E — Authentic 35mm Film Substrate, Rebate Print & Transver
     }
 
     // 1. Inspect Mode in Negative Film Mode
-    await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
+    await page.goto("/guest?deterministic=true&mode=inspect"); await openViewingTools(page);
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible({ timeout: 15000 });
     await page.waitForTimeout(600);

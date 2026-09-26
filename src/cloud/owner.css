@@ -1,0 +1,51 @@
+.owner-panel { width: min(1120px, calc(100vw - 24px)); }
+.owner-panel > p, .owner-panel section > p, .owner-details > p { line-height: 1.55; }
+.owner-panel h2 { margin: 0 0 12px; font-size: 1.15rem; }
+.owner-panel h2 small { font-weight: 400; font-size: .8em; }
+.owner-panel button, .owner-panel input, .owner-panel select, .owner-panel summary, .owner-panel .choose-photos { min-height: 42px; }
+.owner-panel button:disabled, .owner-panel input:disabled, .owner-panel select:disabled { opacity: .45; cursor: not-allowed; }
+.owner-panel button:focus-visible, .owner-panel a:focus-visible, .owner-panel input:focus-visible, .owner-panel select:focus-visible, .owner-panel summary:focus-visible { outline: 2px solid #896332; outline-offset: 3px; }
+.owner-panel .choose-photos:has(input:disabled) { opacity: .45; cursor: not-allowed; }
+.owner-session { padding: 14px; border: 1px solid #6c6151; border-radius: 8px; }
+.owner-session p { margin-top: 0; }
+.owner-session a { display: inline-block; padding: 10px 0; margin-right: 18px; color: #694720; }
+.owner-progress { padding: 12px; border-left: 3px solid #b99360; background: #d8ae7410; overflow-wrap: anywhere; }
+.owner-saved { margin: 24px 0; padding-bottom: 20px; border-bottom: 1px solid #6c6151; }
+.owner-saved ul { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 8px; max-height: 240px; overflow-y: auto; }
+.owner-saved li button { width: 100%; display: grid; gap: 5px; text-align: left; overflow-wrap: anywhere; }
+.owner-saved li span { font-size: .8rem; opacity: .75; }
+.owner-source-actions, .owner-actions, .owner-archive-choice { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.owner-archive-choice { margin-top: 16px; padding: 14px; border: 1px solid #6c6151; }
+.owner-archive-choice h3 { flex-basis: 100%; }
+.owner-editor { display: grid; grid-template-columns: minmax(230px, .8fr) minmax(0, 1.8fr); gap: 24px; }
+.owner-details .library-details { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.owner-details .library-details label { display: grid; gap: 6px; }
+.owner-details .library-details fieldset label { display: inline-flex; align-items: center; margin-right: 16px; }
+.owner-details .library-details input[type="radio"], .owner-panel input[type="checkbox"] { min-height: 20px; min-width: 20px; vertical-align: middle; accent-color: #cba16a; }
+.owner-details .choose-photos { display: block; margin: 20px 0 10px; }
+.owner-details .film-length { margin-top: 16px; }
+.owner-frames { min-width: 0; }
+.owner-filmline { list-style: none; display: flex; gap: 8px; padding: 4px 3px 12px; overflow-x: auto; overscroll-behavior-x: contain; }
+.owner-filmline li { flex: 0 0 96px; }
+.owner-filmline button { width: 100%; padding: 5px; }
+.owner-filmline button[aria-pressed="true"] { border-color: #d8ae74; box-shadow: 0 0 0 1px #d8ae74; }
+.owner-filmline .draft-preview { max-height: 110px; margin: 0 auto 6px; }
+.owner-filmline span { display: block; font-size: .72rem; overflow-wrap: anywhere; }
+.owner-frames .selected-review h3 { overflow-wrap: anywhere; font-size: .95rem; }
+.owner-frames .draft-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.owner-frames .crop-inspector { --crop-edge: 360px; }
+.owner-publication { border-top: 1px solid #6c6151; margin-top: 24px; padding-top: 20px; }
+.owner-publication > label, .owner-publication details label { display: block; line-height: 1.55; margin: 16px 0; }
+.owner-publication input { margin-right: 9px; }
+.owner-publication details { margin-top: 22px; }
+.owner-publication summary { display: flex; align-items: center; cursor: pointer; }
+.owner-return { position: fixed; z-index: 100; top: calc(env(safe-area-inset-top, 0px) + 70px); left: 50%; transform: translateX(-50%); max-width: calc(100vw - 24px); padding: 12px 18px; border: 1px solid #ac8a60; border-radius: 8px; background: #231e19ed; color: #f5e5ca; box-shadow: 0 4px 24px #0008; cursor: pointer; }
+@media (max-width: 720px) {
+  .owner-editor { grid-template-columns: 1fr; gap: 20px; }
+  .owner-panel { padding: 18px 14px; }
+  .owner-panel header h1 { font-size: 1.35rem; }
+  .owner-panel header { gap: 8px; }
+  .owner-frames .crop-inspector { --crop-edge: 300px; }
+  .owner-actions > button { flex: 1 1 150px; }
+  .owner-return { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 82px); width: max-content; }
+}

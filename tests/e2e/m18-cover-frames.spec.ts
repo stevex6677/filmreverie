@@ -27,7 +27,7 @@ function difference(a: PNG, b: PNG) {
 
 test('M18 saved covers render in frames, update after editing, and leave gray blocks unchanged', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/?mode=room&reduced_motion=true'); await ready(page); await focusShelf(page);
+  await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page); await focusShelf(page);
   await expect(page.locator('canvas')).toHaveAttribute('data-packaging-loaded', '24');
   await add(page, 'Medium format cover', 'ektar-100', '66');
   await expect(page.locator('[data-owned="true"]')).toHaveCount(2);

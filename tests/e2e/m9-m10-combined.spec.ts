@@ -14,7 +14,7 @@ for (const stock of FILM_STOCKS) {
     page.on("console", m => { if (m.type() === "error") errors.push(m.text()); });
     page.on("requestfailed", r => errors.push(r.url()));
     page.on("response", r => { if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`); });
-    await page.goto("/?deterministic=true&mode=inspect"); await openViewingTools(page);
+    await page.goto("/guest?deterministic=true&mode=inspect"); await openViewingTools(page);
     await expect(page.locator("canvas")).toBeVisible();
     await page.getByLabel("Film stock", { exact: true }).selectOption(stock.id);
     const measurements: unknown[] = [];
