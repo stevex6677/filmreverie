@@ -15,6 +15,12 @@ test('M18 shelf replaces the archive, with the five-photo example in slot 01 and
   await fs.mkdir(OUT,{recursive:true});
   await page.screenshot({path:`${OUT}/${info.project.name}-room-no-hover-frame.png`});
   await cabinet.click(); await ready(page);
+  const actions = page.getByRole('region', { name: 'Film shelf actions' });
+  await expect(actions.getByRole('button', { name: 'New roll', exact: true })).toBeVisible();
+  await expect(actions.getByRole('button', { name: 'Trash (0)', exact: true })).toBeVisible();
+  await expect(actions).toContainText('Select a roll to open, edit or delete it.');
+  await expect(page.getByRole('menu', { name: 'More options', exact: true })).toHaveCount(0);
+  await page.screenshot({path:`${OUT}/${info.project.name}-shelf-actions.png`});
   let card = await showRoll(page,'Roll 01');
   await expect(card).toContainText('5 photographs');
   await expect(card.getByRole('img')).toBeVisible();

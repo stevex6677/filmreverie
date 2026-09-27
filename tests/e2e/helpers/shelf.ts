@@ -58,16 +58,9 @@ export async function add(page: Page, name: string, stock = 'portra-400', format
   await room(page);
 }
 
-export async function shelfMenu(page: Page) {
-  const menu = page.getByRole('menu', { name: 'More options', exact: true });
-  if (!await menu.isVisible()) await page.getByRole('button', { name: 'More options', exact: true }).click();
-  return menu;
-}
 export async function shelfAction(page: Page, name: string | RegExp) {
-  await (await shelfMenu(page)).getByRole('menuitem', { name, exact: typeof name === 'string' }).click();
+  await page.getByRole('region', { name: 'Film shelf actions' }).getByRole('button', { name, exact: typeof name === 'string' }).click();
 }
 export async function expectShelfSummary(page: Page, text: string) {
-  const menu = await shelfMenu(page);
-  await expect(menu.getByRole('group', { name: 'Film Shelf', exact: true })).toContainText(text);
-  await page.keyboard.press('Escape');
+  await expect(page.getByRole('region', { name: 'Film shelf actions' })).toContainText(text);
 }

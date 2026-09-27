@@ -29,9 +29,8 @@ export function CreateYourOwnLink({ film = false }: { film?: boolean }) {
   </a>;
 }
 
-export function AdminMenu({ loggedIn, guest, layout, onLayoutChange, compact = false, collection }: {
+export function AdminMenu({ loggedIn, guest, layout, onLayoutChange, compact = false }: {
   loggedIn: boolean; guest: boolean; layout: LayoutPreference; onLayoutChange: (next: LayoutPreference) => void; compact?: boolean;
-  collection?: { summary: string; actions: { label: string; disabled?: boolean; onSelect: () => void }[] };
 }) {
   const loginEndpoint = import.meta.env.VITE_FILM_PHOTO_ADMIN_LOGIN_URL || '/api/owner/session';
   const loginUrl = loginEndpoint === '/api/dev-auth/login'
@@ -75,10 +74,6 @@ export function AdminMenu({ loggedIn, guest, layout, onLayoutChange, compact = f
     }}>
       <button ref={trigger} aria-label="More options" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>{compact ? '…' : '⋮'}</button>
       {open && <div ref={dropdown} className="admin-menu-dropdown" role="menu" aria-label="More options">
-        {collection && <div className="layout-menu-options" role="group" aria-label="Film Shelf">
-          <p>{collection.summary}</p>
-          {collection.actions.map(action => <button key={action.label} role="menuitem" disabled={action.disabled} aria-disabled={action.disabled || undefined} onClick={() => { setOpen(false); trigger.current?.focus(); action.onSelect(); }}>{action.label}</button>)}
-        </div>}
         {!guest && (loggedIn ? <button role="menuitem" aria-disabled="true">Logged in</button>
           : <a role="menuitem" href={loginUrl}>Admin Login</a>)}
         <div className="layout-menu-options" role="group" aria-label="Layout">

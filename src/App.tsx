@@ -185,19 +185,7 @@ export function App() {
     : isGuest ? 'No roll on the light table'
       : published.loading ? 'Loading published photographs…' : published.error || 'No published roll on the light table';
   const createAction = !isGuest ? <CreateYourOwnLink film /> : undefined;
-  const ownerActions = <AdminMenu compact={state.roomMode === 'room' || !state.focusMode} loggedIn={adminLoggedIn} guest={isGuest} layout={layout} collection={state.shelfFocused && state.shelfId === 'film' ? {
-    summary: `${shelf.trash ? 'Trash' : canManageRolls ? 'Your collection' : 'Published gallery'} · ${shelf.trash ? shelf.trashCount : shelf.savedCount} ${shelf.trash ? 'deleted' : canManageRolls ? 'saved' : 'published'} ${(shelf.trash ? shelf.trashCount : shelf.savedCount) === 1 ? 'roll' : 'rolls'}${shelf.pages > 1 ? ` · Page ${shelf.page + 1}/${shelf.pages}` : ''}`,
-    actions: [
-      ...(canManageRolls ? [
-        { label: 'New roll', onSelect: () => openEditor() },
-        { label: shelf.trash ? 'Saved rolls' : `Trash (${shelf.trashCount})`, onSelect: () => shelf.changeTrash(!shelf.trash) },
-      ] : []),
-      ...(shelf.pages > 1 ? [
-        { label: 'Previous shelf page', disabled: shelf.page === 0, onSelect: () => shelf.changePage(shelf.page - 1) },
-        { label: 'Next shelf page', disabled: shelf.page + 1 === shelf.pages, onSelect: () => shelf.changePage(shelf.page + 1) },
-      ] : []),
-    ],
-  } : undefined} onLayoutChange={next => {
+  const ownerActions = <AdminMenu compact={state.roomMode === 'room' || !state.focusMode} loggedIn={adminLoggedIn} guest={isGuest} layout={layout} onLayoutChange={next => {
     setSheet(null); changeLayout(next);
     requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('button[aria-label="More options"]')?.focus());
   }} />;
@@ -505,6 +493,28 @@ export function App() {
       {contextLost&&<div className="context-recovery" role="alert"><p>The graphics view was interrupted. Your rolls are saved.</p><button onClick={()=>{setContextLost(false);setCanvasVersion(v=>v+1);}}>Restore view</button></div>}
       <div ref={shelfPortal} className="shelf-overlay" aria-label="Saved-roll shelf" style={{ display: shelfVisible ? undefined : 'none' }} />
       {shelfVisible && state.shelfFocused && state.shelfId === 'film' && !shelf.selection?.pinned && <>
+        <section className="shelf-toolbar" aria-label="Film shelf actions">
+          <div className="shelf-toolbar-summary">
+            <svg className="shelf-archive-icon" width="30" height="36" viewBox="0 0 30 36" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true"><rect x="4" y="3" width="22" height="30" rx="2"/><path d="M10 3v30M20 3v30M10 13h10M10 23h10"/><path d="M6.5 7h1M6.5 12h1M6.5 17h1M6.5 22h1M6.5 27h1M22.5 7h1M22.5 12h1M22.5 17h1M22.5 22h1M22.5 27h1" strokeWidth="2"/></svg>
+            <div className="shelf-toolbar-identity">
+              <h2>{shelf.trash ? 'Trash' : canManageRolls ? 'Your collection' : 'Published gallery'}</h2>
+              <span>{shelf.trash ? shelf.trashCount : shelf.savedCount} {shelf.trash ? 'deleted' : canManageRolls ? 'saved' : 'published'} {(shelf.trash ? shelf.trashCount : shelf.savedCount) === 1 ? 'roll' : 'rolls'}</span>
+            </div>
+          </div>
+          {canManageRolls && <div className="shelf-toolbar-actions">
+            <button className="shelf-new-roll" onClick={() => openEditor()}><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>New roll</button>
+            <button className="shelf-trash" aria-label={shelf.trash ? 'Saved rolls' : `Trash (${shelf.trashCount})`} onClick={() => shelf.changeTrash(!shelf.trash)}>
+              <svg width="16" height="18" viewBox="0 0 18 20" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{shelf.trash ? <path d="M14 5H4m0 0 4-4M4 5l4 4M4 5h6a6 6 0 0 1 0 12H5"/> : <><path d="M2 5h14M7 2h4l1 3M6 5l1-3M4 5l1 13h8l1-13M7 8v7M11 8v7"/></>}</svg>
+              {shelf.trash ? 'Saved rolls' : <>Trash<span className="shelf-trash-count" aria-hidden="true">{shelf.trashCount}</span></>}
+            </button>
+          </div>}
+          {shelf.pages > 1 && <nav aria-label="Shelf pages">
+            <button aria-label="Previous shelf page" disabled={shelf.page === 0} onClick={() => shelf.changePage(shelf.page - 1)}>‹</button>
+            <span>Page {shelf.page + 1}/{shelf.pages}</span>
+            <button aria-label="Next shelf page" disabled={shelf.page + 1 === shelf.pages} onClick={() => shelf.changePage(shelf.page + 1)}>›</button>
+          </nav>}
+          <p className="shelf-toolbar-hint">{shelf.trash ? 'Select a roll to restore it.' : canManageRolls ? 'Select a roll to open, edit or delete it.' : 'Select a roll to view its photographs.'}</p>
+        </section>
         {canManageRolls && deletedRoll && <div className="library-notice" role="status"><span>{deletedRoll.name} moved to Trash</span><button onClick={() => { void restoreRoll(deletedRoll.id).catch(error => setLibraryError(storageMessage(error))); }}>Undo</button><button aria-label="Dismiss deletion notice" onClick={() => setDeletedRoll(null)}>×</button></div>}
         {shelf.error && <div className="library-notice" role="alert">{shelf.error}<button onClick={shelf.retry}>Retry</button></div>}
       </>}
