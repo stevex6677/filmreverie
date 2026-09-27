@@ -1137,16 +1137,50 @@ button:disabled { opacity: .4; cursor: default; }
 .is-placeholder .shelf-slot-number { opacity:.35; }
 .shelf-roll-caption { position:absolute; bottom:0; left:25px; right:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; font:9px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#e5dfcc; text-shadow:0 1px 3px #000; }
 .shelf-active-dot { position:absolute; bottom:4px; right:6px; width:4px; height:4px; border-radius:50%; background:#d1bd7e; box-shadow:0 0 6px #d1bd7e88; }
-.shelf-toolbar { position:absolute; z-index:9; bottom:28px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:22px; padding:10px 14px; border:1px solid #9f927349; border-radius:7px; background:#1d211ce8; color:#d8d6c9; box-shadow:0 6px 24px #0003; font-size:11px; }
-.shelf-toolbar>div { display:grid; gap:4px; white-space:nowrap; }
-.shelf-eyebrow { font-size:8px; letter-spacing:2px; color:#a99e80; }
-.shelf-toolbar button { border:1px solid #a7987655; border-radius:4px; background:#ffffff06; color:#e2dcc9; padding:8px 12px; font-size:11px; cursor:pointer; min-height:36px; white-space:nowrap; }
-.shelf-toolbar button:hover { background:#c7b98920; }
-.shelf-toolbar button:focus-visible { outline:2px solid #e4d3a6; outline-offset:3px; }
-.shelf-toolbar button:disabled { opacity:.3; cursor:default; }
-.shelf-toolbar nav { display:flex; gap:9px; align-items:center; white-space:nowrap; }
-.shelf-toolbar nav button { padding:5px 10px; font-size:22px; line-height:1; }
-.shelf-toolbar>p { position:absolute; bottom:100%; background:#362c21; padding:12px; width:280px; }
+/* A warm archive label keeps collection actions part of the darkroom. */
+.shelf-toolbar {
+  position:absolute; z-index:9; bottom:max(24px,calc(12px + env(safe-area-inset-bottom))); left:50%; transform:translateX(-50%);
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px 24px;
+  width:560px; max-width:calc(100% - 32px); padding:16px 20px 10px;
+  border:1px solid #e0d5c1; border-radius:3px; color:#3b3027;
+  background:linear-gradient(115deg,#f4efe4,#eae2d2);
+  box-shadow:0 12px 32px #0004,0 2px 5px #0003,inset 0 0 0 3px #faf7ef80;
+}
+.shelf-toolbar-summary { display:flex; align-items:center; gap:12px; }
+.shelf-archive-icon { flex:none; color:#9a7650; }
+.shelf-toolbar-identity { display:grid; gap:6px; }
+.shelf-toolbar-identity h2 { margin:0; font:400 21px/1.1 Georgia,'Times New Roman',serif; letter-spacing:-.4px; }
+.shelf-toolbar-identity > span { color:#776954; font:10px/1.2 ui-monospace,monospace; letter-spacing:.5px; }
+.shelf-toolbar-actions { display:flex; align-items:center; gap:10px; padding-left:24px; border-left:1px solid #cbbca3; }
+.shelf-toolbar button {
+  display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:44px; padding:0 12px;
+  border:1px solid transparent; border-radius:3px; background:transparent; color:#685540;
+  font:500 12px/1.2 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; cursor:pointer; white-space:nowrap;
+  transition:background-color .15s,color .15s,box-shadow .15s;
+}
+.shelf-toolbar button:hover { background:#daceb966; color:#362b21; }
+.shelf-toolbar .shelf-new-roll { padding:0 16px; background:#944b34; border-color:#88432f; color:#fff7ea; box-shadow:inset 0 1px #ffffff20,0 2px 3px #59301914; }
+.shelf-toolbar .shelf-new-roll:hover { background:#7c3b28; color:#fffaf0; }
+.shelf-toolbar button:focus-visible { outline:2px solid #944b34; outline-offset:3px; }
+.shelf-toolbar button:disabled { opacity:.35; cursor:default; }
+.shelf-trash-count { display:inline-grid; place-items:center; min-width:19px; height:19px; padding:0 4px; border:1px solid #cfc1aa; border-radius:3px; font:10px/1 ui-monospace,monospace; }
+.shelf-toolbar nav { display:flex; align-items:center; gap:4px; white-space:nowrap; font:10px/1.2 ui-monospace,monospace; color:#776954; }
+.shelf-toolbar nav button { min-width:44px; padding:0; font-size:22px; }
+.shelf-toolbar-hint { flex-basis:100%; margin:0; padding-top:10px; border-top:1px solid #cbbca380; color:#776954; font:11px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; text-align:center; }
+@media(max-width:600px) {
+  .shelf-toolbar { width:360px; max-width:calc(100% - 24px); gap:16px; padding:16px 18px 12px; }
+  .shelf-toolbar-summary { flex:1; gap:10px; }
+  .shelf-toolbar-identity h2 { font-size:22px; }
+  .shelf-toolbar-actions { width:100%; padding:0; border:0; gap:12px; }
+  .shelf-toolbar-actions > button { flex:1; }
+  .shelf-toolbar .shelf-trash { border-color:#cbbca3; }
+  .shelf-toolbar-hint { padding-top:10px; font-size:10px; }
+  .shelf-toolbar nav { margin-left:auto; }
+}
+@media(max-height:560px) {
+  .shelf-toolbar { bottom:10px; padding-top:10px; padding-bottom:10px; gap:8px 18px; }
+  .shelf-toolbar-hint { display:none; }
+}
 .shelf-roll-card { position:fixed; z-index:60; width:288px; max-width:calc(100vw - 24px); max-height:calc(100dvh - 24px); overflow:auto; padding:16px; border-radius:9px; border:1px solid #cdc4ae; background:#eeeae0; box-shadow:0 12px 48px #0009; color:#292d28; user-select:text; outline:none; animation:shelf-card-appear .16s ease-out; }
 .shelf-card-heading { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; color:#787969; font-size:9px; letter-spacing:2px; }
 .shelf-card-heading button { border:0; padding:0; width:32px; height:30px; background:transparent; color:#64675c; font-size:24px; cursor:pointer; }
@@ -1167,13 +1201,9 @@ button:disabled { opacity: .4; cursor: default; }
 @keyframes shelf-card-appear { from { opacity:0; translate:0 4px; } to { opacity:1; translate:0 0; } }
 @media (prefers-reduced-motion:reduce) { .shelf-roll-card { animation:none; } }
 [data-reduced-motion="true"] .shelf-roll-card { animation:none; }
-.mobile-layout .shelf-toolbar { bottom: max(24px, calc(12px + env(safe-area-inset-bottom))); gap:12px; padding:8px 10px; }
-.mobile-layout .shelf-toolbar button { min-height:42px; }
-@media (max-width:600px) { .shelf-roll-caption { font-size:7px; left:17px; } .shelf-slot-number { left:3px; font-size:7px; } .shelf-toolbar { gap:10px; } }
-@media (max-height:560px) { .shelf-toolbar { bottom:12px; } .mobile-layout .shelf-toolbar { bottom:12px; } .shelf-card-cover { height:85px; } .shelf-roll-card { padding:12px; } }
-.darkroom-app-container:not(.mobile-layout) .shelf-toolbar { bottom:86px; }
+@media (max-width:600px) { .shelf-roll-caption { font-size:7px; left:17px; } .shelf-slot-number { left:3px; font-size:7px; } }
+@media (max-height:560px) { .shelf-card-cover { height:85px; } .shelf-roll-card { padding:12px; } }
 
-.shelf-toolbar { width:max-content; max-width:calc(100% - 24px); flex-wrap:wrap; justify-content:center; }
 
 /* The cabinet is a scene object, not a hover-framed panel. */
 .shelf-cell-label .shelf-approach-target,
@@ -1187,7 +1217,7 @@ button:disabled { opacity: .4; cursor: default; }
 .shelf-deleted-notice { flex-basis:100%; display:flex!important; align-items:center; gap:8px!important; white-space:normal!important; }
 .empty-table-controls { position:absolute; top:20px; left:24px; right:24px; z-index:10; display:flex; align-items:center; gap:12px; padding:12px; background:#171a1eee; border:1px solid #424638; border-radius:8px; color:#eee9dc; font-size:13px; }
 .empty-table-controls button { padding:10px; border:1px solid #756c57; border-radius:5px; background:#30372b; color:#eee9dc; cursor:pointer; }
-@media(max-width:600px) { .empty-table-controls { top:8px; left:8px; right:8px; font-size:11px; } .shelf-toolbar { gap:8px; } }
+@media(max-width:600px) { .empty-table-controls { top:8px; left:8px; right:8px; font-size:11px; } }
 
 /* Saved-roll editing keeps identity, frames and composition in one workspace. */
 .roll-editor-dialog[open] { display:flex; flex-direction:column; width:min(1320px,96vw); height:92dvh; max-height:92dvh; overflow:hidden; padding:24px; }

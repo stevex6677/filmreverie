@@ -1,4 +1,4 @@
-import { shelfAction, shelfMenu, expectShelfSummary, focusShelf, ready } from './helpers/shelf';
+import { shelfAction, expectShelfSummary, focusShelf, ready } from './helpers/shelf';
 import { test, expect, type Page } from '@playwright/test';
 import { PNG } from 'pngjs';
 import { createHash } from 'node:crypto';
@@ -243,7 +243,7 @@ test('guest welcome, deletable example and private edits stay in guest storage w
     await expect(page.getByRole('button', { name: 'New roll', exact: true })).toHaveCount(0);
     await focusShelf(page);
     await expect(page.getByRole('button', { name: 'Backups & offline' })).toHaveCount(0);
-    await shelfMenu(page);await expect(page.getByRole('menuitem',{name:'New roll',exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:'New roll',exact:true})).toBeVisible();
     await page.getByRole('button', { name: 'Room', exact: true }).click(); await ready(page);
     await expect(page.locator('.shelf-toolbar')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'New roll', exact: true })).toHaveCount(0);

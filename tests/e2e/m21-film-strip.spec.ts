@@ -23,7 +23,7 @@ test('film navigation changes destination and inverts the photograph and caption
   const negative = PNG.sync.read(await exposure.screenshot());
   await shelf.click(); await ready(page);
   await expect(page.locator('main')).toHaveAttribute('data-shelf-id', 'film');
-  await expect(page.locator('.shelf-toolbar')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Film shelf actions' })).toBeVisible();
   await expect(shelf).toHaveAttribute('aria-current', 'page');
   await expect(exposure).toHaveCSS('filter', 'invert(0)');
   const positive = PNG.sync.read(await exposure.screenshot());

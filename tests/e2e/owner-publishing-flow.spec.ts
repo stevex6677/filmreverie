@@ -1,4 +1,4 @@
-import { shelfAction, shelfMenu, expectShelfSummary, focusShelf, ready } from './helpers/shelf';
+import { shelfAction, expectShelfSummary, focusShelf, ready } from './helpers/shelf';
 import { test, expect } from '@playwright/test';
 import { webcrypto } from 'node:crypto';
 import { createServer, request as httpRequest, type Server, type IncomingMessage, type ServerResponse } from 'node:http';
@@ -113,7 +113,7 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
     await expect(page.locator('.shelf-toolbar')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'New roll', exact: true })).toHaveCount(0);
     await focusShelf(page);
-    await shelfMenu(page);await expect(page.getByRole('menuitem',{name:'New roll',exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:'New roll',exact:true})).toBeVisible();
     await page.getByRole('button', { name: 'Room', exact: true }).click(); await ready(page);
     await expect(page.locator('.shelf-toolbar')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'New roll', exact: true })).toHaveCount(0);
