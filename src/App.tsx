@@ -222,7 +222,7 @@ export function App() {
     saveQueue.current = queued;
     return queued;
   };
-  const openSaved = async (id: string) => {
+  const openSaved = async (id: string, roomMode: RoomMode = 'inspect') => {
     if (!canManageRolls) throw new Error('Admin login is required to manage rolls.');
     const request = ++switchRequest.current;
     if (id !== stateRef.current.roll.rollId) await saveView();
@@ -235,7 +235,7 @@ export function App() {
       await Promise.all(runtime.definition.frames.map(frame => new Promise<void>((resolve,reject) => { const img = new Image(); img.onload = () => resolve(); img.onerror = () => reject(new Error("Stored preview could not be loaded.")); img.src = frame.thumbnailSrc!; })));
       if (request !== switchRequest.current) { runtime.dispose(); return; }
       const previous = ownedRuntime.current; ownedRuntime.current = runtime;
-      dispatch({ type: "LOAD_ROLL", roll: runtime.definition, stockId: bundle.roll.stockId, filmStrength: bundle.roll.filmStrength, view: runtime.view });
+      dispatch({ type: "LOAD_ROLL", roll: runtime.definition, stockId: bundle.roll.stockId, filmStrength: bundle.roll.filmStrength, view: runtime.view, roomMode });
       previous?.dispose(); setLibraryError(""); setCloudSource(null);
       const url = new URL(location.href); for (const key of ["fixture", "roll", "example"]) url.searchParams.delete(key); history.replaceState({}, "", url);
       try { if (isGuest) localStorage.setItem(guestActiveRollKey, id); } catch { /* IndexedDB remains authoritative. */ }
@@ -257,7 +257,7 @@ export function App() {
     if (!isGuest) return () => { ++switchRequest.current; ownedRuntime.current?.dispose(); };
     let id: string | null = null; try { id = localStorage.getItem(guestActiveRollKey); } catch { /* Library reports availability when opened. */ }
     const params = new URLSearchParams(location.search);
-    if (id && !["fixture", "roll", "example"].some(key => params.has(key))) void openSaved(id).catch(error => setLibraryError(storageMessage(error)));
+    if (id && !["fixture", "roll", "example"].some(key => params.has(key))) void openSaved(id, initialRoomMode).catch(error => setLibraryError(storageMessage(error)));
     return () => { ++switchRequest.current; ownedRuntime.current?.dispose(); };
   }, []);
   useEffect(() => {
