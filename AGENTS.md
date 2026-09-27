@@ -1,9 +1,11 @@
 # Project Rules: film_photo (Everything Local)
 
 These instructions apply to the repository root and all descendants. File editing,
-Git, dependency installation, npm/Node, Python, browser tests and Blender work all
-run locally. No remote setup, source synchronization, SSH tunnel or remote service
-is required. Do not use a remote execution wrapper or alter remote services.
+Git commands, dependency installation, npm/Node, Python, browser tests and Blender
+work all run locally. Do not use a remote execution wrapper or SSH tunnel.
+Remote Git pushes and Cloudflare deployments are authorized when the user says
+“push”, as defined below. Other remote service changes require explicit user
+instructions.
 
 ## Existing reusable tools: check before implementing
 
@@ -42,7 +44,41 @@ is required. Do not use a remote execution wrapper or alter remote services.
   `FILM_PHOTO_SHARED_ROOT` only to explicitly override the authoring storage root.
 - Preserve unrelated user changes, source media, accepted models and historical
   runs. Do not discard or overwrite them, or delete unrelated services or files.
-- Keep all Git operations local. Do not commit unless requested.
+- Run Git commands locally. Do not commit unless requested. A user request to
+  “push” authorizes the remote Git push and Cloudflare deployments below.
+
+### “Push” also deploys to Cloudflare
+
+- Whenever the user says “push”, perform both the intended `git push` to GitHub
+  and manual Cloudflare production deployment from the local machine. This is
+  standing authorization for both deployments; do not ask for separate approval.
+  Honor any explicit exception or narrower scope in the user's current request.
+- Verify the active checkout, intended branch and commit. Build and deploy the
+  exact source revision being pushed. Preserve uncommitted changes; use a clean
+  checkout of that revision when necessary. Never force-push unless explicitly
+  authorized.
+- Before pushing or deploying, run `npm run build`, `npm run test:integration`
+  and `npm run check:cloud`, plus any additional checks relevant to the changes.
+  Stop on validation failure and report it.
+- After the Git push succeeds, deploy **both** the API Worker and Pages website
+  from that checkout, in this order:
+
+  ```sh
+  npx wrangler deploy --config cloudflare/wrangler.jsonc
+  npx wrangler pages deploy dist --project-name filmreverie --branch main
+  ```
+
+  `main` is the existing Pages production branch, even when the GitHub release
+  branch is `master`. The deployments update `filmreverie.app` and its existing
+  API Worker. Use local Wrangler authentication; GitHub Actions is not required.
+- Do not deploy if the Git push fails. If the Worker deployment fails, do not
+  proceed to Pages. If Pages fails after the Worker succeeds, report the partial
+  deployment explicitly; do not claim the entire push/deploy operation succeeded.
+- Verify the deployed website and public `/api/gallery` endpoint without
+  creating or deleting published rolls. Report the pushed commit, deployment
+  results, production URL and any unresolved failure. Preserve existing Worker
+  secrets, R2 data, Access policies and DNS; deployment authorization does not
+  authorize unrelated provisioning changes.
 
 ## 2. Install, run and verify locally
 
