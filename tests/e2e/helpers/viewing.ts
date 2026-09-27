@@ -3,12 +3,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { LOUPE_LENS_HEIGHT } from '../../../src/utils/loupeView';
 
-// M16 moves viewing settings into Adjust. These helpers use the public UI;
+// M16 moves viewing settings into Settings. These helpers use the public UI;
 // optical tests still exercise the production renderer and actual source assets.
 export async function openViewingTools(page:Page) {
   if(await page.locator('main').getAttribute('data-room-mode')==='room')return;
   if(await page.getByRole('dialog',{name:'Viewing tools',exact:true}).isVisible())return;
-  await page.getByRole('button',{name:'Adjust',exact:true}).click();
+  await page.getByRole('button',{name:'Settings',exact:true}).click();
   await expect(page.getByRole('dialog',{name:'Viewing tools',exact:true})).toBeVisible();
 }
 export async function viewerKey(page:Page,key:string) {
@@ -16,7 +16,7 @@ export async function viewerKey(page:Page,key:string) {
 }
 export async function closeViewingTools(page:Page) {
   const tools=page.getByRole('dialog',{name:'Viewing tools',exact:true});
-  if(await tools.isVisible())await tools.getByRole('button',{name:'Close',exact:true}).click();
+  if(await tools.isVisible())await page.keyboard.press('Escape');
   await expect(tools).not.toBeVisible();
 }
 export async function selectOverviewFrame(page:Page,n:number) {
@@ -32,6 +32,10 @@ export async function openFrame(page:Page,n:number) {
     await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');
   }
   if(active)await page.getByTestId('put-away-loupe').click();
+  if(await page.locator('main').getAttribute('data-focus-mode')!=='true') {
+    await page.locator('.canvas-wrapper').focus(); await page.keyboard.press('Enter');
+    await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');
+  }
   await page.getByRole('button',{name:'Choose frame',exact:true}).click();
   await page.getByRole('button',{name:`Open frame ${n}`,exact:true}).click();
   await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');

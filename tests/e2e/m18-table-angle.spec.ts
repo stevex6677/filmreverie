@@ -1,6 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 
 const ready = async (page: Page) => {
+  await expect(page.locator('main')).toHaveAttribute('data-app-ready', 'true', { timeout: 90000 });
   await expect(page.locator('main')).toHaveAttribute('data-is-transitioning', 'false', { timeout: 45000 });
   await expect(page.locator('main')).toHaveAttribute('data-assets-ready', 'true', { timeout: 60000 });
 };
@@ -19,7 +20,7 @@ async function drag(page: Page, touch: boolean, browserName: string, dx: number,
     await cdp.detach();
   } else if (touch) {
     // Synthetic WebKit events bypass the native input/frame boundary after
-    // clicking Adjust view. Let the canvas commit its new input mode first.
+    // enabling angle dragging in Settings. Let the canvas commit its new input mode first.
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
     for (let i = 0; i <= 9; i++) {
       await page.locator('canvas').dispatchEvent(i === 0 ? 'pointerdown' : i === 9 ? 'pointerup' : 'pointermove', {
@@ -38,10 +39,11 @@ async function drag(page: Page, touch: boolean, browserName: string, dx: number,
 
 test('M18 angle drag owns input, restores browsing posture, and resets only angle', async ({ page, browserName }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/guest?fixture=36&mode=inspect'); await ready(page);
+  await page.goto('/guest?mode=inspect'); await ready(page);
   const main = page.locator('main'), canvas = page.locator('canvas');
   const pan = await main.getAttribute('data-inspect-pan'), zoom = await main.getAttribute('data-inspect-zoom');
-  await page.getByRole('button', { name: 'Adjust view', exact: true }).click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Drag to tilt and turn', exact: true }).click();
   await drag(page, !!info.project.use.hasTouch, browserName, 90, 100);
   const angle = await angles(page);
   expect(angle[0]).toBeGreaterThan(.2); expect(angle[1]).toBeGreaterThan(.2);
@@ -51,7 +53,7 @@ test('M18 angle drag owns input, restores browsing posture, and resets only angl
   await page.waitForTimeout(400);
   await page.screenshot({ path: info.outputPath('angled-table.png') });
   await page.getByRole('button', { name: 'Done', exact: true }).click();
-  await page.getByRole('button', { name: 'Focus frame 1', exact: true }).click(); await ready(page);
+  await page.locator('.canvas-wrapper').focus(); await page.keyboard.press('Enter'); await ready(page);
   await expect(canvas).toHaveAttribute('data-table-angle', '0,0');
   await page.getByRole('button', { name: '← Overview', exact: true }).click(); await ready(page);
   expect(await angles(page)).toEqual(angle);
@@ -62,7 +64,8 @@ test('M18 angle drag owns input, restores browsing posture, and resets only angl
   await page.getByTestId('inspect-loupe').click(); await ready(page);
   await expect(canvas).toHaveAttribute('data-table-angle', angle.join(','));
   await page.getByTestId('put-away-loupe').click();
-  await page.getByRole('button', { name: 'Adjust view', exact: true }).click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Drag to tilt and turn', exact: true }).click();
   await page.getByRole('button', { name: 'Top-down', exact: true }).click();
   expect(await angles(page)).toEqual([0, 0]);
   expect(await main.getAttribute('data-inspect-pan')).toBe(pan);
@@ -73,7 +76,7 @@ test('M18 angle drag owns input, restores browsing posture, and resets only angl
 });
 
 test('M18 keyboard and Shift-drag adjust angle; ordinary dragging pans', async ({ page }) => {
-  await page.goto('/guest?fixture=36&mode=inspect&deterministic=true'); await ready(page);
+  await page.goto('/guest?mode=inspect&deterministic=true'); await ready(page);
   const main = page.locator('main');
   await page.keyboard.down('Shift'); await drag(page, false, 'chromium', -80, 90); await page.keyboard.up('Shift');
   const angle = await angles(page);
@@ -82,11 +85,12 @@ test('M18 keyboard and Shift-drag adjust angle; ordinary dragging pans', async (
   await drag(page, false, 'chromium', 25, 20);
   expect(await angles(page)).toEqual(angle);
   expect(await main.getAttribute('data-inspect-pan'), `Loupe: ${await main.getAttribute('data-loupe-state')}, focus: ${await main.getAttribute('data-focus-mode')}`).not.toBe(pan);
-  await page.getByRole('button', { name: 'Adjust view', exact: true }).click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Drag to tilt and turn', exact: true }).click();
   await page.keyboard.press('ArrowRight');
   expect((await angles(page))[1]).toBeGreaterThan(angle[1]);
   await page.keyboard.press('Escape'); await expect(main).toHaveAttribute('data-adjusting-view', 'false');
-  await page.getByRole('button', { name: 'Adjust', exact: true }).click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByLabel('Table tilt', { exact: true }).fill('50');
   await page.getByLabel('Table yaw', { exact: true }).fill('-60');
   expect((await angles(page))[0]).toBeCloseTo(50 * Math.PI / 180);
@@ -94,8 +98,9 @@ test('M18 keyboard and Shift-drag adjust angle; ordinary dragging pans', async (
 });
 
 test('M18 pinch zoom in angle mode preserves angle and cannot open a frame', async ({ page, browserName }) => {
-  await page.goto('/guest?fixture=36&mode=inspect'); await ready(page);
-  await page.getByRole('button', { name: 'Adjust view', exact: true }).click();
+  await page.goto('/guest?mode=inspect'); await ready(page);
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Drag to tilt and turn', exact: true }).click();
   await drag(page, true, browserName, 55, 90);
   const angle = await angles(page), main = page.locator('main');
   const zoom = Number(await main.getAttribute('data-inspect-zoom'));

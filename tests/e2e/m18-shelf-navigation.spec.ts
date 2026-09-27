@@ -82,13 +82,13 @@ test('M18 shelf transitions keep navigation enabled and accept dragging before s
   if (info.project.name === 'desktop') {
     await page.getByRole('button', { name: 'Film Shelf', exact: true }).click();
     await expect(app).toHaveAttribute('data-is-transitioning', 'true');
-    await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeEnabled();
     await approachTable(page);
     await expect(app).toHaveAttribute('data-room-mode', 'inspect'); await ready(page);
     await page.getByTestId('return-room-btn').click(); await ready(page); await focusShelf(page);
-    await page.getByRole('button', { name: '← Back to room', exact: true }).click();
+    await page.getByRole('button', { name: 'Room', exact: true }).click();
     await expect(app).toHaveAttribute('data-is-transitioning', 'true');
-    await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeEnabled();
     await approachTable(page);
     await expect(app).toHaveAttribute('data-room-mode', 'inspect'); await ready(page);
     await page.getByTestId('return-room-btn').click(); await ready(page);

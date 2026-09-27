@@ -1,3 +1,4 @@
+import { shelfAction } from './helpers/shelf';
 import { test, expect, Page } from '@playwright/test';
 import { PNG } from 'pngjs';
 import { FILM_STOCKS } from '../../src/data/filmStocks';
@@ -104,7 +105,7 @@ test('M19 keyboard and touch strength retain framing, navigation and the loupe l
 test('M19 actual photograph import preserves strength through edits, all film formats and reload',async({page,request},info)=>{
   test.setTimeout(240000);
   const files=await Promise.all(ROLL_FRAMES.slice(0,2).map(async(f,i)=>({name:`photo-${i}.jpg`,mimeType:'image/jpeg',buffer:await (await request.get(f.src)).body()})));
-  await page.getByRole('button',{name:'Film Shelf',exact:true}).click();await page.getByRole('button',{name:'New roll',exact:true}).click();
+  await page.getByRole('button',{name:'Film Shelf',exact:true}).click();await shelfAction(page, 'New roll');
   await page.getByLabel('Choose photographs').setInputFiles(files);
   await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText('2 / 2',{timeout:120000});
   await page.getByRole('button',{name:'Continue to roll details'}).click();await page.getByLabel('Roll name',{exact:true}).fill('M19 photographs');

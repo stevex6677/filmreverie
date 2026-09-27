@@ -1,3 +1,4 @@
+import { shelfAction } from './helpers/shelf';
 import { openViewingTools, closeViewingTools, openFrame, captureCanvas } from "./helpers/viewing";
 import { test, expect } from '@playwright/test';
 import { PNG } from 'pngjs';
@@ -6,7 +7,7 @@ import fs from 'node:fs/promises';
 test('crop drag follows the image and persists through save, reload, cancellation and rotation',async({page})=>{
   await page.goto('/guest?mode=inspect&reduced_motion=true');
   await page.getByRole('button',{name:'Film Shelf',exact:true}).click();
-  await page.getByRole('button',{name:'New roll',exact:true}).click();
+  await shelfAction(page, 'New roll');
   const png=new PNG({width:900,height:300});
   for(let y=0;y<300;y++)for(let x=0;x<900;x++)png.data.set(x<300?[220,35,35,255]:x<600?[35,220,35,255]:[35,35,220,255],(y*900+x)*4);
   await page.getByLabel('Choose photographs').setInputFiles([{name:'composition.png',mimeType:'image/png',buffer:PNG.sync.write(png)}]);

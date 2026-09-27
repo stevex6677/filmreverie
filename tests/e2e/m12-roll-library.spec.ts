@@ -1,4 +1,4 @@
-import { focusShelf, showRoll, openRoll } from './helpers/shelf';
+import { shelfAction, focusShelf, showRoll, openRoll } from './helpers/shelf';
 import { openViewingTools, closeViewingTools, openFrame, captureCanvas } from "./helpers/viewing";
 import { test, expect, Page, chromium } from '@playwright/test';
 import { PNG } from 'pngjs';
@@ -17,7 +17,7 @@ async function review(page:Page){const save=page.getByRole('button',{name:'Save 
 async function editRoll(page:Page,name:string){await showRoll(page,name);await page.getByRole('button',{name:`Edit ${name}`,exact:true}).click();await expect(page.getByLabel('Roll name',{exact:true})).toBeEnabled();}
 async function rotate(page:Page,n:number){await review(page);await page.getByRole('button',{name:`Select frame ${n}`,exact:true}).click();await page.getByLabel(`Rotate frame ${n}`,{exact:true}).click();}
 async function start(page:Page,name:string,format='135',files=[photo('scan2.png'),photo('scan10.png',600,400,1)]) {
-  await library(page);await page.getByRole('button',{name:'New roll',exact:true}).click();await page.getByLabel('Choose photographs').setInputFiles(files);await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText(`${files.length} / ${files.length}`,{timeout:120000});await page.getByRole('button',{name:'Continue to roll details'}).click();await page.getByLabel('Roll name',{exact:true}).fill(name);await formatOf(page,format);await review(page);
+  await library(page);await shelfAction(page, 'New roll');await page.getByLabel('Choose photographs').setInputFiles(files);await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText(`${files.length} / ${files.length}`,{timeout:120000});await page.getByRole('button',{name:'Continue to roll details'}).click();await page.getByLabel('Roll name',{exact:true}).fill(name);await formatOf(page,format);await review(page);
 }
 async function save(page:Page){await review(page);await page.getByRole('button',{name:'Save and open',exact:true}).click();await expect(page.getByRole('dialog')).not.toBeVisible();await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:30000});}
 async function dbRolls(page:Page){return page.evaluate(async()=>new Promise<any[]>((resolve,reject)=>{const req=indexedDB.open('darkroom-guest-rolls');req.onsuccess=()=>{const db=req.result;const r=db.transaction('rolls').objectStore('rolls').getAll();r.onsuccess=()=>{db.close();resolve(r.result.filter((roll:any)=>roll.id!=='roll-01'));};r.onerror=()=>reject(r.error);};}));}
@@ -33,7 +33,7 @@ async function expectThumbnailCaptionSeparated(page:Page) {
     return {bottom:rect.bottom,height:rect.height,caption:button.querySelector('span')!.getBoundingClientRect().top,overflow:getComputedStyle(crop).overflow,loaded:img.complete&&img.naturalWidth>0};
   });
   expect(bounds.loaded).toBe(true);expect(bounds.height).toBeGreaterThan(20);expect(bounds.overflow).toBe('hidden');expect(bounds.bottom).toBeLessThanOrEqual(bounds.caption);
-  await page.getByRole('dialog',{name:'Choose frame'}).getByRole('button',{name:'Close',exact:true}).click();
+  await page.keyboard.press('Escape');
 }
 test.beforeEach(async({page})=>{await fs.mkdir(OUT,{recursive:true});await page.goto('/guest?mode=inspect&reduced_motion=true');});
 test('M12 real import, editing, duplicate handling, switching and persistent Trash',async({page})=>{
@@ -52,8 +52,8 @@ test('M12 real import, editing, duplicate handling, switching and persistent Tra
   await page.reload();await expect(page.locator('main')).toHaveAttribute('data-roll-id',first.id);await expect(page.locator('main')).toHaveAttribute('data-selected-frame',before!);await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true');
   await library(page);await editRoll(page,'Harbor scans');await page.getByLabel('Roll name',{exact:true}).fill('Renamed scans');await details(page);await page.getByRole('dialog').getByLabel('Film stock',{exact:true}).selectOption('ektachrome-e100');await formatOf(page,'66');await save(page);
   await expect(page.locator('main')).toHaveAttribute('data-film-mode','positive');await expect(page.locator('main')).toHaveAttribute('data-film-format','66');
-  await library(page);await showRoll(page,'Renamed scans');await page.getByRole('button',{name:'Delete Renamed scans',exact:true}).click();await expect(page.getByRole('button',{name:'Show saved roll Renamed scans',exact:true})).toHaveCount(0);await page.getByRole('button',{name:/^Trash /}).click();await showRoll(page,'Renamed scans');await page.getByRole('button',{name:'Restore Renamed scans',exact:true}).click();await page.getByRole('button',{name:'Saved rolls',exact:true}).click();await openRoll(page,'Renamed scans');await expect(page.locator('main')).toHaveAttribute('data-film-mode','positive');
-  await library(page);await page.screenshot({path:`${OUT}/library.png`});await page.getByRole('button',{name:'New roll',exact:true}).click();await page.getByRole('button',{name:'Cancel draft'}).click();expect(await dbRolls(page)).toHaveLength(1);
+  await library(page);await showRoll(page,'Renamed scans');await page.getByRole('button',{name:'Delete Renamed scans',exact:true}).click();await expect(page.getByRole('button',{name:'Show saved roll Renamed scans',exact:true})).toHaveCount(0);await shelfAction(page, /^Trash /);await showRoll(page,'Renamed scans');await page.getByRole('button',{name:'Restore Renamed scans',exact:true}).click();await shelfAction(page, 'Saved rolls');await openRoll(page,'Renamed scans');await expect(page.locator('main')).toHaveAttribute('data-film-mode','positive');
+  await library(page);await page.screenshot({path:`${OUT}/library.png`});await shelfAction(page, 'New roll');await page.getByRole('button',{name:'Cancel draft'}).click();expect(await dbRolls(page)).toHaveLength(1);
 });
 for(const [format,width,height] of [['645',415,560],['66',560,560],['67',685,560],['69',826,560]] as const) test(`M12 ${format} real imported photo fit, loupe and reopen`,async({page,context})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await start(page,`Format ${format}`,format,[photo('frame1.png',width,height),photo('frame2.png',width,height,1),photo('frame3.png',width,height,2)]);await details(page);await page.getByRole('dialog').getByLabel('Film stock',{exact:true}).selectOption('ektachrome-e100');await save(page);
@@ -76,7 +76,7 @@ for(const [format,width,height] of [['645',415,560],['66',560,560],['67',685,560
   const id=await page.locator('main').getAttribute('data-roll-id');await page.waitForTimeout(350);const other=await context.newPage();await other.goto('/guest?mode=inspect&reduced_motion=true');await expect(other.locator('main')).toHaveAttribute('data-roll-id',id!);await expect(other.locator('main')).toHaveAttribute('data-film-format',format);await other.close();expect(errors).toEqual([]);
 });
 test('M12 36 distinct imported frames navigate final strips and preserve originals',async({page})=>{
-  await start(page,'36 test photographs','135',Array.from({length:36},(_,i)=>photo(`scan${i+1}.png`,180,120,i)));await save(page);await page.setViewportSize({width:1280,height:480});await page.getByRole('button',{name:'Choose frame',exact:true}).click();await expect.poll(()=>page.locator('.table-frame-panel').evaluate(el=>el.scrollHeight>el.clientHeight)).toBe(true);await page.getByRole('dialog',{name:'Choose frame'}).getByRole('button',{name:'Close',exact:true}).click();await openFrame(page,36);await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');await page.setViewportSize({width:1280,height:800});await openFrame(page,30);await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');await page.getByRole('button',{name:'Next',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-selected-frame','31');await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');await page.screenshot({path:`${OUT}/36-imported-frame31.png`});
+  await start(page,'36 test photographs','135',Array.from({length:36},(_,i)=>photo(`scan${i+1}.png`,180,120,i)));await save(page);await page.setViewportSize({width:1280,height:480});await page.getByRole('button',{name:'Choose frame',exact:true}).click();await expect.poll(()=>page.locator('.table-frame-panel').evaluate(el=>el.scrollHeight>el.clientHeight)).toBe(true);await page.keyboard.press('Escape');await openFrame(page,36);await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');await page.setViewportSize({width:1280,height:800});await openFrame(page,30);await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');await page.getByRole('button',{name:'Next',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-selected-frame','31');await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');await page.screenshot({path:`${OUT}/36-imported-frame31.png`});
   const counts=await page.evaluate(async()=>new Promise<number[]>((resolve)=>{const req=indexedDB.open('darkroom-guest-rolls');req.onsuccess=()=>{const db=req.result;const tx=db.transaction(['frames','blobs']);const frames=tx.objectStore('frames').count(),blobs=tx.objectStore('blobs').count();tx.oncomplete=()=>{db.close();resolve([frames.result,blobs.result]);};};}));expect(counts).toEqual([41,123]);
 });
 test('M12 quota and unavailable storage leave no half-saved roll',async({page})=>{
@@ -90,7 +90,7 @@ test('M12 persistent browser profile survives browser restart',async({baseURL,la
 });
 
 test('M12 cancellation, unavailable storage, EXIF normalization and zero upload requests',async({page})=>{
-  await library(page);await page.getByRole('button',{name:'← Back to room',exact:true}).click();
+  await library(page);await page.getByRole('button',{name:'Room',exact:true}).click();
   await page.evaluate(()=>{const original=IDBFactory.prototype.open;(window as any).__restoreOpen=()=>IDBFactory.prototype.open=original;IDBFactory.prototype.open=function(){throw new DOMException('Storage blocked for test','SecurityError');};});
   await library(page);await expect(page.getByRole('alert')).toContainText('Storage blocked');await page.evaluate(()=>(window as any).__restoreOpen());await page.getByRole('button',{name:'Retry',exact:true}).click();await expect(page.getByRole('alert')).not.toBeVisible();
   // A native JPEG carrying EXIF orientation 6 must be normalized exactly once.
@@ -116,10 +116,10 @@ test('M12 repeated switching restores roll settings and releases owned object UR
 });
 
 test('M12 cancellation during processing leaves no committed roll and modal owns keyboard focus',async({page})=>{
-  await library(page);await page.getByRole('button',{name:'New roll',exact:true}).click();
+  await library(page);await shelfAction(page, 'New roll');
   await page.getByLabel('Choose photographs').setInputFiles(Array.from({length:72},(_,i)=>photo(`cancel${i}.png`,600,400,i)));
   await page.getByRole('button',{name:'Cancel processing',exact:true}).first().click();await expect(page.getByRole('button',{name:'Cancel draft',exact:true})).toBeEnabled();expect(await dbRolls(page)).toEqual([]);await expect(page.getByRole('button',{name:'Continue to roll details',exact:true})).toBeDisabled();
-  await page.getByLabel('Choose photographs',{exact:true}).focus();await page.keyboard.press('l');await page.keyboard.press('ArrowRight');await expect(page.locator('main')).toHaveAttribute('data-loupe-active','false');await expect(page.locator('main')).toHaveAttribute('data-selected-frame','1');await page.getByRole('button',{name:'Close',exact:true}).click();await expect(page.getByRole('button',{name:'New roll',exact:true})).toBeFocused();
+  await page.getByLabel('Choose photographs',{exact:true}).focus();await page.keyboard.press('l');await page.keyboard.press('ArrowRight');await expect(page.locator('main')).toHaveAttribute('data-loupe-active','false');await expect(page.locator('main')).toHaveAttribute('data-selected-frame','1');await page.getByRole('button',{name:'Close',exact:true}).click();await expect(page.getByRole('button',{name:'More options',exact:true})).toBeFocused();
 });
 
 

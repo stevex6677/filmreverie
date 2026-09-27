@@ -34,7 +34,7 @@ import { CAMERAS } from './data/cameras';
 import { preloadCameraDetails, type CameraCollectionProgress } from './utils/loadCameraModel';
 import { useCameraNavigation } from './utils/useCameraNavigation';
 import type { GalleryRuntime } from './cloud/galleryClient';
-import { AdminMenu, useAdminSession } from './cloud/AdminMenu';
+import { AdminMenu, CreateYourOwnLink, useAdminSession } from './cloud/AdminMenu';
 import { adminRollRepository } from './cloud/adminRepository';
 import { usePublishedShelf } from './cloud/publicShelf';
 import { guestRollRepository, guestActiveRollKey, guestWelcomeKey } from './storage/guestRolls';
@@ -184,7 +184,20 @@ export function App() {
   const emptyRollMessage = tableRollAvailable ? undefined
     : isGuest ? 'No roll on the light table'
       : published.loading ? 'Loading published photographs…' : published.error || 'No published roll on the light table';
-  const ownerActions = <AdminMenu loggedIn={adminLoggedIn} guest={isGuest} layout={layout} onLayoutChange={next => {
+  const createAction = !isGuest ? <CreateYourOwnLink film /> : undefined;
+  const ownerActions = <AdminMenu compact={state.roomMode === 'room' || !state.focusMode} loggedIn={adminLoggedIn} guest={isGuest} layout={layout} collection={state.shelfFocused && state.shelfId === 'film' ? {
+    summary: `${shelf.trash ? 'Trash' : canManageRolls ? 'Your collection' : 'Published gallery'} · ${shelf.trash ? shelf.trashCount : shelf.savedCount} ${shelf.trash ? 'deleted' : canManageRolls ? 'saved' : 'published'} ${(shelf.trash ? shelf.trashCount : shelf.savedCount) === 1 ? 'roll' : 'rolls'}${shelf.pages > 1 ? ` · Page ${shelf.page + 1}/${shelf.pages}` : ''}`,
+    actions: [
+      ...(canManageRolls ? [
+        { label: 'New roll', onSelect: () => openEditor() },
+        { label: shelf.trash ? 'Saved rolls' : `Trash (${shelf.trashCount})`, onSelect: () => shelf.changeTrash(!shelf.trash) },
+      ] : []),
+      ...(shelf.pages > 1 ? [
+        { label: 'Previous shelf page', disabled: shelf.page === 0, onSelect: () => shelf.changePage(shelf.page - 1) },
+        { label: 'Next shelf page', disabled: shelf.page + 1 === shelf.pages, onSelect: () => shelf.changePage(shelf.page + 1) },
+      ] : []),
+    ],
+  } : undefined} onLayoutChange={next => {
     setSheet(null); changeLayout(next);
     requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('button[aria-label="More options"]')?.focus());
   }} />;
@@ -199,6 +212,8 @@ export function App() {
     openShelf(); shelf.changeTrash(false); setEditingRollId(id); setEditorOpen(true);
   };
   const openCameras = () => { void saveView().catch(error => setLibraryError(storageMessage(error))); shelf.close(); setSheet(null); dispatch({ type: 'APPROACH_CAMERA_SHELF' }); };
+  const openTable = () => { shelf.close(); setSheet(null); dispatch({ type: 'APPROACH_TABLE' }); };
+  const openRoom = () => { shelf.close(); setSheet(null); dispatch({ type: 'RETURN_TO_ROOM' }); };
   const deleteRoll = async (removed: StoredRoll) => {
     if (!canManageRolls) throw new Error('Admin login is required to manage rolls.');
     await repository.trash(removed.id); shelf.close(); setDeletedRoll(removed);
@@ -222,7 +237,7 @@ export function App() {
     saveQueue.current = queued;
     return queued;
   };
-  const openSaved = async (id: string) => {
+  const openSaved = async (id: string, roomMode: RoomMode = 'inspect') => {
     if (!canManageRolls) throw new Error('Admin login is required to manage rolls.');
     const request = ++switchRequest.current;
     if (id !== stateRef.current.roll.rollId) await saveView();
@@ -235,7 +250,7 @@ export function App() {
       await Promise.all(runtime.definition.frames.map(frame => new Promise<void>((resolve,reject) => { const img = new Image(); img.onload = () => resolve(); img.onerror = () => reject(new Error("Stored preview could not be loaded.")); img.src = frame.thumbnailSrc!; })));
       if (request !== switchRequest.current) { runtime.dispose(); return; }
       const previous = ownedRuntime.current; ownedRuntime.current = runtime;
-      dispatch({ type: "LOAD_ROLL", roll: runtime.definition, stockId: bundle.roll.stockId, filmStrength: bundle.roll.filmStrength, view: runtime.view });
+      dispatch({ type: "LOAD_ROLL", roll: runtime.definition, stockId: bundle.roll.stockId, filmStrength: bundle.roll.filmStrength, view: runtime.view, roomMode });
       previous?.dispose(); setLibraryError(""); setCloudSource(null);
       const url = new URL(location.href); for (const key of ["fixture", "roll", "example"]) url.searchParams.delete(key); history.replaceState({}, "", url);
       try { if (isGuest) localStorage.setItem(guestActiveRollKey, id); } catch { /* IndexedDB remains authoritative. */ }
@@ -257,7 +272,7 @@ export function App() {
     if (!isGuest) return () => { ++switchRequest.current; ownedRuntime.current?.dispose(); };
     let id: string | null = null; try { id = localStorage.getItem(guestActiveRollKey); } catch { /* Library reports availability when opened. */ }
     const params = new URLSearchParams(location.search);
-    if (id && !["fixture", "roll", "example"].some(key => params.has(key))) void openSaved(id).catch(error => setLibraryError(storageMessage(error)));
+    if (id && !["fixture", "roll", "example"].some(key => params.has(key))) void openSaved(id, initialRoomMode).catch(error => setLibraryError(storageMessage(error)));
     return () => { ++switchRequest.current; ownedRuntime.current?.dispose(); };
   }, []);
   useEffect(() => {
@@ -489,16 +504,10 @@ export function App() {
 
       {contextLost&&<div className="context-recovery" role="alert"><p>The graphics view was interrupted. Your rolls are saved.</p><button onClick={()=>{setContextLost(false);setCanvasVersion(v=>v+1);}}>Restore view</button></div>}
       <div ref={shelfPortal} className="shelf-overlay" aria-label="Saved-roll shelf" style={{ display: shelfVisible ? undefined : 'none' }} />
-      {shelfVisible && state.shelfId === 'camera' && <div className="shelf-toolbar camera-collection-toolbar" aria-label="Camera shelf controls"><button onClick={() => dispatch({ type: 'RETURN_TO_ROOM' })}>← Back to room</button><div><span className="shelf-eyebrow">YOUR CAMERAS</span><span>One camera, many perspectives</span></div><button onClick={openShelf}>Film Shelf</button></div>}
-      {shelfVisible && state.shelfFocused && state.shelfId === 'film' && !shelf.selection?.pinned && <div className="shelf-toolbar" aria-label="Shelf controls">
-        {state.shelfFocused && <button onClick={() => { shelf.close(); dispatch({ type: "RETURN_TO_ROOM" }); }}>← Back to room</button>}
-        <div><span className="shelf-eyebrow">{!canManageRolls ? "PUBLISHED GALLERY" : shelf.trash ? "TRASH" : "YOUR COLLECTION"}</span><span>{!canManageRolls ? `${shelf.savedCount} published ${shelf.savedCount === 1 ? "roll" : "rolls"}` : shelf.trash ? `${shelf.trashCount} deleted rolls` : `${shelf.savedCount} saved ${shelf.savedCount === 1 ? "roll" : "rolls"}`}</span></div>
-        {shelf.pages > 1 && <nav aria-label="Shelf pages"><button aria-label="Previous shelf page" disabled={shelf.page === 0} onClick={() => shelf.changePage(shelf.page - 1)}>‹</button><span aria-live="polite">{shelf.page + 1} / {shelf.pages}</span><button aria-label="Next shelf page" disabled={shelf.page + 1 === shelf.pages} onClick={() => shelf.changePage(shelf.page + 1)}>›</button></nav>}
-        {canManageRolls && <button className="shelf-add" onClick={() => openEditor()}>New roll</button>}
-        {canManageRolls && state.shelfFocused && <button onClick={() => shelf.changeTrash(!shelf.trash)}>{shelf.trash ? "Saved rolls" : `Trash (${shelf.trashCount})`}</button>}
-        {canManageRolls && deletedRoll && <div className="shelf-deleted-notice" role="status"><span>{deletedRoll.name} moved to Trash</span><button onClick={() => { void restoreRoll(deletedRoll.id).catch(error => setLibraryError(storageMessage(error))); }}>Undo</button><button aria-label="Dismiss deletion notice" onClick={() => setDeletedRoll(null)}>×</button></div>}
-        {shelf.error && <p role="alert">{shelf.error}<button onClick={shelf.retry}>Retry</button></p>}
-      </div>}
+      {shelfVisible && state.shelfFocused && state.shelfId === 'film' && !shelf.selection?.pinned && <>
+        {canManageRolls && deletedRoll && <div className="library-notice" role="status"><span>{deletedRoll.name} moved to Trash</span><button onClick={() => { void restoreRoll(deletedRoll.id).catch(error => setLibraryError(storageMessage(error))); }}>Undo</button><button aria-label="Dismiss deletion notice" onClick={() => setDeletedRoll(null)}>×</button></div>}
+        {shelf.error && <div className="library-notice" role="alert">{shelf.error}<button onClick={shelf.retry}>Retry</button></div>}
+      </>}
       {shelfVisible && state.shelfId === 'film' && shelf.selectedRoll && shelf.selection?.pinned && <ShelfRollCard
         key={shelf.selectedRoll.id}
         shelf={shelf}
@@ -514,17 +523,15 @@ export function App() {
       />}
       {!state.cameraDisplay && (state.roomMode === 'room'
         ? mobile
-          ? <MobileControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} emptyRollMessage={emptyRollMessage} ownerActions={ownerActions} />
-          : <Controls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} emptyRollMessage={emptyRollMessage} ownerActions={ownerActions} />
+          ? <MobileControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenRoom={openRoom} onOpenTable={openTable} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} emptyRollMessage={emptyRollMessage} ownerActions={ownerActions} createAction={createAction} />
+          : <Controls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenRoom={openRoom} onOpenTable={openTable} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} emptyRollMessage={emptyRollMessage} ownerActions={ownerActions} createAction={createAction} />
         : !tableRollAvailable
-          ? <div className="empty-table-controls">
-              <button onClick={openShelf}>Film Shelf</button>
-              <button onClick={openCameras}>Camera Cabinet</button>
-              <span>{emptyRollMessage}</span>
-              {ownerActions}
+          ? <div className="empty-film-table">
+              <MobileControls roomOnly state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenRoom={openRoom} onOpenTable={openTable} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} ownerActions={ownerActions} createAction={createAction} />
+              <p>{emptyRollMessage}</p>
             </div>
-          : <TableControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} sheet={sheet} setSheet={setSheet} ownerActions={ownerActions} />)}
-      {state.cameraDisplay && <CameraDisplayView id={state.cameraDisplay} onBack={closeCamera} reducedMotion={isReducedMotion} />}
+          : <TableControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenRoom={openRoom} onOpenTable={openTable} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} ownerActions={ownerActions} createAction={createAction} />)}
+      {state.cameraDisplay && <CameraDisplayView stockId={state.filmStockId} id={state.cameraDisplay} onBack={closeCamera} reducedMotion={isReducedMotion} />}
       {libraryError && <div className="library-notice" role="alert">{libraryError}<button onClick={() => { setLibraryError(""); openShelf(); }}>Open shelf</button></div>}
       {editorOpen && <RollEditor publication={!isGuest} repository={repository} onDelete={deleteRoll} editId={editingRollId} onClose={() => { setEditorOpen(false); setEditingRollId(undefined); }} onOpen={openSaved} />}
       {isGuest && guestWelcome && <GuestWelcome onClose={() => { try { localStorage.setItem(guestWelcomeKey, 'done'); } catch { /* Browsing can continue when localStorage is blocked. */ } setGuestWelcome(false); }} />}

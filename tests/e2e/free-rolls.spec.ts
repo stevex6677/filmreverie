@@ -1,3 +1,4 @@
+import { shelfAction } from './helpers/shelf';
 import { test, expect, Page } from '@playwright/test';
 import { PNG } from 'pngjs';
 import { openFrame, captureCanvas } from './helpers/viewing';
@@ -10,7 +11,7 @@ function photo(i:number,aspect=1.5){
 async function begin(page:Page,count:number,aspects:number[]=[1.5]){
   await page.goto('/guest?mode=inspect&reduced_motion=true');
   await page.getByRole('button',{name:'Film Shelf',exact:true}).click();
-  await page.getByRole('button',{name:'New roll',exact:true}).click();
+  await shelfAction(page, 'New roll');
   await page.getByLabel('Choose photographs').setInputFiles(Array.from({length:count},(_,i)=>photo(i,aspects[i%aspects.length])));
   await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText(`${count} / ${count}`);
   await page.getByRole('button',{name:'Continue to roll details'}).click();

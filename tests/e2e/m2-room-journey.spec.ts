@@ -37,7 +37,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     const roomBadge = page.locator("main");
     await expect(roomBadge).toHaveAttribute("data-room-mode", "room");
 
-    await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();
 
     await page.waitForTimeout(600);
 

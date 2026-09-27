@@ -1,3 +1,6 @@
+import type { FilmStockId } from '../data/filmStocks';
+import { FilmPanelFrames } from './FilmPanelFrames';
+import { usePanelDismiss } from '../utils/usePanelDismiss';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { cameraById } from '../data/cameras';
@@ -9,13 +12,15 @@ import { createRenderLoop } from '../../standalone/model-viewer/render-loop.js';
 type View = keyof typeof viewDirections;
 type StageActions = { view: (view: View) => void; zoom: (factor: number) => void; turn: (x: number, y: number) => void; auto: (enabled: boolean) => void };
 
-export function CameraDisplayView({ id, onBack, reducedMotion }: { id: string; onBack: () => void; reducedMotion: boolean }) {
+export function CameraDisplayView({ id, stockId, onBack, reducedMotion }: { id: string; stockId: FilmStockId; onBack: () => void; reducedMotion: boolean }) {
   const entry = cameraById(id);
   const host = useRef<HTMLDivElement>(null), actions = useRef<StageActions | null>(null);
+  const information=useRef<HTMLElement>(null);
   const back = useRef<HTMLButtonElement>(null);
   const [info, setInfo] = useState(false), [ready, setReady] = useState(false), [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0), [auto, setAuto] = useState(false), [used, setUsed] = useState(false);
   const [preset, setPreset] = useState<View | null>('home');
+  usePanelDismiss(information, info, ()=>setInfo(false));
   useEffect(() => { back.current?.focus(); }, []);
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
@@ -133,13 +138,13 @@ export function CameraDisplayView({ id, onBack, reducedMotion }: { id: string; o
         {!reducedMotion && <button disabled={!ready} aria-pressed={auto} onClick={() => actions.current?.auto(!auto)}>Auto rotate</button>}
       </div>
     </div>
-    <button className="camera-info-toggle" aria-expanded={info} aria-controls="camera-information" onClick={() => setInfo(!info)}><span>{entry.name}</span><small>Introduced {entry.introduced} · About this camera {info ? '−' : '+'}</small></button>
-    <aside id="camera-information" className={`camera-information ${info ? 'is-open' : ''}`} aria-label="About this camera">
-      <button className="camera-info-close" onClick={() => setInfo(false)}>Close information</button>
+    <button data-panel-toggle className="camera-info-toggle" aria-expanded={info} aria-controls="camera-information" onClick={() => setInfo(!info)}><span>{entry.name}</span><small>Introduced {entry.introduced} · About this camera {info ? '−' : '+'}</small></button>
+    <aside ref={information} id="camera-information" className={`film-panel camera-information ${info ? 'is-open' : ''}`} aria-label="About this camera">
+      <FilmPanelFrames stockId={stockId}><div>
       <span className="camera-kicker">{entry.manufacturer.toUpperCase()}</span><h1>{entry.title}<br /><em>{entry.titleAccent}</em></h1><p className="camera-intro">A camera built for possibilities.</p>
       <p>{entry.description}</p>
-      <dl><div><dt>Introduced</dt><dd>{entry.introduced}</dd></div><div><dt>Type</dt><dd>{entry.category}</dd></div><div><dt>Lens shown</dt><dd>{entry.captionDetail}</dd></div></dl>
-      {entry.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a>)}
+      </div><dl><div><dt>Introduced</dt><dd>{entry.introduced}</dd></div><div><dt>Type</dt><dd>{entry.category}</dd></div><div><dt>Lens shown</dt><dd>{entry.captionDetail}</dd></div></dl>
+      <div className="camera-panel-sources">{entry.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a>)}</div></FilmPanelFrames>
     </aside>
   </section>;
 }

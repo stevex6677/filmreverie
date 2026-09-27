@@ -42,7 +42,7 @@ describe("M9 — whole-strip stock profiles, state, material and real rebate ras
     const state = createInitialViewerState();
     expect(state.filmStockId).toBe(DEFAULT_FILM_STOCK_ID);
     expect(state.filmMode).toBe("positive");
-    const html = renderToStaticMarkup(React.createElement(TableControls, {state, dispatch: () => {}, onOpenLibrary: () => {}, sheet: 'tools', setSheet: () => {}}));
+    const html = renderToStaticMarkup(React.createElement(TableControls, {state, dispatch: () => {}, onOpenLibrary: () => {}, onOpenRoom: () => {}, onOpenTable: () => {}, onOpenCameras: () => {}, sheet: 'tools', setSheet: () => {}}));
     expect(html).toContain('Kodak Portra 400');
     expect(html).not.toContain('<select');
   });
@@ -57,7 +57,7 @@ describe("M9 — whole-strip stock profiles, state, material and real rebate ras
       if (to.type === "reversal") {
         expect(viewerReducer(state, {type: "TOGGLE_FILM_MODE"})).toBe(state);
         expect(viewerReducer(state, {type: "SET_FILM_MODE", mode: "negative"})).toBe(state);
-        const html = renderToStaticMarkup(React.createElement(TableControls, {state, dispatch: () => {}, onOpenLibrary: () => {}, sheet: 'tools', setSheet: () => {}}));
+        const html = renderToStaticMarkup(React.createElement(TableControls, {state, dispatch: () => {}, onOpenLibrary: () => {}, onOpenRoom: () => {}, onOpenTable: () => {}, onOpenCameras: () => {}, sheet: 'tools', setSheet: () => {}}));
         expect(html).not.toContain('id="mode-toggle"');
         expect(html).toContain('POSITIVE · E-6');
         expect(html).not.toMatch(/NEGATIVE|Switch to Negative/);

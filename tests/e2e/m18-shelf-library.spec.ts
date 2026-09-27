@@ -1,5 +1,5 @@
+import { expectShelfSummary, shelfAction, ready, focusShelf, showRoll, openRoll, add } from './helpers/shelf';
 import { test, expect } from '@playwright/test';
-import { ready, focusShelf, showRoll, openRoll, add } from './helpers/shelf';
 import fs from 'node:fs/promises';
 const OUT = process.env.M18_REVIEW_DIR || 'artifacts/m18-candidates';
 
@@ -30,7 +30,7 @@ test('M18 shelf replaces the archive, with the five-photo example in slot 01 and
   await card.getByRole('button',{name:'Delete My example',exact:true}).click();
   await expect(page.locator('[data-owned="true"]')).toHaveCount(0);
   await expect(page.locator('main')).toHaveAttribute('data-table-roll-available','false');
-  await expect(page.getByText('No roll on the light table',{exact:true})).toBeVisible();
+  await expectShelfSummary(page, '0 saved rolls');
   await page.getByRole('button',{name:'Undo',exact:true}).click();
   await expect(page.locator('[data-shelf-slot="0"]')).toHaveAttribute('data-owned','true');
   await showRoll(page,'My example'); await page.getByRole('button',{name:'Delete My example',exact:true}).click();
@@ -38,11 +38,11 @@ test('M18 shelf replaces the archive, with the five-photo example in slot 01 and
   await page.reload(); await ready(page); await focusShelf(page);
   await expect(page.locator('[data-owned="true"]')).toHaveCount(0);
   await expect(page.locator('main')).toHaveAttribute('data-table-roll-available','false');
-  await page.getByRole('button',{name:'Trash (1)',exact:true}).click();
+  await shelfAction(page, 'Trash (1)');
   card = await showRoll(page,'My example');
   await expect(card.getByRole('button',{name:'Open on light table'})).toHaveCount(0);
   await card.getByRole('button',{name:'Restore My example',exact:true}).click();
-  await page.getByRole('button',{name:'Saved rolls',exact:true}).click();
+  await shelfAction(page, 'Saved rolls');
   await openRoll(page,'My example');
   await expect(page.locator('main')).toHaveAttribute('data-table-roll-available','true');
   await expect(page.locator('main')).toHaveAttribute('data-roll-id','roll-01');
@@ -50,7 +50,7 @@ test('M18 shelf replaces the archive, with the five-photo example in slot 01 and
 
 test('M18 new rolls and cancelled drafts return to the shelf', async ({page}) => {
   await page.goto('/guest?mode=inspect&reduced_motion=true'); await ready(page); await focusShelf(page);
-  await page.getByRole('button',{name:'New roll',exact:true}).click();
+  await shelfAction(page, 'New roll');
   await page.getByRole('button',{name:'Cancel draft',exact:true}).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await expect(page.locator('main')).toHaveAttribute('data-shelf-focused','true');

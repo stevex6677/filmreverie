@@ -1,5 +1,5 @@
+import { shelfAction, ready, focusShelf, showRoll } from './helpers/shelf';
 import { test, expect } from '@playwright/test';
-import { ready, focusShelf, showRoll } from './helpers/shelf';
 
 test('New roll creation and photo import succeed on unsecured connections without crypto.subtle', async ({ page }) => {
   // Invalidate crypto.subtle and crypto.randomUUID to simulate an insecure context (e.g. HTTP over LAN)
@@ -16,7 +16,7 @@ test('New roll creation and photo import succeed on unsecured connections withou
   await focusShelf(page);
 
   // Click 'New roll'
-  await page.getByRole('button', { name: 'New roll', exact: true }).click();
+  await shelfAction(page, 'New roll');
 
   // Verify dialog is open and no secure connection error is shown
   const dialog = page.getByRole('dialog', { name: 'Review roll' });

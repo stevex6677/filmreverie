@@ -33,6 +33,22 @@ describe('M12 browser-local roll repository and import contracts', () => {
     const broken={...data,roll:{...data.roll,name:'Uncommitted',invalid:()=>{}}}; await expect(repo.save(broken)).rejects.toThrow(); expect((await repo.read('r')).roll.name).toBe('Test roll');
     const db=await openRollDatabase(factory); await new Promise<void>(resolve=>{const tx=db.transaction('frames','readwrite');tx.objectStore('frames').delete('a');tx.oncomplete=()=>resolve();});db.close(); await expect(repo.read('r')).rejects.toThrow('missing');
   });
+  it('restores an active roll in the room without starting a table journey', () => {
+    const runtime = createRuntimeRoll(bundle());
+    try {
+      const state = viewerReducer(createInitialViewerState('room'), {
+        type: 'LOAD_ROLL', roll: runtime.definition, roomMode: 'room', stockId: 'portra-400',
+        view: { frameId: runtime.definition.frames[1].id, level: 'frame', mode: 'positive', brightness: .7, magnification: 4, zoom: .5, pan: { x: 0, z: 0 }, overview: null },
+      });
+      expect(state.roll.rollId).toBe(runtime.definition.rollId);
+      expect(state.roomMode).toBe('room');
+      expect(state.isTransitioning).toBe(false);
+      expect(state.transitionKind).toBeNull();
+      expect(state.activeFrameIndex).toBe(1);
+      expect(state.tableBrightness).toBe(.7);
+      expect(viewerReducer(state, { type: 'LOAD_ROLL', roll: runtime.definition }).roomMode).toBe('inspect');
+    } finally { runtime.dispose(); }
+  });
   it('upgrades version one without losing existing rolls', async () => {
     const factory=new IDBFactory(); await new Promise<void>((resolve,reject)=>{const req=factory.open('upgrade',1);req.onupgradeneeded=()=>{req.result.createObjectStore('rolls',{keyPath:'id'}).put(bundle().roll);};req.onerror=()=>reject(req.error);req.onsuccess=()=>{req.result.close();resolve();};});
     expect((await new RollRepository(factory,'upgrade').list())[0].name).toBe('Test roll');

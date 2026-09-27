@@ -1,0 +1,119 @@
+/* Geometry is shared by the leader, photographs and tail. Perforations are
+   actual holes in a single SVG mask; edge codes sit outside both hole rows. */
+.film-strip-header.film-strip-header {
+  --strip-height: 88px;
+  --film-tools-width: 94px;
+  position: relative; grid-area: heading; z-index: 12;
+  display: block; flex: none; height: 112px; margin: 0;
+  padding: 14px 22px 10px 65px; border: 0; background: transparent;
+  pointer-events: none;
+}
+.film-strip-header .film-cartridge {
+  position: absolute; z-index: 2; left: 0; top: 0;
+  width: 78px; height: 117px; object-fit: contain;
+  filter: drop-shadow(2px 3px 3px #0008); pointer-events: none;
+}
+.film-strip-header .film-strip-body {
+  position: relative; display: grid; grid-template-columns: minmax(12px,1fr) minmax(0,420px) minmax(var(--film-tools-width),1fr);
+  align-items: center; gap: 8px; min-width: 0; height: var(--strip-height);
+  padding: 0 10px 0 0; isolation: isolate;
+}
+.film-strip-header.has-loupe-control { --film-tools-width: 138px; }
+.film-strip-header.has-create-action .film-strip-body { grid-template-columns: minmax(12px,1fr) minmax(0,420px) 146px minmax(var(--film-tools-width),1fr); }
+.film-strip-header .film-create {
+  display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2px;
+  height: 52px; min-height: 44px; min-width: 0; padding: 3px 8px;
+  border: 1px solid #dfb76a; border-radius: 2px; color: #fff0cc;
+  background: linear-gradient(135deg,#91612545,#3c291cd9);
+  box-shadow: inset 0 0 10px #bc84351f, 0 0 0 1px #9e713d40;
+  text-decoration: none; text-align: center; font: 500 14px/1.05 Georgia, 'Times New Roman', serif;
+  pointer-events: auto;
+}
+.film-strip-header .film-create:hover { border-color: #ffe0a1; background-color: #93622e55; }
+.film-create-plus { font: 20px/16px Georgia, serif; }
+.film-strip-header .film-create:focus-visible { outline: 2px solid #ffe0a1; outline-offset: 3px; }
+.film-strip-header .film-loupe[aria-pressed="true"] { background: #d5b17d25; color: #ffe0a1; box-shadow: inset 0 0 0 1px #d5b17d80; }
+.film-strip-base { position: absolute; inset: 0; z-index: -1; overflow: visible; pointer-events: none; }
+.film-strip-frames { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; min-width: 0; height: 88px; pointer-events: auto; }
+.film-frame-slot { position: relative; min-width: 0; padding: 18px 0; }
+.film-strip-header .film-nav-frame {
+  display: block; width: 100%; height: 52px; min-width: 0; min-height: 44px;
+  border: 1px solid #8e674a66; border-radius: 1px; padding: 0;
+  background: #251b16; color: #fff4de; overflow: hidden;
+  pointer-events: auto; cursor: pointer; box-shadow: inset 0 0 0 1px #0005;
+}
+.film-frame-exposure {
+  display: block; position: relative; width: 100%; height: 100%;
+  background-image: url('/assets/navigation/darkroom-frames.jpg');
+  background-size: 300% auto; background-position: left center;
+  filter: invert(1); transition: filter 220ms ease;
+}
+.film-frame-exposure[data-frame="table"] { background-position: center; }
+.film-frame-exposure[data-frame="camera"] { background-position: right center; }
+.film-frame-exposure[data-frame="room"] { background-image: url('/assets/navigation/darkroom-room.jpg'); background-size: cover; background-position: center; }
+.film-strip-header .film-nav-frame[aria-current="page"] {
+  border-color: #e8b766; background: #251b16; color: #fff4de;
+  box-shadow: 0 0 0 1px #b9863e55;
+}
+.film-nav-frame[aria-current="page"] .film-frame-exposure { filter: invert(0); }
+.film-strip-header .film-nav-frame:hover { border-color: #edca8b; }
+.film-frame-label {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 11px 2px 3px; background: linear-gradient(transparent,#100b07e8);
+  color: #fff4de; font: 500 13px/1.1 Georgia, 'Times New Roman', serif;
+  text-align: center; white-space: nowrap;
+}
+.film-edge-code { position: absolute; left: 3px; right: 3px; display: flex; align-items: center; justify-content: space-between; gap: 6px; height: 7px; color: #d6a369; font: 6px/1 monospace; white-space: nowrap; pointer-events: none; }
+.film-edge-top { top: 0; }
+.film-edge-bottom { bottom: 0; }
+.film-edge-bottom i { flex: 1; max-width: 44px; height: 6px; background: repeating-linear-gradient(90deg,#d6a369 0 1px,transparent 1px 3px,#d6a369 3px 5px,transparent 5px 7px,#d6a369 7px 8px,transparent 8px 11px); }
+.film-strip-header .film-strip-tools { display: flex; align-items: center; justify-content: flex-end; gap: 0; min-width: 88px; pointer-events: auto; }
+.film-strip-header .film-loupe, .film-strip-header .film-settings, .film-strip-header .admin-menu > button {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; width: 44px; min-height: 44px; height: 44px;
+  padding: 0; border: 0; border-radius: 4px; background: transparent;
+  box-shadow: none; color: #f1dfc3; cursor: pointer;
+}
+.film-strip-header .admin-menu > button { font-size: 24px; }
+.film-strip-header .film-loupe:hover, .film-strip-header .film-settings:hover, .film-strip-header .admin-menu > button:hover { background: #d5b17d15; }
+.film-strip-header button:focus-visible { outline: 2px solid #ffe0a1; outline-offset: 3px; }
+.film-strip-header .owner-nav-actions { gap: 0; }
+.film-strip-header .admin-menu-dropdown { pointer-events: auto; background: #241c17; border-color: #6b5036; max-height: calc(var(--visible-height,100dvh) - 120px); overflow-y: auto; }
+.film-strip-header .admin-menu-dropdown > *, .film-strip-header .layout-menu-options button { background: #241c17; color: #f4e4c8; }
+.film-strip-header .admin-menu-dropdown a { white-space: normal; }
+.table-controls:has(> .film-strip-header) > .table-header { top: 106px; padding-top: 6px; background: none; justify-content: center; }
+.table-controls > .film-strip-header { padding-top: max(14px,env(safe-area-inset-top)); }
+.empty-film-table { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
+.empty-film-table > p { position: absolute; top: 120px; left: 20px; right: 20px; color: #d8c7ac; text-align: center; font-size: 13px; }
+/* show() keeps the live table interactive, so this nonmodal panel needs its
+   own layer above the film header. Keep dismissal available after scrolling. */
+.table-panel { z-index: 30; }
+.table-panel > header { position: sticky; top: -22px; z-index: 1; margin: -22px -22px 20px; padding: 16px 22px; background: #1a1d22; border-bottom: 1px solid #4b4e53; }
+.mobile-sheet > header { position: sticky; top: -16px; z-index: 1; margin-top: -16px; padding: 12px 0; background: #171a1e; }
+@media(max-width: 700px) {
+  .film-strip-header.film-strip-header { height: 104px; padding: 10px 6px 6px 39px; }
+  .film-strip-header .film-cartridge { left: -10px; width: 66px; height: 104px; }
+  .film-strip-header .film-strip-body { grid-template-columns: 0 minmax(0,1fr) 44px; gap: 3px; padding-right: 1px; }
+  .film-strip-header.has-create-action .film-strip-body { grid-template-columns: 0 minmax(0,1fr) 88px 44px; }
+  .film-strip-header.has-create-action.has-loupe-control .film-strip-body { grid-template-columns: 0 minmax(0,1fr) 88px 88px; }
+  .film-strip-header .film-strip-tools { flex-direction: column; min-width: 44px; }
+  .film-strip-header .film-settings svg { transform: translateY(4px); }
+  .film-strip-header .admin-menu > button { padding-bottom: 8px; }
+  .film-strip-header.has-loupe-control { padding-left: 32px; }
+  .film-strip-header.has-loupe-control .film-cartridge { left: -12px; width: 60px; }
+  .film-strip-header.has-loupe-control .film-strip-body { grid-template-columns: 0 minmax(0,1fr) 88px; }
+  .film-strip-header.has-loupe-control .film-strip-tools { display: grid; grid-template-columns: 44px 44px; grid-template-rows: 44px 44px; }
+  .film-strip-header .film-loupe { grid-row: 1 / 3; }
+  .film-strip-frames { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 88px; gap: 5px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; scroll-snap-type: x proximity; scroll-padding-inline: 3px; touch-action: pan-x; padding-inline: 3px; overscroll-behavior-x: contain; }
+  .film-strip-frames::-webkit-scrollbar { display: none; }
+  .film-frame-slot { scroll-snap-align: start; }
+  .film-strip-header .film-create { font-size: 12px; padding-inline: 6px; }
+  .film-frame-label { font-size: 11px; padding-left: 0; padding-right: 0; }
+  .film-edge-top > span:last-child { font-size: 4px; }
+  .film-edge-code { left: 1px; right: 1px; gap: 2px; }
+  .film-edge-bottom i:last-child { display: none; }
+  .table-controls:has(> .film-strip-header) > .table-header { top: 100px; }
+  .table-panel > header { top: -18px; margin: -18px -18px 18px; padding: 12px 18px; }
+}
+@media(prefers-reduced-motion: reduce) { .film-frame-exposure { transition: none; } }
+.film-create > span:last-child { text-wrap: balance; }

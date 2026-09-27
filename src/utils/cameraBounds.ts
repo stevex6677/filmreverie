@@ -24,9 +24,8 @@ export const DEFAULT_CAMERA_BOUNDS: CameraBounds = {
   minPitch: -85 * Math.PI / 180, maxPitch: 85 * Math.PI / 180,
   minDistance: 3.5, maxDistance: 3.5,
 };
-// Aim above the table so the taller, physically scaled cabinet remains visible.
-// Stand on the room's centerline, facing the centered film cabinet.
-export const DEFAULT_ROOM_POSE: RoomCameraPose = { yaw: 0, pitch: -.16, distance: 3.5 };
+// Stand on the room's centerline, looking straight ahead at the film cabinet.
+export const DEFAULT_ROOM_POSE: RoomCameraPose = { yaw: 0, pitch: 0, distance: 3.5 };
 export const ROOM_CAMERA_FOV = 64;
 export const ROOM_EYE: [number, number, number] = [
   0,

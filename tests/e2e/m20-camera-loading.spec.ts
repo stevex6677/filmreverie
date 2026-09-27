@@ -32,7 +32,7 @@ test('cabinet waits for all five models, then preloads details serially without 
     await page.waitForTimeout(1000);
     expect(detailRequests()).toEqual([CAMERAS[0].url]);
     await expect(page.locator('main')).toHaveAttribute('data-app-ready', 'true');
-    await page.getByRole('button', { name: 'Camera Cabinet', exact: true }).click(); await ready(page);
+    await page.getByRole('button', { name: 'Cameras', exact: true }).click(); await ready(page);
     await openCamera(page, last.name);
     await expect(page.locator('.camera-display')).toHaveAttribute('data-model-ready', 'true', { timeout: 90000 });
     expect(detailRequests()).toEqual([CAMERAS[0].url, last.url]);
@@ -75,7 +75,7 @@ test('a failed detail preload leaves the room ready, continues the queue and ret
   await expect(page.locator('main')).toHaveAttribute('data-app-ready', 'true');
   await expect(page.locator('#darkroom-loader')).not.toBeVisible();
   failing = false;
-  await page.getByRole('button', { name: 'Camera Cabinet', exact: true }).click(); await ready(page);
+  await page.getByRole('button', { name: 'Cameras', exact: true }).click(); await ready(page);
   await openCamera(page, first.name);
   await expect(page.locator('.camera-display')).toHaveAttribute('data-model-ready', 'true', { timeout: 90000 });
   expect(requested.filter(url => url === first.url)).toHaveLength(2);

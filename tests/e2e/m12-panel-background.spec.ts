@@ -1,3 +1,4 @@
+import { shelfAction } from './helpers/shelf';
 import { openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect } from '@playwright/test';
 import { PNG } from 'pngjs';
@@ -7,7 +8,7 @@ const output=process.env.M12_PANEL_CANDIDATE_DIR || 'artifacts/m12-panel-review'
 for(const format of ['135','69']) test(`M12 ${format} exposed panel has no phantom strip at either brightness`,async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await fs.mkdir(output,{recursive:true});await page.goto('/guest?mode=inspect&reduced_motion=true');
-  await page.getByRole('button',{name:'Film Shelf',exact:true}).click();await page.getByRole('button',{name:'New roll',exact:true}).click();
+  await page.getByRole('button',{name:'Film Shelf',exact:true}).click();await shelfAction(page, 'New roll');
   await page.getByLabel('Choose photographs').setInputFiles(Array.from({length:format==='135'?7:3},(_,n)=>{
     const png=new PNG({width:180,height:120});for(let i=0;i<png.data.length;i+=4){png.data[i]=18+n*3;png.data[i+1]=150;png.data[i+2]=230;png.data[i+3]=255;}
     return {name:`frame${n+1}.png`,mimeType:'image/png',buffer:PNG.sync.write(png)};

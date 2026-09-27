@@ -182,7 +182,7 @@ for (const brightness of [30, 100]) {
     await page.waitForTimeout(250);
     const after = await capture(page, `macro-pan-${brightness}`);
     expect(getRegionMeanDifference(before, after, 640, 400, 100)).toBeGreaterThan(2);
-    await page.getByTestId("reset-view-btn").click();
+    await viewerKey(page, "0");
     await viewerKey(page, "Escape");
     await expect(page.locator("main")).toHaveAttribute("data-is-transitioning", "false");
     await expect(page.locator("main")).toHaveAttribute("data-room-mode", "room");

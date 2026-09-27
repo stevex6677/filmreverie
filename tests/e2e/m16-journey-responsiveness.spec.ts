@@ -23,8 +23,8 @@ test.describe("Journey transition responsiveness (room <-> table)", () => {
       await page.locator(".canvas-wrapper").focus();
       await page.keyboard.press("Enter");
     } else {
-      await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeEnabled();
+      await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeEnabled();
       await approachTable(page);
     }
 
@@ -42,7 +42,7 @@ test.describe("Journey transition responsiveness (room <-> table)", () => {
       await expect(loupeBtn).toBeEnabled();
     }
 
-    const adjustBtn = page.getByRole("button", { name: "Adjust", exact: true });
+    const adjustBtn = page.getByRole("button", { name: "Settings", exact: true });
     if (await adjustBtn.count() > 0) {
       await expect(adjustBtn).toBeEnabled();
     }
@@ -74,7 +74,7 @@ test.describe("Journey transition responsiveness (room <-> table)", () => {
     await expect(app).toHaveAttribute("data-room-mode", "room");
 
     if (!isMobile) {
-      await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeEnabled();
+      await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeEnabled();
     }
   });
 });

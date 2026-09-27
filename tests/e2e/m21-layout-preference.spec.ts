@@ -12,7 +12,7 @@ test('guest menu remembers Desktop and returns to automatic layout without losin
   });
   const automaticStyle = await headerStyle();
   await expect(app).toHaveClass(/mobile-layout/);
-  await expect(menuButton).toHaveText('⋮');
+  await expect(menuButton).toHaveText('…');
   await menuButton.click();
   const menu = page.getByRole('menu', { name: 'More options', exact: true });
   await expect(menu.getByRole('menuitem', { name: 'Admin Login' })).toHaveCount(0);
@@ -55,7 +55,7 @@ test('desktop room tools remain available and film navigation has no bottom hint
   await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page);
   await page.getByRole('button', { name: 'More options', exact: true }).click();
   await page.getByRole('menuitemradio', { name: 'Desktop', exact: true }).click();
-  await page.getByRole('button', { name: 'Lights', exact: true }).click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const panel = page.getByRole('dialog', { name: 'Viewing tools', exact: true });
   await expect(panel.getByRole('slider', { name: 'Room brightness', exact: true })).toBeVisible();
   await panel.getByRole('slider', { name: 'Room brightness', exact: true }).fill('0.6');
@@ -63,11 +63,11 @@ test('desktop room tools remain available and film navigation has no bottom hint
   await panel.getByRole('button', { name: 'Face table', exact: true }).click();
   await expect(panel).toHaveCount(0);
   await page.screenshot({ path: info.outputPath('shared-desktop-header.png') });
-  await page.getByRole('button', { name: 'Lights', exact: true }).click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByTestId('approach-table-btn').click(); await ready(page);
   await expect(page.locator('main')).toHaveAttribute('data-room-mode', 'inspect');
   await expect(page.locator('.table-caption')).not.toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'Overview navigation', exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Overview navigation', exact: true })).toHaveCount(0);
   await page.screenshot({ path: info.outputPath('desktop-film-without-hint.png') });
 });
 
@@ -78,7 +78,7 @@ test('owner menu retains login and layout controls in the camera cabinet', async
   await expect(page.getByRole('menuitem', { name: 'Admin Login', exact: true })).toBeVisible();
   await expect(page.getByRole('menuitemradio', { name: 'Auto', exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Camera Cabinet', exact: true }).click(); await ready(page);
+  await page.getByRole('button', { name: 'Cameras', exact: true }).click(); await ready(page);
   await trigger.click();
   await page.getByRole('menuitemradio', { name: 'Desktop', exact: true }).click();
   await expect(page.locator('main')).not.toHaveClass(/mobile-layout/);

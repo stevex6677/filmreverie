@@ -157,7 +157,7 @@ export type ViewerAction =
   | { type: "LOOK_ROOM"; yaw: number; pitch: number }
   | { type: "SET_ROOM_BRIGHTNESS"; brightness: number }
   | { type: "TOGGLE_ROOM_LIGHTS" }
-  | { type: "LOAD_ROLL"; roll: RollDefinition; stockId?: FilmStockId; filmStrength?: number; view?: import("../storage/rollRepository").SavedView }
+  | { type: "LOAD_ROLL"; roll: RollDefinition; stockId?: FilmStockId; filmStrength?: number; view?: import("../storage/rollRepository").SavedView; roomMode?: RoomMode }
   | { type: "CAMERA_MOTION"; moving: boolean }
   | { type: "ASSET_STATUS"; failures: string[]; loading: boolean; detailStatus?: string }
   | { type: "RETRY_ASSETS" }
@@ -293,7 +293,8 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
         }
         next.savedOverview = next.focusMode && v.overview && Number.isFinite(v.overview.zoom) && Number.isFinite(v.overview.pan?.x) && Number.isFinite(v.overview.pan?.z) ? { zoom: Math.max(.1,Math.min(Math.max(3.6,fitRollView(action.roll,'roll',0,state.viewportAspect).zoom),v.overview.zoom)), pan: clampRollPan(action.roll,v.overview.pan.x,v.overview.pan.z), frameIndex: locateFrame(action.roll,v.overview.frameIndex).globalIndex } : next.savedOverview;
       }
-      return { ...next, roomBrightness: state.roomBrightness, lastRoomBrightness: state.lastRoomBrightness, savedRoomPose: state.savedRoomPose, viewportAspect: state.viewportAspect, isTransitioning: true, transitionKind: "journey" };
+      const roomMode = action.roomMode ?? 'inspect';
+      return { ...next, roomMode, roomBrightness: state.roomBrightness, lastRoomBrightness: state.lastRoomBrightness, savedRoomPose: state.savedRoomPose, viewportAspect: state.viewportAspect, isTransitioning: roomMode === 'inspect', transitionKind: roomMode === 'inspect' ? "journey" : null };
     }
     case "CAMERA_MOTION": {
       if (state.cameraMoving === action.moving) return state;
@@ -449,7 +450,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
     case "APPROACH_TABLE":
       if (state.shelfId === 'camera') return { ...state, roomMode: 'inspect', shelfFocused: false, shelfId: null, cameraDisplay: null, isTransitioning: true, transitionKind: 'journey' };
       // Guard against competing transitions or already inspecting
-      if (state.roomMode === "inspect" || (state.isTransitioning && state.transitionKind !== 'shelf')) {
+      if (state.roomMode === "inspect" || (state.isTransitioning && state.transitionKind !== 'shelf' && state.transitionKind !== 'journey')) {
         return state;
       }
       return {
@@ -469,7 +470,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       if (state.cameraDisplay) return { ...state, cameraDisplay: null };
       if (state.roomMode === "room" && state.shelfFocused) return { ...state, shelfFocused: false, shelfId: null, isTransitioning: true, transitionKind: "shelf" };
       // Guard against competing transitions or already in room
-      if (state.roomMode === "room" || state.isTransitioning) {
+      if (state.roomMode === "room" || (state.isTransitioning && state.transitionKind !== 'journey')) {
         return state;
       }
       return {

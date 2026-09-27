@@ -11,7 +11,7 @@ import { LOUPE_LENS_RADIUS, LOUPE_RADIUS } from "../../src/utils/loupeView";
 const output = path.resolve(process.env.M13_CANDIDATE_DIR || "artifacts/m13-candidates");
 const ready = async (page: Page) => { await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true'); await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false'); await page.waitForTimeout(350); };
 const pose = async (page: Page) => (await page.locator('main').getAttribute('data-room-pose'))!.split(',').map(Number);
-async function light(page: Page, n: number) { const panel = await openRoomLights(page); await panel.getByRole('slider',{name:'Room brightness',exact:true}).fill(String(n/100)); await panel.getByRole('button',{name:'Close',exact:true}).click(); await page.locator('.canvas-wrapper').focus(); await page.waitForTimeout(700); }
+async function light(page: Page, n: number) { const panel = await openRoomLights(page); await panel.getByRole('slider',{name:'Room brightness',exact:true}).fill(String(n/100)); await page.keyboard.press('Escape'); await page.locator('.canvas-wrapper').focus(); await page.waitForTimeout(700); }
 async function turn(page: Page, yaw: number, pitch=0) { const x=yaw>0?200:1050; await page.mouse.move(x,400); await page.mouse.down(); await page.mouse.move(x+yaw/.0035,400-pitch/.0035,{steps:16}); await page.mouse.up(); await page.waitForTimeout(250); }
 async function face(page: Page) { await faceTable(page); await page.waitForTimeout(250); }
 async function shot(page: Page, name: string) { fs.mkdirSync(output,{recursive:true}); const buffer=await captureCanvas(page); fs.writeFileSync(path.join(output,`${name}.png`),buffer);return parsePng(buffer); }
@@ -73,7 +73,7 @@ for (const reduced of [false,true]) test(`M13 fixed-eye full turns, six views an
   const keyboardPose=await pose(page); await page.keyboard.press('Enter'); await ready(page); await page.keyboard.press('Escape'); await ready(page); expect(await pose(page)).toEqual(keyboardPose); await page.keyboard.press('0'); expect(await pose(page)).toEqual(initial);
   const beforeFocus=await pose(page);await openRoomLights(page);await page.getByRole('slider',{name:'Room brightness',exact:true}).press('ArrowLeft');expect(await pose(page)).toEqual(beforeFocus);
   await page.getByRole('button',{name:'Face table',exact:true}).focus();await page.keyboard.press('ArrowLeft');expect(await pose(page)).toEqual(beforeFocus);
-  await page.getByRole('dialog',{name:'Viewing tools',exact:true}).getByRole('button',{name:'Close',exact:true}).click();await page.getByRole('button',{name:'Film Shelf',exact:true}).click();await page.keyboard.press('ArrowRight');expect(await pose(page)).toEqual(beforeFocus);await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');await page.getByRole('button',{name:'Film Shelf',exact:true}).click();await page.keyboard.press('ArrowRight');expect(await pose(page)).toEqual(beforeFocus);await page.keyboard.press('Escape');
   // Real pointer capture cancellation followed by motion cannot leave a stuck drag.
   await page.mouse.move(850,420);await page.mouse.down();await page.mouse.move(760,420,{steps:5});
   await canvas.dispatchEvent('pointercancel',{pointerId:1});const cancelled=await pose(page);await page.mouse.move(500,450);await page.mouse.up();expect(await pose(page)).toEqual(cancelled);
@@ -110,7 +110,7 @@ for(const stock of ['ektachrome-e100','ektar-100','portra-160','portra-400','por
         await light(page,room);await approachTable(page);await ready(page);
         // Normalize overview framing before comparing the same photo pixels;
         // room return fits the current viewport, unlike the initial overview.
-        await page.getByTestId('reset-view-btn').click();await ready(page);
+        await page.locator('.canvas-wrapper').focus();await page.keyboard.press('0');await ready(page);
         await openViewingTools(page);
         if(await page.locator('main').getAttribute('data-film-mode')!==mode)await page.getByTestId('mode-toggle').click();
         const dim=page.getByTestId('brightness-slider');await dim.press(table===30?'Home':'End');await dim.blur();

@@ -70,9 +70,9 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
       const zoomVal = parseInt(zoomText?.replace("%", "") || "100", 10);
       expect(zoomVal).toBeGreaterThan(105);
 
-      // Reset View button should now appear
+      // Reset remains available through the keyboard without an overview toolbar
       const resetBtn = page.locator("[data-testid=reset-view-btn]");
-      await expect(resetBtn).toBeVisible();
+      await expect(resetBtn).toHaveCount(0);
 
       // Capture zoomed-in screenshot
       const zoomedBuffer = await captureCanvas(page);
@@ -98,11 +98,11 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
       const panDiff = getRegionMeanDifference(zoomedPng, pannedPng, 640, 400, 100);
       expect(panDiff).toBeGreaterThan(8);
 
-      // 4. Test Reset View (click reset button)
-      await resetBtn.click();
+      // 4. Test Reset View (keyboard shortcut)
+      await viewerKey(page, "0");
       await page.waitForTimeout(400);
       await expect(zoomBadge).toHaveText("100%");
-      await expect(resetBtn).toBeVisible(); // M16 keeps Fit roll available.
+      await expect(resetBtn).toHaveCount(0);
 
       // 5. Test Configurable Loupe Magnification
       // Activate loupe
@@ -177,7 +177,7 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
       await page.waitForTimeout(600);
       await expect(roomBadge).toHaveAttribute("data-room-mode", "room");
 
-      await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();
       await approachTable(page); await openViewingTools(page);
       await page.waitForTimeout(600);
       await expect(roomBadge).toHaveAttribute("data-room-mode", "inspect");

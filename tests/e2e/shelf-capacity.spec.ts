@@ -1,5 +1,5 @@
+import { expectShelfSummary, shelfAction, ready, room, add, showRoll, openRoll } from './helpers/shelf';
 import { test, expect } from '@playwright/test';
-import { ready, room, add, showRoll, openRoll } from './helpers/shelf';
 import { FILM_STOCKS } from '../../src/data/filmStocks';
 import fs from 'node:fs/promises';
 const OUT = process.env.M18_REVIEW_DIR || 'artifacts/m18-candidates';
@@ -14,11 +14,11 @@ test('M18 all stock packaging, full shelf, overflow, edit, trash and restore thr
     if (i === 9) { await fs.mkdir(OUT, { recursive: true }); await page.screenshot({ path: `${OUT}/all-ten-packaging.png` }); }
   }
   await expect(page.locator('[data-owned="true"]')).toHaveCount(16);
-  await expect(page.getByRole('navigation', { name: 'Shelf pages' })).toContainText('1 / 2');
-  await page.getByRole('button', { name: 'Next shelf page' }).click();
+  await expectShelfSummary(page, 'Page 1/2');
+  await shelfAction(page, 'Next shelf page');
   await expect(page.getByRole('button', { name: 'Show saved roll Roll 17', exact: true })).toBeVisible();
   await expect(page.locator('[data-owned="true"]')).toHaveCount(1);
-  await page.getByRole('button', { name: 'Previous shelf page' }).click();
+  await shelfAction(page, 'Previous shelf page');
   // Keyboard reveals a card and Escape dismisses it without opening or moving.
   await page.getByRole('button', { name: 'Show saved roll Roll 01', exact: true }).focus();
   await page.keyboard.press('ArrowDown'); await expect(page.getByRole('dialog', { name: /Roll 01 —/ })).toBeVisible();
@@ -37,10 +37,10 @@ test('M18 all stock packaging, full shelf, overflow, edit, trash and restore thr
   if (await page.locator('main').getAttribute('data-room-mode') === 'inspect') await room(page);
   await expect(page.locator('[data-shelf-slot="0"]')).toHaveAttribute('data-owned', 'false');
   await page.getByRole('button', { name: 'Film Shelf', exact: true }).click();
-  await page.getByRole('button', { name: /^Trash / }).click();
+  await shelfAction(page, /^Trash /);
   await showRoll(page, 'Edited first roll');
   await page.getByRole('button', { name: 'Restore Edited first roll', exact: true }).click();
-  await page.getByRole('button', { name: 'Saved rolls', exact: true }).click();
+  await shelfAction(page, 'Saved rolls');
   await expect(page.locator('[data-shelf-slot="0"]')).toHaveAttribute('data-owned', 'true');
   // The same package card provides opening and management on desktop and touch.
   await openRoll(page, 'Edited first roll');

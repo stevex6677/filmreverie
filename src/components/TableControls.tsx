@@ -1,3 +1,5 @@
+import { FilmPanelFrames } from './FilmPanelFrames';
+import { usePanelDismiss } from '../utils/usePanelDismiss';
 import { FilmStrengthControl } from "./FilmStrengthControl";
 import { useEffect, useRef, useState, type Dispatch, type ReactNode } from 'react';
 import { ViewerAction, ViewerState } from '../state/viewerState';
@@ -6,8 +8,9 @@ import { focusFrameLayout, fitRollView } from '../utils/rollLayout';
 import { photoCropPreview } from '../utils/photoFraming';
 import { MobileSheet } from './MobileControls';
 import { FilmStockInfo } from './FilmStockInfo';
+import { FilmStripHeader } from './FilmStripHeader';
 
-export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet,ownerActions}:{state:ViewerState;dispatch:Dispatch<ViewerAction>;onOpenLibrary:()=>void;sheet:MobileSheet;setSheet:(sheet:MobileSheet)=>void;ownerActions?:ReactNode}) {
+export function TableControls({state,dispatch,onOpenLibrary,onOpenRoom,onOpenTable,onOpenCameras,sheet,setSheet,ownerActions,createAction}:{state:ViewerState;dispatch:Dispatch<ViewerAction>;onOpenLibrary:()=>void;onOpenRoom:()=>void;onOpenTable:()=>void;onOpenCameras:()=>void;sheet:MobileSheet;setSheet:(sheet:MobileSheet)=>void;createAction?:ReactNode;ownerActions?:ReactNode}) {
   const root=useRef<HTMLDivElement>(null), panel=useRef<HTMLDialogElement>(null);
   const [quiet,setQuiet]=useState(false);
   const stock=getFilmStock(state.filmStockId);
@@ -38,18 +41,22 @@ export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet,owner
     const dialog=panel.current;
     if(sheet==='frames') dialog?.showModal();
     else dialog?.show();
+    dialog?.focus({preventScroll:true});
+    if(dialog)dialog.scrollTop=0;
     return()=>{dialog?.close();if(previous?.isConnected)previous.focus({preventScroll:true});};
   },[sheet]);
 
+  usePanelDismiss(panel, !!sheet, ()=>setSheet(null));
   const next=(delta:number)=>dispatch({type:'OPEN_FRAME',frameIndex:state.activeFrameIndex+delta});
   return <div ref={root} className={`table-controls ${focus?'is-focus':''} ${inspecting?'is-loupe-inspection':''} ${state.loupe.isActive?'has-loupe':''}`} data-quiet={quiet} data-testid="controls-panel">
-    {!inspecting&&<header className="table-header">
-      {focus?<button className="table-back" onClick={()=>dispatch({type:'SHOW_OVERVIEW'})}>← Overview</button>:<div className="table-entry"><button onClick={onOpenLibrary}>Film Shelf</button><button data-testid="return-room-btn" onClick={()=>dispatch({type:'RETURN_TO_ROOM'})}>← Room</button></div>}
-      <div className="table-identity"><span className="table-eyebrow">{focus?'FOCUS':'LIGHT TABLE'}</span><h1>{state.roll.label}</h1><span>{focus?`Frame ${String(number).padStart(2,'0')}`:`${state.roll.frames.length} frames · ${state.roll.format==='135'||!state.roll.format?'35 mm':'120'}`}</span></div>
-      <div className="table-actions">{!focus && <button aria-pressed={state.adjustingView} onClick={()=>{setSheet(null);dispatch({type:'SET_ADJUSTING_VIEW',active:!state.adjustingView});}}>{state.adjustingView?'Done':'Adjust view'}</button>}{!state.loupe.isActive&&<button data-testid="loupe-activate" onClick={()=>dispatch({type:'SET_LOUPE_ACTIVE',active:true})}>Loupe</button>}<button className="table-adjust" aria-haspopup="dialog" onClick={()=>setSheet('tools')}>Adjust</button>{ownerActions}</div>
+    {!focus && !inspecting && <FilmStripHeader state={state} onOpenRoom={onOpenRoom} onOpenLibrary={onOpenLibrary} onOpenTable={onOpenTable} onOpenCameras={onOpenCameras} onOpenSettings={()=>setSheet(sheet==='tools'?null:'tools')} settingsOpen={sheet==='tools'} onToggleLoupe={()=>{setSheet(null);dispatch({type:'TOGGLE_LOUPE'});}} ownerActions={ownerActions} createAction={createAction} />}
+    {focus&&!inspecting&&<header className="table-header">
+      <button className="table-back" onClick={()=>dispatch({type:'SHOW_OVERVIEW'})}>← Overview</button>
+      <div className="table-actions">{!state.loupe.isActive&&<button data-testid="loupe-activate" onClick={()=>dispatch({type:'SET_LOUPE_ACTIVE',active:true})}>Loupe</button>}<button data-panel-toggle className="table-adjust" aria-haspopup="dialog" onClick={()=>setSheet('tools')}>Settings</button>{ownerActions}</div>
     </header>}
 
     {state.adjustingView && <nav className="table-navigation table-angle-controls" aria-label="View angle">
+      <button onClick={()=>dispatch({type:'SET_ADJUSTING_VIEW',active:false})}>Done</button>
       <output aria-label="Current view angle">Tilt {Math.round(state.tableAngle.tilt*180/Math.PI)}° · Yaw {Math.round(state.tableAngle.yaw*180/Math.PI)}°</output>
       <button onClick={()=>dispatch({type:'TOP_DOWN'})}>Top-down</button>
     </nav>}
@@ -58,33 +65,26 @@ export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet,owner
       {!inspecting&&<button data-testid="put-away-loupe" onClick={()=>dispatch({type:'SET_LOUPE_ACTIVE',active:false})}>Put away</button>}</div>
       <div className="table-magnification" role="group" aria-label="Loupe magnification">{[2,4,8].map(value=><button key={value} data-testid={`mag-btn-${value}x`} aria-pressed={state.loupe.magnification===value} onClick={()=>dispatch({type:'SET_LOUPE_MAGNIFICATION',magnification:value})}>{value}×</button>)}</div>
       {inspecting&&<button data-testid="loupe-effects" aria-pressed={state.loupe.opticalEffects} onClick={()=>dispatch({type:'SET_LOUPE_EFFECTS',enabled:!state.loupe.opticalEffects})}>Optical effects {state.loupe.opticalEffects?'on':'off'}</button>}
-    </nav>:!state.loupe.isActive&&<nav className="table-navigation table-secondary" aria-label={focus?'Focused frame navigation':'Overview navigation'}>
-      {focus?<>
+    </nav>:!state.loupe.isActive&&focus&&<nav className="table-navigation table-secondary" aria-label="Focused frame navigation">
         <button aria-label="Previous" disabled={number===1} onClick={()=>next(-1)}>←</button>
         <button aria-label="Choose frame" aria-haspopup="dialog" onClick={()=>setSheet('frames')}><span aria-live="polite">{String(number).padStart(2,'0')} <span className="table-muted">/ {state.roll.frames.length}</span></span></button>
         <button aria-label="Next" disabled={number===state.roll.frames.length} onClick={()=>next(1)}>→</button>
         <span className="table-divider"/>
         <button onClick={()=>dispatch({type:'FIT_VIEW'})}>Reset framing</button>
-      </>:<>
-        <button onClick={()=>dispatch({type:'OPEN_FRAME',frameIndex:state.activeFrameIndex})}>Focus frame {number}</button>
-        <button aria-label="Choose frame" aria-haspopup="dialog" onClick={()=>setSheet('frames')}>Frames</button>
-        <button data-testid="reset-view-btn" onClick={()=>dispatch({type:'RESET_TABLE_VIEW'})}>Fit roll</button>
-      </>}
     </nav>)}
-    <div className="table-caption table-secondary">{state.adjustingView?'Drag ↔ to turn · Drag ↕ to tilt · Pinch or scroll to zoom':state.loupe.isActive?(inspecting?'Drag to explore · Tap to pull back':'Drag the loupe · Tap its lens to inspect'):focus?(detailZoom?'Drag to inspect detail':''):'Drag to explore · Shift-drag to adjust view'}</div>
+    {(state.adjustingView || state.loupe.isActive || (focus && detailZoom)) && <div className="table-caption table-secondary">{state.adjustingView?'Drag ↔ to turn · Drag ↕ to tilt · Pinch or scroll to zoom':state.loupe.isActive?(inspecting?'Drag to explore · Tap to pull back':'Drag the loupe · Tap its lens to inspect'):'Drag to inspect detail'}</div>}
     <div className="table-feedback">
       {state.assetsLoading?<p role="status">Loading photographs…</p>:state.detailStatus&&<p role="status">{state.detailStatus}{state.detailStatus.includes('unavailable')&&<button onClick={()=>dispatch({type:'RETRY_ASSETS'})}>Retry detail</button>}</p>}
       {!!state.assetFailures.length&&<p role="alert">Some photographs could not load. <button onClick={()=>dispatch({type:'RETRY_ASSETS'})}>Retry photographs</button></p>}
     </div>
 
-    {sheet&&<dialog ref={panel} className={`table-panel ${sheet==='frames'?'table-frame-panel':''}`} aria-label={sheet==='tools'?'Viewing tools':'Choose frame'} onCancel={event=>{event.preventDefault();setSheet(null);}} onKeyDown={event=>{event.stopPropagation();if(event.key==='Escape')setSheet(null);}}>
-      <header><div><span className="table-eyebrow">{sheet==='tools'?'ADJUST':'CURRENT ROLL'}</span><h2>{sheet==='tools'?'Viewing tools':'Your photographs'}</h2></div><button onClick={()=>setSheet(null)}>Close</button></header>
-      {sheet==='frames'?<div className="table-frame-grid" role="group" aria-label="Frame map">{state.roll.frames.map((photo,index)=>{
+    {sheet&&<dialog tabIndex={-1} ref={panel} className={`film-panel table-panel ${sheet==='frames'?'table-frame-panel':''}`} aria-label={sheet==='tools'?'Viewing tools':'Choose frame'} onCancel={event=>{event.preventDefault();setSheet(null);}} onKeyDown={event=>{event.stopPropagation();if(event.key==='Escape')setSheet(null);}}>
+      {sheet==='frames'?<FilmPanelFrames stockId={state.filmStockId}><div className="table-frame-grid" role="group" aria-label="Frame map">{state.roll.frames.map((photo,index)=>{
         const layout=focusFrameLayout(state.roll,index);
         return <button key={photo.id} aria-label={`Open frame ${index+1}`} aria-current={index===state.activeFrameIndex?'true':undefined} data-testid={`frame-btn-${index+1}`} onClick={()=>{dispatch({type:'OPEN_FRAME',frameIndex:index});setSheet(null);}}>
           <div style={{aspectRatio:layout.frameWidth/layout.frameHeight}}><img src={photo.thumbnailSrc??photo.src} alt={photo.alt} loading="lazy" style={photoCropPreview(photo.aspectRatio,layout.frameWidth/layout.frameHeight,photo.rotation??0,photo.cropPosition)}/></div><span>{String(index+1).padStart(2,'0')}</span>
         </button>;
-      })}</div>:<div className="table-fields">
+      })}</div></FilmPanelFrames>:<FilmPanelFrames stockId={state.filmStockId} className="table-fields">
         <FilmStockInfo stockId={state.filmStockId}/>
         <FilmStrengthControl state={state} dispatch={dispatch}/>
         <div className="table-field"><span>Rendering <output data-testid="mode-badge">{stock.type==='reversal'?'POSITIVE · E-6':state.filmMode.toUpperCase()}</output></span>{stock.type==='negative'&&<button id="mode-toggle" data-testid="mode-toggle" onClick={()=>dispatch({type:'TOGGLE_FILM_MODE'})}>Switch to {state.filmMode==='positive'?'Negative':'Positive'}</button>}</div>
@@ -94,11 +94,12 @@ export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet,owner
           {state.loupe.isActive&&<><button onClick={()=>{setSheet(null);dispatch({type:'INSPECT_LOUPE'});}}>Inspect</button><p>Drag the loupe, then tap its lens to inspect. Two fingers move the table.</p></>}
         </div>
         {!focus && !inspecting && <div className="table-field">
+          <button aria-pressed={state.adjustingView} onClick={()=>{setSheet(null);dispatch({type:'SET_ADJUSTING_VIEW',active:!state.adjustingView});}}>Drag to tilt and turn</button>
           <label>Tilt <output>{Math.round(state.tableAngle.tilt*180/Math.PI)}°</output><input aria-label="Table tilt" title="Double-click to reset to 0°" onDoubleClick={()=>dispatch({type:'SET_TABLE_ANGLE',angle:{...state.tableAngle,tilt:0}})} type="range" min="0" max="50" step="1" value={state.tableAngle.tilt*180/Math.PI} onChange={event=>dispatch({type:'SET_TABLE_ANGLE',angle:{...state.tableAngle,tilt:Number(event.target.value)*Math.PI/180}})}/></label>
           <label>Yaw <output>{Math.round(state.tableAngle.yaw*180/Math.PI)}°</output><input aria-label="Table yaw" title="Double-click to reset to 0°" onDoubleClick={()=>dispatch({type:'SET_TABLE_ANGLE',angle:{...state.tableAngle,yaw:0}})} type="range" min="-60" max="60" step="1" value={state.tableAngle.yaw*180/Math.PI} onChange={event=>dispatch({type:'SET_TABLE_ANGLE',angle:{...state.tableAngle,yaw:Number(event.target.value)*Math.PI/180}})}/></label>
           <button onClick={()=>dispatch({type:'TOP_DOWN'})}>Top-down</button>
         </div>}
-      </div>}
+      </FilmPanelFrames>}
     </dialog>}
   </div>;
 }

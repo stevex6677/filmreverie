@@ -10,6 +10,8 @@ choice. The preference is remembered in this browser.
 Desktop and mobile room headers share the same styling. **Lights** opens room
 lighting controls; desktop room navigation actions are also available there.
 Desktop views omit the bottom interaction hints.
+Guest visits open in the darkroom, with the last active roll still loaded on the
+table. Opening a roll from the shelf enters the light table.
 
 ---
 

@@ -45,7 +45,7 @@ export async function room(page: Page) {
   await focusShelf(page);
 }
 export async function add(page: Page, name: string, stock = 'portra-400', format = '135') {
-  await page.getByRole('button', { name: 'New roll', exact: true }).click();
+  await shelfAction(page, 'New roll');
   await page.getByLabel('Choose photographs').setInputFiles('photos/roll-01/frame-01-harbor.png');
   await page.getByRole('button', { name: 'Continue to roll details' }).click();
   await page.getByLabel('Roll name', { exact: true }).fill(name);
@@ -56,4 +56,18 @@ export async function add(page: Page, name: string, stock = 'portra-400', format
   await page.getByRole('button', { name: 'Save and open', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 60000 }); await ready(page);
   await room(page);
+}
+
+export async function shelfMenu(page: Page) {
+  const menu = page.getByRole('menu', { name: 'More options', exact: true });
+  if (!await menu.isVisible()) await page.getByRole('button', { name: 'More options', exact: true }).click();
+  return menu;
+}
+export async function shelfAction(page: Page, name: string | RegExp) {
+  await (await shelfMenu(page)).getByRole('menuitem', { name, exact: typeof name === 'string' }).click();
+}
+export async function expectShelfSummary(page: Page, text: string) {
+  const menu = await shelfMenu(page);
+  await expect(menu.getByRole('group', { name: 'Film Shelf', exact: true })).toContainText(text);
+  await page.keyboard.press('Escape');
 }
