@@ -2,6 +2,7 @@ import type { CloudDraft, UploadRequest } from '../src/cloud/contracts';
 import { authorize, checkConfig, checkMutationOrigin } from './auth';
 import { completeUpload, grantUpload, listDrafts, privateImage, publicCatalog, publishDraft, readDraft, saveDraft, withdrawPublication } from './storage';
 import { Env, HttpError, Kind, requireValue, validId } from './types';
+import { exchangeDevLogin, startDevLogin } from './devLogin';
 
 const headers = {
   'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff',
@@ -31,9 +32,18 @@ async function route(request: Request, env: Env): Promise<Response | object> {
   checkConfig(env);
   const path = new URL(request.url).pathname, method = request.method;
   if (path === '/api/gallery' && method === 'GET') return publicCatalog(env);
+  if (path === '/api/dev-auth/exchange' && method === 'POST') return exchangeDevLogin(request, env, await readJson(request));
   if (!path.startsWith('/api/owner/')) throw new HttpError(404, 'API route was not found.');
-  checkMutationOrigin(request, env);
+  // A login link may arrive from another site. Only a top-level session
+  // navigation can do so; it returns to the app rather than exposing JSON.
+  const loginNavigation = ['/api/owner/session', '/api/owner/dev-login'].includes(path) && method === 'GET'
+    && request.headers.get('Sec-Fetch-Mode') === 'navigate'
+    && request.headers.get('Sec-Fetch-Dest') === 'document'
+    && (!request.headers.has('Origin') || request.headers.get('Origin') === env.APP_ORIGIN);
+  if (!loginNavigation) checkMutationOrigin(request, env);
   const email = await authorize(request, env);
+  if (path === '/api/owner/dev-login' && loginNavigation) return startDevLogin(request, env);
+  if (loginNavigation) return new Response(null, { status: 303, headers: { ...headers, Location: `${env.APP_ORIGIN}/` } });
   if (path === '/api/owner/session' && method === 'GET') return { email };
   if (path === '/api/owner/uploads' && method === 'POST') return grantUpload(env, await readJson<UploadRequest>(request));
   if (path === '/api/owner/drafts' && method === 'GET') return listDrafts(env);

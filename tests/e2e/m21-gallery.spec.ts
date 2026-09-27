@@ -34,27 +34,33 @@ function proxy(request: IncomingMessage, response: ServerResponse, baseURL: stri
 async function databases(page: Page) {
   return page.evaluate(async () => (await indexedDB.databases()).map(db => db.name));
 }
-test('owner room keeps the guest header with Admin and Create Your Own beside Lights', async ({ page, baseURL }) => {
+test('owner room keeps the guest header with the admin menu after Create Your Own beside Lights', async ({ page, baseURL }, info) => {
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 844 });
     await page.goto(`${baseURL}/?mode=room&reduced_motion=true`); await ready(page);
     const mobile = await page.evaluate(() => matchMedia('(max-width: 1000px), (any-pointer: coarse)').matches);
     const header = page.locator(mobile ? '.mobile-header' : '.controls-header');
     const lights = header.getByRole(mobile ? 'button' : 'switch', { name: mobile ? 'Lights' : 'Room lights' });
-    const admin = header.getByRole('button', { name: 'Admin' });
+    const admin = header.getByRole('button', { name: 'Admin menu' });
     const create = header.getByRole('link', { name: /Create Your Own/ });
     await expect(header.getByRole('button', { name: 'Rolls' })).toBeVisible();
     await expect(header.getByRole('button', { name: 'Cameras' })).toBeVisible();
     await expect(lights).toBeVisible(); await expect(admin).toBeVisible(); await expect(create).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Admin', exact: true })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Admin menu', exact: true })).toHaveCount(1);
     await expect(page.getByRole('link', { name: /Create Your Own/ })).toHaveCount(1);
     const lightBox = (await lights.boundingBox())!, adminBox = (await admin.boundingBox())!, createBox = (await create.boundingBox())!;
     const center = (box: { y: number; height: number }) => box.y + box.height / 2;
     expect(Math.abs(center(lightBox) - center(adminBox))).toBeLessThan(4);
     expect(Math.abs(center(lightBox) - center(createBox))).toBeLessThan(4);
-    expect(lightBox.x + lightBox.width).toBeLessThan(adminBox.x);
-    expect(adminBox.x + adminBox.width).toBeLessThan(createBox.x);
-    expect(createBox.x + createBox.width).toBeLessThanOrEqual(width);
+    expect(lightBox.x + lightBox.width).toBeLessThan(createBox.x);
+    expect(createBox.x + createBox.width).toBeLessThan(adminBox.x);
+    expect(adminBox.x + adminBox.width).toBeLessThanOrEqual(width);
+    await admin.click();
+    await expect(page.getByRole('menuitem', { name: 'Admin Login' })).toBeVisible();
+    await page.screenshot({ path: info.outputPath(`admin-menu-${width}.png`) });
+    await page.getByRole('menuitem', { name: 'Admin Login' }).press('Escape');
+    await expect(admin).toBeFocused();
+    await expect(page.getByRole('menu')).toHaveCount(0);
     await page.goto(`${baseURL}/guest?mode=room&reduced_motion=true`);
     const welcome = page.getByRole('button', { name: 'Enter guest darkroom' });
     await expect(welcome.or(page.locator('main[data-app-ready="true"]'))).toBeVisible();
@@ -65,6 +71,26 @@ test('owner room keeps the guest header with Admin and Create Your Own beside Li
     await expect(guestHeader.getByRole('button', { name: 'Admin' })).toHaveCount(0);
     await expect(guestHeader.getByRole('link', { name: /Create Your Own/ })).toHaveCount(0);
   }
+});
+
+test('Admin Login survives a null focus change and navigates in the same tab', async ({ page, context, baseURL }, info) => {
+  await page.route('**/api/owner/session', route => route.request().isNavigationRequest()
+    ? route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><h1>Admin sign-in</h1>' })
+    : route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'Owner login required.' }) }));
+  await page.goto(`${baseURL}/?mode=room&reduced_motion=true`); await ready(page);
+  await page.getByRole('button', { name: 'Admin menu' }).click();
+  const menu = page.getByRole('menu', { name: 'Admin', exact: true });
+  const login = menu.getByRole('menuitem', { name: 'Admin Login', exact: true });
+  await expect(menu).toHaveText('Admin Login');
+  await expect(login).not.toHaveAttribute('target', '_blank');
+  // Safari can report a null relatedTarget during a touch-driven focus change.
+  await login.evaluate(link => link.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null })));
+  await expect(login).toBeVisible();
+  const tabs = context.pages().length;
+  if (info.project.use.hasTouch) await login.tap(); else await login.click();
+  await expect(page).toHaveURL(`${baseURL}/api/owner/session`);
+  await expect(page.getByRole('heading', { name: 'Admin sign-in' })).toBeVisible();
+  expect(context.pages()).toHaveLength(tabs);
 });
 
 test('public home displays only published rolls in the physical cabinet and opens selected photographs read-only', async ({ page, baseURL }, info) => {
@@ -94,7 +120,7 @@ test('public home displays only published rolls in the physical cabinet and open
       frames: [{ id: 'frame-one', width: 180, height: 120, rotation: 0, viewing: image(`${photos}/view.png`), thumbnail: image(`${photos}/thumb.png`) }] };
     await page.goto(`${origin}/?mode=inspect&reduced_motion=true`); await ready(page);
     await expect(page.getByRole('link', { name: /Create Your Own/ })).toHaveAttribute('target', '_blank');
-    await expect(page.getByRole('button', { name: 'Admin', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Admin menu', exact: true })).toBeVisible();
     const guestTab = page.waitForEvent('popup');
     await page.getByRole('link', { name: /Create Your Own/ }).click();
     const guest = await guestTab;
@@ -128,8 +154,9 @@ test('public home displays only published rolls in the physical cabinet and open
     await expect(page.locator('main')).toHaveAttribute('data-roll-id', 'gallery:published-roll:revision-one');
     await expect.poll(() => requests.filter(url => url === '/view.png').length).toBe(1);
     expect(await databases(page)).not.toContain('darkroom-rolls');
-    await page.getByRole('button', { name: 'Admin' }).click();
-    await expect(page.getByRole('dialog', { name: 'Owner publishing' }).getByRole('button', { name: 'New photo draft' })).toBeDisabled();
+    await page.getByRole('button', { name: 'Admin menu' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Admin Login' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Owner publishing' })).toHaveCount(0);
   } finally { await close(images); await close(app); }
 });
 

@@ -51,11 +51,12 @@ The room starts from its center. Its 90 cm, two-tier camera cabinet matches the 
 ### 7. Public Gallery and Guest Darkroom
 The home page (`/`) displays only owner-published cloud rolls on the physical
 darkroom shelf. Browsing needs no account; visitors cannot add, edit or delete
-rolls there. Its room header shares the guest darkroom's controls; **Admin**
-and **Create Your Own** sit immediately after **Room lights** (or **Lights**
-on phones), wrapping within the same header on narrow screens. **Admin**
-opens the Access-protected owner workspace for explicit JPEG/PNG or `.darkroom`
-import, saved private drafts, preview and confirmed publication. Cloudflare
+rolls there. Its room header shares the guest darkroom's controls; **Create Your Own**
+sits after **Room lights** (or **Lights** on phones), followed by a three-dot menu.
+The menu shows **Admin Login** until authenticated, then **Logged in**. Admins use
+the same shelf and roll editor as guests: **New roll**, edit, delete, Trash and
+Undo. **Save and open** publishes the reviewed roll; deletion withdraws it from
+the gallery and retains it in cloud Trash; restoration republishes it. Cloudflare
 Access JWT verification, short-lived key-scoped direct R2 uploads of browser-re-encoded
 JPEG derivatives (never originals), versioned R2 catalog publication and withdrawal
 live in `cloudflare/`. Admin performs metadata removal locally before uploading;
@@ -71,9 +72,13 @@ earlier `darkroom-rolls` library automatically. On the same origin, explicitly
 choose **Backups & offline → Copy previous darkroom rolls** to copy earlier rolls;
 export and verify a backup before changing origins or clearing site data.
 
-**Production is not provisioned or deployed.** See
+**The API Worker is deployed. Current menu and shared roll editor changes remain local; they have not been published to Pages.** See
 [deployment/privacy/recovery instructions](docs/CLOUD_GALLERY.md) and
 [M21 validation and blockers](docs/M21_REVIEW.md).
+Local development can use real Cloudflare login, return to the same dev URL,
+and edit the published gallery through the opt-in
+[development admin bridge](docs/CLOUD_GALLERY.md). Its session stays on the local
+server; the guest darkroom remains browser-local.
 `npm run validate:m21` includes the app/Worker builds, cumulative integration/E2E
 suites and all three standalone viewer gates; hosted checks remain separate.
 

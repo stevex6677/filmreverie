@@ -9,6 +9,7 @@ export interface Env {
   ACCESS_ISSUER: string;
   ACCESS_AUDIENCE: string;
   OWNER_EMAIL: string;
+  DEV_LOGIN_ORIGINS?: string;
   R2_ACCOUNT_ID: string;
   PRIVATE_BUCKET_NAME: string;
   R2_ACCESS_KEY_ID: string;

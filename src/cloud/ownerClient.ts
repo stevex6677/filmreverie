@@ -100,7 +100,7 @@ export async function uploadOwnerPhoto(photo: OwnerPhoto, signal: AbortSignal, p
     if (Date.now() >= grant.expiresAt) throw new Error('Upload authorization expired. Save again to obtain a new grant; completed photographs are retained.');
     progress(kind);
     const target = grant.uploads[kind];
-    const response = await fetch(target.url, { method: 'PUT', headers: target.headers, body: blobs.get(keys[kind])!, credentials: 'omit', cache: 'no-store', redirect: 'error', signal });
+    const response = await fetch(target.url, { method: 'PUT', headers: target.headers, body: blobs.get(keys[kind])!, credentials: target.url.startsWith('/api/dev-auth/upload/') ? 'same-origin' : 'omit', cache: 'no-store', redirect: 'error', signal });
     if (!response.ok) throw new Error(`The ${kind} upload failed (${response.status}). Save again to retry this photograph; earlier completed uploads are retained.`);
   }
   const complete = await json<{ id: string }>(`uploads/${idPath(grant.id)}/complete`, { method: 'POST', signal });

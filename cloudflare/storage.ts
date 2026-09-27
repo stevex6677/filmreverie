@@ -145,6 +145,7 @@ function checkDraft(value: CloudDraft, id: string) {
     && Array.isArray(roll.frameIds) && roll.frameIds.every(validId) && validId(roll.coverId)
     && Number.isSafeInteger(roll.createdAt) && roll.createdAt >= 0 && Number.isSafeInteger(roll.updatedAt) && roll.updatedAt >= 0
     && (roll.filmStrength === undefined || Number.isFinite(roll.filmStrength) && roll.filmStrength >= 0 && roll.filmStrength <= 100)
+    && (roll.trashedAt === null || Number.isSafeInteger(roll.trashedAt) && roll.trashedAt >= 0)
     && (roll.shelfSlot === undefined || Number.isSafeInteger(roll.shelfSlot) && roll.shelfSlot >= 0), 'Invalid roll metadata.');
   requireValue(new Set(value.frames.map(frame => frame?.id)).size === value.frames.length, 'Duplicate frames are not allowed.');
   for (const frame of value.frames) {
@@ -189,7 +190,7 @@ export async function saveDraft(env: Env, id: string, value: CloudDraft): Promis
   const roll = value.roll;
   const draft: CloudDraft = { roll: { id, name: roll.name.trim(), stockId: roll.stockId, format: roll.format, sizing: roll.sizing,
     filmStrength: roll.filmStrength, frameIds: [...roll.frameIds], coverId: roll.coverId, createdAt: previous?.roll.createdAt ?? roll.createdAt,
-    updatedAt: Math.max(Date.now(), (previous?.roll.updatedAt ?? 0) + 1), trashedAt: null, shelfSlot: roll.shelfSlot, view: roll.view }, frames };
+    updatedAt: Math.max(Date.now(), (previous?.roll.updatedAt ?? 0) + 1), trashedAt: roll.trashedAt, shelfSlot: roll.shelfSlot, view: roll.view }, frames };
   const snapshot = `drafts/snapshots/${id}/${crypto.randomUUID()}.json`;
   await env.PRIVATE_BUCKET.put(snapshot, JSON.stringify({ draft } satisfies DraftSnapshot), { httpMetadata: privateMetadata, onlyIf: { etagDoesNotMatch: '*' } });
   let committed = false;
@@ -211,6 +212,7 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
   const snapshot = await record<DraftSnapshot>(env.PRIVATE_BUCKET, head.value.snapshot);
   if (!snapshot) throw new HttpError(503, 'Private draft storage is unavailable.');
   const draft = snapshot.value.draft;
+  if (draft.roll.trashedAt !== null) throw new HttpError(409, 'Restore this roll from Trash before publishing.');
   if (draft.roll.updatedAt !== updatedAt) throw new HttpError(409, 'This draft changed since preview. Reopen it before publishing.');
   let pending: PendingPublication, pendingEtag: string | undefined;
   if (continuation) {

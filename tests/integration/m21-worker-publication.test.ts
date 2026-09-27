@@ -16,6 +16,20 @@ async function finish(env: Env, id: string, updatedAt: number): Promise<GalleryR
 }
 
 describe('M21 private derivative boundary', () => {
+  it('retains cloud Trash across reads, rejects publication until restored, and republishes restored rolls', async () => {
+    const { env, privateBucket } = environment(), { draft } = await draftFixture(env, privateBucket);
+    await finish(env, draft.roll.id, draft.roll.updatedAt);
+    await withdrawPublication(env, draft.roll.id);
+    const deleted = await saveDraft(env, draft.roll.id, { ...draft, roll: { ...draft.roll, trashedAt: Date.now() } });
+    expect((await readDraft(env, draft.roll.id)).roll.trashedAt).toBe(deleted.roll.trashedAt);
+    expect((await publicCatalog(env)).rolls).toHaveLength(0);
+    await expect(finish(env, draft.roll.id, deleted.roll.updatedAt)).rejects.toMatchObject({ status: 409 });
+    const restored = await saveDraft(env, draft.roll.id, { ...deleted, roll: { ...deleted.roll, trashedAt: null } });
+    await finish(env, draft.roll.id, restored.roll.updatedAt);
+    expect((await publicCatalog(env)).rolls[0].id).toBe(draft.roll.id);
+    await expect(saveDraft(env, draft.roll.id, { ...restored, roll: { ...restored.roll, trashedAt: -1 } })).rejects.toMatchObject({ status: 400 });
+  });
+
   it('seals only two streamed derivatives at unique keys and ignores staged replay', async () => {
     const { env, privateBucket } = environment(), { bytes, grant } = await uploadFixture(env, privateBucket);
     const completed = await completedUpload(env, grant.id);

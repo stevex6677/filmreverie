@@ -24,7 +24,7 @@ export interface FilmShelfState {
   keep: () => void;
   close: () => void;
 }
-export function useFilmShelf(repository: RollRepository, visible: boolean, enabled = true): FilmShelfState {
+export function useFilmShelf(repository: RollRepository, visible: boolean, enabled = true, seedExample = true): FilmShelfState {
   const [allRolls, setAllRolls] = useState<StoredRoll[]>([]), [error, setError] = useState('');
   const [trash, setTrash] = useState(false), [loaded, setLoaded] = useState(false), [revision, setRevision] = useState(0);
   const rolls = trash ? allRolls.filter(r => r.trashedAt !== null).sort((a,b) => b.trashedAt! - a.trashedAt!).map((r, shelfSlot) => ({ ...r, shelfSlot })) : allRolls.filter(r => r.trashedAt === null);
@@ -48,7 +48,7 @@ export function useFilmShelf(repository: RollRepository, visible: boolean, enabl
       const request = ++sequence;
       try {
         let preparationError = '';
-        try { await ensureExampleRoll(repository); } catch (failure) { preparationError = storageMessage(failure); }
+        try { if (seedExample) await ensureExampleRoll(repository); } catch (failure) { preparationError = storageMessage(failure); }
         await repository.shelf();
         const saved = await repository.list();
         if (cancelled || request !== sequence) return;
@@ -62,7 +62,7 @@ export function useFilmShelf(repository: RollRepository, visible: boolean, enabl
     const focus = () => { if (visible) void refresh(); };
     window.addEventListener('focus', focus);
     return () => { cancelled = true; unsubscribe(); window.removeEventListener('focus', focus); };
-  }, [repository, visible, trash, revision, enabled]);
+  }, [repository, visible, trash, revision, enabled, seedExample]);
   useEffect(() => { if (!visible) close(); }, [visible, close]);
   useEffect(() => () => clearTimeout(timer.current), []);
   const changePage = (next: number) => { close(); setPage(Math.max(0, Math.min(next, pages - 1))); };

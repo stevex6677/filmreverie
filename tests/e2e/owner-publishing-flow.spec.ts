@@ -1,11 +1,13 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { webcrypto } from 'node:crypto';
 import { createServer, request as httpRequest, type Server, type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import worker from '../../cloudflare/worker';
-import { environment, photograph, type MemoryBucket } from '../integration/m21-worker-fixtures';
+import { environment, photograph } from '../integration/m21-worker-fixtures';
 import type { Env } from '../../cloudflare/types';
 import { focusShelf, ready } from './helpers/shelf';
+import { devAdminBridge } from '../../scripts/dev-admin-bridge';
+import type { ViteDevServer } from 'vite';
 
 async function listen(server: Server) {
   await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
@@ -39,82 +41,138 @@ function metadataBearingPhotograph(): Buffer {
 }
 
 
-function routeR2(page: Page, env: Env, privateBucket: MemoryBucket, publicBucket: MemoryBucket, puts: string[]) {
-  void page.route(`https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/**`, async route => {
-    const request = route.request(), url = new URL(request.url());
-    if (request.method() === 'OPTIONS') {
-      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'PUT, OPTIONS', 'Access-Control-Allow-Headers': 'content-type,x-amz-content-sha256', 'Access-Control-Max-Age': '300' } });
-      return;
-    }
-    expect(request.method()).toBe('PUT');
-    expect(url.pathname).toMatch(new RegExp(`^/${env.PRIVATE_BUCKET_NAME}/staging/[0-9a-f-]+/(viewing|thumbnail)$`));
-    const key = url.pathname.slice(env.PRIVATE_BUCKET_NAME.length + 2);
-    puts.push(key);
-    await privateBucket.put(key, new Uint8Array(request.postDataBuffer()!), { httpMetadata: { contentType: request.headers()['content-type'] } });
-    await route.fulfill({ status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
-  });
-  void page.route(`${env.PHOTO_ORIGIN}/rolls/**`, async route => {
-    const key = new URL(route.request().url()).pathname.slice(1), object = publicBucket.objects.get(key);
-    if (!object) { await route.fulfill({ status: 404 }); return; }
-    await route.fulfill({ status: 200, body: Buffer.from(object.bytes), headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store' } });
-  });
-}
-
-test('Admin publishes browser-derived JPEGs; a new gallery session sees only public images, while guest stays local', async ({ page, browser, baseURL }) => {
+test('Admin publishes browser-derived JPEGs; a new gallery session sees only public images, while guest stays local', async ({ page, browser, baseURL }, info) => {
   const { env, privateBucket, publicBucket } = environment();
   const { token, jwk } = await ownerToken(env);
   const nativeFetch = globalThis.fetch, uploads: string[] = [];
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => String(input) === `${env.ACCESS_ISSUER}/cdn-cgi/access/certs`
     ? Promise.resolve(Response.json({ keys: [jwk] })) : nativeFetch(input, init)) as typeof fetch;
+  let middleware!: (request: IncomingMessage, response: ServerResponse, next: () => void) => void;
   const app = createServer((request, response) => {
     if (!request.url?.startsWith('/api/')) { proxy(request, response, baseURL!); return; }
-    void (async () => {
-      const headers = new Headers();
-      for (const [name, value] of Object.entries(request.headers)) if (value) headers.set(name, Array.isArray(value) ? value.join(', ') : value);
-      // Simulate the Access/TLS edge; the browser itself remains on localhost.
-      headers.delete('host'); headers.delete('sec-fetch-site');
-      if (request.url!.startsWith('/api/owner/')) headers.set('Cf-Access-Jwt-Assertion', token);
-      if (!['GET', 'HEAD'].includes(request.method!)) headers.set('Origin', env.APP_ORIGIN);
-      const chunks: Buffer[] = [];
-      for await (const chunk of request) chunks.push(Buffer.from(chunk));
-      const body = chunks.length ? Buffer.concat(chunks) : undefined;
-      const result = await worker.fetch(new Request(new URL(request.url!, env.APP_ORIGIN), { method: request.method, headers, body }), env);
+    middleware(request, response, () => { response.writeHead(404); response.end(); });
+  });
+  const edgeLogin = async (url: string) => worker.fetch(new Request(new URL(new URL(url).pathname + new URL(url).search, env.APP_ORIGIN), { headers: { 'Cf-Access-Jwt-Assertion': token, 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document' } }), env);
+  const edge = createServer((request, response) => {
+    void edgeLogin(`http://edge.invalid${request.url}`).then(async result => {
       response.writeHead(result.status, Object.fromEntries(result.headers.entries()));
       response.end(Buffer.from(await result.arrayBuffer()));
-    })().catch(error => { response.writeHead(500); response.end(String(error)); });
+    }).catch(() => { response.writeHead(500); response.end(); });
   });
   try {
     const origin = await listen(app);
-    routeR2(page, env, privateBucket, publicBucket, uploads);
+    const edgeOrigin = await listen(edge);
+    env.DEV_LOGIN_ORIGINS = origin;
+    const bridge = devAdminBridge({ origins: [origin], appOrigin: edgeOrigin, photoOrigin: env.PHOTO_ORIGIN,
+      fetcher: async (input, init) => {
+        const url = new URL(String(input));
+        if (url.origin === edgeOrigin) {
+          const headers = new Headers(init?.headers);
+          if (headers.get('Cookie') === `CF_Authorization=${token}`) headers.set('Cf-Access-Jwt-Assertion', token);
+          if (headers.has('Origin')) headers.set('Origin', env.APP_ORIGIN);
+          return worker.fetch(new Request(new URL(url.pathname + url.search, env.APP_ORIGIN), { ...init, headers }), env);
+        }
+        if (url.hostname.endsWith('.r2.cloudflarestorage.com')) {
+          const key = url.pathname.slice(env.PRIVATE_BUCKET_NAME.length + 2);
+          uploads.push(key);
+          await privateBucket.put(key, new Uint8Array(await new Response(init?.body).arrayBuffer()), { httpMetadata: { contentType: 'image/jpeg' } });
+          return new Response(null, { status: 200 });
+        }
+        if (url.origin === env.PHOTO_ORIGIN) {
+          const object = publicBucket.objects.get(url.pathname.slice(1));
+          return new Response(object ? new Uint8Array(object.bytes) : null, { status: object ? 200 : 404, headers: { 'Content-Type': 'image/jpeg' } });
+        }
+        throw new Error('Unexpected upstream');
+      },
+    });
+    if (typeof bridge.configureServer !== 'function') throw new Error('Missing bridge middleware');
+    (bridge.configureServer as (server: ViteDevServer) => unknown)({ httpServer: app, middlewares: { use: (handler: typeof middleware) => { middleware = handler; } } } as unknown as ViteDevServer);
+    const renewLogin = async () => {
+      const start = await page.context().request.get(`${origin}/api/dev-auth/login`, { maxRedirects: 0 });
+      const verified = await edgeLogin(start.headers().location);
+      const callback = await page.context().request.get(verified.headers.get('location')!, { maxRedirects: 0 });
+      expect(callback.status()).toBe(303);
+      expect(callback.headers().location).toBe(`${origin}/`);
+    };
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${origin}/?mode=room&reduced_motion=true`); await ready(page);
-    await page.getByRole('button', { name: 'Admin', exact: true }).click();
-    const admin = page.getByRole('dialog', { name: 'Owner publishing' });
-    await expect(admin.getByText(`Authenticated owner: ${env.OWNER_EMAIL}`)).toBeVisible();
-    await admin.getByRole('button', { name: 'New photo draft' }).click();
-    await admin.getByLabel('Owner roll name').fill('Browser-published photograph');
+    await page.getByRole('button', { name: 'Admin menu' }).click();
+    await expect(page.getByRole('menu')).toHaveText('Admin Login');
+    await page.getByRole('menuitem', { name: 'Admin Login' }).click();
+    await expect(page).toHaveURL(`${origin}/`); await ready(page);
+    const sessionCookie = (await page.context().cookies()).find(value => value.name === 'film_dev_session')!;
+    expect(sessionCookie.httpOnly).toBe(true);
+    expect(sessionCookie.value).not.toBe(token);
+    expect(await page.evaluate(() => document.cookie)).not.toContain('film_dev_session');
+    const csrf = await page.context().request.delete(`${origin}/api/owner/publications/${webcrypto.randomUUID()}`, { headers: { Origin: 'https://attacker.invalid' } });
+    expect(csrf.status()).toBe(403);
+    await page.getByRole('button', { name: 'Admin menu' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Logged in' })).toBeVisible();
+    await page.screenshot({ path: info.outputPath('logged-in-menu-phone.png') });
+    await page.getByRole('menuitem', { name: 'Logged in' }).press('Escape');
+    await focusShelf(page);
+    await page.getByRole('button', { name: 'New roll', exact: true }).click();
+    const editor = page.getByRole('dialog', { name: 'Review roll' });
+    await expect(editor).toContainText('Saving publishes this roll');
     const original = metadataBearingPhotograph();
     expect(original.toString('latin1')).toContain('GPS PRIVATE LOCATION');
-    await admin.getByLabel('Choose owner photographs').setInputFiles({ name: 'private-location.jpg', mimeType: 'image/jpeg', buffer: original });
-    await expect(admin.locator('.owner-progress')).toContainText('prepared locally');
-    await admin.getByRole('button', { name: 'Save private draft' }).click();
-    await expect(admin.locator('.owner-progress')).toContainText('Private draft saved');
+    await editor.getByLabel('Choose photographs', { exact: true }).setInputFiles({ name: 'private-location.jpg', mimeType: 'image/jpeg', buffer: original });
+    await expect(editor.getByText('Processed 1 / 1', { exact: true })).toBeVisible();
+    await editor.getByRole('button', { name: 'Continue to roll details' }).click();
+    await editor.getByLabel('Roll name', { exact: true }).fill('Browser-published photograph');
+    await editor.getByRole('button', { name: 'Review photographs' }).click();
+    await editor.getByRole('button', { name: 'Save and open' }).click();
+    await expect(editor).toHaveCount(0);
     expect(uploads).toHaveLength(2);
     expect(uploads.map(key => key.split('/').at(-1))).toEqual(['viewing', 'thumbnail']);
     for (const object of privateBucket.objects.values()) if (object.httpMetadata.contentType === 'image/jpeg') {
       expect(Buffer.from(object.bytes).toString('latin1')).not.toContain('GPS PRIVATE LOCATION');
     }
-    await admin.getByRole('button', { name: 'Preview saved draft' }).click();
-    await expect(page.getByRole('status').filter({ hasText: 'Private admin preview' })).toBeVisible();
-    await page.getByRole('button', { name: /Return to owner/ }).click();
-    await admin.getByRole('checkbox', { name: /reviewed this saved preview/ }).check();
-    await admin.getByRole('button', { name: 'Publish revision' }).click();
-    await expect(admin.locator('.owner-progress')).toContainText('Published “Browser-published photograph”');
-    await admin.getByRole('button', { name: 'Close' }).click();
+    await focusShelf(page);
+    await page.getByRole('button', { name: 'Show saved roll Browser-published photograph' }).click();
+    await editor.getByLabel('Roll name', { exact: true }).fill('Edited published photograph');
+    // A session expiring while editing must preserve the draft and keep the dialog usable.
+    await page.context().clearCookies();
+    const expired = page.waitForResponse(response => response.url().endsWith('/api/owner/session') && response.status() === 401);
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await expired;
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await editor.getByRole('button', { name: 'Save and open' }).click();
+    await expect(editor.getByRole('alert')).toBeVisible();
+    await expect(editor.getByLabel('Roll name', { exact: true })).toHaveValue('Edited published photograph');
+    await renewLogin();
+    const authenticated = page.waitForResponse(response => response.url().endsWith('/api/owner/session') && response.status() === 200);
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await authenticated;
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await editor.getByRole('button', { name: 'Save and open' }).click();
+    await expect(editor).toHaveCount(0);
+    expect(uploads).toHaveLength(2);
+    await focusShelf(page);
+    await page.getByRole('button', { name: 'Show saved roll Edited published photograph' }).click();
+    await editor.getByRole('button', { name: 'Delete Edited published photograph' }).click();
+    await expect(editor).toHaveCount(0);
+    await expect(page.locator('.shelf-toolbar')).toContainText('0 saved rolls');
+    await expect.poll(async () => (await (await nativeFetch(`${origin}/api/gallery`)).json()).rolls.length).toBe(0);
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await expect(page.locator('.shelf-toolbar')).toContainText('1 saved roll');
+    await expect.poll(async () => (await (await nativeFetch(`${origin}/api/gallery`)).json()).rolls.length).toBe(1);
+    await page.getByRole('button', { name: 'Show saved roll Edited published photograph' }).click();
+    await editor.getByRole('button', { name: 'Delete Edited published photograph' }).click();
+    await expect(editor).toHaveCount(0);
+    await page.reload(); await ready(page); await focusShelf(page);
+    await page.getByRole('button', { name: 'Trash (1)' }).click();
+    await page.getByRole('button', { name: 'Show saved roll Edited published photograph' }).click();
+    await page.getByRole('button', { name: 'Restore Edited published photograph' }).click();
+    await page.getByRole('button', { name: 'Saved rolls', exact: true }).click();
+    await page.getByRole('button', { name: 'Show saved roll Edited published photograph' }).click();
+    await editor.getByLabel('Roll name', { exact: true }).fill('Browser-published photograph');
+    await editor.getByRole('button', { name: 'Save and open' }).click();
+    await expect(editor).toHaveCount(0);
 
     const fresh = await browser.newContext();
     try {
       const visitor = await fresh.newPage();
-      routeR2(visitor, env, privateBucket, publicBucket, uploads);
       await visitor.goto(`${origin}/?mode=room&reduced_motion=true`); await ready(visitor);
       await focusShelf(visitor);
       const card = visitor.getByRole('button', { name: 'Show published roll Browser-published photograph' });
@@ -128,5 +186,5 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
       await expect(visitor.getByRole('button', { name: 'Show saved roll Browser-published photograph' })).toHaveCount(0);
       await expect(visitor.getByRole('button', { name: 'Show saved roll Roll 01' })).toBeVisible();
     } finally { await fresh.close(); }
-  } finally { globalThis.fetch = nativeFetch; await close(app); }
+  } finally { globalThis.fetch = nativeFetch; await close(app); await close(edge); }
 });

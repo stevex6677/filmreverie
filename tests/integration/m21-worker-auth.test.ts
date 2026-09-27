@@ -29,6 +29,73 @@ function trustedIssuer() {
   return fetch;
 }
 describe('M21 owner authorization boundary', () => {
+  async function devGrant(env: Env, assertion: string, redirectUri = 'http://localhost:5180/api/dev-auth/callback') {
+    const verifier = Buffer.alloc(32, 7).toString('base64url');
+    const url = new URL('/api/owner/dev-login', env.APP_ORIGIN);
+    url.searchParams.set('redirect_uri', redirectUri);
+    url.searchParams.set('state', Buffer.alloc(32, 8).toString('base64url'));
+    url.searchParams.set('challenge', createHash('sha256').update(verifier).digest('base64url'));
+    const response = await worker.fetch(new Request(url, { headers: { 'Cf-Access-Jwt-Assertion': assertion, 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document' } }), env);
+    return { response, verifier, redirectUri };
+  }
+  async function exchange(env: Env, input: object, headers = {}) {
+    return worker.fetch(new Request(`${env.APP_ORIGIN}/api/dev-auth/exchange`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(input) }), env);
+  }
+  it('hands the verified Access session back to an allowlisted dev callback using a single-use PKCE code', async () => {
+    const { env, privateBucket } = environment(); trustedIssuer();
+    env.DEV_LOGIN_ORIGINS = 'http://localhost:5180';
+    const assertion = await token(env), grant = await devGrant(env, assertion);
+    expect(grant.response.status).toBe(303);
+    const location = new URL(grant.response.headers.get('location')!);
+    expect(location.origin).toBe('http://localhost:5180');
+    expect(location.searchParams.get('state')).toBe(Buffer.alloc(32, 8).toString('base64url'));
+    expect(location.href).not.toContain(assertion);
+    expect([...privateBucket.objects.values()].some(value => Buffer.from(value.bytes).toString().includes(assertion))).toBe(false);
+    const input = { code: location.searchParams.get('code'), verifier: grant.verifier, redirectUri: grant.redirectUri };
+    expect((await exchange(env, { ...input, verifier: Buffer.alloc(32, 9).toString('base64url') })).status).toBe(400);
+    expect((await exchange(env, input, { Origin: env.APP_ORIGIN })).status).toBe(400);
+    const responses = await Promise.all([exchange(env, input), exchange(env, input)]);
+    expect(responses.filter(value => value.status === 200)).toHaveLength(1);
+    expect(await responses.find(value => value.status === 200)!.json()).toMatchObject({ token: assertion, email: env.OWNER_EMAIL });
+    expect((await exchange(env, input)).status).toBe(401);
+    expect(privateBucket.objects.size).toBe(0);
+  });
+  it('requires authentication and exact configured callback origin and path; expired codes fail closed', async () => {
+    const { env } = environment(); trustedIssuer(); env.DEV_LOGIN_ORIGINS = 'http://localhost:5180';
+    expect((await devGrant(env, '')).response.status).toBe(401);
+    for (const uri of ['https://attacker.invalid/api/dev-auth/callback', 'http://localhost:5180/other', 'http://localhost:5180/api/dev-auth/callback?next=evil']) {
+      expect((await devGrant(env, await token(env), uri)).response.status).toBe(400);
+    }
+    const grant = await devGrant(env, await token(env)), code = new URL(grant.response.headers.get('location')!).searchParams.get('code');
+    const now = Date.now(); vi.spyOn(Date, 'now').mockReturnValue(now + 61_000);
+    try { expect((await exchange(env, { code, verifier: grant.verifier, redirectUri: grant.redirectUri })).status).toBe(401); }
+    finally { vi.restoreAllMocks(); }
+  });
+  it('authenticates cross-site top-level login navigation and redirects to the hosted darkroom without exposing identity', async () => {
+    const { env } = environment(); trustedIssuer();
+    const navigation = { 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document' };
+    const anonymous = await worker.fetch(new Request(`${env.APP_ORIGIN}/api/owner/session`, { headers: navigation }), env);
+    expect(anonymous.status).toBe(401);
+    const response = await worker.fetch(new Request(`${env.APP_ORIGIN}/api/owner/session`, {
+      headers: { ...navigation, 'Cf-Access-Jwt-Assertion': await token(env) },
+    }), env);
+    expect(response.status).toBe(303);
+    expect(response.headers.get('location')).toBe(`${env.APP_ORIGIN}/`);
+    expect(response.headers.get('cache-control')).toContain('no-store');
+    expect(await response.text()).toBe('');
+  });
+  it('keeps cross-site API reads, embedded login requests and mutations forbidden', async () => {
+    const { env } = environment(); trustedIssuer();
+    const assertion = await token(env);
+    const base = { 'Cf-Access-Jwt-Assertion': assertion, 'Sec-Fetch-Site': 'cross-site' };
+    for (const request of [
+      new Request(`${env.APP_ORIGIN}/api/owner/session`, { headers: { ...base, 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Dest': 'empty' } }),
+      new Request(`${env.APP_ORIGIN}/api/owner/session`, { headers: { ...base, 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'iframe' } }),
+      new Request(`${env.APP_ORIGIN}/api/owner/session`, { headers: { ...base, 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document', Origin: 'https://attacker.invalid' } }),
+      new Request(`${env.APP_ORIGIN}/api/owner/drafts`, { headers: { ...base, 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document' } }),
+      new Request(`${env.APP_ORIGIN}/api/owner/uploads`, { method: 'POST', headers: { ...base, Origin: env.APP_ORIGIN, 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document' } }),
+    ]) expect((await worker.fetch(request, env)).status).toBe(403);
+  });
   it('accepts only the configured signed owner identity and ignores token-selected key servers', async () => {
     const { env } = environment(), fetch = trustedIssuer();
     const assertion = await token(env, {}, { jku: 'https://attacker.invalid/jwks', x5u: 'https://attacker.invalid/cert' });
