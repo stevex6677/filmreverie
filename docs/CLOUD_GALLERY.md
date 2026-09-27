@@ -78,6 +78,13 @@ The bridge forwards authenticated owner requests to the production API, rejects 
 
 ## Porkbun → Cloudflare DNS migration
 
+For subsequent application releases, use the
+[GitHub push deployment workflow](AUTO_DEPLOY.md) to validate and deploy both
+the API Worker and existing Pages project. GitHub `master` deploys to the Pages
+project's existing production branch `main`. A dedicated GitHub repository
+deployment token is required; the workflow does not change DNS, Access or R2
+provisioning.
+
 Registration and renewal stay at Porkbun. Before changing nameservers, export the current zone and record all A/AAAA/CNAME, MX, TXT, SPF, DKIM, DMARC, CAA and verification records, TTLs and current DNSSEC state. Import and compare the complete zone in Cloudflare; do not overwrite mail records with app records. Check CAA allows certificate issuance required by the chosen services.
 
 If DNSSEC is currently enabled, remove the old DS at Porkbun and allow its TTL to expire **before** changing delegation; stale DS records can make the entire domain fail validation. Use the actual nameservers assigned to this zone, not example names. Change only the authoritative nameservers at Porkbun, verify delegation/resolution and preserved email records, then enable Cloudflare DNSSEC and publish its new DS at Porkbun. Verify validating resolvers before calling migration complete. Keep the old zone export and a rollback plan; do not toggle nameservers and DS records together blindly.

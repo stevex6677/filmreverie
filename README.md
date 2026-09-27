@@ -75,6 +75,9 @@ export and verify a backup before changing origins or clearing site data.
 **The API Worker is deployed. Current menu and shared roll editor changes remain local; they have not been published to Pages.** See
 [deployment/privacy/recovery instructions](docs/CLOUD_GALLERY.md) and
 [M21 validation and blockers](docs/M21_REVIEW.md).
+Pushes to GitHub `master` can deploy both the API Worker and website through
+the [automatic deployment workflow](docs/AUTO_DEPLOY.md), after its dedicated
+Cloudflare repository secret is configured.
 Local development can use real Cloudflare login, return to the same dev URL,
 and edit the published gallery through the opt-in
 [development admin bridge](docs/CLOUD_GALLERY.md). Its session stays on the local
