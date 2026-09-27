@@ -1,0 +1,92 @@
+/* A continuous, unperforated 120-film strip with sparse edge printing. */
+.film-panel.film-panel {
+  --panel-ink: #f2e5ce;
+  --panel-muted: #bcac94;
+  --panel-brass: #d5ad70;
+  --film-edge: 16px;
+  color-scheme: dark;
+  color: var(--panel-ink);
+  background: linear-gradient(100deg,#35271c40,transparent 45%), #201913;
+  border: 1px solid #68523b;
+  border-radius: 3px;
+  /* Opening focuses the dialog for keyboard access, without a browser-blue
+     outline around the entire film strip. Controls retain their focus rings. */
+  outline: none;
+  padding: 12px 0;
+  box-shadow: 0 16px 56px #0006;
+  scrollbar-color: #756047 #201913;
+  scrollbar-width: thin;
+}
+.darkroom-app-container:has(.film-strip-header) { --film-panel-top: calc(max(14px, env(safe-area-inset-top)) + 110px); }
+.film-panel.table-panel, .film-panel.mobile-sheet {
+  inset: var(--film-panel-top,12px) max(12px,env(safe-area-inset-right)) 12px auto;
+  width: 360px; max-width: calc(100% - 40px); margin: 0;
+  height: fit-content;
+  max-height: calc(var(--visible-height,100dvh) - var(--film-panel-top,12px) - 12px);
+}
+.film-panel.table-frame-panel, .film-panel.frame-sheet { width: 460px; }
+.film-panel .film-panel-frames { display:grid; gap:10px; }
+.film-panel-frame { position:relative; padding:0 var(--film-edge); min-width:0; }
+.film-panel-edge {
+  position:absolute; top:16px; left:0; width:var(--film-edge);
+  display:flex; align-items:center; gap:12px; flex-direction:column;
+  color:#e6d9bc; font:10px/1 sans-serif; pointer-events:none; user-select:none;
+}
+.film-panel-edge > span, .film-panel-index > span:last-child { writing-mode:vertical-rl; text-orientation:sideways; transform:rotate(180deg); white-space:nowrap; }
+.film-panel-edge > span:last-child { font-size:9px; letter-spacing:.04em; }
+.film-panel-index { position:absolute; top:36px; right:0; width:var(--film-edge); display:flex; flex-direction:column; align-items:center; gap:6px; font:10px/1 sans-serif; color:#e6d9bc; pointer-events:none; user-select:none; }
+.film-panel-content {
+  min-width:0; min-height:148px; padding:22px 16px;
+  background:linear-gradient(120deg,#21190e35,transparent),#100d09;
+  border:1px solid #3d30204a; border-radius:3px;
+  display:flex; flex-direction:column; justify-content:center;
+}
+.film-panel-content > * { min-width:0; }
+.film-panel .table-fields label, .film-panel .table-field { width:100%; }
+.film-panel .table-fields label > output { top:0; }
+.film-panel .film-panel-content > .table-frame-grid, .film-panel .film-panel-content > .mobile-frame-grid { width:100%; }
+.film-panel .mobile-tool-content .table-field { display:grid; gap:12px; }
+.film-panel .camera-panel-sources { display:grid; gap:12px; }
+.film-panel.camera-information h1 { font-size:32px; overflow-wrap:anywhere; }
+.film-panel.camera-information dl { margin:0; }
+@media(max-width:700px) {
+  .darkroom-app-container:has(.film-strip-header) { --film-panel-top:112px; }
+  .film-panel.table-panel, .film-panel.mobile-sheet { right:8px; bottom:8px; max-width:calc(100% - 32px); }
+}
+.film-panel .table-eyebrow { display:block; font: 9px/1.5 monospace; letter-spacing: .13em; color: var(--panel-brass); }
+.film-panel .film-stock-info { padding:0; border:0; background:none; }
+.film-panel .film-stock-info h3 { font: 400 21px/1.2 Georgia,'Times New Roman',serif; }
+.film-panel .film-stock-info p, .film-panel .table-field p { color: var(--panel-muted); }
+.film-panel .film-stock-type, .film-panel output { color: var(--panel-brass); }
+.film-panel output { font-family: monospace; font-variant-numeric: tabular-nums; }
+.film-panel .film-strength-scale { color: var(--panel-muted); opacity: 1; font: 10px/1.4 monospace; }
+.film-panel .film-strength-control small { color: var(--panel-muted); opacity: 1; }
+.film-panel.film-panel button {
+  min-height: 44px; color: var(--panel-ink); border: 1px solid #816345;
+  border-radius: 3px; background: linear-gradient(#403225,#2b2119);
+  box-shadow: inset 0 1px #e9c58b17, 0 2px 3px #0003;
+  font-size: 13px; cursor: pointer;
+}
+.film-panel.film-panel button:hover:not(:disabled) { border-color: #d5ad70; background: linear-gradient(#514030,#33261c); }
+.film-panel.film-panel button:is([aria-pressed=true],[aria-checked=true],[aria-current=true]) { border-color: #dfb76a; color: #ffe6b4; background: #624627; box-shadow: inset 0 0 0 1px #d5ad7029; }
+.film-panel.film-panel button:disabled { opacity: .4; cursor: default; }
+.film-panel.film-panel :is(button,input,select,a):focus-visible { outline: 2px solid #ffe0a1; outline-offset: 3px; }
+.film-panel.film-panel select { color: var(--panel-ink); background-color:#2b2119; border:1px solid #816345; border-radius:3px; }
+/* Keep the full 44px input hit area around the recessed track. */
+.film-panel.film-panel input[type=range] { appearance:none; -webkit-appearance:none; width:100%; height:44px; min-height:44px; margin:0; background:transparent; cursor:ew-resize; accent-color:var(--panel-brass); }
+.film-panel input[type=range]::-webkit-slider-runnable-track { height:5px; border:1px solid #987343; border-radius:1px; background:#110d09; box-shadow:0 1px #e9c58b20; }
+.film-panel input[type=range]::-moz-range-track { height:3px; border:1px solid #987343; border-radius:1px; background:#110d09; }
+.film-panel input[type=range]::-webkit-slider-thumb { appearance:none; -webkit-appearance:none; width:22px; height:22px; margin-top:-9px; border:2px solid #e1be83; border-radius:50%; background:repeating-linear-gradient(90deg,#bf955e 0 2px,#e6c894 2px 3px); box-shadow:0 2px 5px #0009,inset 0 0 0 3px #443021; }
+.film-panel input[type=range]::-moz-range-thumb { width:18px; height:18px; border:2px solid #e1be83; border-radius:50%; background:repeating-linear-gradient(90deg,#bf955e 0 2px,#e6c894 2px 3px); box-shadow:0 2px 5px #0009,inset 0 0 0 3px #443021; }
+.film-panel.camera-information { border-radius:0; }
+.film-panel.camera-information h1, .film-panel.camera-information dd { color: var(--panel-ink); }
+.film-panel.camera-information h1 em, .film-panel.camera-information .camera-intro { color: #ddc6a0; }
+.film-panel.camera-information p, .film-panel.camera-information dt { color: var(--panel-muted); }
+.film-panel.camera-information a { color: var(--panel-brass); }
+.film-panel.camera-information .camera-kicker { color: var(--panel-brass); font-family: monospace; }
+.film-panel.camera-information dl > div { border-color:#94704455; }
+@media(max-width:850px), (max-height:500px) and (orientation:landscape) {
+  /* The desktop second-column placement must not anchor the absolute sheet
+     to an implicit column outside the narrow viewport. */
+  .film-panel.camera-information { grid-area:auto; }
+}

@@ -1,5 +1,5 @@
+import { shelfAction, expectShelfSummary, focusShelf, ready } from './helpers/shelf';
 import { test, expect, type Page } from '@playwright/test';
-import { focusShelf, ready } from './helpers/shelf';
 import { mm, SHELF_ORIGIN, SHELF_CELL_MM } from '../../src/data/physicalScale';
 
 async function panelBelowCube(page: Page) {
@@ -29,7 +29,7 @@ test('a selected shelf compartment moves above its roll record, including corner
       } finally { db.close(); }
     }, slot);
     await page.reload(); await ready(page); await focusShelf(page);
-    if (slot >= 16) await page.getByRole('button', { name: 'Next shelf page', exact: true }).click();
+    if (slot >= 16) await shelfAction(page, 'Next shelf page');
     const cube = page.getByRole('button', { name: 'Show saved roll Roll 01', exact: true });
     const fullPose = await page.locator('canvas').getAttribute('data-camera-position');
     if (info.project.use.hasTouch) await cube.tap(); else await cube.click();
@@ -61,7 +61,7 @@ test('roll details separate selection from edit, delete, undo and opening photog
   card = await panelBelowCube(page);
   await card.getByRole('button', { name: 'Delete Roll 01', exact: true }).click();
   await expect(card).toHaveCount(0);
-  await expect(page.locator('.shelf-toolbar')).toContainText('0 saved rolls');
+  await expectShelfSummary(page, '0 saved rolls');
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(cube).toBeVisible();
   await cube.focus(); await cube.press('ArrowDown');

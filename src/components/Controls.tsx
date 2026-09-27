@@ -7,11 +7,14 @@ export function Controls(props: {
   state: ViewerState;
   dispatch: Dispatch<ViewerAction>;
   onOpenLibrary: () => void;
+  onOpenRoom: () => void;
+  onOpenTable: () => void;
   onOpenCameras?: () => void;
   sheet: MobileSheet;
   setSheet: (sheet: MobileSheet) => void;
   emptyRollMessage?: string;
   ownerActions?: ReactNode;
+  createAction?: ReactNode;
 }) {
   return <div className="desktop-room-controls" data-testid="controls-panel">
     <MobileControls {...props} roomNavigation />

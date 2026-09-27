@@ -450,7 +450,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
     case "APPROACH_TABLE":
       if (state.shelfId === 'camera') return { ...state, roomMode: 'inspect', shelfFocused: false, shelfId: null, cameraDisplay: null, isTransitioning: true, transitionKind: 'journey' };
       // Guard against competing transitions or already inspecting
-      if (state.roomMode === "inspect" || (state.isTransitioning && state.transitionKind !== 'shelf')) {
+      if (state.roomMode === "inspect" || (state.isTransitioning && state.transitionKind !== 'shelf' && state.transitionKind !== 'journey')) {
         return state;
       }
       return {
@@ -470,7 +470,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       if (state.cameraDisplay) return { ...state, cameraDisplay: null };
       if (state.roomMode === "room" && state.shelfFocused) return { ...state, shelfFocused: false, shelfId: null, isTransitioning: true, transitionKind: "shelf" };
       // Guard against competing transitions or already in room
-      if (state.roomMode === "room" || state.isTransitioning) {
+      if (state.roomMode === "room" || (state.isTransitioning && state.transitionKind !== 'journey')) {
         return state;
       }
       return {

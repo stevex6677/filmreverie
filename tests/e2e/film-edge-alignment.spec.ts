@@ -1,3 +1,4 @@
+import { shelfAction } from './helpers/shelf';
 import { openViewingTools, openFrame, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import { PNG } from "pngjs";
@@ -6,7 +7,7 @@ import fs from "node:fs/promises";
 for (const format of ["135", "67"]) test(`${format} photo edges stay aligned with the curved film`, async ({ page }) => {
   await page.goto("/guest?mode=inspect&reduced_motion=true");
   await page.getByRole("button", { name: "Film Shelf", exact: true }).click();
-  await page.getByRole("button", { name: "New roll", exact: true }).click();
+  await shelfAction(page, "New roll");
   const png = new PNG({ width: 600, height: 400 });
   for (let i = 0; i < png.data.length; i += 4) png.data.set([40, 180, 70, 255], i);
   await page.getByLabel("Choose photographs").setInputFiles([{ name: "green.png", mimeType: "image/png", buffer: PNG.sync.write(png) }]);

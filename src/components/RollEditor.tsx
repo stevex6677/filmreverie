@@ -14,7 +14,7 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onDelete,rep
   const [error,setError]=useState(''),[busy,setBusy]=useState(false),[progress,setProgress]=useState(''),[loading,setLoading]=useState(true);
   const [draft,setDraft]=useState<DraftPhoto[]|null>(null),[editing,setEditing]=useState<StoredRoll|null>(null),[rollId,setRollId]=useState(''),[step,setStep]=useState<Step>('photos'),[selected,setSelected]=useState('');
   const [name,setName]=useState(''),[stock,setStock]=useState<FilmStockId>(DEFAULT_FILM_STOCK_ID),[format,setFormat]=useState<FilmFormat>('135'),[sizing,setSizing]=useState<FrameSizing>('fixed'),[cover,setCover]=useState('');
-  // Capture before the opening commit removes the shelf toolbar and roll card.
+  // Capture before the opening commit removes the shelf menu and roll card.
   const [opener]=useState(()=>document.activeElement instanceof HTMLElement?document.activeElement:null);
   useEffect(() => { blockUpdate('roll-editor', true); return () => blockUpdate('roll-editor', false); }, []);
   const drag=useRef<number|null>(null),draftCreatedAt=useRef(Date.now());
@@ -27,7 +27,7 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onDelete,rep
       requestAnimationFrame(()=>{
         if(mounted.current)return;
         // Saving opens the table; cancelling returns to the remounted shelf.
-        for(const target of [opener,document.querySelector<HTMLElement>('.shelf-toolbar .shelf-add'),document.querySelector<HTMLElement>('.canvas-wrapper')]){
+        for(const target of [opener,document.querySelector<HTMLElement>('button[aria-label="More options"]'),document.querySelector<HTMLElement>('.canvas-wrapper')]){
           if(!target?.isConnected||target===document.body||!target.getClientRects().length)continue;
           target.focus({preventScroll:true});
           if(document.activeElement===target)break;

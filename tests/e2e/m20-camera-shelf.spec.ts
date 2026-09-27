@@ -11,7 +11,7 @@ test.use({ actionTimeout: 60000 });
 const canon = CAMERAS.find(camera => camera.id === 'canon-7s')!;
 
 async function cameraShelf(page: Page) {
-  await page.getByRole('button', { name: 'Camera Cabinet', exact: true }).click();
+  await page.getByRole('button', { name: 'Cameras', exact: true }).click();
   await expect(page.locator('main')).toHaveAttribute('data-shelf-id', 'camera'); await ready(page);
   await expect(page.locator('.canvas-wrapper canvas')).toHaveAttribute('data-camera-model-width', '0.756', { timeout: 90000 });
 }
@@ -75,8 +75,7 @@ test('physical shelf, all rendered sides, orbit, zoom, reset, history and preser
   const area = await page.evaluate(() => {
     const canvas = document.querySelector('canvas')!.getBoundingClientRect();
     const header = document.querySelector('.controls-header, .mobile-header')!.getBoundingClientRect();
-    const toolbar = document.querySelector('.camera-collection-toolbar')!.getBoundingClientRect();
-    return { left: canvas.left, right: canvas.right, top: Math.max(canvas.top, header.bottom), bottom: Math.min(canvas.bottom, toolbar.top) };
+    return { left: canvas.left, right: canvas.right, top: Math.max(canvas.top, header.bottom), bottom: canvas.bottom };
   });
   expect(topLeft.x).toBeGreaterThan(area.left); expect(bottomRight.x).toBeLessThan(area.right);
   expect(topLeft.y).toBeGreaterThan(area.top); expect(bottomRight.y).toBeLessThan(area.bottom);
@@ -120,7 +119,7 @@ test('physical shelf, all rendered sides, orbit, zoom, reset, history and preser
   await page.getByRole('button', { name: 'Back to shelf' }).click();
   const primaryLabel = page.getByRole('button', { name: 'Inspect Mamiya Universal' });
   if (await primaryLabel.isVisible()) await expect(primaryLabel).toBeFocused();
-  await page.getByRole('button', { name: 'Back to room' }).click(); await ready(page);
+  await page.getByRole('button', { name: 'Room', exact: true }).click(); await ready(page);
   await expect(app).toHaveAttribute('data-room-pose', pose!);
   expect(errors).toEqual([]);
 });
@@ -171,7 +170,7 @@ test('Canon model failure can retry and all prepared cameras reopen with the ser
     server.fail(canon.url);
     await page.addInitScript(() => localStorage.setItem('darkroom-guest-welcome', 'done'));
     await page.goto(`${server.url}/guest?mode=room&reduced_motion=true`); await ready(page);
-    await page.getByRole('button', { name: 'Camera Cabinet', exact: true }).click(); await ready(page);
+    await page.getByRole('button', { name: 'Cameras', exact: true }).click(); await ready(page);
     await openCamera(page, 'Canon 7s');
     await expect(page.locator('.camera-display [role="alert"]')).toBeVisible({ timeout: 90000 });
     server.fail('');
@@ -211,10 +210,10 @@ test('physical room entry and reversible camera shelf flights', async ({ page },
   else await page.mouse.click(point.x, point.y);
   await expect(page.locator('main')).toHaveAttribute('data-shelf-id', 'camera');
   await expect(page.locator('.camera-display')).toHaveCount(0); await ready(page);
-  await page.getByRole('button', { name: 'Back to room' }).click(); await ready(page);
-  await page.getByRole('button', { name: 'Camera Cabinet', exact: true }).click();
+  await page.getByRole('button', { name: 'Room', exact: true }).click(); await ready(page);
+  await page.getByRole('button', { name: 'Cameras', exact: true }).click();
   await expect(page.locator('main')).toHaveAttribute('data-is-transitioning', 'true');
-  await page.getByRole('button', { name: 'Back to room' }).click();
+  await page.getByRole('button', { name: 'Room', exact: true }).click();
   await expect(page.locator('main')).toHaveAttribute('data-shelf-focused', 'false'); await ready(page);
 });
 
@@ -278,7 +277,8 @@ test('responsive inspection, touch gestures, graphics recovery and repeated entr
   try {
     for (let i = 0; i < 2; i++) {
       await page.getByRole('button', { name: 'Back to shelf' }).click();
-      await expect(page.locator('.camera-collection-toolbar')).toBeVisible();
+      await expect(page.locator('.camera-collection-toolbar')).toHaveCount(0);
+      await expect(page.locator('main')).toHaveAttribute('data-shelf-id', 'camera');
       if (i === 0) await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-844-shelf.png` });
       await display(page);
     }

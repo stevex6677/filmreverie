@@ -1,3 +1,4 @@
+import { shelfAction } from './helpers/shelf';
 import { IMPORT_LIMITS } from '../../src/storage/importPhotos';
 import { openViewingTools, openFrame, captureCanvas } from "./helpers/viewing";
 import {test,expect,Page} from '@playwright/test';
@@ -5,7 +6,7 @@ import {PNG} from 'pngjs';
 import fs from 'node:fs/promises';
 const OUT=process.env.M14_CANDIDATE_DIR || 'artifacts/m14-candidates';
 function chart(name:string,seed=0,width=600,height=400){const p=new PNG({width,height});for(let y=0;y<height;y++)for(let x=0;x<width;x++){const i=(y*width+x)*4;const v=x%6<3?230:25;p.data[i]=v;p.data[i+1]=y<height/2?40+seed%100:180;p.data[i+2]=60+(seed*19)%150;p.data[i+3]=255;}return {name,mimeType:'image/png',buffer:PNG.sync.write(p)};}
-async function begin(page:Page){await page.goto('/guest?mode=inspect&example=1');await page.getByRole('button',{name:'Film Shelf',exact:true}).click();await page.getByRole('button',{name:'New roll',exact:true}).click();}
+async function begin(page:Page){await page.goto('/guest?mode=inspect&example=1');await page.getByRole('button',{name:'Film Shelf',exact:true}).click();await shelfAction(page, 'New roll');}
 async function add(page:Page,files:ReturnType<typeof chart>[]){await page.getByLabel('Choose photographs',{exact:true}).setInputFiles(files);await expect(page.getByText(`Processed ${files.length} / ${files.length}`,{exact:true})).toBeVisible({timeout:120000});}
 async function ready(page:Page){await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:30000});await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});}
 async function details(page:Page,name:string){await page.getByRole('button',{name:'Continue to roll details'}).click();await page.getByLabel('Roll name',{exact:true}).fill(name);}
@@ -25,7 +26,7 @@ test('M14 staged import appends atomically and crop review persists only on save
 });
 test('M14 latest destination wins, adjacent textures stay resident, focus preserves framing and memory stays bounded',async({page})=>{
   await begin(page);await add(page,Array.from({length:24},(_,i)=>chart(`scan${i+1}.png`,i,2100,2100)));await details(page,'Navigation and residency');await review(page);await save(page);
-  await page.getByRole('button',{name:'Focus frame 1',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-inspection-level','frame');await page.getByRole('button',{name:'Next',exact:true}).click();await ready(page);await expect(page.locator('main')).toHaveAttribute('data-selected-frame','2');await page.getByRole('button',{name:'← Overview',exact:true}).click();await ready(page);
+  await page.locator('.canvas-wrapper').focus();await page.keyboard.press('Enter');await expect(page.locator('main')).toHaveAttribute('data-inspection-level','frame');await page.getByRole('button',{name:'Next',exact:true}).click();await ready(page);await expect(page.locator('main')).toHaveAttribute('data-selected-frame','2');await page.getByRole('button',{name:'← Overview',exact:true}).click();await ready(page);
   await openFrame(page,6);await ready(page);const canvas=page.locator('canvas');const ids=JSON.parse((await canvas.getAttribute('data-texture-ids'))!);
   await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowRight');await expect(page.locator('main')).toHaveAttribute('data-selected-frame','9');await ready(page);const after=JSON.parse((await canvas.getAttribute('data-texture-ids'))!);expect(after[5]).toBe(ids[5]);expect(after[6]).toBe(ids[6]);
   const camera=await canvas.getAttribute('data-camera-position');await expect(page.getByRole('button',{name:'← Overview',exact:true})).toBeVisible();await expect(page.getByRole('group',{name:'Frame map'})).not.toBeVisible();await capture(page,'06-focus');await page.getByRole('button',{name:'← Overview',exact:true}).click();await ready(page);await openFrame(page,9);expect(await canvas.getAttribute('data-camera-position')).toBe(camera);

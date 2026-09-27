@@ -4,7 +4,7 @@ import { getRegionStats,getRegionMeanDifference } from './helpers/pixelAnalysis'
 import { FULL_ROLL_FIXTURE,locateFrame } from '../../src/utils/rollLayout';
 import { captureCanvas } from "./helpers/viewing";
 const ready=async(page:Page)=>{await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:45000});await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});};
-const open=async(page:Page,n:number)=>{await page.getByRole('button',{name:'Choose frame',exact:true}).click();await page.getByRole('button',{name:`Open frame ${n}`,exact:true}).click();await ready(page);};
+const open=async(page:Page,n:number)=>{if(await page.locator('main').getAttribute('data-focus-mode')!=='true'){await page.locator('.canvas-wrapper').focus();await page.keyboard.press('Enter');await ready(page);}await page.getByRole('button',{name:'Choose frame',exact:true}).click();await page.getByRole('button',{name:`Open frame ${n}`,exact:true}).click();await ready(page);};
 test('M16 zooms the same table with neighboring images visible and restores Overview',async({page},info)=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/guest?fixture=36&mode=inspect');await ready(page);
@@ -39,7 +39,7 @@ test('M16 zooms the same table with neighboring images visible and restores Over
     }
     expect(b.left).toBeGreaterThan(width*.08);expect(b.right).toBeLessThan(width*.92);expect(b.top).toBeGreaterThan(height*.055);expect(b.bottom).toBeLessThan(height*.945);
     expect(b.right-b.left).toBeGreaterThan(width*.18);expect(getRegionStats(png,width/2|0,height/2|0,35).stdDev).toBeGreaterThan(4);
-    await expect(page.getByRole('button',{name:'← Overview',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Adjust',exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:'← Overview',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Settings',exact:true})).toBeVisible();
     await page.screenshot({path:info.outputPath(`focus-${width}x${height}.png`)});
   }
   // Restore the original viewport before checking the saved table pose.
@@ -54,15 +54,15 @@ test('M16 zooms the same table with neighboring images visible and restores Over
 test('M16 Focus keeps live settings and keyboard ownership without changing photographic framing',async({page},info)=>{
   await page.goto('/guest?mode=inspect&deterministic=true');await ready(page);await open(page,3);
   const canvas=page.locator('canvas'),pose=await canvas.getAttribute('data-camera-position');
-  await page.getByRole('button',{name:'Adjust',exact:true}).click();await expect(page.getByRole('dialog',{name:'Viewing tools'})).toBeVisible();
+  await page.getByRole('button',{name:'Settings',exact:true}).click();await expect(page.getByRole('dialog',{name:'Viewing tools'})).toBeVisible();
   const before=PNG.sync.read(await captureCanvas(page));
   await page.getByTestId('mode-toggle').click();await page.waitForTimeout(350);
   const after=PNG.sync.read(await captureCanvas(page));expect(getRegionMeanDifference(before,after,after.width/2|0,after.height/2|0,40)).toBeGreaterThan(15);
   const visible=PNG.sync.read(await page.screenshot({path:info.outputPath('focus-adjust.png')}));
   expect(getRegionMeanDifference(after,visible,after.width/2|0,after.height/2|0,40)).toBeLessThan(2);
   await page.getByLabel('Light Table Brightness').fill('0.3');await page.keyboard.press('ArrowRight');await expect(page.locator('main')).toHaveAttribute('data-selected-frame','3');
-  await page.getByRole('button',{name:'Close',exact:true}).click();expect(await canvas.getAttribute('data-camera-position')).toBe(pose);
-  await page.getByRole('button',{name:'Adjust',exact:true}).click();await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).not.toBeVisible();await expect(page.locator('main')).toHaveAttribute('data-focus-mode','true');
+  await page.keyboard.press('Escape');expect(await canvas.getAttribute('data-camera-position')).toBe(pose);
+  await page.getByRole('button',{name:'Settings',exact:true}).click();await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).not.toBeVisible();await expect(page.locator('main')).toHaveAttribute('data-focus-mode','true');
   await page.keyboard.press('Escape');await ready(page);await expect(page.locator('main')).toHaveAttribute('data-focus-mode','false');
   await page.screenshot({path:info.outputPath('overview.png')});
 });
@@ -76,7 +76,7 @@ test('M16 Focus keeps live settings and keyboard ownership without changing phot
   if(test.info().project.use.hasTouch)await page.touchscreen.tap(viewport.width/2,viewport.height/2);
   else await page.mouse.move(viewport.width/2+10,viewport.height/2+10);
   await expect(controls).toHaveAttribute('data-quiet','false');expect(await page.locator('canvas').getAttribute('data-camera-position')).toBe(pose);
-  await page.getByRole('button',{name:'Adjust',exact:true}).focus();await page.keyboard.press('Enter');
+  await page.getByRole('button',{name:'Settings',exact:true}).focus();await page.keyboard.press('Enter');
   await expect(page.getByRole('dialog',{name:'Viewing tools'})).toBeVisible();await page.keyboard.press('Escape');
-  await expect(page.getByRole('button',{name:'Adjust',exact:true})).toBeFocused();
+  await expect(page.getByRole('button',{name:'Settings',exact:true})).toBeFocused();
  });

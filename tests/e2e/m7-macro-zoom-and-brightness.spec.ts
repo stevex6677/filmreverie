@@ -117,9 +117,9 @@ test.describe("M7 E2E — Deep Macro Zoom (1000%) & Light Table Dimmer Calibrati
       expect(reached1000).toBe(true);
       await expect(zoomBadge).toHaveText("1000%");
 
-      // Reset View button must be visible
+      // The removed overview toolbar must stay absent
       const resetBtn = page.locator("[data-testid=reset-view-btn]");
-      await expect(resetBtn).toBeVisible();
+      await expect(resetBtn).toHaveCount(0);
 
       // Capture 1000% macro close-up screenshot
       await page.waitForTimeout(400);
@@ -150,11 +150,11 @@ test.describe("M7 E2E — Deep Macro Zoom (1000%) & Light Table Dimmer Calibrati
       expect(pannedDiff).toBeGreaterThan(2.0);
 
       // 8. Test Reset View restores 100% zoom and center while preserving dimmer setting
-      await resetBtn.click();
+      await viewerKey(page, "0");
       await page.waitForTimeout(400);
       await expect(zoomBadge).toHaveText("100%");
       await expect(brightnessBadge).toHaveText("100%");
-      await expect(resetBtn).toBeVisible(); // M16 keeps Fit roll available.
+      await expect(resetBtn).toHaveCount(0);
     }
 
     // Baseline validation: zero unhandled errors

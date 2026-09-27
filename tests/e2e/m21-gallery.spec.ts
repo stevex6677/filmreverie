@@ -1,10 +1,10 @@
+import { shelfAction, shelfMenu, expectShelfSummary, focusShelf, ready } from './helpers/shelf';
 import { test, expect, type Page } from '@playwright/test';
 import { PNG } from 'pngjs';
 import { createHash } from 'node:crypto';
 import { createServer, request as httpRequest, type Server, type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { GalleryRoll } from '../../src/cloud/contracts';
-import { focusShelf, ready } from './helpers/shelf';
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -34,27 +34,62 @@ function proxy(request: IncomingMessage, response: ServerResponse, baseURL: stri
 async function databases(page: Page) {
   return page.evaluate(async () => (await indexedDB.databases()).map(db => db.name));
 }
-test('owner room keeps the guest header with the admin menu after Create Your Own beside Lights', async ({ page, baseURL }, info) => {
-  for (const width of [1280, 390]) {
+test('owner film header keeps Create your own visible beside swipeable destinations', async ({ page, baseURL }, info) => {
+  for (const width of [320, 390, 820, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await page.goto(`${baseURL}/?mode=room&reduced_motion=true`); await ready(page);
     const header = page.locator('.mobile-header');
-    const lights = header.getByRole('button', { name: 'Lights', exact: true });
+    const lights = header.getByRole('button', { name: 'Settings', exact: true });
     const admin = header.getByRole('button', { name: 'More options' });
-    const create = header.getByRole('link', { name: /Create Your Own/ });
+    const create = header.getByRole('link', { name: /Create your own/i });
     await expect(header.getByRole('button', { name: 'Film Shelf' })).toBeVisible();
-    await expect(header.getByRole('button', { name: 'Camera Cabinet' })).toBeVisible();
-    await expect(lights).toBeVisible(); await expect(admin).toBeVisible(); await expect(create).toBeVisible();
+    await expect(header.getByRole('button', { name: 'Cameras' })).toBeVisible();
+    await expect(lights).toBeVisible(); await expect(admin).toBeVisible();
     await expect(page.getByRole('button', { name: 'More options', exact: true })).toHaveCount(1);
-    await expect(page.getByRole('link', { name: /Create Your Own/ })).toHaveCount(1);
-    const lightBox = (await lights.boundingBox())!, adminBox = (await admin.boundingBox())!, createBox = (await create.boundingBox())!;
+    const lightBox = (await lights.boundingBox())!, adminBox = (await admin.boundingBox())!;
     const center = (box: { y: number; height: number }) => box.y + box.height / 2;
-    expect(Math.abs(center(lightBox) - center(adminBox))).toBeLessThan(4);
-    expect(Math.abs(center(lightBox) - center(createBox))).toBeLessThan(4);
-    expect(lightBox.x + lightBox.width).toBeLessThan(createBox.x);
-    expect(createBox.x + createBox.width).toBeLessThan(adminBox.x);
+    if (width <= 700) expect(lightBox.y + lightBox.height).toBeLessThanOrEqual(adminBox.y);
+    else {
+      expect(Math.abs(center(lightBox) - center(adminBox))).toBeLessThan(4);
+      expect(lightBox.x + lightBox.width).toBeLessThanOrEqual(adminBox.x);
+    }
     expect(adminBox.x + adminBox.width).toBeLessThanOrEqual(width);
+    await expect(create).toBeVisible();
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    const createBox = (await create.boundingBox())!;
+    expect(createBox.width).toBeGreaterThanOrEqual(44);
+    expect(createBox.height).toBe(52);
+    expect(createBox.x + createBox.width).toBeLessThanOrEqual(lightBox.x);
+    const stripBox = (await header.locator('.film-strip-body').boundingBox())!;
+    expect(createBox.y).toBeGreaterThanOrEqual(stripBox.y + 16);
+    expect(createBox.y + createBox.height).toBeLessThanOrEqual(stripBox.y + 72);
+    const destinations = header.getByRole('navigation', { name: 'Explore the darkroom' });
+    const first = destinations.getByRole('button', { name: 'Room', exact: true });
+    await first.focus();
+    await page.keyboard.press('End');
+    const last = destinations.getByRole('button', { name: 'Cameras', exact: true });
+    await expect(last).toBeFocused();
+    const lastBox = (await last.boundingBox())!, navBox = (await destinations.boundingBox())!;
+    expect(lastBox.x + lastBox.width).toBeLessThanOrEqual(navBox.x + navBox.width + 1);
+    if (width > 700) expect(lastBox.width).toBeLessThanOrEqual(105);
+    else expect(await destinations.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
+    expect((await create.boundingBox())!.x).toBe(createBox.x);
+    await page.keyboard.press('Home');
+    if (width <= 700 && info.project.use.hasTouch) {
+      const cdp = await page.context().newCDPSession(page);
+      const x = navBox.x + navBox.width - 10, y = navBox.y + navBox.height / 2;
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ id: 1, x, y }] });
+      for (let step = 1; step <= 6; step++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ id: 1, x: x - (navBox.width - 20) * step / 6, y }] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await expect.poll(() => destinations.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
+      expect((await create.boundingBox())!.x).toBe(createBox.x);
+      await cdp.detach();
+      await page.keyboard.press('End'); await page.keyboard.press('Home');
+    }
+    await page.screenshot({ path: info.outputPath(`create-film-strip-${width}.png`) });
     await admin.click();
+    await expect(page.getByRole('menuitem', { name: /Create your own/i })).toHaveCount(0);
+    await expect(create).toHaveAttribute('target', '_blank');
     await expect(page.getByRole('menuitem', { name: 'Admin Login' })).toBeVisible();
     await page.screenshot({ path: info.outputPath(`admin-menu-${width}.png`) });
     await page.getByRole('menuitem', { name: 'Admin Login' }).press('Escape');
@@ -66,9 +101,9 @@ test('owner room keeps the guest header with the admin menu after Create Your Ow
     if (await welcome.isVisible()) await welcome.click();
     await ready(page);
     const guestHeader = page.locator('.mobile-header');
-    await expect(guestHeader.getByRole('button', { name: 'Lights', exact: true })).toBeVisible();
+    await expect(guestHeader.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();
     await expect(guestHeader.getByRole('button', { name: 'Admin' })).toHaveCount(0);
-    await expect(guestHeader.getByRole('link', { name: /Create Your Own/ })).toHaveCount(0);
+    await expect(guestHeader.getByRole('link', { name: /Create your own/i })).toHaveCount(0);
   }
 });
 
@@ -118,10 +153,11 @@ test('public home displays only published rolls in the physical cabinet and open
     roll = { id: 'published-roll', revision: 'revision-one', name: 'Published coastline', stockId: 'portra-400', format: '135', coverId: 'frame-one', publishedAt: 1,
       frames: [{ id: 'frame-one', width: 180, height: 120, rotation: 0, viewing: image(`${photos}/view.png`), thumbnail: image(`${photos}/thumb.png`) }] };
     await page.goto(`${origin}/?mode=inspect&reduced_motion=true`); await ready(page);
-    await expect(page.getByRole('link', { name: /Create Your Own/ })).toHaveAttribute('target', '_blank');
+    await page.getByRole('button', { name: 'More options', exact: true }).click();
+    await expect(page.getByRole('link', { name: /Create your own/i })).toHaveAttribute('target', '_blank');
     await expect(page.getByRole('button', { name: 'More options', exact: true })).toBeVisible();
     const guestTab = page.waitForEvent('popup');
-    await page.getByRole('link', { name: /Create Your Own/ }).click();
+    await page.getByRole('link', { name: /Create your own/i }).click();
     const guest = await guestTab;
     await expect(guest).toHaveURL(/\/guest\?welcome=1$/);
     await expect(guest.getByRole('dialog', { name: 'Your guest darkroom' })).toBeVisible();
@@ -130,16 +166,17 @@ test('public home displays only published rolls in the physical cabinet and open
     await expect(guest.getByRole('dialog', { name: 'Your guest darkroom' })).toHaveCount(0);
     await guest.close();
     const repeatTab = page.waitForEvent('popup');
-    await page.getByRole('link', { name: /Create Your Own/ }).click();
+    await page.getByRole('link', { name: /Create your own/i }).click();
     const returningGuest = await repeatTab;
     await expect(returningGuest).toHaveURL(/\/guest\?welcome=1$/);
     await expect(returningGuest.getByRole('dialog', { name: 'Your guest darkroom' })).toBeVisible();
     await returningGuest.close();
+    await page.keyboard.press('Escape');
     await expect(page.getByRole('button', { name: 'New roll' })).toHaveCount(0);
     expect(await databases(page)).not.toContain('darkroom-rolls');
     await focusShelf(page);
     await expect(page.locator('[data-owned="true"]')).toHaveCount(1);
-    await expect(page.locator('.shelf-toolbar')).toContainText('PUBLISHED GALLERY');
+    await expectShelfSummary(page, 'Published gallery');
     await expect(page.getByRole('button', { name: 'Show published roll Published coastline' })).toBeVisible();
     await expect(page.locator('canvas')).toHaveAttribute('data-shelf-covers', /published-roll.*frame-one/);
     await page.screenshot({ path: info.outputPath('public-shelf.png') });
@@ -153,6 +190,29 @@ test('public home displays only published rolls in the physical cabinet and open
     await expect(page.locator('main')).toHaveAttribute('data-roll-id', 'gallery:published-roll:revision-one');
     await expect.poll(() => requests.filter(url => url === '/view.png').length).toBe(1);
     expect(await databases(page)).not.toContain('darkroom-rolls');
+    await ready(page);
+    for (const width of [320, 390, 1280]) {
+      await page.setViewportSize({ width, height: 844 });
+      const header = page.locator('.film-strip-header');
+      const nav = header.getByRole('navigation', { name: 'Explore the darkroom' });
+      await expect.poll(() => nav.evaluate(node => {
+        const selected = node.querySelector('[aria-current="page"]')!.getBoundingClientRect(), rail = node.getBoundingClientRect();
+        return selected.left >= rail.left - 1 && selected.right <= rail.right + 1;
+      })).toBe(true);
+      const create = header.getByRole('link', { name: 'Create your own', exact: true });
+      const createBox = (await create.boundingBox())!;
+      for (const name of ['Loupe', 'Settings', 'More options']) {
+        const box = (await header.getByRole('button', { name, exact: true }).boundingBox())!;
+        expect(box.x).toBeGreaterThanOrEqual(createBox.x + createBox.width);
+        expect(box.x + box.width).toBeLessThanOrEqual(width);
+        expect(box.width).toBeGreaterThanOrEqual(44);
+      }
+      await header.getByRole('button', { name: 'Loupe', exact: true }).click();
+      await expect(page.locator('main')).toHaveAttribute('data-loupe-active', 'true');
+      await header.getByRole('button', { name: 'Loupe', exact: true }).click();
+      await expect(page.locator('main')).toHaveAttribute('data-loupe-active', 'false');
+      await page.screenshot({ path: info.outputPath(`public-table-header-${width}.png`) });
+    }
     await page.getByRole('button', { name: 'More options' }).click();
     await expect(page.getByRole('menuitem', { name: 'Admin Login' })).toBeVisible();
     await expect(page.getByRole('dialog', { name: 'Owner publishing' })).toHaveCount(0);
@@ -178,30 +238,30 @@ test('guest welcome, deletable example and private edits stay in guest storage w
     await welcome.getByRole('button', { name: 'Enter guest darkroom' }).click();
     await ready(page);
     await expect(page.getByRole('button', { name: 'Admin' })).toHaveCount(0);
-    await expect(page.getByRole('link', { name: /Create Your Own/ })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /Create your own/i })).toHaveCount(0);
     await expect(page.locator('.shelf-toolbar')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'New roll', exact: true })).toHaveCount(0);
     await focusShelf(page);
     await expect(page.getByRole('button', { name: 'Backups & offline' })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'New roll', exact: true })).toBeVisible();
-    await page.getByRole('button', { name: '← Back to room', exact: true }).click(); await ready(page);
+    await shelfMenu(page);await expect(page.getByRole('menuitem',{name:'New roll',exact:true})).toBeVisible();
+    await page.getByRole('button', { name: 'Room', exact: true }).click(); await ready(page);
     await expect(page.locator('.shelf-toolbar')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'New roll', exact: true })).toHaveCount(0);
-    await page.getByRole('button', { name: 'Camera Cabinet', exact: true }).click(); await ready(page);
+    await page.getByRole('button', { name: 'Cameras', exact: true }).click(); await ready(page);
     await expect(page.getByRole('button', { name: 'New roll', exact: true })).toHaveCount(0);
     await focusShelf(page);
     await expect(page.locator('[data-owned="true"]')).toHaveCount(1);
     await page.getByRole('button', { name: 'Show saved roll Roll 01' }).click();
     await page.getByRole('button', { name: 'Delete Roll 01' }).click();
     await expect(page.getByRole('dialog', { name: 'Review roll' })).toHaveCount(0);
-    await expect(page.locator('.shelf-toolbar')).toContainText('0 saved rolls');
+    await expectShelfSummary(page, '0 saved rolls');
     await expect(page.locator('[data-owned="true"]')).toHaveCount(0);
     await page.reload(); await ready(page);
     await expect(welcome).toHaveCount(0);
     await focusShelf(page);
-    await expect(page.locator('.shelf-toolbar')).toContainText('0 saved rolls');
+    await expectShelfSummary(page, '0 saved rolls');
     await expect(page.locator('[data-owned="true"]')).toHaveCount(0);
-    await page.getByRole('button', { name: 'New roll' }).click();
+    await shelfAction(page, 'New roll');
     await page.getByLabel('Choose photographs', { exact: true }).setInputFiles({ name: 'private-location-source.png', mimeType: 'image/png', buffer: photo() });
     await expect(page.getByText('Processed 1 / 1', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Continue to roll details' }).click();

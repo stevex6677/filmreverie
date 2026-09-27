@@ -114,7 +114,7 @@ test('M18 cabinet click or tap approaches the shelf and Back restores the room p
   expect(closePosition[2]).toBeLessThan(Number(before!.split(',')[2]));
   await expect(page.getByRole('button', { name: /Show saved roll/ })).toHaveCount(1);
   await fs.mkdir(OUT, { recursive: true }); await page.screenshot({ path: `${OUT}/${info.project.name}-shelf-closeup.png` });
-  await page.getByRole('button', { name: '← Back to room', exact: true }).click(); await ready(page);
+  await page.getByRole('button', { name: 'Room', exact: true }).click(); await ready(page);
   await expect(app).toHaveAttribute('data-shelf-focused', 'false');
   await expect(app).toHaveAttribute('data-room-pose', pose!);
   const after = (await canvas.getAttribute('data-camera-position'))!.split(',').map(Number);

@@ -23,10 +23,10 @@ test('initial room prepares camera alongside photographs and reveals it with the
   for (let i = 0; i < 18; i++) await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(400);
   await page.screenshot({ path: `artifacts/m20-revision/${info.project.name}-chemistry-wall.png` });
-  await page.getByRole('button', { name: 'Camera Cabinet', exact: true }).click();
+  await page.getByRole('button', { name: 'Cameras', exact: true }).click();
   await expect(page.locator('main')).toHaveAttribute('data-is-transitioning', 'false');
   await page.screenshot({ path: `artifacts/m20-revision/${info.project.name}-large-shelf.png` });
-  await page.getByRole('button', { name: 'Back to room' }).click(); await ready(page);
+  await page.getByRole('button', { name: 'Room', exact: true }).click(); await ready(page);
   await page.locator('.canvas-wrapper').focus();
   for (let i = 0; i < 9; i++) await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(400);

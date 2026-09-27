@@ -1,3 +1,4 @@
+import { shelfAction } from './helpers/shelf';
 import { test, expect, Page } from '@playwright/test';
 import { PNG } from 'pngjs';
 import { offlineServer } from './helpers/offlineServer';
@@ -38,7 +39,7 @@ function photo(width=600,height=400) {
   return {name:'offline-source.png',mimeType:'image/png',buffer:PNG.sync.write(p)};
 }
 async function createRoll(page:Page,name='Offline roll',source=photo()) {
-  await shelf(page);await page.getByRole('button',{name:'New roll',exact:true}).click();
+  await shelf(page);await shelfAction(page, 'New roll');
   await page.getByLabel('Choose photographs',{exact:true}).setInputFiles(source);
   await expect(page.getByText('Processed 1 / 1',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Continue to roll details'}).click();await page.getByLabel('Roll name',{exact:true}).fill(name);
@@ -111,7 +112,7 @@ test('M18 update download is atomic and activation protects drafts, other tabs a
     await offlineReady(page);await expect(page.getByRole('button',{name:'Update Available'})).toHaveCount(0);
     server.fail('');await page.evaluate(() => window.dispatchEvent(new Event('online')));
     await expect(page.locator('.update-notice')).toContainText('Update Available',{timeout:60000});
-    await shelf(page);await page.getByRole('button',{name:'New roll',exact:true}).click();
+    await shelf(page);await shelfAction(page, 'New roll');
     // A modal makes the update control inert; invoke its actual click handler to
     // verify the underlying guard also rejects programmatic activation.
     await page.getByRole('button',{name:'Update Available'}).evaluate((el:HTMLButtonElement)=>el.click());

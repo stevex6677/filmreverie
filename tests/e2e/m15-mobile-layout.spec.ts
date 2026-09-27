@@ -6,7 +6,7 @@ const ready=async(page:Page)=>{await expect(page.locator('main')).toHaveAttribut
 test('M15 phone and tablet layouts keep usable film, controls, modal ownership and framing through rotation',async({page},info)=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto('/guest?fixture=36&mode=inspect&deterministic=true');await ready(page);
-  await page.getByRole('button',{name:'Choose frame',exact:true}).tap();await page.getByRole('button',{name:'Open frame 7',exact:true}).tap();await ready(page);
+  await openFrame(page,7);await ready(page);
   for(const [width,height] of [[375,667],[390,844],[667,375],[844,390],[820,1180],[1180,820],[540,820]]) {
     await page.setViewportSize({width,height});
     // visualViewport's resize event can follow setViewportSize's resolution.
@@ -23,13 +23,13 @@ test('M15 phone and tablet layouts keep usable film, controls, modal ownership a
     const image=PNG.sync.read(await captureCanvas(page));expect(getRegionStats(image,image.width/2|0,image.height/2|0,70).stdDev).toBeGreaterThan(4);
     await page.screenshot({path:info.outputPath(`layout-${width}x${height}.png`)});
     const zoom=await page.locator('main').getAttribute('data-inspect-zoom');
-    await page.getByRole('button',{name:'Adjust',exact:true}).tap();await expect(page.getByRole('dialog',{name:'Viewing tools'})).toBeVisible();
+    await page.getByRole('button',{name:'Settings',exact:true}).tap();await expect(page.getByRole('dialog',{name:'Viewing tools'})).toBeVisible();
     await page.keyboard.press('ArrowRight');await expect(page.locator('main')).toHaveAttribute('data-selected-frame','7');
-    await page.getByRole('button',{name:'Close',exact:true}).tap();expect(await page.locator('main').getAttribute('data-inspect-zoom')).toBe(zoom);
+    await page.keyboard.press('Escape');expect(await page.locator('main').getAttribute('data-inspect-zoom')).toBe(zoom);
     await page.getByRole('button',{name:'← Overview',exact:true}).tap();await ready(page);await openFrame(page,7);expect(Number(await page.locator('main').getAttribute('data-inspect-zoom'))).toBeCloseTo(Number(zoom));
   }
-  await page.getByRole('button',{name:'Adjust',exact:true}).tap();await page.getByRole('button',{name:'Switch to Positive',exact:true}).tap();await page.getByRole('button',{name:'Close',exact:true}).tap();await page.waitForTimeout(700);
-  const positive=PNG.sync.read(await captureCanvas(page));await page.getByRole('button',{name:'Adjust',exact:true}).tap();await page.getByRole('button',{name:'Switch to Negative',exact:true}).tap();await page.getByRole('button',{name:'Close',exact:true}).tap();await page.waitForTimeout(700);
+  await page.getByRole('button',{name:'Settings',exact:true}).tap();await page.getByRole('button',{name:'Switch to Positive',exact:true}).tap();await page.keyboard.press('Escape');await page.waitForTimeout(700);
+  const positive=PNG.sync.read(await captureCanvas(page));await page.getByRole('button',{name:'Settings',exact:true}).tap();await page.getByRole('button',{name:'Switch to Negative',exact:true}).tap();await page.keyboard.press('Escape');await page.waitForTimeout(700);
   const negative=PNG.sync.read(await captureCanvas(page));expect(getRegionMeanDifference(positive,negative,positive.width/2|0,positive.height/2|0,70)).toBeGreaterThan(15);
   expect(errors).toEqual([]);
 });
@@ -56,7 +56,7 @@ test('M15 iPad and iPhone in room mode have no bottom tools or footer', async ({
     await ready(page);
 
     await expect(page.getByRole('button', { name: 'Film Shelf', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();
 
     await expect(page.getByRole('button', { name: 'Face table', exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Approach table', exact: true })).toHaveCount(0);

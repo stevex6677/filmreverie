@@ -70,7 +70,7 @@ describe("M2 Integration — Camera Bounds, State Transitions & Pose Restoration
       expect(rx).toBe(0);
       expect(ry).toBeGreaterThan(0.0); // eye-level viewing elevation
       expect(rz).toBe((ROOM_ENVELOPE.front + ROOM_ENVELOPE.back) / 2);
-      expect(roomLookTarget(DEFAULT_ROOM_POSE)[1]).toBeGreaterThan(ry);
+      expect(roomLookTarget(DEFAULT_ROOM_POSE)[1]).toBe(ry); // level gaze, no upward tilt
     });
 
     it("defines flat horizontal table placement with mathematically perpendicular inspect camera pose", () => {
@@ -156,18 +156,18 @@ describe("M2 Integration — Camera Bounds, State Transitions & Pose Restoration
       expect(state).toEqual(beforeState);
     });
 
-    it("blocks competing transitions while isTransitioning is true", () => {
+    it("lets the latest room/table navigation reverse an in-flight journey", () => {
       let state = createInitialViewerState("room");
       state = viewerReducer(state, { type: "APPROACH_TABLE" });
       expect(state.isTransitioning).toBe(true);
 
-      // Rapid secondary commands while in-flight must be ignored
-      const lockedState = { ...state };
       state = viewerReducer(state, { type: "RETURN_TO_ROOM" });
-      expect(state).toEqual(lockedState);
-
+      expect(state.roomMode).toBe('room');
+      expect(state.transitionKind).toBe('journey');
       state = viewerReducer(state, { type: "APPROACH_TABLE" });
-      expect(state).toEqual(lockedState);
+      expect(state.roomMode).toBe('inspect');
+      expect(state.transitionKind).toBe('journey');
+      expect(state.savedRoomPose).toEqual(createInitialViewerState('room').savedRoomPose);
     });
   });
 
