@@ -1,3 +1,4 @@
+import { approachTable } from "./helpers/room";
 import { placeLoupeAtScreenPoint, viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
@@ -176,9 +177,8 @@ test.describe("M6 E2E — Table Inspection Zoom, Pan, and Loupe Magnification", 
       await page.waitForTimeout(600);
       await expect(roomBadge).toHaveAttribute("data-room-mode", "room");
 
-      const approachBtn = page.locator("[data-testid=approach-table-btn]");
-      await expect(approachBtn).toBeVisible();
-      await approachBtn.click(); await openViewingTools(page);
+      await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeVisible();
+      await approachTable(page); await openViewingTools(page);
       await page.waitForTimeout(600);
       await expect(roomBadge).toHaveAttribute("data-room-mode", "inspect");
       await expect(zoomBadge).toHaveText("100%");

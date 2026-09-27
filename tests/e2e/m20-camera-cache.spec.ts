@@ -13,7 +13,7 @@ test('failed optional preparation preserves film readiness; uncached inspection 
     await page.addInitScript(() => localStorage.setItem('darkroom-guest-welcome', 'done'));
     await page.goto(`${server.url}/guest?mode=room&reduced_motion=true`); await ready(page);
     await page.waitForFunction(() => !!navigator.serviceWorker.controller, { timeout: 90000 });
-    await page.getByRole('button', { name: 'Rolls', exact: true }).click(); await ready(page);
+    await page.getByRole('button', { name: 'Film Shelf', exact: true }).click(); await ready(page);
     await page.getByRole('button', { name: 'Backups & offline' }).click();
     await page.getByText('Offline & storage', { exact: true }).click();
     await expect(page.locator('.offline-panel')).toContainText('The app and built-in photographs are downloaded.');
@@ -26,7 +26,7 @@ test('failed optional preparation preserves film readiness; uncached inspection 
     // emulation, and both engines exercise a stopped server below.
     if (browserName !== 'webkit') await context.setOffline(true);
     await reload(); await ready(page);
-    await page.getByRole('button', { name: 'Cameras', exact: true }).click(); await ready(page);
+    await page.getByRole('button', { name: 'Camera Cabinet', exact: true }).click(); await ready(page);
     await openCamera(page);
     await expect(page.locator('.camera-display [role="alert"]')).toContainText(browserName === 'webkit' ? 'could not be loaded' : "Camera model isn't available offline");
     await expect(page.getByRole('button', { name: 'Back to shelf' })).toBeEnabled();
@@ -36,7 +36,7 @@ test('failed optional preparation preserves film readiness; uncached inspection 
     await expect(page.locator('.camera-display')).toHaveAttribute('data-model-ready', 'true', { timeout: 90000 });
     if (browserName === 'webkit') await server.stop(); else await context.setOffline(true);
     await reload(); await ready(page);
-    await page.getByRole('button', { name: 'Cameras', exact: true }).click(); await ready(page);
+    await page.getByRole('button', { name: 'Camera Cabinet', exact: true }).click(); await ready(page);
     await openCamera(page);
     await expect(page.locator('.camera-display')).toHaveAttribute('data-model-ready', 'true', { timeout: 90000 });
   } finally { await context.setOffline(false); await server.stop(); }

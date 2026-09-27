@@ -47,14 +47,14 @@ test('M18 package opens one editor with details left, frames above crop, and per
   await fs.mkdir(OUT,{recursive:true}); await page.screenshot({path:`${OUT}/${info.project.name}-combined-editor.png`});
   await editor.getByRole('button',{name:'Save and open',exact:true}).click(); await expect(editor).not.toBeVisible(); await ready(page);
   await page.reload(); await ready(page); await focusShelf(page);
-  await page.getByRole('button',{name:'Show saved roll Edited on the shelf',exact:true}).click();
+  await page.getByRole('button',{name:'Show saved roll Edited on the shelf',exact:true}).click();await page.getByRole('button',{name:'Edit Edited on the shelf',exact:true}).click();
   await expect(editor.getByLabel('Film format',{exact:true})).toHaveValue('66');
   await editor.getByRole('button',{name:'Select frame 2',exact:true}).click();
   await expect(editor.getByLabel('Horizontal crop position')).toHaveValue('0.4');
   await expect(editor.getByRole('button',{name:'Cover',exact:true})).toHaveAttribute('aria-pressed','true');
   await editor.getByLabel('Roll name',{exact:true}).fill('Discard this change');
   await editor.getByRole('button',{name:'Cancel edits',exact:true}).click();
-  await page.getByRole('button',{name:'Show saved roll Edited on the shelf',exact:true}).click();
+  await page.getByRole('button',{name:'Show saved roll Edited on the shelf',exact:true}).click();await page.getByRole('button',{name:'Edit Edited on the shelf',exact:true}).click();
   await editor.getByRole('button',{name:'Delete Edited on the shelf',exact:true}).click();
   await expect(editor).not.toBeVisible(); await expect(page.locator('[data-owned="true"]')).toHaveCount(0);
   await page.getByRole('button',{name:'Undo',exact:true}).click();

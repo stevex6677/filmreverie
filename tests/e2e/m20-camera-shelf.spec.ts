@@ -11,7 +11,7 @@ test.use({ actionTimeout: 60000 });
 const canon = CAMERAS.find(camera => camera.id === 'canon-7s')!;
 
 async function cameraShelf(page: Page) {
-  await page.getByRole('button', { name: 'Cameras', exact: true }).click();
+  await page.getByRole('button', { name: 'Camera Cabinet', exact: true }).click();
   await expect(page.locator('main')).toHaveAttribute('data-shelf-id', 'camera'); await ready(page);
   await expect(page.locator('.canvas-wrapper canvas')).toHaveAttribute('data-camera-model-width', '0.756', { timeout: 90000 });
 }
@@ -171,7 +171,7 @@ test('Canon model failure can retry and all prepared cameras reopen with the ser
     server.fail(canon.url);
     await page.addInitScript(() => localStorage.setItem('darkroom-guest-welcome', 'done'));
     await page.goto(`${server.url}/guest?mode=room&reduced_motion=true`); await ready(page);
-    await page.getByRole('button', { name: 'Cameras', exact: true }).click(); await ready(page);
+    await page.getByRole('button', { name: 'Camera Cabinet', exact: true }).click(); await ready(page);
     await openCamera(page, 'Canon 7s');
     await expect(page.locator('.camera-display [role="alert"]')).toBeVisible({ timeout: 90000 });
     server.fail('');
@@ -180,7 +180,7 @@ test('Canon model failure can retry and all prepared cameras reopen with the ser
     await page.waitForFunction(() => !!navigator.serviceWorker.controller, { timeout: 90000 });
     // Normal UI prepares the optional model explicitly, independent of film readiness.
     await page.getByRole('button', { name: 'Back to shelf' }).click();
-    await page.getByRole('button', { name: 'Film shelf', exact: true }).click(); await ready(page);
+    await page.getByRole('button', { name: 'Film Shelf', exact: true }).click(); await ready(page);
     await page.getByRole('button', { name: 'Backups & offline' }).click();
     await page.getByText('Offline & storage', { exact: true }).click();
     const download = page.getByRole('button', { name: 'Download cameras for offline use' });
@@ -212,7 +212,7 @@ test('physical room entry and reversible camera shelf flights', async ({ page },
   await expect(page.locator('main')).toHaveAttribute('data-shelf-id', 'camera');
   await expect(page.locator('.camera-display')).toHaveCount(0); await ready(page);
   await page.getByRole('button', { name: 'Back to room' }).click(); await ready(page);
-  await page.getByRole('button', { name: 'Cameras', exact: true }).click();
+  await page.getByRole('button', { name: 'Camera Cabinet', exact: true }).click();
   await expect(page.locator('main')).toHaveAttribute('data-is-transitioning', 'true');
   await page.getByRole('button', { name: 'Back to room' }).click();
   await expect(page.locator('main')).toHaveAttribute('data-shelf-focused', 'false'); await ready(page);

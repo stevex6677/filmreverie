@@ -46,6 +46,13 @@ html, body, #root {
 .mobile-header { grid-area: heading; display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #14171b; z-index: 10; border-bottom: 1px solid #303337; }
 .mobile-header > div { min-width: 0; flex: 1; }
 .mobile-header > button { flex: 0 0 auto; white-space: nowrap; }
+.desktop-room-controls { position:absolute; inset:0; z-index:10; pointer-events:none; }
+.desktop-room-controls .mobile-header, .desktop-room-controls .mobile-sheet, .desktop-room-controls .asset-status { pointer-events:auto; }
+.mobile-header button, .mobile-sheet button { min-width:44px; min-height:44px; font:inherit; font-size:.875rem; border:1px solid #40434a; border-radius:8px; padding:8px 12px; color:#e8e8e5; background:#25292e; cursor:pointer; }
+.mobile-header button:focus-visible, .mobile-sheet button:focus-visible { outline:2px solid #efcb8f; outline-offset:2px; }
+.mobile-sheet button[aria-checked=true] { border-color:#d3ac70; background:#483c2b; }
+.room-navigation-actions { display:flex; gap:8px; }
+.room-navigation-actions > button { flex:1; }
 .mobile-header h1 { font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .mobile-eyebrow { color: #c4a570; font-size: .625rem; letter-spacing: .15em; }
 .mobile-layout button, .mobile-layout select, .mobile-layout input:not([type=radio]):not([type=checkbox]) { min-height: 44px; }
@@ -829,6 +836,7 @@ html, body, #root {
 
 /* Full-roll chrome reserves canvas space; labels never cover the film. */
 .full-roll .canvas-wrapper { top: 116px; bottom: 166px; right: 244px; width: auto; height: auto; }
+.darkroom-app-container[data-room-mode="room"]:not(.mobile-layout) .canvas-wrapper { inset:0; width:100%; height:100%; }
 .full-roll .controls-header { flex-wrap: wrap; gap: 10px; }
 .full-roll .branding h1 { font-size: 12px; }
 .full-roll .action-buttons { flex-wrap: wrap; gap: 6px; }
@@ -1025,6 +1033,8 @@ button:disabled { opacity: .4; cursor: default; }
 .table-divider { height:22px; width:1px; background:#484c52; margin:0 3px; }
 .table-muted { color:#b8babe; }
 .table-caption { position:absolute; bottom:calc(14px + env(safe-area-inset-bottom)); left:12px; right:12px; font-size:.7rem; color:#bec0c2; text-align:center; }
+.darkroom-app-container:not(.mobile-layout) .table-caption,
+.darkroom-app-container:not(.mobile-layout) .camera-hint { display:none; }
 .table-secondary { transition:opacity .25s; }
 .is-focus[data-quiet=true] .table-secondary,.is-focus[data-quiet=true] .table-identity { opacity:0; pointer-events:none; }
 .is-focus[data-quiet=true] .table-secondary:focus-within { opacity:1; pointer-events:auto; }
@@ -1334,7 +1344,7 @@ button:disabled { opacity: .4; cursor: default; }
 
 /* Give the camera cabinet the larger-screen area normally used by film tools. */
 @media (min-width: 700px) and (min-height: 600px) {
-  .darkroom-app-container[data-shelf-id="camera"] .controls-header .action-buttons,
+  .darkroom-app-container[data-shelf-id="camera"] .controls-header .action-buttons > :not(.owner-nav-actions),
   .darkroom-app-container[data-shelf-id="camera"] .controls-footer { display: none; }
   .darkroom-app-container[data-shelf-id="camera"] .camera-collection-toolbar { bottom: 12px; }
 }
@@ -1345,3 +1355,47 @@ button:disabled { opacity: .4; cursor: default; }
 }
 
 .camera-loading-retry { margin-top:20px; padding:10px 20px; min-height:44px; border:1px solid #c7ba9d; border-radius:5px; background:#27291f; color:#f0e4c9; cursor:pointer; pointer-events:auto; }
+
+.stock-current { color:#cbd5e1; font-size:.85rem; }
+.film-stock-info { display:grid; gap:8px; }
+.film-stock-info h3 { margin:0; font-size:1rem; font-weight:500; }
+.film-stock-info .film-stock-type { font-size:.75rem; color:#d9be8d; }
+.film-stock-info p { margin:0; font-size:.75rem; color:#b8babe; line-height:1.5; }
+
+/* A selected roll: its compartment above, a paper record below. */
+[data-shelf-roll-focused]:not([data-shelf-roll-focused=""]) .controls-footer { display:none; }
+.shelf-roll-card { inset:auto 20px max(22px,calc((100dvh - 900px)/2)); margin:0 auto; width:720px; max-width:calc(100vw - 40px); max-height:min(48dvh,440px); padding:20px 24px 16px; border-radius:16px; box-shadow:0 18px 64px #0008; }
+.shelf-card-heading { margin-bottom:14px; font-size:10px; letter-spacing:2.5px; }
+.shelf-card-heading button { min-height:32px; }
+.shelf-card-layout { display:grid; grid-template-columns:220px minmax(0,1fr); column-gap:24px; }
+.shelf-card-cover { grid-row:1/4; height:170px; }
+.shelf-card-identity h2 { margin:0 0 5px; font-size:28px; }
+.shelf-card-stock { margin:0 0 12px; font-size:13px; }
+.shelf-roll-card dl { margin:0; padding-top:12px; gap:10px 22px; }
+.shelf-roll-card dd { margin:0; font-size:13px; }
+.shelf-card-count { margin:12px 0 0; font-size:11px; }
+.shelf-card-buttons { display:grid; grid-template-columns:1.1fr 1fr; gap:12px; margin-top:18px; }
+.shelf-card-open { align-items:center; padding:13px 16px; font-size:13px; border-radius:7px; }
+.shelf-card-actions { margin:0; gap:10px; }
+.shelf-card-buttons > .shelf-card-open:only-child { grid-column:1/-1; }
+.shelf-card-actions button { border-radius:7px; font-size:13px; }
+.shelf-card-help { margin:10px 0 0; font-size:11px; text-align:right; }
+@media(max-width:600px) {
+  .shelf-roll-card { inset:auto 12px max(12px,env(safe-area-inset-bottom)); width:auto; max-width:calc(100vw - 24px); max-height:52dvh; padding:16px; border-radius:14px; }
+  .shelf-card-heading { margin-bottom:12px; font-size:9px; }
+  .shelf-card-layout { grid-template-columns:96px minmax(0,1fr); gap:12px; }
+  .shelf-card-cover { grid-row:1; height:82px; }
+  .shelf-card-identity { align-self:center; }
+  .shelf-card-identity h2 { font-size:23px; }
+  .shelf-card-stock { margin:0; font-size:12px; }
+  .shelf-roll-card dl { grid-column:1/-1; gap:10px; }
+  .shelf-card-count { grid-column:1/-1; margin:0; }
+  .shelf-card-buttons { grid-template-columns:1fr; margin-top:14px; gap:10px; }
+  .shelf-card-help { font-size:10px; text-align:left; }
+}
+@media(max-height:500px) and (min-width:601px) {
+  .shelf-roll-card { max-height:52dvh; padding:12px 18px; }
+  .shelf-card-cover { height:100px; }
+  .shelf-card-layout { grid-template-columns:150px minmax(0,1fr); }
+  .shelf-card-heading { margin-bottom:8px; }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { RollRepository, StoredRoll, storageMessage } from '../storage/rollRepository';
 import { getFilmStock } from '../data/filmStocks';
@@ -29,23 +29,6 @@ export function ShelfRollCard({ shelf, roll, repository, activeId, onOpen, onEdi
   }, [readOnly, repository, roll.id, roll.coverId, roll.updatedAt]);
   useEffect(() => { setPublicCoverFailed(false); }, [thumbnailUrl]);
   const cover = readOnly ? !publicCoverFailed && thumbnailUrl ? { url: thumbnailUrl, rotation: thumbnailRotation } : null : localCover;
-  useLayoutEffect(() => {
-    const position = () => {
-      const node = card.current; if (!node) return;
-      const rect = anchor.getBoundingClientRect(), margin = 12;
-      const cardRect = node.getBoundingClientRect();
-      const cardW = Math.ceil(cardRect.width), cardH = Math.ceil(cardRect.height);
-      const viewport = window.visualViewport;
-      const width = viewport?.width ?? window.innerWidth, height = viewport?.height ?? window.innerHeight;
-      const ox = viewport?.offsetLeft ?? 0, oy = viewport?.offsetTop ?? 0;
-      const x = rect.right + cardW + margin <= width + ox ? rect.right + 12 : rect.left - cardW - 12;
-      node.style.left = `${Math.max(ox + margin, Math.min(x, ox + width - cardW - margin))}px`;
-      node.style.top = `${Math.max(oy + margin, Math.min(rect.top, oy + height - cardH - margin))}px`;
-    };
-    position(); const resize = new ResizeObserver(position); if (card.current) resize.observe(card.current);
-    window.addEventListener('resize', position); window.visualViewport?.addEventListener('resize', position);
-    return () => { resize.disconnect(); window.removeEventListener('resize', position); window.visualViewport?.removeEventListener('resize', position); };
-  }, [anchor]);
   useEffect(() => {
     const dismiss = (event: PointerEvent) => {
       if (!card.current?.contains(event.target as Node) && !anchor.contains(event.target as Node)) shelf.close();
@@ -59,22 +42,24 @@ export function ShelfRollCard({ shelf, roll, repository, activeId, onOpen, onEdi
   useEffect(() => {
     if (shelf.selection?.pinned) card.current?.focus({ preventScroll: true });
   }, [roll.id, shelf.selection?.pinned]);
-  // Positioning uses viewport coordinates, outside the viewer's layout containment.
+  // The paper panel stays below the focused compartment, outside canvas containment.
   return createPortal(<div ref={card} className="shelf-roll-card" role="dialog" aria-label={`${roll.name} — roll details`} tabIndex={-1}
     onPointerEnter={shelf.keep} onPointerLeave={shelf.leave} onFocus={shelf.keep}
     onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) shelf.leave(); }}
     onKeyDown={event => event.stopPropagation()}>
     <div className="shelf-card-heading"><span>{readOnly ? 'PUBLISHED ROLL' : roll.trashedAt === null ? 'SAVED ROLL' : 'TRASH'}</span><button aria-label="Close roll details" onClick={() => { shelf.close(); anchor.focus({ preventScroll: true }); }}>×</button></div>
-    <div className="shelf-card-cover">{cover ? <img src={cover.url} alt={`Cover photograph of ${roll.name}`} loading="lazy" crossOrigin={readOnly ? 'anonymous' : undefined} referrerPolicy={readOnly ? 'no-referrer' : undefined} style={{ transform: `rotate(${cover.rotation}deg)` }} onError={() => readOnly ? setPublicCoverFailed(true) : setLocalCover(null)} /> : <span>Cover unavailable</span>}</div>
-    <h2>{roll.name}</h2><p className="shelf-card-stock">{stock.displayName}</p>
+    <div className="shelf-card-layout"><div className="shelf-card-cover">{cover ? <img src={cover.url} alt={`Cover photograph of ${roll.name}`} loading="lazy" crossOrigin={readOnly ? 'anonymous' : undefined} referrerPolicy={readOnly ? 'no-referrer' : undefined} style={{ transform: `rotate(${cover.rotation}deg)` }} onError={() => readOnly ? setPublicCoverFailed(true) : setLocalCover(null)} /> : <span>Cover unavailable</span>}</div>
+    <div className="shelf-card-identity"><h2>{roll.name}</h2><p className="shelf-card-stock">{stock.displayName}</p></div>
     <dl><div><dt>Format</dt><dd>{rollFormatLabel(roll.format, roll.sizing)}</dd></div><div><dt>Sensitivity</dt><dd>ISO {FILM_ISO[roll.stockId]}</dd></div><div><dt>Film</dt><dd>{stock.type === 'reversal' ? 'Color reversal' : 'Color negative'}</dd></div><div><dt>Process</dt><dd>{stock.process}</dd></div></dl>
     <p className="shelf-card-count">{roll.frameIds.length} {roll.frameIds.length === 1 ? 'photograph' : 'photographs'}{activeId === roll.id && <span>On the light table</span>}</p>
+    </div>
     {error && <p role="alert" className="shelf-card-error">{error}</p>}
-    {(readOnly || roll.trashedAt === null) ? <>
+    {(readOnly || roll.trashedAt === null) ? <div className="shelf-card-buttons">
       <button className="shelf-card-open" disabled={busy} onClick={async () => { shelf.show(roll, anchor, true); setBusy(true); setError(''); try { await onOpen(roll.id); shelf.close(); } catch (failure) { setError(storageMessage(failure)); } finally { setBusy(false); } }}>{busy ? 'Opening…' : 'Open on light table'} <span aria-hidden="true">↗</span></button>
       {!readOnly && <><div className="shelf-card-actions"><button disabled={busy} aria-label={`Edit ${roll.name}`} onClick={() => onEdit?.(roll.id)}>Edit roll</button><button disabled={busy} aria-label={`Delete ${roll.name}`} onClick={async () => { shelf.show(roll, anchor, true); setBusy(true); setError(''); try { await onDelete?.(roll); } catch (failure) { setError(storageMessage(failure)); } finally { setBusy(false); } }}>Delete roll</button></div>
-      <p className="shelf-card-help">Deleted rolls can be restored from Trash.</p></>}
-    </> : <button className="shelf-card-open" disabled={busy} aria-label={`Restore ${roll.name}`} onClick={async () => { shelf.show(roll, anchor, true); setBusy(true); setError(''); try { await onRestore?.(roll.id); } catch (failure) { setError(storageMessage(failure)); } finally { setBusy(false); } }}>Restore roll</button>}
+      </>}
+    </div> : <button className="shelf-card-open" disabled={busy} aria-label={`Restore ${roll.name}`} onClick={async () => { shelf.show(roll, anchor, true); setBusy(true); setError(''); try { await onRestore?.(roll.id); } catch (failure) { setError(storageMessage(failure)); } finally { setBusy(false); } }}>Restore roll</button>}
 
+    {!readOnly && roll.trashedAt === null && <p className="shelf-card-help">Deleted rolls can be restored from Trash.</p>}
   </div>, document.body);
 }

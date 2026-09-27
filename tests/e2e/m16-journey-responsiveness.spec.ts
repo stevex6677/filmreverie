@@ -1,3 +1,4 @@
+import { approachTable } from "./helpers/room";
 import { test, expect } from "@playwright/test";
 
 test.describe("Journey transition responsiveness (room <-> table)", () => {
@@ -13,8 +14,8 @@ test.describe("Journey transition responsiveness (room <-> table)", () => {
     const isMobile = info.project.name.startsWith("mobile");
 
     if (isMobile) {
-      // On mobile, room header has Rolls and Lights buttons
-      const rollsBtn = page.getByRole("button", { name: "Rolls", exact: true });
+      // On mobile, room header has Film Shelf and Lights buttons
+      const rollsBtn = page.getByRole("button", { name: "Film Shelf", exact: true });
       await expect(rollsBtn).toBeVisible();
       await expect(rollsBtn).toBeEnabled();
 
@@ -22,10 +23,9 @@ test.describe("Journey transition responsiveness (room <-> table)", () => {
       await page.locator(".canvas-wrapper").focus();
       await page.keyboard.press("Enter");
     } else {
-      const approachBtn = page.locator('[data-testid="approach-table-btn"]');
-      await expect(approachBtn).toBeVisible();
-      await expect(approachBtn).toBeEnabled();
-      await approachBtn.click();
+      await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeEnabled();
+      await approachTable(page);
     }
 
     // Verify room mode immediately changes to inspect and journey transition is active
@@ -58,7 +58,7 @@ test.describe("Journey transition responsiveness (room <-> table)", () => {
     await expect(app).toHaveAttribute("data-is-transitioning", "true");
 
     // 5. Verify that during returning to room, controls are NOT disabled / frozen
-    const rollsBtn = page.getByRole("button", { name: "Rolls", exact: true });
+    const rollsBtn = page.getByRole("button", { name: "Film Shelf", exact: true });
     await expect(rollsBtn).toBeVisible();
     await expect(rollsBtn).toBeEnabled();
 
@@ -74,8 +74,7 @@ test.describe("Journey transition responsiveness (room <-> table)", () => {
     await expect(app).toHaveAttribute("data-room-mode", "room");
 
     if (!isMobile) {
-      const approachBtn = page.locator('[data-testid="approach-table-btn"]');
-      await expect(approachBtn).toBeEnabled();
+      await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeEnabled();
     }
   });
 });

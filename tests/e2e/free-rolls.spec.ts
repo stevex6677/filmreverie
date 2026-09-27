@@ -9,7 +9,7 @@ function photo(i:number,aspect=1.5){
 }
 async function begin(page:Page,count:number,aspects:number[]=[1.5]){
   await page.goto('/guest?mode=inspect&reduced_motion=true');
-  await page.getByRole('button',{name:'Rolls',exact:true}).click();
+  await page.getByRole('button',{name:'Film Shelf',exact:true}).click();
   await page.getByRole('button',{name:'New roll',exact:true}).click();
   await page.getByLabel('Choose photographs').setInputFiles(Array.from({length:count},(_,i)=>photo(i,aspects[i%aspects.length])));
   await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText(`${count} / ${count}`);
@@ -71,8 +71,8 @@ for(const film of ['35mm','120']) test(`${film} free frames preserve proportions
   await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true');
   await expect(page.locator('main')).toHaveAttribute('data-selected-frame',film==='35mm'?'24':'8');
   await page.getByRole('button',{name:'← Overview',exact:true}).click();
-  await page.getByRole('button',{name:'Rolls',exact:true}).click();
-  await page.getByRole('button',{name:'Show saved roll Mixed sizes',exact:true}).click();
+  await page.getByRole('button',{name:'Film Shelf',exact:true}).click();
+  await page.getByRole('button',{name:'Show saved roll Mixed sizes',exact:true}).click();await page.getByRole('button',{name:'Edit Mixed sizes',exact:true}).click();
   await expect(page.getByLabel('Film format',{exact:true})).toHaveValue('free');
 
   await page.getByRole('button',{name:'Select frame 2',exact:true}).click();

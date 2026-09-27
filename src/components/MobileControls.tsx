@@ -1,11 +1,12 @@
+import { FilmStockInfo } from './FilmStockInfo';
 import { FilmStrengthControl } from "./FilmStrengthControl";
 import { useEffect, useRef, type ReactNode } from 'react';
 import { ViewerAction, ViewerState } from '../state/viewerState';
-import { FILM_STOCKS, getFilmStock, isFilmStockId } from '../data/filmStocks';
+import { getFilmStock } from '../data/filmStocks';
 import { focusFrameLayout } from '../utils/rollLayout';
 import { photoCropPreview } from '../utils/photoFraming';
 export type MobileSheet = 'tools' | 'frames' | null;
-export function MobileControls({state,dispatch,onOpenLibrary,onOpenCameras,sheet,setSheet,emptyRollMessage,ownerActions}:{state:ViewerState;dispatch:React.Dispatch<ViewerAction>;onOpenLibrary:()=>void;onOpenCameras?:()=>void;sheet:MobileSheet;setSheet:(s:MobileSheet)=>void;emptyRollMessage?:string;ownerActions?:ReactNode}) {
+export function MobileControls({state,dispatch,onOpenLibrary,onOpenCameras,sheet,setSheet,emptyRollMessage,ownerActions,roomNavigation=false}:{state:ViewerState;dispatch:React.Dispatch<ViewerAction>;onOpenLibrary:()=>void;onOpenCameras?:()=>void;sheet:MobileSheet;setSheet:(s:MobileSheet)=>void;emptyRollMessage?:string;ownerActions?:ReactNode;roomNavigation?:boolean}) {
   const dialog=useRef<HTMLDialogElement>(null);
   const room=state.roomMode==='room',stock=getFilmStock(state.filmStockId);
 
@@ -20,8 +21,8 @@ export function MobileControls({state,dispatch,onOpenLibrary,onOpenCameras,sheet
   const lightControl = <button aria-pressed={state.focusMode} onClick={()=>room?setSheet('tools'):dispatch({type:'TOGGLE_FOCUS'})}>{room?'Lights':state.focusMode?'Exit focus':'Focus'}</button>;
   return <>
     <header className="mobile-header">
-      <button aria-label={room?'Rolls':'Back one level'} onClick={()=>room?onOpenLibrary():dispatch({type:'ESCAPE_INSPECTION'})}>{room?'Rolls':'← Back'}</button>
-      {room && onOpenCameras && <button onClick={onOpenCameras}>Cameras</button>}
+      <button aria-label={room?'Film Shelf':'Back one level'} onClick={()=>room?onOpenLibrary():dispatch({type:'ESCAPE_INSPECTION'})}>{room?'Film Shelf':'← Back'}</button>
+      {room && onOpenCameras && <button onClick={onOpenCameras}>Camera Cabinet</button>}
       <div><span className="mobile-eyebrow">{room?'DARKROOM':state.inspectionLevel.toUpperCase()}</span><h1 title={emptyRollMessage ?? state.roll.label}>{emptyRollMessage ?? state.roll.label}</h1></div>
       {ownerActions ? <div className="mobile-header-actions">{lightControl}{ownerActions}</div> : lightControl}
     </header>
@@ -44,7 +45,7 @@ export function MobileControls({state,dispatch,onOpenLibrary,onOpenCameras,sheet
       {sheet==='frames'?<div className="mobile-frame-grid">{state.roll.frames.map((frame,i)=>{const layout=focusFrameLayout(state.roll,i);return <button key={frame.id} aria-label={`Open frame ${i+1}`} aria-current={i===state.activeFrameIndex?'true':undefined} onClick={()=>{dispatch({type:'OPEN_FRAME',frameIndex:i});setSheet(null);}}><div style={{aspectRatio:layout.frameWidth/layout.frameHeight}}><img loading="lazy" src={frame.thumbnailSrc??frame.src} alt={frame.alt} style={photoCropPreview(frame.aspectRatio,layout.frameWidth/layout.frameHeight,frame.rotation??0,frame.cropPosition)}/></div><span>Frame {i+1}</span></button>;})}</div>:<div className="mobile-tool-content">
         {!room&&<>
           <fieldset><legend>View</legend><div className="mobile-sequence">{(['roll','strip','frame'] as const).map(level=><button key={level} aria-pressed={state.inspectionLevel===level} onClick={()=>dispatch({type:'VIEW_LEVEL',level})}>{level[0].toUpperCase()+level.slice(1)}</button>)}</div></fieldset>
-          <label>Film stock<select aria-label="Film stock" value={stock.id} onChange={e=>{if(isFilmStockId(e.target.value))dispatch({type:'SET_FILM_STOCK',stockId:e.target.value});}}>{FILM_STOCKS.map(s=><option key={s.id} value={s.id}>{s.displayName}</option>)}</select></label>
+          <FilmStockInfo stockId={state.filmStockId}/>
         <FilmStrengthControl state={state} dispatch={dispatch}/>
           {stock.type==='negative'?<button onClick={()=>dispatch({type:'TOGGLE_FILM_MODE'})}>Switch to {state.filmMode==='positive'?'Negative':'Positive'}</button>:<p>Positive · reversal film</p>}
           <label>Table light · {Math.round(state.tableBrightness*100)}%<input aria-label="Light Table Brightness" type="range" min=".3" max="1" step=".01" value={state.tableBrightness} onChange={e=>dispatch({type:'SET_TABLE_BRIGHTNESS',brightness:Number(e.target.value)})}/></label>
@@ -52,7 +53,11 @@ export function MobileControls({state,dispatch,onOpenLibrary,onOpenCameras,sheet
         </>}
         <label>Room light · {Math.round(state.roomBrightness*100)}%<input aria-label="Room brightness" type="range" min="0" max="1" step=".01" value={state.roomBrightness} onChange={e=>dispatch({type:'SET_ROOM_BRIGHTNESS',brightness:Number(e.target.value)})}/></label>
         <button role="switch" aria-checked={state.roomBrightness>0} onClick={()=>dispatch({type:'TOGGLE_ROOM_LIGHTS'})}>Room lights</button>
-        <button onClick={()=>{setSheet(null);onOpenLibrary();}}>Rolls</button>
+        {room && roomNavigation && <div className="room-navigation-actions">
+          <button onClick={()=>{setSheet(null);dispatch({type:'FACE_TABLE'});}}>Face table</button>
+          <button data-testid="approach-table-btn" onClick={()=>{setSheet(null);dispatch({type:'APPROACH_TABLE'});}}>Approach table</button>
+        </div>}
+        <button onClick={()=>{setSheet(null);onOpenLibrary();}}>Film Shelf</button>
         {!room&&<button data-testid="return-room-btn" onClick={()=>{setSheet(null);dispatch({type:'RETURN_TO_ROOM'});}}>Return to Room</button>}
       </div>}
     </dialog>}

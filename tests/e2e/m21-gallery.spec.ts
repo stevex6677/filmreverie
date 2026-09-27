@@ -38,15 +38,14 @@ test('owner room keeps the guest header with the admin menu after Create Your Ow
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 844 });
     await page.goto(`${baseURL}/?mode=room&reduced_motion=true`); await ready(page);
-    const mobile = await page.evaluate(() => matchMedia('(max-width: 1000px), (any-pointer: coarse)').matches);
-    const header = page.locator(mobile ? '.mobile-header' : '.controls-header');
-    const lights = header.getByRole(mobile ? 'button' : 'switch', { name: mobile ? 'Lights' : 'Room lights' });
-    const admin = header.getByRole('button', { name: 'Admin menu' });
+    const header = page.locator('.mobile-header');
+    const lights = header.getByRole('button', { name: 'Lights', exact: true });
+    const admin = header.getByRole('button', { name: 'More options' });
     const create = header.getByRole('link', { name: /Create Your Own/ });
-    await expect(header.getByRole('button', { name: 'Rolls' })).toBeVisible();
-    await expect(header.getByRole('button', { name: 'Cameras' })).toBeVisible();
+    await expect(header.getByRole('button', { name: 'Film Shelf' })).toBeVisible();
+    await expect(header.getByRole('button', { name: 'Camera Cabinet' })).toBeVisible();
     await expect(lights).toBeVisible(); await expect(admin).toBeVisible(); await expect(create).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Admin menu', exact: true })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'More options', exact: true })).toHaveCount(1);
     await expect(page.getByRole('link', { name: /Create Your Own/ })).toHaveCount(1);
     const lightBox = (await lights.boundingBox())!, adminBox = (await admin.boundingBox())!, createBox = (await create.boundingBox())!;
     const center = (box: { y: number; height: number }) => box.y + box.height / 2;
@@ -66,8 +65,8 @@ test('owner room keeps the guest header with the admin menu after Create Your Ow
     await expect(welcome.or(page.locator('main[data-app-ready="true"]'))).toBeVisible();
     if (await welcome.isVisible()) await welcome.click();
     await ready(page);
-    const guestHeader = page.locator(mobile ? '.mobile-header' : '.controls-header');
-    await expect(guestHeader.getByRole(mobile ? 'button' : 'switch', { name: mobile ? 'Lights' : 'Room lights' })).toBeVisible();
+    const guestHeader = page.locator('.mobile-header');
+    await expect(guestHeader.getByRole('button', { name: 'Lights', exact: true })).toBeVisible();
     await expect(guestHeader.getByRole('button', { name: 'Admin' })).toHaveCount(0);
     await expect(guestHeader.getByRole('link', { name: /Create Your Own/ })).toHaveCount(0);
   }
@@ -78,10 +77,10 @@ test('Admin Login survives a null focus change and navigates in the same tab', a
     ? route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><h1>Admin sign-in</h1>' })
     : route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'Owner login required.' }) }));
   await page.goto(`${baseURL}/?mode=room&reduced_motion=true`); await ready(page);
-  await page.getByRole('button', { name: 'Admin menu' }).click();
-  const menu = page.getByRole('menu', { name: 'Admin', exact: true });
+  await page.getByRole('button', { name: 'More options' }).click();
+  const menu = page.getByRole('menu', { name: 'More options', exact: true });
   const login = menu.getByRole('menuitem', { name: 'Admin Login', exact: true });
-  await expect(menu).toHaveText('Admin Login');
+  await expect(menu).toContainText('Admin Login');
   await expect(login).not.toHaveAttribute('target', '_blank');
   // Safari can report a null relatedTarget during a touch-driven focus change.
   await login.evaluate(link => link.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null })));
@@ -120,7 +119,7 @@ test('public home displays only published rolls in the physical cabinet and open
       frames: [{ id: 'frame-one', width: 180, height: 120, rotation: 0, viewing: image(`${photos}/view.png`), thumbnail: image(`${photos}/thumb.png`) }] };
     await page.goto(`${origin}/?mode=inspect&reduced_motion=true`); await ready(page);
     await expect(page.getByRole('link', { name: /Create Your Own/ })).toHaveAttribute('target', '_blank');
-    await expect(page.getByRole('button', { name: 'Admin menu', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'More options', exact: true })).toBeVisible();
     const guestTab = page.waitForEvent('popup');
     await page.getByRole('link', { name: /Create Your Own/ }).click();
     const guest = await guestTab;
@@ -154,7 +153,7 @@ test('public home displays only published rolls in the physical cabinet and open
     await expect(page.locator('main')).toHaveAttribute('data-roll-id', 'gallery:published-roll:revision-one');
     await expect.poll(() => requests.filter(url => url === '/view.png').length).toBe(1);
     expect(await databases(page)).not.toContain('darkroom-rolls');
-    await page.getByRole('button', { name: 'Admin menu' }).click();
+    await page.getByRole('button', { name: 'More options' }).click();
     await expect(page.getByRole('menuitem', { name: 'Admin Login' })).toBeVisible();
     await expect(page.getByRole('dialog', { name: 'Owner publishing' })).toHaveCount(0);
   } finally { await close(images); await close(app); }
@@ -175,11 +174,21 @@ test('guest welcome, deletable example and private edits stay in guest storage w
     await page.goto(`${origin}/guest?mode=inspect&reduced_motion=true`);
     const welcome = page.getByRole('dialog', { name: 'Your guest darkroom' });
     await expect(welcome).toContainText('not uploaded or synced');
-    await expect(welcome).toContainText('Clearing browser data');
+    await expect(welcome).not.toContainText('Export backups');
     await welcome.getByRole('button', { name: 'Enter guest darkroom' }).click();
     await ready(page);
     await expect(page.getByRole('button', { name: 'Admin' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: /Create Your Own/ })).toHaveCount(0);
+    await expect(page.locator('.shelf-toolbar')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'New roll', exact: true })).toHaveCount(0);
+    await focusShelf(page);
+    await expect(page.getByRole('button', { name: 'Backups & offline' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'New roll', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '← Back to room', exact: true }).click(); await ready(page);
+    await expect(page.locator('.shelf-toolbar')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'New roll', exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Camera Cabinet', exact: true }).click(); await ready(page);
+    await expect(page.getByRole('button', { name: 'New roll', exact: true })).toHaveCount(0);
     await focusShelf(page);
     await expect(page.locator('[data-owned="true"]')).toHaveCount(1);
     await page.getByRole('button', { name: 'Show saved roll Roll 01' }).click();
@@ -220,7 +229,7 @@ test('guest welcome, deletable example and private edits stay in guest storage w
   } finally { await close(app); }
 });
 
-test('guest copies old on-origin rolls only after explicit migration and leaves the old library intact', async ({ page }) => {
+test('guest leaves old on-origin rolls intact and has no backup or migration controls', async ({ page }) => {
   await page.goto('/guest?mode=inspect&reduced_motion=true');
   await page.getByRole('button', { name: 'Enter guest darkroom' }).click(); await ready(page);
   await focusShelf(page);
@@ -252,12 +261,9 @@ test('guest copies old on-origin rolls only after explicit migration and leaves 
   await page.reload(); await ready(page);
   await focusShelf(page);
   await expect(page.getByRole('button', { name: 'Show saved roll Previous roll' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Backups & offline' }).click();
-  await page.getByRole('button', { name: 'Copy previous darkroom rolls' }).click();
-  await expect(page.getByRole('dialog', { name: 'Backups and offline' }).getByRole('status')).toContainText('Copied 1 previous roll');
-  await page.getByRole('button', { name: 'Close', exact: true }).click();
-  await focusShelf(page);
-  await expect(page.getByRole('button', { name: 'Show saved roll Previous roll' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Backups & offline' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Copy previous darkroom rolls' })).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'Backups and offline' })).toHaveCount(0);
   const legacy = await page.evaluate(() => new Promise<string[]>((resolve, reject) => {
     const open = indexedDB.open('darkroom-rolls');
     open.onerror = () => reject(open.error);

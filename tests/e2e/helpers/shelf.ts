@@ -17,8 +17,10 @@ export async function screenPoint(page: Page, point: [number, number, number]) {
   return { x: rect.x + (p.x + 1) * rect.width / 2, y: rect.y + (1 - p.y) * rect.height / 2 };
 }
 export async function focusShelf(page: Page) {
-  if (await page.locator('main').getAttribute('data-shelf-focused') !== 'true') {
-    await page.getByRole('button', { name: 'Rolls', exact: true }).click();
+  const closeDetails = page.getByRole('button', { name: 'Close roll details', exact: true });
+  if (await closeDetails.isVisible()) await closeDetails.click();
+  if (await page.locator('main').getAttribute('data-shelf-id') !== 'film') {
+    await page.locator('.controls-header, .mobile-header, .table-entry, .empty-table-controls').getByRole('button', { name: 'Film Shelf', exact: true }).click();
   }
   await ready(page);
   await expect(page.locator('main')).toHaveAttribute('data-shelf-focused', 'true');

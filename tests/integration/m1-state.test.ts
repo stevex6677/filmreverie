@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { INITIAL_VIEWER_STATE, viewerReducer } from "../../src/state/viewerState";
 
 describe("M1 Integration — Viewer State Transitions", () => {
-  it("starts in negative film mode with loupe resting", () => {
-    expect(INITIAL_VIEWER_STATE.filmMode).toBe("negative");
+  it("starts in positive film mode with loupe resting", () => {
+    expect(INITIAL_VIEWER_STATE.filmMode).toBe("positive");
     expect(INITIAL_VIEWER_STATE.loupe.isActive).toBe(false);
     expect(INITIAL_VIEWER_STATE.activeFrameIndex).toBe(0);
     expect(INITIAL_VIEWER_STATE.roomMode).toBe("inspect");
@@ -12,10 +12,10 @@ describe("M1 Integration — Viewer State Transitions", () => {
   it("toggles film mode between negative and positive", () => {
     let state = INITIAL_VIEWER_STATE;
     state = viewerReducer(state, { type: "TOGGLE_FILM_MODE" });
-    expect(state.filmMode).toBe("positive");
+    expect(state.filmMode).toBe("negative");
 
     state = viewerReducer(state, { type: "TOGGLE_FILM_MODE" });
-    expect(state.filmMode).toBe("negative");
+    expect(state.filmMode).toBe("positive");
   });
 
   it("sets explicit film mode", () => {
@@ -80,12 +80,12 @@ describe("M1 Integration — Viewer State Transitions", () => {
 
   it("resets back to initial state cleanly", () => {
     let state = INITIAL_VIEWER_STATE;
-    state = viewerReducer(state, { type: "SET_FILM_MODE", mode: "positive" });
+    state = viewerReducer(state, { type: "SET_FILM_MODE", mode: "negative" });
     state = viewerReducer(state, { type: "SET_LOUPE_ACTIVE", active: true });
     state = viewerReducer(state, { type: "SELECT_FRAME", frameIndex: 3 });
 
     state = viewerReducer(state, { type: "RESET" });
-    expect(state.filmMode).toBe("negative");
+    expect(state.filmMode).toBe("positive");
     expect(state.loupe.isActive).toBe(false);
     expect(state.activeFrameIndex).toBe(0);
   });

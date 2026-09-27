@@ -4,6 +4,13 @@ An immersive 3D darkroom and illuminated light table experience for inspecting 3
 
 Built with **React 18**, **Three.js**, and **React Three Fiber**.
 
+The vertical three-dot menu offers **Layout → Auto / Desktop** in owner and guest
+darkrooms. Auto adapts to screen width and touch input; Desktop overrides that
+choice. The preference is remembered in this browser.
+Desktop and mobile room headers share the same styling. **Lights** opens room
+lighting controls; desktop room navigation actions are also available there.
+Desktop views omit the bottom interaction hints.
+
 ---
 
 ## Features
@@ -46,13 +53,13 @@ The [Canon Demi EE17 delivery](blender/canon_demi_ee17/CURRENT.json) applies loc
 The [Canon 7s delivery](blender/canon7s/CURRENT.json) preserves the supplied Tripo body and optics while restoring the Voigtländer lens inscription, rear manufacturer/serial engraving, and top logo, shutter dial, meter window and control markings. Its surface pass smooths the metal housing, bottom trim and lens bezel while retaining leather grain, lettering and knurled grips. The underside pass follows `bottom.HEIC`: a slotted cap, open 1/4-20 threaded tripod socket, recessed circular latch and two slotted screws. It leaves the parent vertex coordinates and retained-face UVs, colors and encoded normals unchanged; only local underside faces are removed for the recesses. The socket's hidden depth is an estimate, recorded separately from its nominal thread dimensions. Its packed Blender master, full-detail GLB, compact browser derivative and CUDA review renders live under shared `ignored_generated/blender/canon7s/`. Builders and verification are under `blender/canon7s/`; the standalone viewer uses `/?model=canon-7s`. A separate lightweight derivative is mounted in the Web App cabinet at the requested **13.8 cm width**, without rescaling the editable master.
 
 ### 6. Camera Collection
-The room starts from its center. Its 90 cm, two-tier camera cabinet matches the film cabinet's height and replaces the right-wall chemistry shelf. The complete developing bench, chemicals and drying equipment sit beside the door, where the box shelf was removed. The camera cabinet sits closer to the light table and displays the current Mamiya Universal, Minolta Autocord, Canon Demi EE17, Canon 7s and Olympus OM-1 on its upper tier at their respective 21 cm, 8.4 cm, 11.6 cm, 13.8 cm and 13.6 cm physical widths. Five upper positions provide clearance for the cameras without changing their scale. Three film boxes and two cartridges occupy the lower tier. The cabinet uses separate lightweight models, with preserved lettering and materials on Mamiya; after the room is ready, detailed models below 5 MB preload sequentially in the background for inspection. Startup waits for every cabinet model to load successfully, with retry for failed models. Select **Cameras** for a tightly framed cabinet-only view, then any camera to inspect every side with rotation, zoom, pan and directional presets. Detailed camera downloads are optional in **Backups & offline**; lightweight cabinet models and the compressed-model decoder are included in the required offline shell. See [mobile model delivery](blender/MOBILE_MODELS.md) and [camera shelf review](docs/CAMERA_SHELF_REVIEW.md) for validation and remaining acceptance work; asset preparation verifies each camera's `CURRENT.json` against the shared viewer catalog.
+The room starts from its center. Its 90 cm, two-tier camera cabinet matches the film cabinet's height and replaces the right-wall chemistry shelf. The complete developing bench, chemicals and drying equipment sit beside the door, where the box shelf was removed. The camera cabinet sits closer to the light table and displays the current Mamiya Universal, Minolta Autocord, Canon Demi EE17, Canon 7s and Olympus OM-1 on its upper tier at their respective 21 cm, 8.4 cm, 11.6 cm, 13.8 cm and 13.6 cm physical widths. Five upper positions provide clearance for the cameras without changing their scale. Three film boxes and two cartridges occupy the lower tier. The cabinet uses separate lightweight models, with preserved lettering and materials on Mamiya; after the room is ready, detailed models below 5 MB preload sequentially in the background for inspection. Startup waits for every cabinet model to load successfully, with retry for failed models. Select **Camera Cabinet** for a tightly framed cabinet-only view, then any camera to inspect every side with rotation, zoom, pan and directional presets. Detailed camera models load when inspected; lightweight cabinet models and the compressed-model decoder are included in the required offline shell. See [mobile model delivery](blender/MOBILE_MODELS.md) and [camera shelf review](docs/CAMERA_SHELF_REVIEW.md) for validation and remaining acceptance work; asset preparation verifies each camera's `CURRENT.json` against the shared viewer catalog.
 
 ### 7. Public Gallery and Guest Darkroom
 The home page (`/`) displays only owner-published cloud rolls on the physical
 darkroom shelf. Browsing needs no account; visitors cannot add, edit or delete
 rolls there. Its room header shares the guest darkroom's controls; **Create Your Own**
-sits after **Room lights** (or **Lights** on phones), followed by a three-dot menu.
+sits after **Lights**, followed by a vertical three-dot menu.
 The menu shows **Admin Login** until authenticated, then **Logged in**. Admins use
 the same shelf and roll editor as guests: **New roll**, edit, delete, Trash and
 Undo. **Save and open** publishes the reviewed roll; deletion withdraws it from
@@ -65,12 +72,11 @@ measurements are pending account setup.
 
 **Create Your Own** opens `/guest?welcome=1` in a new tab and shows the guest
 introduction on every click; direct `/guest` visits show it only until dismissed.
-The guest darkroom starts with one removable example roll; imports, edits, Trash
-and backups stay in this browser only, without accounts, uploads or
-synchronization. Its separate `darkroom-guest-rolls` database does not read the
-earlier `darkroom-rolls` library automatically. On the same origin, explicitly
-choose **Backups & offline → Copy previous darkroom rolls** to copy earlier rolls;
-export and verify a backup before changing origins or clearing site data.
+The guest darkroom starts with one removable example roll. Add, edit and delete
+rolls in film shelf mode. Guest rolls stay in the browser's `darkroom-guest-rolls`
+database at best effort, without accounts, uploads or synchronization. Guest
+backup, migration and offline/storage controls are not offered. Earlier
+`darkroom-rolls` libraries remain untouched.
 
 **The API Worker is deployed. Current menu and shared roll editor changes remain local; they have not been published to Pages.** See
 [deployment/privacy/recovery instructions](docs/CLOUD_GALLERY.md) and
@@ -192,27 +198,29 @@ restores the browsing angle and framing. Camera roll remains locked.
 Regression coverage: `npm run test:integration -- m18-table-angle` and
 `npm run test:e2e -- m18-table-angle` (desktop, touch Chrome, and WebKit).
 
-## Offline app and roll backups (M18)
+## App caching and updates
 
-Production offline preparation, safe updates, and portable browser-local roll backups
-are described in [docs/OFFLINE.md](docs/OFFLINE.md). Export from the exact old
-address before importing at a new HTTPS origin. `npm run validate:m18` runs the
-production build, integration tests, and cumulative browser regression suite.
-Physical iPhone/iPad Safari and Home Screen review remains a separate acceptance gate.
+Production app caching and updates are described in [docs/OFFLINE.md](docs/OFFLINE.md).
+Guest rolls use browser storage at best effort; there are no backup or storage
+protection controls. `npm run validate:m18` runs the production build,
+integration tests and cumulative browser regression suite.
 
 ## Saved-roll shelf
 
-Click/tap the cabinet, or choose **Rolls**, to approach the 4×4 shelf. Each colored
+Click/tap the cabinet, or choose **Film Shelf**, to approach the 4×4 shelf. Each colored
 block holds one saved roll: a 35mm cartridge with its single-roll box, or a 120 package, beside a wood-framed
 cover photo. Covers follow the saved crop and rotation. Gray packages remain
-inactive placeholders. Click/tap a saved block to edit its roll. The editor keeps roll details on
+inactive placeholders. Click/tap a saved block to zoom into its compartment and
+open a paper-style roll record beneath it. Close the record or press Escape to
+return to the full shelf. Choose **Edit roll** from the record to edit. The editor keeps roll details on
 the left, frames at the upper right, and crop/rotation/cover/order controls below.
-On phones these sections stack. Hover (or focus and press Arrow Down) for a
-preview card with **Open on light table**, **Edit roll**, and **Delete roll**. **New roll** opens the photograph importer. **Trash** shows
+On phones these sections stack. The roll record offers **Open on light table**,
+**Edit roll**, and **Delete roll**; keyboard users can open it with Enter or Arrow Down.
+**New roll** opens the photograph importer. **Trash** shows
 deleted rolls on the shelf with Restore; deletion also offers Undo. Additional
-pages accommodate more than 16 saved rolls. Back to room/Escape restores the room view.
+pages accommodate more than 16 saved rolls. **Back to room** restores the room view.
 Dragging over the cabinet in room mode moves the view, just like dragging the room.
-Dragging in shelf mode smoothly returns to the room; clicking a saved roll still opens its editor.
+Dragging in shelf mode smoothly returns to the room; clicking a saved roll focuses its compartment and opens the details record.
 Shelf entry and exit animate for about 0.42 seconds. Navigation stays available
 during the flight: drag to return/look around or choose another destination immediately.
 
@@ -240,5 +248,4 @@ green unseen faces. Its 135 cassette labels use separate real photographs with
 cylindrical projection correction. See the [packaging manifest and preparation instructions](public/assets/film-packaging/README.md)
 and [shelf review record](docs/SHELF_REVIEW.md) for sources and validation.
 
-Use **Backups & offline** on the shelf for all-roll or selected-roll export,
-backup import, offline preparation and storage protection.
+Roll creation and deletion controls appear only while viewing the film shelf.

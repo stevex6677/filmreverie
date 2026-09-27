@@ -104,7 +104,7 @@ test('M19 keyboard and touch strength retain framing, navigation and the loupe l
 test('M19 actual photograph import preserves strength through edits, all film formats and reload',async({page,request},info)=>{
   test.setTimeout(240000);
   const files=await Promise.all(ROLL_FRAMES.slice(0,2).map(async(f,i)=>({name:`photo-${i}.jpg`,mimeType:'image/jpeg',buffer:await (await request.get(f.src)).body()})));
-  await page.getByRole('button',{name:'Rolls',exact:true}).click();await page.getByRole('button',{name:'New roll',exact:true}).click();
+  await page.getByRole('button',{name:'Film Shelf',exact:true}).click();await page.getByRole('button',{name:'New roll',exact:true}).click();
   await page.getByLabel('Choose photographs').setInputFiles(files);
   await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText('2 / 2',{timeout:120000});
   await page.getByRole('button',{name:'Continue to roll details'}).click();await page.getByLabel('Roll name',{exact:true}).fill('M19 photographs');
@@ -116,8 +116,8 @@ test('M19 actual photograph import preserves strength through edits, all film fo
   await expect.poll(()=>page.evaluate(id=>new Promise<number|undefined>(resolve=>{const request=indexedDB.open('darkroom-guest-rolls');request.onsuccess=()=>{const db=request.result,get=db.transaction('rolls').objectStore('rolls').get(id);get.onsuccess=()=>{resolve(get.result?.filmStrength);db.close();};};request.onerror=()=>resolve(undefined);}),rollId)).toBe(0);
   await page.reload();await expect(page.locator('main')).toHaveAttribute('data-roll-id',rollId);await ready(page);await expect(page.locator('main')).toHaveAttribute('data-film-strength','0');
   for(const format of ['135','645','66','67','69']) {
-    await closeViewingTools(page);await page.getByRole('button',{name:'Rolls',exact:true}).click();
-    await ready(page);await page.getByRole('button',{name:'Show saved roll M19 photographs',exact:true}).click();
+    await closeViewingTools(page);await page.getByRole('button',{name:'Film Shelf',exact:true}).click();
+    await ready(page);await page.getByRole('button',{name:'Show saved roll M19 photographs',exact:true}).click();await page.getByRole('button',{name:'Edit M19 photographs',exact:true}).click();
     await page.getByRole('radio',{name:format==='135'?'35mm':'120',exact:true}).check();await page.getByLabel('Film format',{exact:true}).selectOption(format);
     await page.getByRole('dialog').getByLabel('Film stock',{exact:true}).selectOption('ektachrome-e100');
     await page.getByRole('button',{name:'Save and open',exact:true}).click();

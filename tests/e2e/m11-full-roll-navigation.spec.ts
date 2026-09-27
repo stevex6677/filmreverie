@@ -1,3 +1,4 @@
+import { approachTable } from "./helpers/room";
 import { openViewingTools, closeViewingTools, openFrame, captureCanvas } from "./helpers/viewing";
 import { test, expect, Page } from "@playwright/test";
 import fs from "node:fs";
@@ -78,7 +79,7 @@ test("M11 six strips, 36 photo regions, 29→30→31 loupe journey and overview 
 test("M11 keyboard and endpoints through M16 Overview/Focus, stock and dimmer", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/guest?fixture=36&deterministic=true&mode=room"); await ready(page);
-  await page.getByTestId("approach-table-btn").click(); await ready(page);
+  await approachTable(page); await ready(page);
   await page.locator(".canvas-wrapper").focus();
   await page.keyboard.press("ArrowDown"); await page.keyboard.press("ArrowRight"); await page.keyboard.press("Enter"); await ready(page);
   await expect(app(page)).toHaveAttribute("data-selected-frame", "8");

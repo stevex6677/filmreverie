@@ -13,7 +13,7 @@ export async function offlineServer(tls = false) {
     requests++;
     const pathname = new URL(req.url ?? '/', 'http://localhost').pathname;
     if (pathname === fail) { res.writeHead(503); res.end('Interrupted download'); return; }
-    let relative = pathname === '/' ? 'index.html' : pathname.slice(1);
+    let relative = ['/', '/guest', '/guest/'].includes(pathname) ? 'index.html' : pathname.slice(1);
     if (relative.includes('..')) { res.writeHead(400);res.end();return; }
     try {
       let data = await readFile(path.join('dist', relative));

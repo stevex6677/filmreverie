@@ -1,3 +1,4 @@
+import { approachTable } from "./helpers/room";
 import { placeLoupeAtScreenPoint, viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect, Page } from "@playwright/test";
 import fs from "node:fs";
@@ -54,10 +55,12 @@ test("M9: every stock, physical borders, allowed views and keyboard restrictions
   let lastEdge: ReturnType<typeof parsePng> | undefined;
   let positiveMaster: ReturnType<typeof parsePng> | undefined;
   for (const stock of FILM_STOCKS) {
-    // Go through E100 each time to verify returning to every negative starts negative.
+    // Switching from reversal to a negative stock keeps the positive default.
     await selector.selectOption("ektachrome-e100");
     await selector.selectOption(stock.id);
     await expect(app).toHaveAttribute("data-film-stock", stock.id);
+    await expect(app).toHaveAttribute("data-film-mode", "positive");
+    if (stock.type === "negative") await page.getByTestId("mode-toggle").click();
     const initial = await capture(page, `${stock.id}-${stock.type === "negative" ? "negative" : "positive"}`);
     if (lastEdge) expect(getRegionMeanDifference(lastEdge, initial, 640, 320, 18)).toBeGreaterThan(1);
     lastEdge = initial;
@@ -185,7 +188,7 @@ test("M9: macro stock lettering through the scene-capture loupe, rapid changes a
     await expect(page.locator("main")).toHaveAttribute("data-is-transitioning", "false");
     await expect(page.locator("main")).toHaveAttribute("data-room-mode", "room");
     await selector.selectOption(i === 0 ? "ektachrome-e100" : "portra-800");
-    await page.getByTestId("approach-table-btn").click(); await openViewingTools(page);
+    await approachTable(page); await openViewingTools(page);
     await expect(page.locator("main")).toHaveAttribute("data-room-mode", "inspect");
     await expect(page.getByTestId("brightness-badge")).toHaveText("31%");
     const arrived = await capture(page, `room-return-${i}`);

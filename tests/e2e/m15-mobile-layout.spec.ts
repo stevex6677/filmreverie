@@ -35,7 +35,7 @@ test('M15 phone and tablet layouts keep usable film, controls, modal ownership a
 });
 test('M15 mobile import appends, reorders, crops, saves, reloads and cancels edits',async({page},info)=>{
   await page.goto('/guest?mode=room&example=1&deterministic=true');await ready(page);
-  await page.getByRole('button',{name:'Rolls',exact:true}).tap();await page.getByRole('button',{name:'New roll',exact:true}).tap();
+  await page.getByRole('button',{name:'Film Shelf',exact:true}).tap();await page.getByRole('button',{name:'New roll',exact:true}).tap();
   const image=(name:string,seed:number)=>{const p=new PNG({width:600,height:400});for(let y=0;y<400;y++)for(let x=0;x<600;x++){const i=(y*600+x)*4;p.data[i]=x%100+seed*35;p.data[i+1]=y%200;p.data[i+2]=180;p.data[i+3]=255;}return {name,mimeType:'image/png',buffer:PNG.sync.write(p)};};
   await page.getByLabel('Choose photographs',{exact:true}).setInputFiles(image('first.png',1));await expect(page.getByText('Processed 1 / 1',{exact:true})).toBeVisible();
   await page.getByLabel('Choose photographs',{exact:true}).setInputFiles(image('second.png',2));await expect(page.getByText('2 photographs selected',{exact:false})).toBeVisible();
@@ -44,9 +44,9 @@ test('M15 mobile import appends, reorders, crops, saves, reloads and cancels edi
   await page.getByLabel('Horizontal crop position').fill('0.6');await page.getByRole('button',{name:'Show final crop'}).tap();
   await page.screenshot({path:info.outputPath('mobile-crop-review.png')});await page.getByRole('button',{name:'Save and open',exact:true}).tap();await expect(page.getByRole('dialog')).not.toBeVisible();await ready(page);
   const id=await page.locator('main').getAttribute('data-roll-id');await page.reload();await expect(page.locator('main')).toHaveAttribute('data-roll-id',id!);await ready(page);
-  await page.getByRole('button',{name:'Rolls',exact:true}).tap();await page.getByRole('button',{name:'Show saved roll Phone contact sheet'}).tap();
+  await page.getByRole('button',{name:'Film Shelf',exact:true}).tap();await page.getByRole('button',{name:'Show saved roll Phone contact sheet'}).tap();await page.getByRole('button',{name:'Edit Phone contact sheet',exact:true}).tap();
   await expect(page.getByLabel('Horizontal crop position')).toHaveValue('0.6');await page.getByLabel('Horizontal crop position').fill('-0.6');await page.getByRole('button',{name:'Cancel edits',exact:true}).tap();
-  await page.getByRole('button',{name:'Show saved roll Phone contact sheet'}).tap();await expect(page.getByLabel('Horizontal crop position')).toHaveValue('0.6');
+  await page.getByRole('button',{name:'Show saved roll Phone contact sheet'}).tap();await page.getByRole('button',{name:'Edit Phone contact sheet',exact:true}).tap();await expect(page.getByLabel('Horizontal crop position')).toHaveValue('0.6');
 });
 
 test('M15 iPad and iPhone in room mode have no bottom tools or footer', async ({ page }, info) => {
@@ -55,7 +55,7 @@ test('M15 iPad and iPhone in room mode have no bottom tools or footer', async ({
     await page.goto('/guest?mode=room&deterministic=true');
     await ready(page);
 
-    await expect(page.getByRole('button', { name: 'Rolls', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Film Shelf', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeVisible();
 
     await expect(page.getByRole('button', { name: 'Face table', exact: true })).toHaveCount(0);

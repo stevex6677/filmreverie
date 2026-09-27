@@ -7,7 +7,7 @@ import { createCanvas } from "@napi-rs/canvas";
 import * as THREE from "three";
 import { FILM_STOCKS, DEFAULT_FILM_STOCK_ID, getFilmStock, FilmStockId } from "../../src/data/filmStocks";
 import { createInitialViewerState, viewerReducer } from "../../src/state/viewerState";
-import { Controls } from "../../src/components/Controls";
+import { TableControls } from "../../src/components/TableControls";
 import { createFilmRebateCanvas } from "../../src/utils/filmRebateCanvas";
 import { createFilmShaderMaterial } from "../../src/shaders/filmShader";
 import { DEFAULT_LAYOUT, getFrameCenter, getStripDimensions } from "../../src/utils/loupeMapping";
@@ -38,14 +38,13 @@ describe("M9 — whole-strip stock profiles, state, material and real rebate ras
     expect(fs.readdirSync("public/assets/film-stocks").filter((name) => /\.(jpg|png|webp)$/.test(name))).toEqual([]);
   });
 
-  it("defaults to Portra 400 negative and exposes a labeled selector with eight choices", () => {
+  it("defaults to Portra 400 in positive view and shows the current stock without a selector", () => {
     const state = createInitialViewerState();
     expect(state.filmStockId).toBe(DEFAULT_FILM_STOCK_ID);
-    expect(state.filmMode).toBe("negative");
-    const html = renderToStaticMarkup(React.createElement(Controls, {state, dispatch: () => {}}));
-    expect(html).toContain('for="film-stock"');
-    expect(html.match(/<option /g)).toHaveLength(8);
-    expect(html).toContain('value="portra-400" selected');
+    expect(state.filmMode).toBe("positive");
+    const html = renderToStaticMarkup(React.createElement(TableControls, {state, dispatch: () => {}, onOpenLibrary: () => {}, sheet: 'tools', setSheet: () => {}}));
+    expect(html).toContain('Kodak Portra 400');
+    expect(html).not.toContain('<select');
   });
 
   it("handles every stock pair in both source views and enforces reversal restrictions", () => {
@@ -53,12 +52,12 @@ describe("M9 — whole-strip stock profiles, state, material and real rebate ras
       let state = viewerReducer(createInitialViewerState(), {type: "SET_FILM_STOCK", stockId: from.id});
       state = viewerReducer(state, {type: "SET_FILM_MODE", mode});
       state = viewerReducer(state, {type: "SET_FILM_STOCK", stockId: to.id});
-      const expected = to.type === "reversal" ? "positive" : from.type === "reversal" ? "negative" : mode;
+      const expected = to.type === "reversal" ? "positive" : from.type === "reversal" ? "positive" : mode;
       expect(state.filmMode, `${from.id}/${mode} -> ${to.id}`).toBe(expected);
       if (to.type === "reversal") {
         expect(viewerReducer(state, {type: "TOGGLE_FILM_MODE"})).toBe(state);
         expect(viewerReducer(state, {type: "SET_FILM_MODE", mode: "negative"})).toBe(state);
-        const html = renderToStaticMarkup(React.createElement(Controls, {state, dispatch: () => {}}));
+        const html = renderToStaticMarkup(React.createElement(TableControls, {state, dispatch: () => {}, onOpenLibrary: () => {}, sheet: 'tools', setSheet: () => {}}));
         expect(html).not.toContain('id="mode-toggle"');
         expect(html).toContain('POSITIVE · E-6');
         expect(html).not.toMatch(/NEGATIVE|Switch to Negative/);

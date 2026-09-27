@@ -1,3 +1,4 @@
+import { approachTable, faceTable } from "./helpers/room";
 import { viewerKey, openViewingTools, selectOverviewFrame, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
@@ -36,8 +37,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     const roomBadge = page.locator("main");
     await expect(roomBadge).toHaveAttribute("data-room-mode", "room");
 
-    const approachBtn = page.locator("[data-testid=approach-table-btn]");
-    await expect(approachBtn).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeVisible();
 
     await page.waitForTimeout(600);
 
@@ -76,7 +76,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     }
 
     // 3. Selecting the table completes the approach transition
-    await approachBtn.click(); await openViewingTools(page);
+    await approachTable(page); await openViewingTools(page);
 
     // Verify transition into inspect mode completes
     await expect(page.locator("[data-room-mode=inspect]")).toBeAttached({ timeout: 5000 });
@@ -111,7 +111,7 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
 
     // 5. Repeat approach / return twice
     // Cycle 1: Click approach button, click return button
-    await approachBtn.click(); await openViewingTools(page);
+    await approachTable(page); await openViewingTools(page);
     await expect(page.locator("[data-room-mode=inspect]")).toBeAttached();
     await page.waitForTimeout(600);
 
@@ -120,12 +120,12 @@ test.describe("M2 E2E — Room and Camera Journey", () => {
     await page.waitForTimeout(600);
 
     // Cycle 2: Face the table before testing spatial selection from a known view.
-    await page.getByRole("button", { name: "Face table", exact: true }).click();
+    await faceTable(page);
     await page.waitForTimeout(200);
     if (box) {
       await page.mouse.click(box.x + 640, box.y + 400);
     } else {
-      await approachBtn.click(); await openViewingTools(page);
+      await approachTable(page); await openViewingTools(page);
     }
     await expect(page.locator("[data-room-mode=inspect]")).toBeAttached({ timeout: 5000 });
     await page.waitForTimeout(600);

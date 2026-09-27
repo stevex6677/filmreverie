@@ -1,3 +1,4 @@
+import { approachTable } from "./helpers/room";
 import { viewerKey, openViewingTools, captureCanvas } from "./helpers/viewing";
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
@@ -60,8 +61,7 @@ test.describe("M4 E2E — Darkroom Realism & Production Hardening", () => {
     expect(tableCenterStats.meanLum).toBeGreaterThan(150);
 
     // Approach table with reduced motion -> should instantly transition without long interpolation
-    const approachBtn = page.locator("#approach-btn");
-    await approachBtn.click(); await openViewingTools(page);
+    await approachTable(page); await openViewingTools(page);
     await expect(appContainer).toHaveAttribute("data-room-mode", "inspect", { timeout: 3000 });
     await expect(appContainer).toHaveAttribute("data-is-transitioning", "false", { timeout: 3000 });
 

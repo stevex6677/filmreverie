@@ -96,8 +96,8 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
     };
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${origin}/?mode=room&reduced_motion=true`); await ready(page);
-    await page.getByRole('button', { name: 'Admin menu' }).click();
-    await expect(page.getByRole('menu')).toHaveText('Admin Login');
+    await page.getByRole('button', { name: 'More options' }).click();
+    await expect(page.getByRole('menu')).toContainText('Admin Login');
     await page.getByRole('menuitem', { name: 'Admin Login' }).click();
     await expect(page).toHaveURL(`${origin}/`); await ready(page);
     const sessionCookie = (await page.context().cookies()).find(value => value.name === 'film_dev_session')!;
@@ -106,10 +106,17 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
     expect(await page.evaluate(() => document.cookie)).not.toContain('film_dev_session');
     const csrf = await page.context().request.delete(`${origin}/api/owner/publications/${webcrypto.randomUUID()}`, { headers: { Origin: 'https://attacker.invalid' } });
     expect(csrf.status()).toBe(403);
-    await page.getByRole('button', { name: 'Admin menu' }).click();
+    await page.getByRole('button', { name: 'More options' }).click();
     await expect(page.getByRole('menuitem', { name: 'Logged in' })).toBeVisible();
     await page.screenshot({ path: info.outputPath('logged-in-menu-phone.png') });
     await page.getByRole('menuitem', { name: 'Logged in' }).press('Escape');
+    await expect(page.locator('.shelf-toolbar')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'New roll', exact: true })).toHaveCount(0);
+    await focusShelf(page);
+    await expect(page.getByRole('button', { name: 'New roll', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '← Back to room', exact: true }).click(); await ready(page);
+    await expect(page.locator('.shelf-toolbar')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'New roll', exact: true })).toHaveCount(0);
     await focusShelf(page);
     await page.getByRole('button', { name: 'New roll', exact: true }).click();
     const editor = page.getByRole('dialog', { name: 'Review roll' });
@@ -130,6 +137,7 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
     }
     await focusShelf(page);
     await page.getByRole('button', { name: 'Show saved roll Browser-published photograph' }).click();
+    await page.getByRole('button', { name: 'Edit Browser-published photograph', exact: true }).click();
     await editor.getByLabel('Roll name', { exact: true }).fill('Edited published photograph');
     // A session expiring while editing must preserve the draft and keep the dialog usable.
     await page.context().clearCookies();
@@ -150,7 +158,7 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
     expect(uploads).toHaveLength(2);
     await focusShelf(page);
     await page.getByRole('button', { name: 'Show saved roll Edited published photograph' }).click();
-    await editor.getByRole('button', { name: 'Delete Edited published photograph' }).click();
+    await page.getByRole('button', { name: 'Delete Edited published photograph' }).click();
     await expect(editor).toHaveCount(0);
     await expect(page.locator('.shelf-toolbar')).toContainText('0 saved rolls');
     await expect.poll(async () => (await (await nativeFetch(`${origin}/api/gallery`)).json()).rolls.length).toBe(0);
@@ -158,7 +166,7 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
     await expect(page.locator('.shelf-toolbar')).toContainText('1 saved roll');
     await expect.poll(async () => (await (await nativeFetch(`${origin}/api/gallery`)).json()).rolls.length).toBe(1);
     await page.getByRole('button', { name: 'Show saved roll Edited published photograph' }).click();
-    await editor.getByRole('button', { name: 'Delete Edited published photograph' }).click();
+    await page.getByRole('button', { name: 'Delete Edited published photograph' }).click();
     await expect(editor).toHaveCount(0);
     await page.reload(); await ready(page); await focusShelf(page);
     await page.getByRole('button', { name: 'Trash (1)' }).click();
@@ -166,6 +174,7 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
     await page.getByRole('button', { name: 'Restore Edited published photograph' }).click();
     await page.getByRole('button', { name: 'Saved rolls', exact: true }).click();
     await page.getByRole('button', { name: 'Show saved roll Edited published photograph' }).click();
+    await page.getByRole('button', { name: 'Edit Edited published photograph', exact: true }).click();
     await editor.getByLabel('Roll name', { exact: true }).fill('Browser-published photograph');
     await editor.getByRole('button', { name: 'Save and open' }).click();
     await expect(editor).toHaveCount(0);

@@ -86,7 +86,7 @@ export const INITIAL_VIEWER_STATE: ViewerState = {
   shelfFocused: false,
   shelfId: null,
   cameraDisplay: null,
-  filmMode: "negative",
+  filmMode: "positive",
   filmStockId: DEFAULT_FILM_STOCK_ID,
   filmStrength: DEFAULT_FILM_STRENGTH,
   loupe: {
@@ -360,7 +360,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
         ...state,
         filmStockId: next.id,
         filmMode: next.type === "reversal" ? "positive"
-          : getFilmStock(state.filmStockId).type === "reversal" ? "negative" : state.filmMode,
+          : getFilmStock(state.filmStockId).type === "reversal" ? "positive" : state.filmMode,
       };
     }
     case "SET_FILM_MODE":

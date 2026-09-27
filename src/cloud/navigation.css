@@ -5,6 +5,7 @@
 .controls-header:has(.owner-nav-actions) { flex-wrap:wrap; gap:10px; }
 .controls-header:has(.owner-nav-actions) .action-buttons { flex:1 1 950px; flex-wrap:wrap; align-items:center; }
 .mobile-header:has(.owner-nav-actions) { flex-wrap:wrap; }
+.mobile-header:has(.owner-nav-actions) > div:not(.mobile-header-actions) { min-width:100px; }
 .mobile-header .mobile-header-actions { display:flex; flex:0 0 auto; align-items:center; gap:6px; margin-left:auto; }
 .mobile-header .owner-nav-actions a { min-height:44px; }
 .empty-table-controls:has(.owner-nav-actions) { flex-wrap:wrap; }
@@ -34,3 +35,14 @@
 .admin-menu-dropdown { position:absolute; top:calc(100% + 6px); right:0; z-index:40; min-width:150px; padding:5px; border:1px solid #a18c67; border-radius:7px; background:#302b25; box-shadow:0 6px 20px #0008; }
 .owner-nav-actions .admin-menu-dropdown > * { width:100%; justify-content:flex-start; background:#302b25; color:#f4e4c8; border:0; }
 .admin-menu-dropdown [aria-disabled="true"] { cursor:default; }
+.admin-menu-dropdown { min-width:180px; max-width:calc(100vw - 16px); }
+.admin-menu-dropdown .layout-menu-options { display:block; padding:4px 0 0; }
+.admin-menu-dropdown > .layout-menu-options:not(:first-child) { border-top:1px solid #655945; margin-top:4px; }
+.layout-menu-options p { padding:7px 12px 3px; font-size:10px; color:#c6b38e; letter-spacing:1.5px; text-transform:uppercase; }
+.owner-nav-actions .layout-menu-options button { width:100%; justify-content:space-between; border:0; background:transparent; }
+.owner-nav-actions .layout-menu-options button:hover, .owner-nav-actions .layout-menu-options button[aria-checked="true"] { background:#494034; }
+.controls-header .branding { min-width:0; flex-wrap:wrap; }
+@media (min-width:700px) and (min-height:600px) {
+  .darkroom-app-container[data-shelf-id="camera"] .controls-header .action-buttons { display:flex; flex:0 1 auto; margin-left:auto; }
+  .darkroom-app-container[data-shelf-id="camera"] .controls-header .action-buttons > :not(.owner-nav-actions) { display:none; }
+}

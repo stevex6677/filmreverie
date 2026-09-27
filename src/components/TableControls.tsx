@@ -1,11 +1,11 @@
 import { FilmStrengthControl } from "./FilmStrengthControl";
 import { useEffect, useRef, useState, type Dispatch, type ReactNode } from 'react';
 import { ViewerAction, ViewerState } from '../state/viewerState';
-import { FILM_STOCKS, getFilmStock, isFilmStockId } from '../data/filmStocks';
+import { getFilmStock } from '../data/filmStocks';
 import { focusFrameLayout, fitRollView } from '../utils/rollLayout';
 import { photoCropPreview } from '../utils/photoFraming';
 import { MobileSheet } from './MobileControls';
-import { DEFAULT_INSPECT_DISTANCE } from '../utils/cameraBounds';
+import { FilmStockInfo } from './FilmStockInfo';
 
 export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet,ownerActions}:{state:ViewerState;dispatch:Dispatch<ViewerAction>;onOpenLibrary:()=>void;sheet:MobileSheet;setSheet:(sheet:MobileSheet)=>void;ownerActions?:ReactNode}) {
   const root=useRef<HTMLDivElement>(null), panel=useRef<HTMLDialogElement>(null);
@@ -13,7 +13,6 @@ export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet,owner
   const stock=getFilmStock(state.filmStockId);
   const focus=state.focusMode, number=state.activeFrameIndex+1;
 
-  const frame=state.roll.frames[state.activeFrameIndex];
   const defaultZoom=fitRollView(state.roll,'frame',state.activeFrameIndex,state.viewportAspect).zoom;
   const detailZoom=focus && state.inspectZoom<defaultZoom*.92;
   const inspecting=state.loupe.inspecting;
@@ -45,7 +44,7 @@ export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet,owner
   const next=(delta:number)=>dispatch({type:'OPEN_FRAME',frameIndex:state.activeFrameIndex+delta});
   return <div ref={root} className={`table-controls ${focus?'is-focus':''} ${inspecting?'is-loupe-inspection':''} ${state.loupe.isActive?'has-loupe':''}`} data-quiet={quiet} data-testid="controls-panel">
     {!inspecting&&<header className="table-header">
-      {focus?<button className="table-back" onClick={()=>dispatch({type:'SHOW_OVERVIEW'})}>← Overview</button>:<div className="table-entry"><button onClick={onOpenLibrary}>Rolls</button><button data-testid="return-room-btn" onClick={()=>dispatch({type:'RETURN_TO_ROOM'})}>← Room</button></div>}
+      {focus?<button className="table-back" onClick={()=>dispatch({type:'SHOW_OVERVIEW'})}>← Overview</button>:<div className="table-entry"><button onClick={onOpenLibrary}>Film Shelf</button><button data-testid="return-room-btn" onClick={()=>dispatch({type:'RETURN_TO_ROOM'})}>← Room</button></div>}
       <div className="table-identity"><span className="table-eyebrow">{focus?'FOCUS':'LIGHT TABLE'}</span><h1>{state.roll.label}</h1><span>{focus?`Frame ${String(number).padStart(2,'0')}`:`${state.roll.frames.length} frames · ${state.roll.format==='135'||!state.roll.format?'35 mm':'120'}`}</span></div>
       <div className="table-actions">{!focus && <button aria-pressed={state.adjustingView} onClick={()=>{setSheet(null);dispatch({type:'SET_ADJUSTING_VIEW',active:!state.adjustingView});}}>{state.adjustingView?'Done':'Adjust view'}</button>}{!state.loupe.isActive&&<button data-testid="loupe-activate" onClick={()=>dispatch({type:'SET_LOUPE_ACTIVE',active:true})}>Loupe</button>}<button className="table-adjust" aria-haspopup="dialog" onClick={()=>setSheet('tools')}>Adjust</button>{ownerActions}</div>
     </header>}
@@ -86,7 +85,7 @@ export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet,owner
           <div style={{aspectRatio:layout.frameWidth/layout.frameHeight}}><img src={photo.thumbnailSrc??photo.src} alt={photo.alt} loading="lazy" style={photoCropPreview(photo.aspectRatio,layout.frameWidth/layout.frameHeight,photo.rotation??0,photo.cropPosition)}/></div><span>{String(index+1).padStart(2,'0')}</span>
         </button>;
       })}</div>:<div className="table-fields">
-        <label>Film stock<select id="film-stock" data-testid="film-stock-selector" aria-label="Film stock" value={stock.id} onChange={event=>{if(isFilmStockId(event.target.value))dispatch({type:'SET_FILM_STOCK',stockId:event.target.value});}}>{FILM_STOCKS.map(profile=><option key={profile.id} value={profile.id}>{profile.displayName}</option>)}</select></label>
+        <FilmStockInfo stockId={state.filmStockId}/>
         <FilmStrengthControl state={state} dispatch={dispatch}/>
         <div className="table-field"><span>Rendering <output data-testid="mode-badge">{stock.type==='reversal'?'POSITIVE · E-6':state.filmMode.toUpperCase()}</output></span>{stock.type==='negative'&&<button id="mode-toggle" data-testid="mode-toggle" onClick={()=>dispatch({type:'TOGGLE_FILM_MODE'})}>Switch to {state.filmMode==='positive'?'Negative':'Positive'}</button>}</div>
         <label data-testid="dimmer-controls">Table light <output data-testid="brightness-badge"><span data-testid="brightness-value">{Math.round(state.tableBrightness*100)}%</span></output><input id="brightness-slider" data-testid="brightness-slider" aria-label="Light Table Brightness" type="range" min=".3" max="1" step=".01" value={state.tableBrightness} onChange={event=>dispatch({type:'SET_TABLE_BRIGHTNESS',brightness:Number(event.target.value)})}/></label>
@@ -94,8 +93,6 @@ export function TableControls({state,dispatch,onOpenLibrary,sheet,setSheet,owner
           <div className="table-magnification" data-testid="magnification-controls">{[2,4,8].map(value=><button key={value} data-testid={`mag-btn-${value}x`} aria-pressed={state.loupe.magnification===value} onClick={()=>dispatch({type:'SET_LOUPE_MAGNIFICATION',magnification:value})}>{value}×</button>)}</div>
           {state.loupe.isActive&&<><button onClick={()=>{setSheet(null);dispatch({type:'INSPECT_LOUPE'});}}>Inspect</button><p>Drag the loupe, then tap its lens to inspect. Two fingers move the table.</p></>}
         </div>
-        <p className="table-muted" data-testid="frame-badge">#{state.loupe.isActive?state.loupe.frameIndex+1:number} — {state.loupe.isActive?state.roll.frames[state.loupe.frameIndex].title:frame.title}</p>
-        <p className="table-muted">View scale <output data-testid="zoom-badge">{Math.round((focus?defaultZoom:DEFAULT_INSPECT_DISTANCE)/state.inspectZoom*100)}%</output></p>
         {!focus && !inspecting && <div className="table-field">
           <label>Tilt <output>{Math.round(state.tableAngle.tilt*180/Math.PI)}°</output><input aria-label="Table tilt" title="Double-click to reset to 0°" onDoubleClick={()=>dispatch({type:'SET_TABLE_ANGLE',angle:{...state.tableAngle,tilt:0}})} type="range" min="0" max="50" step="1" value={state.tableAngle.tilt*180/Math.PI} onChange={event=>dispatch({type:'SET_TABLE_ANGLE',angle:{...state.tableAngle,tilt:Number(event.target.value)*Math.PI/180}})}/></label>
           <label>Yaw <output>{Math.round(state.tableAngle.yaw*180/Math.PI)}°</output><input aria-label="Table yaw" title="Double-click to reset to 0°" onDoubleClick={()=>dispatch({type:'SET_TABLE_ANGLE',angle:{...state.tableAngle,yaw:0}})} type="range" min="-60" max="60" step="1" value={state.tableAngle.yaw*180/Math.PI} onChange={event=>dispatch({type:'SET_TABLE_ANGLE',angle:{...state.tableAngle,yaw:Number(event.target.value)*Math.PI/180}})}/></label>

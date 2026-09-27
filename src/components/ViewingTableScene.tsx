@@ -26,7 +26,6 @@ import { CameraShelf } from './CameraShelf';
 import type { CameraCollectionProgress } from '../utils/loadCameraModel';
 
 interface ViewingTableSceneProps {
-  onEditShelfRoll: (id: string) => void;
   showRoll?: boolean;
   readOnlyShelf?: boolean;
   coverSource?: ShelfCoverSource;
@@ -43,7 +42,7 @@ interface ViewingTableSceneProps {
 }
 
 export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
-  shelf, shelfPortal, onEditShelfRoll, showRoll = true, readOnlyShelf = false, coverSource,
+  shelf, shelfPortal, showRoll = true, readOnlyShelf = false, coverSource,
   inputBlocked = false,
   state,
   dispatch,
@@ -119,7 +118,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       <TableAngleNavigation state={state} dispatch={dispatch} blocked={inputBlocked} />
       <LoupeNavigation state={state} dispatch={dispatch} blocked={inputBlocked} />
       <TouchNavigation state={state} dispatch={dispatch} blocked={inputBlocked} livePose={livePose} />
-      <ShelfNavigation enabled={state.shelfFocused && !inputBlocked} onLeave={() => { shelf.close(); dispatch({ type: 'RETURN_TO_ROOM' }); }} onLook={(dx, dy) => dispatch({ type: 'LOOK_ROOM', yaw: dx * .0035, pitch: -dy * .0035 })} />
+      <ShelfNavigation enabled={state.shelfFocused && !shelf.selection?.pinned && !inputBlocked} onLeave={() => { shelf.close(); dispatch({ type: 'RETURN_TO_ROOM' }); }} onLook={(dx, dy) => dispatch({ type: 'LOOK_ROOM', yaw: dx * .0035, pitch: -dy * .0035 })} />
       {/* Darkroom Atmosphere Scene Background */}
       <color attach="background" args={[cabinetOnly ? "#0b0c0e" : "#13151b"]} />
 
@@ -130,6 +129,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         touchInput={state.touchInput}
         shelfFocused={state.shelfFocused}
         cameraShelf={state.shelfId === 'camera'}
+        shelfDetailSlot={state.shelfId === 'film' && shelf.selection?.pinned ? shelf.selectedRoll?.shelfSlot : undefined}
         shelfTransition={state.transitionKind === 'shelf'}
         journeyTransition={state.transitionKind === 'journey'}
         inputBlocked={inputBlocked || state.shelfFocused}
@@ -159,7 +159,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         interactive={state.roomMode === 'room' && !inputBlocked && state.shelfId !== 'film'}
         onApproach={() => { shelf.close(); dispatch({ type: 'APPROACH_CAMERA_SHELF' }); }}
         onOpen={id => dispatch({ type: 'OPEN_CAMERA', id })} />
-      <group visible={!cabinetOnly}><FilmShelf textures={packagingTextures} onEdit={onEditShelfRoll} readOnly={readOnlyShelf} coverSource={coverSource} focused={state.shelfId === 'film'} onApproach={point => {
+      <group visible={!cabinetOnly}><FilmShelf textures={packagingTextures} readOnly={readOnlyShelf} coverSource={coverSource} focused={state.shelfId === 'film'} onApproach={point => {
         const target = point ? roomHitTarget(camera, gl.domElement, point.x, point.y, tableSize) : 'shelf';
         if (!target) return;
         shelf.close(); dispatch({ type: target === 'table' ? 'APPROACH_TABLE' : target === 'camera' ? 'APPROACH_CAMERA_SHELF' : 'APPROACH_SHELF' });

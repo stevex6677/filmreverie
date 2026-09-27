@@ -36,7 +36,7 @@ test('M18 saved covers render in frames, update after editing, and leave gray bl
   const before = await photoPixels(page, 0), gray = await photoPixels(page, 5);
   await fs.mkdir(OUT, { recursive: true });
   await page.screenshot({ path: `${OUT}/${info.project.name}-cover-frames.png` });
-  await page.getByRole('button', { name: 'Show saved roll Roll 01', exact: true }).click();
+  await page.getByRole('button', { name: 'Show saved roll Roll 01', exact: true }).click();await page.getByRole('button',{name:'Edit Roll 01',exact:true}).click();
   const editor = page.getByRole('dialog', { name: 'Review roll', exact: true });
   await editor.getByRole('button', { name: 'Select frame 2', exact: true }).click();
   await editor.getByRole('button', { name: 'Rotate frame 2', exact: true }).click();

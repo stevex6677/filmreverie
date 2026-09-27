@@ -1,3 +1,4 @@
+import { approachTable, openRoomLights, faceTable } from "./helpers/room";
 import { openViewingTools, captureCanvas, placeLoupeAtScreenPoint } from "./helpers/viewing";
 import { test, expect, type Page } from "@playwright/test";
 import fs from "node:fs";
@@ -10,9 +11,9 @@ import { LOUPE_LENS_RADIUS, LOUPE_RADIUS } from "../../src/utils/loupeView";
 const output = path.resolve(process.env.M13_CANDIDATE_DIR || "artifacts/m13-candidates");
 const ready = async (page: Page) => { await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true'); await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false'); await page.waitForTimeout(350); };
 const pose = async (page: Page) => (await page.locator('main').getAttribute('data-room-pose'))!.split(',').map(Number);
-async function light(page: Page, n: number) { const slider=page.getByRole('slider',{name:'Room brightness',exact:true}); await slider.focus(); await slider.press(n===100?'End':'Home'); if(n>0 && n<100){for(let i=0;i<Math.floor(n/10);i++)await slider.press('PageUp');for(let i=0;i<n%10;i++)await slider.press('ArrowRight');} await slider.blur(); await page.waitForTimeout(700); }
+async function light(page: Page, n: number) { const panel = await openRoomLights(page); await panel.getByRole('slider',{name:'Room brightness',exact:true}).fill(String(n/100)); await panel.getByRole('button',{name:'Close',exact:true}).click(); await page.locator('.canvas-wrapper').focus(); await page.waitForTimeout(700); }
 async function turn(page: Page, yaw: number, pitch=0) { const x=yaw>0?200:1050; await page.mouse.move(x,400); await page.mouse.down(); await page.mouse.move(x+yaw/.0035,400-pitch/.0035,{steps:16}); await page.mouse.up(); await page.waitForTimeout(250); }
-async function face(page: Page) { await page.getByRole('button',{name:'Face table',exact:true}).click(); await page.getByRole('button',{name:'Face table',exact:true}).blur(); await page.waitForTimeout(250); }
+async function face(page: Page) { await faceTable(page); await page.waitForTimeout(250); }
 async function shot(page: Page, name: string) { fs.mkdirSync(output,{recursive:true}); const buffer=await captureCanvas(page); fs.writeFileSync(path.join(output,`${name}.png`),buffer);return parsePng(buffer); }
 async function sampleGeometry(page: Page) {
   const canvas = page.locator("canvas"), box = (await canvas.boundingBox())!;
@@ -56,7 +57,7 @@ for (const reduced of [false,true]) test(`M13 fixed-eye full turns, six views an
     const vertical=await shot(page,`${reduced?'reduced':'animated'}-${name}`);
     expect(getRegionStats(vertical,640,430,160).meanLum).toBeGreaterThan(8);
     const q=await canvas.getAttribute('data-camera-quaternion'); const saved=await pose(page);
-    await page.getByTestId('approach-table-btn').click();await ready(page);
+    await approachTable(page);await ready(page);
     await page.getByTestId('return-room-btn').click();await ready(page);
     expect(await pose(page)).toEqual(saved);
     const restored=(await canvas.getAttribute('data-camera-quaternion'))!.split(',').map(Number), expected=q!.split(',').map(Number);
@@ -65,14 +66,14 @@ for (const reduced of [false,true]) test(`M13 fixed-eye full turns, six views an
     await face(page);
   }
   await turn(page,Math.PI/2);await turn(page,Math.PI/2);
-  const away=await pose(page);await page.getByTestId('approach-table-btn').click();await ready(page);
+  const away=await pose(page);await approachTable(page);await ready(page);
   await page.getByTestId('return-room-btn').click();await ready(page);expect(await pose(page)).toEqual(away);
   await face(page);
   await page.keyboard.press('ArrowLeft');expect((await pose(page))[0]).toBeCloseTo(initial[0]+.12);
   const keyboardPose=await pose(page); await page.keyboard.press('Enter'); await ready(page); await page.keyboard.press('Escape'); await ready(page); expect(await pose(page)).toEqual(keyboardPose); await page.keyboard.press('0'); expect(await pose(page)).toEqual(initial);
-  const beforeFocus=await pose(page);await page.getByRole('slider',{name:'Room brightness',exact:true}).press('ArrowLeft');expect(await pose(page)).toEqual(beforeFocus);
+  const beforeFocus=await pose(page);await openRoomLights(page);await page.getByRole('slider',{name:'Room brightness',exact:true}).press('ArrowLeft');expect(await pose(page)).toEqual(beforeFocus);
   await page.getByRole('button',{name:'Face table',exact:true}).focus();await page.keyboard.press('ArrowLeft');expect(await pose(page)).toEqual(beforeFocus);
-  await page.getByRole('button',{name:'Rolls',exact:true}).click();await page.keyboard.press('ArrowRight');expect(await pose(page)).toEqual(beforeFocus);await page.keyboard.press('Escape');
+  await page.getByRole('dialog',{name:'Viewing tools',exact:true}).getByRole('button',{name:'Close',exact:true}).click();await page.getByRole('button',{name:'Film Shelf',exact:true}).click();await page.keyboard.press('ArrowRight');expect(await pose(page)).toEqual(beforeFocus);await page.keyboard.press('Escape');
   // Real pointer capture cancellation followed by motion cannot leave a stuck drag.
   await page.mouse.move(850,420);await page.mouse.down();await page.mouse.move(760,420,{steps:5});
   await canvas.dispatchEvent('pointercancel',{pointerId:1});const cancelled=await pose(page);await page.mouse.move(500,450);await page.mouse.up();expect(await pose(page)).toEqual(cancelled);
@@ -93,7 +94,7 @@ test('M13 room illumination is ordered and switch remembers level',async({page})
   for(const n of [0,25,50,100]){await light(page,n);const png=await shot(page,`room-light-${n}`);const wall=getRegionStats(png,...wallRegion);levels.push(wall.meanLum);const table=getRegionStats(png,...tableRegion), red=getRegionStats(png,...redRegion); measurements[n]={wall,table,red}; if(n===0){expect(table.meanLum).toBeGreaterThan(100);expect(red.meanLum).toBeGreaterThan(30);}}
   // Predefined visual gate: at least 3 luminance levels per step, bright wall >25.
   for(let i=1;i<levels.length;i++)expect(levels[i]-levels[i-1]).toBeGreaterThan(3);expect(levels[3]).toBeGreaterThan(25);
-  await light(page,50);await page.getByRole('switch',{name:'Room lights',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-room-brightness','0');await page.getByRole('switch',{name:'Room lights',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-room-brightness','0.5');
+  await light(page,50);await openRoomLights(page);await page.getByRole('switch',{name:'Room lights',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-room-brightness','0');await page.getByRole('switch',{name:'Room lights',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-room-brightness','0.5');
   fs.writeFileSync(path.join(output,'room-light-measurements.json'),JSON.stringify(measurements,null,2));
 });
 
@@ -106,7 +107,7 @@ for(const stock of ['ektachrome-e100','ektar-100','portra-160','portra-400','por
       const captures:ReturnType<typeof parsePng>[]=[];
       let photoRegion: readonly [number, number, number], loupeRegion: readonly [number, number, number], lensDetailSize: number;
       for(const room of [0,100]){
-        await light(page,room);await page.getByTestId('approach-table-btn').click();await ready(page);
+        await light(page,room);await approachTable(page);await ready(page);
         // Normalize overview framing before comparing the same photo pixels;
         // room return fits the current viewport, unlike the initial overview.
         await page.getByTestId('reset-view-btn').click();await ready(page);

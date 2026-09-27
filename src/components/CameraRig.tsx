@@ -1,4 +1,4 @@
-import { SHELF_CAMERA, SHELF_ORIGIN, shelfFov, CAMERA_SHELF_EYE, CAMERA_SHELF_TARGET, CAMERA_SHELF_ORIGIN, CAMERA_SHELF_MM, mm, cameraShelfFov } from '../data/physicalScale';
+import { SHELF_CAMERA, SHELF_ORIGIN, shelfFov, CAMERA_SHELF_EYE, CAMERA_SHELF_TARGET, CAMERA_SHELF_ORIGIN, CAMERA_SHELF_MM, mm, cameraShelfFov, SHELF_CELL_MM } from '../data/physicalScale';
 import { InspectionMotion, Point3 } from "../utils/inspectionMotion";
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
@@ -17,6 +17,7 @@ import { TableAngle, TOP_DOWN, tableCameraPose, tablePointAt } from "../utils/ta
 import { RoomMode } from "../state/viewerState";
 
 interface CameraRigProps {
+  shelfDetailSlot?: number;
   cameraShelf?: boolean;
   shelfTransition?: boolean;
   shelfFocused?: boolean;
@@ -46,6 +47,7 @@ interface CameraRigProps {
 }
 
 export const CameraRig: React.FC<CameraRigProps> = ({
+  shelfDetailSlot,
   shelfTransition = false,
   cameraShelf = false,
   shelfFocused = false,
@@ -96,6 +98,24 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     for (const element of [gl.domElement, document.querySelector('.controls-header, .mobile-header'), document.querySelector('.camera-collection-toolbar')]) if (element) observer.observe(element);
     return () => observer.disconnect();
   }, [cameraShelf, gl, size.width, size.height]);
+  const detailFrame = useRef({ height: .3, bottom: .5 });
+  const detailMotion = useRef<{ slot: number | undefined; moving: boolean }>({ slot: undefined, moving: false });
+  useEffect(() => {
+    if (shelfDetailSlot === undefined) return;
+    const update = () => {
+      const rect = gl.domElement.getBoundingClientRect();
+      const header = document.querySelector('.controls-header, .mobile-header')?.getBoundingClientRect();
+      const card = document.querySelector('.shelf-roll-card')?.getBoundingClientRect();
+      const top = Math.max(0, (header?.bottom ?? rect.top) - rect.top) + 18;
+      const bottom = Math.max(top + 80, Math.min(rect.height, (card?.top ?? rect.bottom * .5) - rect.top) - 20);
+      detailFrame.current = { height: Math.max(.12, (bottom - top) / rect.height), bottom: bottom / rect.height };
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    for (const node of [gl.domElement, document.querySelector('.controls-header, .mobile-header'), document.querySelector('.shelf-roll-card')]) if (node) observer.observe(node);
+    window.addEventListener('resize', update);
+    return () => { observer.disconnect(); window.removeEventListener('resize', update); };
+  }, [shelfDetailSlot, gl, size.width, size.height]);
   const captureOwner = useRef<HTMLElement | null>(null);
   const isDraggingRoomRef = useRef(false);
   const isPanningTableRef = useRef(false);
@@ -325,32 +345,55 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     const effectivePan = (live?.active && inspecting) ? live.pan : inspectPan;
     const tablePose = tableCameraPose(effectiveZoom, effectivePan, tableAngle);
     const frame = cabinetFrame.current;
-    const cabinetFov = cameraShelf ? cameraShelfFov(size.width / size.height, frame.height, frame.width) : shelfFov(size.width / size.height);
+    let cabinetFov = cameraShelf ? cameraShelfFov(size.width / size.height, frame.height, frame.width) : shelfFov(size.width / size.height);
     const frontDistance = CAMERA_SHELF_ORIGIN[0] - mm(CAMERA_SHELF_MM.depth) - CAMERA_SHELF_EYE[0];
     const cabinetOffset = cameraShelf && shelfFocused ? (frame.center - .5) * 2 * frontDistance * Math.tan(cabinetFov * Math.PI / 360) : 0;
     targetPos.current.set(...(inspecting
       ? tablePose.position
       : shelfFocused ? (cameraShelf ? CAMERA_SHELF_EYE : SHELF_CAMERA) : ROOM_EYE));
+    const detailSlot = !inspecting && shelfFocused && !cameraShelf ? shelfDetailSlot : undefined;
+    if (detailMotion.current.slot !== detailSlot) {
+      detailMotion.current = { slot: detailSlot, moving: !inspecting && shelfFocused && !cameraShelf };
+      shelfFlight.current = null;
+    }
+    let detailTarget: [number, number, number] | null = null;
+    if (detailSlot !== undefined) {
+      const index = detailSlot % 16;
+      const width = mm(SHELF_CELL_MM.width), height = mm(SHELF_CELL_MM.height);
+      const distance = 1.65;
+      const visible = detailFrame.current;
+      const span = Math.max(height * 1.28 / visible.height, width * 1.18 / (size.width / size.height));
+      cabinetFov = 2 * Math.atan(span / (2 * distance)) * 180 / Math.PI;
+      const x = SHELF_ORIGIN[0] + (index % 4 - 1.5) * width;
+      const y = SHELF_ORIGIN[1] + (1.5 - Math.floor(index / 4)) * height + (visible.bottom - height * .54 / span - .5) * span;
+      const z = SHELF_ORIGIN[2] + mm(SHELF_CELL_MM.depth / 2);
+      detailTarget = [x, y, z];
+      targetPos.current.set(x, y, z + distance);
+    }
     targetPos.current.y += cabinetOffset;
     const desired = desiredCamera.current;
     desired.position.copy(targetPos.current);
     desired.up.set(...(inspecting ? tablePose.up : ROOM_CAMERA_UP));
     desired.lookAt(...(inspecting ? tablePose.target : shelfFocused ? (cameraShelf ? CAMERA_SHELF_TARGET : SHELF_ORIGIN) : roomLookTarget(savedRoomPose)));
     if (cameraShelf && shelfFocused) desired.lookAt(CAMERA_SHELF_TARGET[0], CAMERA_SHELF_TARGET[1] + cabinetOffset, CAMERA_SHELF_TARGET[2]);
+    if (detailTarget) desired.lookAt(...detailTarget);
+    const detailJourney = detailMotion.current.moving;
+    const automaticShelfMotion = shelfTransition || detailJourney;
     const angleChanging = Math.abs(renderedAngle.current.tilt - tableAngle.tilt) + Math.abs(renderedAngle.current.yaw - tableAngle.yaw) > .00001;
-    const immediate = angleDragging || isDeterministic || isReducedMotion || (!inspecting && !isTransitioning) || ((touchInput || loupeInspection || live?.active) && !isTransitioning && !angleChanging);
+    const immediate = angleDragging || isDeterministic || isReducedMotion || (!inspecting && !isTransitioning && !detailJourney) || ((touchInput || loupeInspection || live?.active) && !isTransitioning && !angleChanging && !detailJourney);
     const moving = !immediate && (camera.position.distanceTo(targetPos.current) > .001 || camera.quaternion.angleTo(desired.quaternion) > .001 || isPanningTableRef.current);
     if (moving !== wasMovingRef.current) { wasMovingRef.current = moving; onCameraMotion?.(moving); }
     // A finite shelf flight avoids waiting for an exponential tail to settle.
     // Reversals start at the rendered pose, and look input can change its target.
     let shelfProgress: number | null = null;
-    if (!shelfTransition || immediate) shelfFlight.current = null;
-    if (shelfTransition && !immediate) {
-      const key = shelfFocused ? (cameraShelf ? 'camera-shelf' : 'shelf') : 'room';
+    if (!automaticShelfMotion || immediate) shelfFlight.current = null;
+    if (automaticShelfMotion && !immediate) {
+      const key = shelfFocused ? (cameraShelf ? 'camera-shelf' : `shelf:${detailSlot ?? 'all'}`) : 'room';
       if (shelfFlight.current?.key !== key) shelfFlight.current = { key, elapsed: 0, position: camera.position.clone(), rotation: camera.quaternion.clone(), fov: perspective.fov };
       const motion = shelfFlight.current;
       motion.elapsed = Math.min(.42, motion.elapsed + delta);
       shelfProgress = 1 - Math.pow(1 - motion.elapsed / .42, 3);
+      if (motion.elapsed >= .42) detailMotion.current.moving = false;
       camera.position.lerpVectors(motion.position, targetPos.current, shelfProgress);
       camera.quaternion.slerpQuaternions(motion.rotation, desired.quaternion, shelfProgress);
       flight.current = null; lastTarget.current = ''; lastStrip.current = stripIndex;
@@ -387,6 +430,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       camera.position.lerp(targetPos.current, alpha);
       camera.quaternion.slerp(desired.quaternion, alpha);
     }
+    if (immediate) detailMotion.current.moving = false;
     perspective.near = inspecting ? Math.min(.04, effectiveZoom * .025) : .04;
     // Keep the entire cabinet reachable on a portrait screen from the same
     // standing eye. Widen the lens, never move the viewer through the room.

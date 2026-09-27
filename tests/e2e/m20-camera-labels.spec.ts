@@ -4,7 +4,7 @@ import { ready } from './helpers/shelf';
 test('tablet nameplates share one row and hide when resized too narrow', async ({ page }, info) => {
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page);
-  await page.getByRole('button', { name: 'Cameras', exact: true }).click(); await ready(page);
+  await page.getByRole('button', { name: 'Camera Cabinet', exact: true }).click(); await ready(page);
   const visible = page.locator('.camera-shelf-target:visible');
   for (const viewport of [{width:1024,height:768}, {width:1180,height:820}]) {
     await page.setViewportSize(viewport);

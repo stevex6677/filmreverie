@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 
 test('crop drag follows the image and persists through save, reload, cancellation and rotation',async({page})=>{
   await page.goto('/guest?mode=inspect&reduced_motion=true');
-  await page.getByRole('button',{name:'Rolls',exact:true}).click();
+  await page.getByRole('button',{name:'Film Shelf',exact:true}).click();
   await page.getByRole('button',{name:'New roll',exact:true}).click();
   const png=new PNG({width:900,height:300});
   for(let y=0;y<300;y++)for(let x=0;x<900;x++)png.data.set(x<300?[220,35,35,255]:x<600?[35,220,35,255]:[35,35,220,255],(y*900+x)*4);
@@ -33,7 +33,7 @@ test('crop drag follows the image and persists through save, reload, cancellatio
   isRed(PNG.sync.read(await captureCanvas(page, {path:`${output}/film.png`})));
   await page.reload();await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true');await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');await page.waitForTimeout(700);
   isRed(PNG.sync.read(await captureCanvas(page)));
-  const edit=async()=>{await closeViewingTools(page);if(await page.locator('main').getAttribute('data-focus-mode')==='true'){await page.getByRole('button',{name:'← Overview',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');}await page.getByRole('button',{name:'Rolls',exact:true}).click();await page.getByRole('button',{name:'Show saved roll Recompose',exact:true}).click();};
+  const edit=async()=>{await closeViewingTools(page);if(await page.locator('main').getAttribute('data-focus-mode')==='true'){await page.getByRole('button',{name:'← Overview',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');}await page.getByRole('button',{name:'Film Shelf',exact:true}).click();await page.getByRole('button',{name:'Show saved roll Recompose',exact:true}).click();await page.getByRole('button',{name:'Edit Recompose',exact:true}).click();};
   await edit();await expect(page.getByLabel('Horizontal crop position')).toHaveValue('-1');
   await page.getByRole('button',{name:'Center crop',exact:true}).click();await expect(page.getByLabel('Horizontal crop position')).toHaveValue('0');
   await page.getByRole('button',{name:'Cancel edits',exact:true}).click();

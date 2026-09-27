@@ -1,4 +1,3 @@
-import { ShelfTools } from "./components/ShelfTools";
 import { RollEditor } from "./components/RollEditor";
 import { UpdateNotice } from "./components/UpdateNotice";
 import { createRuntimeRoll } from "./storage/rollRuntime";
@@ -64,7 +63,7 @@ export function App() {
     if (new URLSearchParams(window.location.search).get('welcome') === '1') return true;
     try { return localStorage.getItem(guestWelcomeKey) !== 'done'; } catch { return true; }
   });
-  const mobile = useMobileLayout();
+  const { mobile, layout, changeLayout } = useMobileLayout();
   const [sheet,setSheet]=useState<MobileSheet>(null);
   const [hidden,setHidden]=useState(document.hidden);
   const [contextLost,setContextLost]=useState(false);
@@ -168,14 +167,13 @@ export function App() {
   useEffect(()=>setSheet(null),[state.roomMode]);
   useEffect(()=>{if(mobile)dispatch({type:'INPUT_TOUCH',active:true});else setSheet(null);},[mobile]);
   useEffect(() => { document.title = isGuest ? (roll.imported ? `${roll.label} — Your darkroom` : 'Your darkroom — Film Reverie') : 'Film Reverie — Published photographs'; }, [isGuest, roll]);
-  const [toolsOpen, setToolsOpen] = useState(false);
   const [cloudSource, setCloudSource] = useState<'gallery' | null>(null);
   const cloudDialogOpen = guestWelcome;
   const [editorOpen, setEditorOpen] = useState(false), [libraryError, setLibraryError] = useState("");
   const [editingRollId, setEditingRollId] = useState<string | undefined>();
   const [deletedRoll, setDeletedRoll] = useState<StoredRoll | null>(null);
   const shelfPortal = useRef<HTMLDivElement>(null);
-  const shelfVisible = state.roomMode === 'room' && !state.cameraDisplay && !editorOpen && !toolsOpen && !cloudDialogOpen && !sheet && !hidden && !contextLost;
+  const shelfVisible = state.roomMode === 'room' && !state.cameraDisplay && !editorOpen && !cloudDialogOpen && !sheet && !hidden && !contextLost;
   const managedShelf = useFilmShelf(repository, shelfVisible && canManageRolls, canManageRolls, isGuest);
   const published = usePublishedShelf(!isGuest);
   const shelf = canManageRolls ? managedShelf : published.shelf;
@@ -186,7 +184,10 @@ export function App() {
   const emptyRollMessage = tableRollAvailable ? undefined
     : isGuest ? 'No roll on the light table'
       : published.loading ? 'Loading published photographs…' : published.error || 'No published roll on the light table';
-  const ownerActions = isGuest ? null : <AdminMenu loggedIn={adminLoggedIn} />;
+  const ownerActions = <AdminMenu loggedIn={adminLoggedIn} guest={isGuest} layout={layout} onLayoutChange={next => {
+    setSheet(null); changeLayout(next);
+    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('button[aria-label="More options"]')?.focus());
+  }} />;
   const openShelf = () => {
     void saveView().catch(error => setLibraryError(storageMessage(error)));
     shelf.close();
@@ -299,7 +300,7 @@ export function App() {
   // Keyboard shortcut support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (state.cameraDisplay || editorOpen || toolsOpen || cloudDialogOpen || sheet==='frames') return;
+      if (state.cameraDisplay || editorOpen || cloudDialogOpen || sheet==='frames') return;
       if(sheet==='tools' && e.key==='Escape'){setSheet(null);return;}
       // Ignore when typing in input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
@@ -373,7 +374,7 @@ export function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.cameraDisplay, state.roomMode, state.adjustingView, state.shelfFocused, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, state.loupe, roll, editorOpen, toolsOpen, cloudDialogOpen, sheet]);
+  }, [state.cameraDisplay, state.roomMode, state.adjustingView, state.shelfFocused, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, state.loupe, roll, editorOpen, cloudDialogOpen, sheet]);
 
   const localError = new URLSearchParams(window.location.search).get("roll") === "local" ? validateRoll(LOCAL_ROLL) : null;
   if (localError) return <>
@@ -413,6 +414,7 @@ export function App() {
       data-shelf-trash={shelf.trash}
       data-table-roll-available={tableRollAvailable}
       data-shelf-focused={state.shelfFocused}
+      data-shelf-roll-focused={shelf.selection?.pinned && state.shelfId === 'film' ? shelf.selection.id : ''}
       data-shelf-id={state.shelfId ?? ''}
       data-camera-display={state.cameraDisplay ?? ''}
       data-room-mode={state.roomMode}
@@ -453,7 +455,7 @@ export function App() {
           <div className="canvas-wrapper" tabIndex={state.cameraDisplay ? -1 : 0} aria-hidden={!!state.cameraDisplay} aria-label="Film viewer">
             <Canvas shadows key={canvasVersion}
               onCreated={({gl})=>{gl.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();setContextLost(true);});gl.domElement.addEventListener('webglcontextrestored',()=>setContextLost(false));}}
-              frameloop={state.cameraDisplay || editorOpen || toolsOpen || cloudDialogOpen || sheet === 'frames' || hidden || contextLost ? "never" : "always"}
+              frameloop={state.cameraDisplay || editorOpen || cloudDialogOpen || sheet === 'frames' || hidden || contextLost ? "never" : "always"}
               camera={initialCamera}
               dpr={[1, Math.min(typeof window !== "undefined" ? window.devicePixelRatio : 1, 1.5)]}
               gl={{
@@ -466,13 +468,12 @@ export function App() {
               }}
             >
               <ViewingTableScene
-                onEditShelfRoll={openEditor}
                 showRoll={tableRollAvailable}
                 readOnlyShelf={!canManageRolls}
                 coverSource={canManageRolls ? managedCoverSource : published.cover}
                 shelf={shelf}
                 shelfPortal={shelfPortal}
-                inputBlocked={!!state.cameraDisplay || editorOpen || toolsOpen || cloudDialogOpen || sheet==='frames' || (state.roomMode==='room' && !!sheet) || hidden || contextLost}
+                inputBlocked={!!state.cameraDisplay || editorOpen || cloudDialogOpen || sheet==='frames' || (state.roomMode==='room' && !!sheet) || hidden || contextLost}
                 state={state}
                 dispatch={dispatch}
                 isDeterministic={isDeterministic}
@@ -488,18 +489,17 @@ export function App() {
 
       {contextLost&&<div className="context-recovery" role="alert"><p>The graphics view was interrupted. Your rolls are saved.</p><button onClick={()=>{setContextLost(false);setCanvasVersion(v=>v+1);}}>Restore view</button></div>}
       <div ref={shelfPortal} className="shelf-overlay" aria-label="Saved-roll shelf" style={{ display: shelfVisible ? undefined : 'none' }} />
-      {shelfVisible && state.shelfId === 'camera' && <div className="shelf-toolbar camera-collection-toolbar" aria-label="Camera shelf controls"><button onClick={() => dispatch({ type: 'RETURN_TO_ROOM' })}>← Back to room</button><div><span className="shelf-eyebrow">YOUR CAMERAS</span><span>One camera, many perspectives</span></div><button onClick={openShelf}>Film shelf</button></div>}
-      {shelfVisible && state.shelfId !== 'camera' && <div className="shelf-toolbar" aria-label="Shelf controls">
+      {shelfVisible && state.shelfId === 'camera' && <div className="shelf-toolbar camera-collection-toolbar" aria-label="Camera shelf controls"><button onClick={() => dispatch({ type: 'RETURN_TO_ROOM' })}>← Back to room</button><div><span className="shelf-eyebrow">YOUR CAMERAS</span><span>One camera, many perspectives</span></div><button onClick={openShelf}>Film Shelf</button></div>}
+      {shelfVisible && state.shelfFocused && state.shelfId === 'film' && !shelf.selection?.pinned && <div className="shelf-toolbar" aria-label="Shelf controls">
         {state.shelfFocused && <button onClick={() => { shelf.close(); dispatch({ type: "RETURN_TO_ROOM" }); }}>← Back to room</button>}
         <div><span className="shelf-eyebrow">{!canManageRolls ? "PUBLISHED GALLERY" : shelf.trash ? "TRASH" : "YOUR COLLECTION"}</span><span>{!canManageRolls ? `${shelf.savedCount} published ${shelf.savedCount === 1 ? "roll" : "rolls"}` : shelf.trash ? `${shelf.trashCount} deleted rolls` : `${shelf.savedCount} saved ${shelf.savedCount === 1 ? "roll" : "rolls"}`}</span></div>
         {shelf.pages > 1 && <nav aria-label="Shelf pages"><button aria-label="Previous shelf page" disabled={shelf.page === 0} onClick={() => shelf.changePage(shelf.page - 1)}>‹</button><span aria-live="polite">{shelf.page + 1} / {shelf.pages}</span><button aria-label="Next shelf page" disabled={shelf.page + 1 === shelf.pages} onClick={() => shelf.changePage(shelf.page + 1)}>›</button></nav>}
-        {isGuest && <button onClick={() => { shelf.close(); setToolsOpen(true); }}>Backups &amp; offline</button>}
         {canManageRolls && <button className="shelf-add" onClick={() => openEditor()}>New roll</button>}
         {canManageRolls && state.shelfFocused && <button onClick={() => shelf.changeTrash(!shelf.trash)}>{shelf.trash ? "Saved rolls" : `Trash (${shelf.trashCount})`}</button>}
         {canManageRolls && deletedRoll && <div className="shelf-deleted-notice" role="status"><span>{deletedRoll.name} moved to Trash</span><button onClick={() => { void restoreRoll(deletedRoll.id).catch(error => setLibraryError(storageMessage(error))); }}>Undo</button><button aria-label="Dismiss deletion notice" onClick={() => setDeletedRoll(null)}>×</button></div>}
         {shelf.error && <p role="alert">{shelf.error}<button onClick={shelf.retry}>Retry</button></p>}
       </div>}
-      {shelfVisible && shelf.selectedRoll && shelf.selection && <ShelfRollCard
+      {shelfVisible && state.shelfId === 'film' && shelf.selectedRoll && shelf.selection?.pinned && <ShelfRollCard
         key={shelf.selectedRoll.id}
         shelf={shelf}
         roll={shelf.selectedRoll}
@@ -515,19 +515,17 @@ export function App() {
       {!state.cameraDisplay && (state.roomMode === 'room'
         ? mobile
           ? <MobileControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} emptyRollMessage={emptyRollMessage} ownerActions={ownerActions} />
-          : <Controls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenCameras={openCameras} emptyRollMessage={emptyRollMessage} ownerActions={ownerActions} />
+          : <Controls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} emptyRollMessage={emptyRollMessage} ownerActions={ownerActions} />
         : !tableRollAvailable
           ? <div className="empty-table-controls">
-              <button onClick={openShelf}>Rolls</button>
-              <button onClick={openCameras}>Cameras</button>
+              <button onClick={openShelf}>Film Shelf</button>
+              <button onClick={openCameras}>Camera Cabinet</button>
               <span>{emptyRollMessage}</span>
-              {canManageRolls && <button onClick={() => openEditor()}>New roll</button>}
               {ownerActions}
             </div>
           : <TableControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} sheet={sheet} setSheet={setSheet} ownerActions={ownerActions} />)}
       {state.cameraDisplay && <CameraDisplayView id={state.cameraDisplay} onBack={closeCamera} reducedMotion={isReducedMotion} />}
       {libraryError && <div className="library-notice" role="alert">{libraryError}<button onClick={() => { setLibraryError(""); openShelf(); }}>Open shelf</button></div>}
-      {isGuest && toolsOpen && <ShelfTools repository={repository} showLegacyImport onClose={() => setToolsOpen(false)} beforeExport={saveView} />}
       {editorOpen && <RollEditor publication={!isGuest} repository={repository} onDelete={deleteRoll} editId={editingRollId} onClose={() => { setEditorOpen(false); setEditingRollId(undefined); }} onOpen={openSaved} />}
       {isGuest && guestWelcome && <GuestWelcome onClose={() => { try { localStorage.setItem(guestWelcomeKey, 'done'); } catch { /* Browsing can continue when localStorage is blocked. */ } setGuestWelcome(false); }} />}
     </main>

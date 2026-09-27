@@ -1,3 +1,4 @@
+import { approachTable } from "./helpers/room";
 import { expect, Page, test } from '@playwright/test';
 import { PerspectiveCamera, Vector3 } from 'three';
 import { ROOM_EYE, TABLE_SURFACE_Y } from '../../src/utils/cameraBounds';
@@ -71,30 +72,31 @@ test('M18 shelf drags return smoothly from owned and gray blocks without opening
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await focusShelf(page);
   if (info.project.use.hasTouch) await button.tap(); else await button.click();
-  await expect(page.getByRole('dialog', { name: 'Review roll', exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Roll 01 — roll details', exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Review roll', exact: true })).toHaveCount(0);
 });
 
 test('M18 shelf transitions keep navigation enabled and accept dragging before settling', async ({ page, context, browserName }, info) => {
   await page.goto('/guest?mode=room'); await ready(page);
-  const app = page.locator('main'), approach = page.getByTestId('approach-table-btn');
+  const app = page.locator('main');
   if (info.project.name === 'desktop') {
-    await page.getByRole('button', { name: 'Rolls', exact: true }).click();
+    await page.getByRole('button', { name: 'Film Shelf', exact: true }).click();
     await expect(app).toHaveAttribute('data-is-transitioning', 'true');
-    await expect(approach).toBeEnabled();
-    await approach.click();
+    await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeEnabled();
+    await approachTable(page);
     await expect(app).toHaveAttribute('data-room-mode', 'inspect'); await ready(page);
     await page.getByTestId('return-room-btn').click(); await ready(page); await focusShelf(page);
     await page.getByRole('button', { name: '← Back to room', exact: true }).click();
     await expect(app).toHaveAttribute('data-is-transitioning', 'true');
-    await expect(approach).toBeEnabled();
-    await approach.click();
+    await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeEnabled();
+    await approachTable(page);
     await expect(app).toHaveAttribute('data-room-mode', 'inspect'); await ready(page);
     await page.getByTestId('return-room-btn').click(); await ready(page);
   }
   const pose = await app.getAttribute('data-room-pose');
   const rect = (await page.locator('canvas').boundingBox())!, x = rect.x + rect.width * .52, y = rect.y + rect.height * .5;
   const cdp = browserName === 'chromium' && info.project.use.hasTouch ? await context.newCDPSession(page) : null;
-  await page.getByRole('button', { name: 'Rolls', exact: true }).click();
+  await page.getByRole('button', { name: 'Film Shelf', exact: true }).click();
   await expect(app).toHaveAttribute('data-is-transitioning', 'true');
   if (cdp) {
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
@@ -111,7 +113,7 @@ test('M18 shelf transitions keep navigation enabled and accept dragging before s
   await page.evaluate(() => {
     const main = document.querySelector('main')!, times = { start: 0, end: 0, frames: 0 };
     (window as any).__shelfTiming = times;
-    (Array.from(document.querySelectorAll('button')).find(b => b.textContent === 'Rolls') as HTMLButtonElement).click();
+    (Array.from(document.querySelectorAll('button')).find(b => b.textContent === 'Film Shelf') as HTMLButtonElement).click();
     const sample = () => {
       // WebKit may defer React's commit beyond two animation frames after click.
       // Measure the rendered flight, not the delay before its state appears.
