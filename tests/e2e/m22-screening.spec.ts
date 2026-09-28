@@ -11,7 +11,6 @@ import { offlineServer } from './helpers/offlineServer';
 import { readMp4 } from '../helpers/mp4';
 import { BASELINE_ROLL } from '../../src/utils/rollLayout';
 import { createScreeningTimeline } from '../../src/screening/reels';
-import { LOUPE_SIZE_SCALE } from '../../src/utils/loupeView';
 import type { GalleryRoll } from '../../src/cloud/contracts';
 
 // The screening overlay is a second canvas; address the WebGL scene explicitly.
@@ -50,7 +49,7 @@ async function library(page: Page, name = 'darkroom-guest-rolls') {
 }
 const player = (page: Page) => page.getByTestId('screening-player');
 const time = async (page: Page) => Number(await player(page).getAttribute('data-time'));
-async function pickReel(page: Page, reel: 'Loupe Walk' | 'Develop' | 'Projector', pace = 'Normal', format = '16:9') {
+async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Projector', pace = 'Normal', format = '16:9') {
   // Phones hide the Focus header button; Settings offers Screen roll in every layout.
   if (await page.getByTestId('screen-roll').isVisible()) await page.getByTestId('screen-roll').click();
   else { await openViewingTools(page); await page.getByTestId('screen-roll-tools').click(); }
@@ -87,7 +86,7 @@ async function inspectVideo(page: Page) {
       for (let i = 0; i < data.length; i += 4) { const l = (data[i] + data[i + 1] + data[i + 2]) / 3; sum += l; square += l * l; }
       const n = data.length / 4; return { mean: sum / n, deviation: Math.sqrt(square / n - (sum / n) ** 2) };
     };
-    return { width: video.videoWidth, height: video.videoHeight, duration: video.duration, start: await frame(.05), middle: await frame(video.duration * .45), later: await frame(video.duration * .6) };
+    return { width: video.videoWidth, height: video.videoHeight, duration: video.duration, start: await frame(.05), leader: await frame(1.6), middle: await frame(video.duration * .45), later: await frame(video.duration * .6) };
   });
 }
 async function download(page: Page, path: string) {
@@ -101,18 +100,18 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('darkroom-guest-welcome', 'done'));
 });
 
-test('Loupe Walk previews in the table scene with pause, seek, tap and keys, then restores Overview exactly', async ({ page }, info) => {
+test('Tracking Shot previews in the table scene with pause, seek, tap and keys, then restores Overview exactly', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   const requests = watchRequests(page);
   await page.goto('/guest?mode=inspect&deterministic=true'); await ready(page);
   const before = await table(page), stored = await library(page);
   const overview = PNG.sync.read(await captureCanvas(page));
-  const picker = await pickReel(page, 'Loupe Walk');
+  const picker = await pickReel(page, 'Tracking Shot');
   await expect(picker.getByTestId('screening-estimate')).toContainText('5 frames');
   await page.screenshot({ path: info.outputPath('picker.png') });
   await picker.getByTestId('screening-preview').click();
   await expect(page.locator('main')).toHaveAttribute('data-screening', 'preview');
-  await expect(page.locator('main')).toHaveAttribute('data-screening-reel', 'loupe-walk');
+  await expect(page.locator('main')).toHaveAttribute('data-screening-reel', 'tracking');
   await expect(page.getByTestId('controls-panel')).toHaveCount(0);
   await expect(player(page)).toHaveAttribute('data-playing', 'true');
   await expect.poll(() => time(page), { timeout: 30000 }).toBeGreaterThan(6);
@@ -123,7 +122,7 @@ test('Loupe Walk previews in the table scene with pause, seek, tap and keys, the
   const paused = await time(page);
   await page.waitForTimeout(700);
   expect(await time(page)).toBe(paused);
-  const walk = PNG.sync.read(await captureCanvas(page, { path: info.outputPath('loupe-walk.png') }));
+  const walk = PNG.sync.read(await captureCanvas(page, { path: info.outputPath('tracking.png') }));
   expect(getRegionMeanDifference(walk, overview, walk.width / 2 | 0, walk.height / 2 | 0, 200)).toBeGreaterThan(4);
   expect(await renderedDeviation(page)).toBeGreaterThan(6);
 
@@ -185,7 +184,7 @@ test('Develop from Focus reveals the roll in the scene, and exit restores Focus,
   expect(await library(page)).toBe(stored);
 });
 
-test('Screen roll waits for the loupe to be put away and restores loupe choices after an inspecting walk', async ({ page }) => {
+test('Screen roll waits for the loupe to be put away, hides it while screening and restores loupe choices', async ({ page }) => {
   await page.goto('/guest?mode=inspect&deterministic=true'); await ready(page);
   await page.getByTestId('loupe-activate').first().click();
   await expect(page.locator('main')).toHaveAttribute('data-loupe-state', 'activated');
@@ -200,13 +199,15 @@ test('Screen roll waits for the loupe to be put away and restores loupe choices 
   await expect(page.locator('main')).toHaveAttribute('data-loupe-state', 'inactivated');
   await ready(page);
   const before = await table(page);
-  await (await pickReel(page, 'Loupe Walk', 'Brisk')).getByTestId('screening-preview').click();
-  // The walk inspects the middle frame through the chosen glass dome.
-  await expect.poll(async () => Number(await scene(page).getAttribute('data-loupe-magnification')), { timeout: 60000 }).toBeGreaterThan(4.5);
-  await expect(scene(page)).toHaveAttribute('data-loupe-type', 'glass');
-  expect(Number(await scene(page).getAttribute('data-loupe-scale'))).toBeCloseTo(BASELINE_ROLL.scale * LOUPE_SIZE_SCALE.large, 6);
+  await expect(scene(page)).toHaveAttribute('data-loupe-visible', 'true');
+  await (await pickReel(page, 'Tracking Shot', 'Brisk')).getByTestId('screening-preview').click();
+  // No reel uses the loupe; it is hidden rather than left resting in shot.
+  await expect(scene(page)).toHaveAttribute('data-loupe-visible', 'false');
+  await expect.poll(() => time(page), { timeout: 30000 }).toBeGreaterThan(4);
   await page.getByTestId('screening-exit').click();
   await expectRestored(page, before);
+  await expect(scene(page)).toHaveAttribute('data-loupe-visible', 'true');
+  await expect(scene(page)).toHaveAttribute('data-loupe-type', 'glass');
   await expect(scene(page)).toHaveAttribute('data-loupe-magnification', '8');
   await page.getByTestId('loupe-activate').first().click();
   await expect(page.locator('main')).toHaveAttribute('data-loupe-state', 'activated');
@@ -218,7 +219,7 @@ test('exports a decodable 720p H.264 MP4 of the whole reel without writes or upl
   const requests = watchRequests(page);
   await page.goto('/guest?mode=inspect&deterministic=true'); await ready(page);
   const before = await table(page), stored = await library(page);
-  const expected = createScreeningTimeline(BASELINE_ROLL, { reel: 'projector', pace: 'brisk', aspect: 16 / 9, stockType: 'negative', loupe: { scale: 1, type: 'classic' } }).duration;
+  const expected = createScreeningTimeline(BASELINE_ROLL, { reel: 'projector', pace: 'brisk', aspect: 16 / 9, stockType: 'negative' }).duration;
   await (await pickReel(page, 'Projector', 'Brisk')).getByTestId('screening-export').click();
   const view = page.getByTestId('screening-export-view');
   await expect(view).toHaveAttribute('data-phase', 'rendering');
@@ -230,7 +231,9 @@ test('exports a decodable 720p H.264 MP4 of the whole reel without writes or upl
   const video = await inspectVideo(page);
   expect([video.width, video.height]).toEqual([1280, 720]);
   expect(video.duration).toBeCloseTo(Math.round(expected * 30) / 30, 1);
-  expect(video.start.mean).toBeLessThan(12);
+  expect(video.start.mean).toBeLessThan(60);
+  // The countdown leader: a mid-grey field with a dark numeral.
+  expect(video.leader.mean).toBeGreaterThan(70); expect(video.leader.mean).toBeLessThan(180); expect(video.leader.deviation).toBeGreaterThan(8);
   expect(video.middle.deviation).toBeGreaterThan(12);
   expect(Math.abs(video.middle.mean - video.later.mean) + Math.abs(video.middle.deviation - video.later.deviation)).toBeGreaterThan(.5);
   await page.screenshot({ path: info.outputPath('export-done.png') });
@@ -259,7 +262,7 @@ test('export Cancel and an unavailable encoder leave the table, its resolution a
   const resolution = () => scene(page).evaluate((node: HTMLCanvasElement) => [node.width, node.height, node.clientWidth, node.clientHeight]);
   const pixels = await resolution();
   expect(pixels[0]).toBeGreaterThan(pixels[2]);
-  await (await pickReel(page, 'Loupe Walk')).getByTestId('screening-export').click();
+  await (await pickReel(page, 'Tracking Shot')).getByTestId('screening-export').click();
   await expect.poll(async () => Number(await page.getByTestId('screening-export-progress').getAttribute('value')), { timeout: 60000 }).toBeGreaterThan(5);
   await page.getByTestId('screening-export-cancel').click();
   await expect(page.getByTestId('screening-export-view')).toHaveCount(0);
@@ -381,7 +384,7 @@ test.describe('offline', () => {
       await context.setOffline(true);
       await Promise.all([page.waitForNavigation({ waitUntil: 'load' }), page.evaluate(() => location.reload())]);
       await ready(page);
-      await (await pickReel(page, 'Loupe Walk', 'Brisk')).getByTestId('screening-export').click();
+      await (await pickReel(page, 'Tracking Shot', 'Brisk')).getByTestId('screening-export').click();
       await expect(page.getByTestId('screening-export-view')).toHaveAttribute('data-phase', 'done', { timeout: 120000 });
       const { mp4 } = await download(page, info.outputPath('offline.mp4'));
       expect(mp4.stts.reduce((n, [count]) => n + count, 0)).toBe(60);

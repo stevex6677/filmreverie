@@ -6,40 +6,48 @@ import { TABLE_CENTER_Z } from '../utils/cameraBounds';
 // timeline drives live preview and frame-stepped export, and is tested without
 // WebGL. Segments keep explicit timing so a later soundtrack can align to beats.
 
-export const REEL_IDS = ['loupe-walk', 'develop', 'projector'] as const;
+export const REEL_IDS = ['tracking', 'develop', 'projector'] as const;
 export type ReelId = typeof REEL_IDS[number];
 export const PACES = ['relaxed', 'normal', 'brisk'] as const;
 export type Pace = typeof PACES[number];
 export const PACE_SCALE: Record<Pace, number> = { relaxed: 1.3, normal: 1, brisk: .72 };
 export type Act = 'establish' | 'tour' | 'break' | 'return';
-export type SegmentKind = 'open' | 'lift' | 'glide' | 'frame' | 'descend' | 'detail' | 'rise' | 'push' | 'develop' | 'advance'
-  | 'pull-back' | 'overview' | 'push-in' | 'set-down' | 'close';
+export type SegmentKind = 'open' | 'glide' | 'frame' | 'descend' | 'detail' | 'rise' | 'push' | 'develop' | 'advance'
+  | 'pull-back' | 'overview' | 'push-in' | 'close';
 
 export interface CameraPose { zoom: number; pan: { x: number; z: number }; tilt: number; yaw: number }
-export interface LoupePose { x: number; y: number; lift: number; magnification: number }
-export type Ease = 'linear' | 'inOut' | 'out' | 'snap' | 'heavy';
+export type Ease = 'linear' | 'inOut' | 'in' | 'out' | 'snap' | 'heavy';
+/** Projector shutter: a partial blink during a pull-down, or closing/opening around a hidden cut. */
+export type Shutter = 'pulse' | 'close' | 'open';
 export interface Reveal { mode: 'polarity' | 'backlight'; position: number }
 
 export interface Segment {
   act: Act; kind: SegmentKind; start: number; duration: number; frameIndex: number;
-  camera: [CameraPose, CameraPose]; loupe: [LoupePose, LoupePose] | null;
-  /** Height of the loupe's arc above the film while it travels. */
-  arc: number;
-  light: { from: number; to: number; flicker?: 'on' | 'gate' };
+  camera: [CameraPose, CameraPose];
+  light: { from: number; to: number; flicker?: 'gate' };
   reveal: [number, number] | null;
   /** Projector gate strength, and its fixed aperture (world units) while shown. */
   blur: number; gate: [number, number]; aperture: { width: number; height: number } | null; ease: Ease;
+  shutter: Shutter | null;
+  /** The film drifts slightly inside the fixed gate. */
+  weave: boolean;
   /** Reduced motion: hold, dip through dark, then hold at the destination. */
   cut: boolean;
 }
-export interface CardSpan { kind: 'title' | 'end'; start: number; end: number; fade: number }
+export type CardKind = 'countdown' | 'title' | 'end';
+export interface CardSpan { kind: CardKind; start: number; end: number; fade: number }
 export interface FadeKey { time: number; value: number }
 
 export interface ScreeningSample {
   time: number; act: Act; kind: SegmentKind; segment: number; frameIndex: number;
-  camera: CameraPose; loupe: LoupePose | null; light: number;
-  reveal: Reveal | null; card: { kind: 'title' | 'end'; opacity: number } | null;
+  camera: CameraPose; light: number;
+  reveal: Reveal | null; card: { kind: CardKind; opacity: number; elapsed: number; duration: number } | null;
   fade: number; blur: number; gate: number; aperture: { width: number; height: number } | null;
+  /** Darkening of the projected image by the shutter, 0–1. */
+  shutter: number;
+  /** Projector dust and hair in the gate (off with reduced motion). */
+  dust: number;
+  reducedMotion: boolean;
 }
 
 export interface ScreeningTimeline {
@@ -56,6 +64,7 @@ export interface ScreeningTimeline {
 export const EASE: Record<Ease, (u: number) => number> = {
   linear: u => u,
   inOut: u => u * u * u * (u * (6 * u - 15) + 10),
+  in: u => u * u * u,
   out: u => 1 - Math.pow(1 - u, 3),
   snap: u => u < .5 ? 16 * u ** 5 : 1 - Math.pow(-2 * u + 2, 5) / 2,
   // A heavier medium-format advance: it overruns by a hair, then settles.
@@ -69,11 +78,7 @@ export function lerpCamera(a: CameraPose, b: CameraPose, u: number): CameraPose 
   // Geometric distance keeps perceived zoom speed constant between a frame and the roll.
   return { zoom: Math.exp(lerp(Math.log(a.zoom), Math.log(b.zoom), u)), pan: { x: lerp(a.pan.x, b.pan.x, u), z: lerp(a.pan.z, b.pan.z, u) }, tilt: lerp(a.tilt, b.tilt, u), yaw: lerp(a.yaw, b.yaw, u) };
 }
-function lerpLoupe(a: LoupePose, b: LoupePose, u: number, arc: number, raw: number): LoupePose {
-  return { x: lerp(a.x, b.x, u), y: lerp(a.y, b.y, u), lift: lerp(a.lift, b.lift, u) + arc * Math.sin(Math.PI * Math.min(1, Math.max(0, raw))), magnification: lerp(a.magnification, b.magnification, u) };
-}
 const samePose = (a: CameraPose, b: CameraPose) => a.zoom === b.zoom && a.pan.x === b.pan.x && a.pan.z === b.pan.z && a.tilt === b.tilt && a.yaw === b.yaw;
-const sameLoupe = (a: LoupePose | null, b: LoupePose | null) => a === b || (!!a && !!b && a.x === b.x && a.y === b.y && a.lift === b.lift);
 
 /** Deterministic flicker in [0, 1], stepped like a mains-driven lamp or shutter. */
 export function flicker(time: number, rate = 24) {
@@ -81,16 +86,19 @@ export function flicker(time: number, rate = 24) {
   const hash = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
   return hash - Math.floor(hash);
 }
-function lightAt(light: Segment['light'], u: number, time: number, local: number) {
+function lightAt(light: Segment['light'], u: number, time: number) {
   const base = lerp(light.from, light.to, u);
-  if (light.flicker === 'gate') return base * (1 - .045 * flicker(time));
-  if (light.flicker === 'on') {
-    // A cold tube strikes twice, drops out, then holds.
-    const steps = [0, .55, .05, .8, .25, 1];
-    const index = Math.min(steps.length - 1, Math.floor(local * steps.length));
-    return base * steps[index];
-  }
-  return base;
+  return light.flicker === 'gate' ? base * (1 - .045 * flicker(time)) : base;
+}
+/** Slow, smooth gate weave in [-1, 1] on each axis; deterministic. */
+export function weave(time: number) {
+  return { x: .6 * Math.sin(time * 2.3) + .4 * Math.sin(time * 5.9 + 1.7), y: .6 * Math.sin(time * 1.7 + .4) + .4 * Math.sin(time * 4.3 + 2.9) };
+}
+function shutterAt(shutter: Shutter | null, local: number) {
+  if (shutter === 'pulse') return .6 * Math.sin(Math.PI * local);
+  if (shutter === 'close') return local * local;
+  if (shutter === 'open') return (1 - local) * (1 - local);
+  return 0;
 }
 
 export class TimelineBuilder {
@@ -103,35 +111,33 @@ export class TimelineBuilder {
   gate = 0;
   aperture: Segment['aperture'] = null;
   reveal: number | null = null;
-  constructor(public camera: CameraPose, public loupe: LoupePose | null, private scale: number, private reduced: boolean) {}
+  constructor(public camera: CameraPose, private scale: number, private reduced: boolean) {}
   seconds(value: number) { return value * this.scale; }
   step(act: Act, kind: SegmentKind, frameIndex: number, seconds: number, to: {
-    camera?: CameraPose; loupe?: LoupePose | null; arc?: number; light?: number; flicker?: 'on' | 'gate';
+    camera?: CameraPose; light?: number; flicker?: 'gate'; shutter?: Shutter; weave?: boolean;
     reveal?: number; blur?: number; gate?: number; aperture?: Segment['aperture']; ease?: Ease; beat?: boolean; drift?: boolean;
   } = {}) {
     let camera = to.camera ?? this.camera;
-    const loupe = to.loupe === undefined ? this.loupe : to.loupe;
     // Reduced motion removes the gentle drift of holds entirely.
     if (this.reduced && to.drift) camera = this.camera;
-    const travels = !samePose(this.camera, camera) || !sameLoupe(this.loupe, loupe);
+    const travels = !samePose(this.camera, camera);
     const cut = this.reduced && travels && !to.drift;
     let duration = this.seconds(seconds);
     if (cut) duration = Math.max(duration, this.seconds(1.1));
-    const light = this.reduced && to.flicker === 'on' ? { from: this.light, to: to.light ?? this.light }
-      : { from: this.light, to: to.light ?? this.light, flicker: this.reduced ? undefined : to.flicker };
+    const light = { from: this.light, to: to.light ?? this.light, flicker: this.reduced ? undefined : to.flicker };
     const reveal = to.reveal === undefined ? (this.reveal === null ? null : [this.reveal, this.reveal] as [number, number]) : [this.reveal ?? to.reveal, to.reveal] as [number, number];
     if (to.beat) this.beats.push(this.time);
     this.segments.push({ act, kind, start: this.time, duration, frameIndex, camera: [this.camera, camera],
-      loupe: this.loupe && loupe ? [this.loupe, loupe] : loupe ? [loupe, loupe] : null,
-      arc: this.reduced ? 0 : to.arc ?? 0, light, reveal, blur: this.reduced ? 0 : to.blur ?? 0, gate: [this.gate, to.gate ?? this.gate],
-      aperture: to.aperture === undefined ? this.aperture : to.aperture, ease: to.ease ?? 'inOut', cut });
-    this.time += duration; this.camera = camera; this.loupe = loupe;
+      light, reveal, blur: this.reduced ? 0 : to.blur ?? 0, gate: [this.gate, to.gate ?? this.gate],
+      aperture: to.aperture === undefined ? this.aperture : to.aperture, ease: to.ease ?? 'inOut', cut,
+      shutter: to.shutter ?? null, weave: !this.reduced && !!to.weave });
+    this.time += duration; this.camera = camera;
     this.light = to.light ?? this.light;
     this.gate = to.gate ?? this.gate;
     if (to.aperture !== undefined) this.aperture = to.aperture;
     if (to.reveal !== undefined) this.reveal = to.reveal;
   }
-  card(kind: CardSpan['kind'], start: number, end: number) { this.cards.push({ kind, start, end, fade: Math.min(this.seconds(.6), (end - start) / 3) }); }
+  card(kind: CardKind, start: number, end: number, fade = Math.min(this.seconds(.6), (end - start) / 3)) { this.cards.push({ kind, start, end, fade }); }
   fade(time: number, value: number) { this.fades.push({ time, value }); }
 }
 
@@ -147,8 +153,12 @@ export function finishTimeline(builder: TimelineBuilder, info: { reel: ReelId; p
     const index = low, segment = segments[index];
     const local = segment.duration > 0 ? Math.min(1, (time - segment.start) / segment.duration) : 1;
     const eased = segment.cut ? (local < .5 ? 0 : 1) : EASE[segment.ease](local);
-    const camera = lerpCamera(segment.camera[0], segment.camera[1], eased);
-    const loupe = segment.loupe ? lerpLoupe(segment.loupe[0], segment.loupe[1], eased, segment.arc, local) : null;
+    let camera = lerpCamera(segment.camera[0], segment.camera[1], eased);
+    const gate = lerp(segment.gate[0], segment.gate[1], eased);
+    if (segment.weave && segment.aperture) {
+      const drift = weave(time), amount = segment.aperture.width * .004 * gate;
+      camera = { ...camera, pan: { x: camera.pan.x + drift.x * amount, z: camera.pan.z + drift.y * amount } };
+    }
     const position = segment.reveal ? lerp(segment.reveal[0], segment.reveal[1], segment.kind === 'develop' ? local : eased) : null;
     let fade = 0;
     for (let i = 0; i < fades.length; i++) {
@@ -159,11 +169,12 @@ export function finishTimeline(builder: TimelineBuilder, info: { reel: ReelId; p
     const card = cards.find(span => time >= span.start && time <= span.end);
     return {
       time, act: segment.act, kind: segment.kind, segment: index, frameIndex: segment.frameIndex,
-      camera, loupe, light: Math.max(0, lightAt(segment.light, eased, time, local)),
+      camera, light: Math.max(0, lightAt(segment.light, eased, time)),
       reveal: position === null || !info.revealMode ? null : { mode: info.revealMode, position },
-      card: card ? { kind: card.kind, opacity: Math.min(1, (time - card.start) / card.fade, (card.end - time) / card.fade) } : null,
+      card: card ? { kind: card.kind, opacity: Math.min(1, card.fade > 0 ? (time - card.start) / card.fade : 1, card.fade > 0 ? (card.end - time) / card.fade : 1), elapsed: time - card.start, duration: card.end - card.start } : null,
       fade: Math.max(0, Math.min(1, fade)), blur: segment.blur * Math.sin(Math.PI * local),
-      gate: lerp(segment.gate[0], segment.gate[1], eased), aperture: segment.aperture,
+      gate, aperture: segment.aperture, shutter: shutterAt(segment.shutter, local),
+      dust: info.reducedMotion ? 0 : gate, reducedMotion: info.reducedMotion,
     };
   };
   return { ...info, duration, segments, cards, fades, beats: builder.beats, sample,

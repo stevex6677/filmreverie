@@ -1,20 +1,18 @@
 import { createRollLayout, fitRollView, locateFrame, type RollDefinition } from '../utils/rollLayout';
 import { getStripDimensions } from '../utils/loupeMapping';
-import { loupeGeometry, loupeInspectionView, type LoupeType } from '../utils/loupeView';
-import { finishTimeline, PACE_SCALE, tablePan, TimelineBuilder, type CameraPose, type LoupePose, type Pace, type ReelId, type ScreeningTimeline } from './timeline';
+import { finishTimeline, PACE_SCALE, tablePan, TimelineBuilder, type CameraPose, type Pace, type ReelId, type ScreeningTimeline } from './timeline';
 
 export interface ReelOptions {
   reel: ReelId; pace: Pace; aspect: number; reducedMotion?: boolean;
   /** Reversal stock has no negative stage; Develop reveals its backlight instead. */
   stockType: 'negative' | 'reversal';
-  loupe: { scale: number; type: LoupeType };
 }
 
-export const REEL_LABEL: Record<ReelId, string> = { 'loupe-walk': 'Loupe Walk', develop: 'Develop', projector: 'Projector' };
+export const REEL_LABEL: Record<ReelId, string> = { tracking: 'Tracking Shot', develop: 'Develop', projector: 'Projector' };
 export const REEL_DESCRIPTION: Record<ReelId, string> = {
-  'loupe-walk': 'The loupe glides along each strip and stops to inspect details.',
+  tracking: 'A low camera tracks along each strip and moves in on details.',
   develop: 'A band of light turns each negative into a photograph.',
-  projector: 'Each frame jumps into a projector gate, in rhythm.',
+  projector: 'After a countdown, each frame slides into a lit projector gate.',
 };
 export const PACE_LABEL: Record<Pace, string> = { relaxed: 'Relaxed', normal: 'Normal', brisk: 'Brisk' };
 
@@ -62,58 +60,54 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
   const holdScale = medium ? 1.35 : 1;
   const info = { reel: options.reel, pace: options.pace, aspect, reducedMotion: reduced, frameCount: n };
 
-  if (options.reel === 'loupe-walk') {
-    const loupeRadius = loupeGeometry(options.loupe.type).radius * options.loupe.scale;
-    const bottom = f.strips[f.strips.length - 1];
-    const rest: LoupePose = { x: f.halfWidth + loupeRadius * 1.6, y: bottom.y, lift: 0, magnification: 4 };
-    // The loupe's raised rim projects outward in perspective; keep it clear of the edge.
-    const establishing = f.whole((rest.x * 1.12 + loupeRadius * 2.4) * 2, f.span * 1.2);
-    const at = (index: number, lift = 0, magnification = 4): LoupePose => { const frame = locateFrame(roll, index); return { x: frame.x, y: frame.y, lift, magnification }; };
-    // A low, angled eye that follows the lens along the film.
-    const walk = (index: number, point: LoupePose = at(index)): CameraPose => ({ zoom: f.frame(index).zoom * 1.85, pan: tablePan(point.x, point.y), tilt: degrees(32), yaw: degrees(-8) });
-    const inspect = (point: LoupePose): CameraPose => { const view = loupeInspectionView(point.x, point.y, options.loupe.scale, aspect, options.loupe.type); return { zoom: view.zoom, pan: view.pan, tilt: 0, yaw: 0 }; };
-    const inspections = new Set(Array.from({ length: n }, (_, i) => i).filter(i => n < 6 ? i === Math.floor(n / 2) : i % 6 === 2));
-    const b = new TimelineBuilder(establishing, rest, scale, reduced);
+  if (options.reel === 'tracking') {
+    // A low, angled camera tracks along each strip; every few frames it pushes
+    // in close and drifts across a detail of the photograph.
+    const track = (index: number): CameraPose => { const frame = locateFrame(roll, index); return { zoom: f.frame(index).zoom * 1.85, pan: tablePan(frame.x, frame.y), tilt: degrees(32), yaw: degrees(-8) }; };
+    const close = (index: number, u: number, v: number): CameraPose => {
+      const frame = locateFrame(roll, index), width = (frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) * frame.strip.scale;
+      return { zoom: f.frame(index).zoom * .55, pan: tablePan(frame.x + u * width, frame.y + v * frame.strip.layout.frameHeight * frame.strip.scale), tilt: degrees(18), yaw: degrees(-8) };
+    };
+    const details = new Set(Array.from({ length: n }, (_, i) => i).filter(i => n < 6 ? i === Math.floor(n / 2) : i % 6 === 2));
+    const b = new TimelineBuilder(f.overview, scale, reduced);
     b.fade(b.seconds(.9), 0);
-    b.step('establish', 'open', 0, 3.2, { camera: drift(establishing), drift: true });
+    b.step('establish', 'open', 0, 3.2, { camera: drift(f.overview), drift: true });
     b.card('title', b.seconds(.5), b.seconds(3));
-    b.step('establish', 'lift', 0, 2.1, { camera: walk(0), loupe: at(0), arc: loupeRadius * .5 });
-    let inspected = 0;
+    b.step('tour', 'push-in', 0, 2.1, { camera: track(0), beat: true });
     for (let i = 0; i < n; i++) {
-      const frame = locateFrame(roll, i), wide = frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth;
       if (i > 0) {
-        if (frame.localIndex > 0) b.step('tour', 'glide', i, .9, { camera: walk(i), loupe: at(i), arc: loupeRadius * .18, beat: true });
+        if (locateFrame(roll, i).localIndex > 0) b.step('tour', 'glide', i, .9, { camera: track(i), beat: true });
         else if (breaks.has(i)) {
-          b.step('break', 'pull-back', i, 1.4, { camera: f.overview, loupe: at(i - 1, loupeRadius * .35) });
-          b.step('break', 'overview', i, 1.5, { loupe: at(i, loupeRadius * .35) });
-          b.step('break', 'push-in', i, 1.4, { camera: walk(i), loupe: at(i), beat: true });
-        } else b.step('tour', 'glide', i, 1.9, { camera: walk(i), loupe: at(i), arc: loupeRadius * .4, beat: true });
+          b.step('break', 'pull-back', i, 1.4, { camera: f.overview });
+          b.step('break', 'overview', i, 1.3, { camera: drift(f.overview, .5), drift: true });
+          b.step('break', 'push-in', i, 1.4, { camera: track(i), beat: true });
+        } else b.step('tour', 'glide', i, 1.9, { camera: track(i), beat: true });
       }
-      if (inspections.has(i)) {
-        const magnification = inspected++ % 2 ? 4 : 8;
-        const detail = { x: frame.x + wide * frame.strip.scale * .22, y: frame.y - frame.strip.layout.frameHeight * frame.strip.scale * .14, lift: 0, magnification };
-        b.step('tour', 'frame', i, 1.1 * holdScale, { camera: drift(walk(i), .5), drift: true });
-        b.step('tour', 'descend', i, 1, { camera: inspect(at(i)), loupe: at(i, 0, magnification) });
-        b.step('tour', 'detail', i, 2.6 * holdScale, { camera: inspect(detail), loupe: detail, ease: 'inOut' });
-        b.step('tour', 'rise', i, 1, { camera: walk(i), loupe: at(i) });
-      } else b.step('tour', 'frame', i, 2 * holdScale, { camera: drift(walk(i)), drift: true });
+      if (details.has(i)) {
+        b.step('tour', 'frame', i, 1.1 * holdScale, { camera: drift(track(i), .5), drift: true });
+        b.step('tour', 'descend', i, 1, { camera: close(i, -.2, .12) });
+        b.step('tour', 'detail', i, 2.6 * holdScale, { camera: close(i, .2, -.12), drift: true });
+        b.step('tour', 'rise', i, 1, { camera: track(i) });
+      } else b.step('tour', 'frame', i, 2 * holdScale, { camera: drift(track(i)), drift: true });
     }
-    b.step('return', 'set-down', n - 1, 2.1, { camera: establishing, loupe: rest, arc: loupeRadius * .5 });
-    const close = b.time;
-    b.step('return', 'close', n - 1, 3.8, { camera: drift(establishing), drift: true });
-    b.card('end', close + b.seconds(.4), b.time);
+    b.step('return', 'pull-back', n - 1, 2.1, { camera: f.overview });
+    const end = b.time;
+    b.step('return', 'close', n - 1, 3.8, { camera: drift(f.overview), drift: true });
+    b.card('end', end + b.seconds(.4), b.time);
     b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
     return finishTimeline(b, { ...info, revealMode: null });
   }
 
   if (options.reel === 'develop') {
-    const b = new TimelineBuilder(f.overview, null, scale, reduced);
+    const b = new TimelineBuilder(f.overview, scale, reduced);
     b.light = 0; b.reveal = 0;
     b.fade(b.seconds(.8), 0);
-    b.step('establish', 'open', 0, 1.2, { light: 0, reveal: 0 });
-    b.step('establish', 'open', 0, 1.5, { light: 1, flicker: 'on' });
-    b.step('establish', 'open', 0, 2.1, { camera: drift(f.overview), drift: true });
-    b.card('title', b.seconds(1.8), b.time);
+    // The title shows over the dark table; the light then comes up smoothly as
+    // it fades, so brightness only ever rises (no strike, flicker or pumping).
+    b.step('establish', 'open', 0, 2.6, { light: 0, reveal: 0 });
+    b.card('title', b.seconds(.5), b.seconds(3.2));
+    b.step('establish', 'open', 0, 1.8, { light: 1 });
+    b.step('establish', 'open', 0, 1.2, { camera: drift(f.overview, .5), drift: true });
     for (let i = 0; i < n; i++) {
       const frame = f.frame(i);
       if (i > 0 && locateFrame(roll, i).localIndex === 0 && breaks.has(i)) {
@@ -133,40 +127,67 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     return finishTimeline(b, { ...info, revealMode: options.stockType === 'reversal' ? 'backlight' : 'polarity' });
   }
 
-  // Projector: a fixed gate, with frame changes on a regular beat grid.
+  // Projector: a countdown leader, then a fixed, lit gate. Every photograph
+  // enters from the right and leaves to the left, whatever its place on the table;
+  // a jump to another strip is hidden behind the closed shutter.
   const beat = .6;
+  const width = (index: number) => { const frame = locateFrame(roll, index); return (frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) * frame.strip.scale; };
   const gate = (index: number): CameraPose => { const pose = f.frame(index); return { ...pose, zoom: pose.zoom * .8 }; };
-  const aperture = (index: number) => { const frame = locateFrame(roll, index); return { width: (frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) * frame.strip.scale, height: frame.strip.layout.frameHeight * frame.strip.scale }; };
+  const shifted = (index: number, frames: number): CameraPose => {
+    const pose = gate(index), pitch = width(index) + locateFrame(roll, index).strip.layout.gap * roll.scale;
+    return { ...pose, pan: { ...pose.pan, x: pose.pan.x + frames * pitch } };
+  };
+  const aperture = (index: number) => { const frame = locateFrame(roll, index); return { width: width(index), height: frame.strip.layout.frameHeight * frame.strip.scale }; };
   const jump = medium ? .42 : .18;
   const period = (i: number) => {
     if (medium || n < 10) return medium ? 2.5 : 2;
     const phase = i % 9;
     return phase >= 5 && phase <= 7 ? .5 : phase === 8 ? 3 : 2;
   };
-  const b = new TimelineBuilder(f.overview, null, scale, reduced);
-  b.fade(b.seconds(.8), 0);
-  b.step('establish', 'open', 0, 3, { camera: drift(f.overview), drift: true });
-  b.card('title', b.seconds(.4), b.seconds(2.8));
-  b.step('tour', 'push-in', 0, 1.8, { camera: gate(0), gate: 1, aperture: aperture(0), beat: true });
+  const advance = { blur: medium ? .6 : 1, beat: true };
+  const b = new TimelineBuilder(f.overview, scale, reduced);
+  b.fade(b.seconds(.3), 0);
+  const leader = b.seconds(4.4);
+  b.card('countdown', 0, leader, 0);
+  b.step('establish', 'open', 0, 4.4 + 3, { camera: drift(f.overview), drift: true });
+  b.card('title', leader + b.seconds(.3), b.time);
+  if (reduced) b.step('tour', 'push-in', 0, 1.8, { camera: gate(0), gate: 1, aperture: aperture(0), beat: true });
+  else {
+    b.step('tour', 'push-in', 0, 1.8, { camera: shifted(0, -1), gate: 1, aperture: aperture(0) });
+    b.step('tour', 'advance', 0, jump, { ...advance, camera: gate(0), shutter: 'pulse', ease: medium ? 'heavy' : 'snap' });
+  }
+  // Beats fall on a regular grid: each frame's period includes its advance.
   for (let i = 0; i < n; i++) {
-    let hold = period(i) * beat;
+    let hold = period(i) * beat - (i === 0 && !reduced ? jump : 0);
     if (i > 0) {
-      if (locateFrame(roll, i).localIndex === 0 && breaks.has(i)) {
+      const newStrip = locateFrame(roll, i).localIndex === 0;
+      if (newStrip && breaks.has(i)) {
         b.step('break', 'pull-back', i, 2 * beat, { camera: f.overview, gate: 0 });
         b.step('break', 'overview', i, beat, {});
-        b.step('break', 'push-in', i, 2 * beat, { camera: gate(i), gate: 1, aperture: aperture(i), beat: true });
+        if (reduced) b.step('break', 'push-in', i, 2 * beat, { camera: gate(i), gate: 1, aperture: aperture(i), beat: true });
+        else {
+          b.step('break', 'push-in', i, 2 * beat, { camera: shifted(i, -1), gate: 1, aperture: aperture(i) });
+          b.step('tour', 'advance', i, jump, { ...advance, camera: gate(i), shutter: 'pulse', ease: medium ? 'heavy' : 'snap' });
+          hold -= jump;
+        }
+      } else if (newStrip && !reduced) {
+        // Carry on leftward past the strip's end, then enter the next strip from its right.
+        const half = jump * (medium ? .5 : .7);
+        b.step('tour', 'advance', i, half, { ...advance, camera: shifted(i - 1, 1), shutter: 'close', ease: 'in' });
+        b.camera = shifted(i, -1); b.aperture = aperture(i);
+        b.step('tour', 'advance', i, half, { blur: advance.blur, camera: gate(i), shutter: 'open', ease: medium ? 'heavy' : 'out' });
+        hold -= 2 * half;
       } else {
-        // The gate stays fixed while the film jumps through it.
-        b.step('tour', 'advance', i, jump, { camera: gate(i), blur: medium ? .6 : 1, aperture: aperture(i), ease: medium ? 'heavy' : 'snap', beat: true });
+        b.step('tour', 'advance', i, jump, { ...advance, camera: gate(i), aperture: aperture(i), shutter: 'pulse', ease: medium ? 'heavy' : 'snap' });
         hold -= jump;
       }
     }
-    b.step('tour', 'frame', i, Math.max(.08, hold), { flicker: 'gate', light: 1 });
+    b.step('tour', 'frame', i, Math.max(.08, hold), { flicker: 'gate', light: 1, weave: true });
   }
   b.step('return', 'pull-back', n - 1, 2 * beat, { camera: f.overview, gate: 0 });
-  const close = b.time;
+  const end = b.time;
   b.step('return', 'close', n - 1, 3.4, { camera: drift(f.overview), drift: true });
-  b.card('end', close + b.seconds(.3), b.time);
+  b.card('end', end + b.seconds(.3), b.time);
   b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
   return finishTimeline(b, { ...info, revealMode: null });
 }

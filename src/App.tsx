@@ -177,7 +177,7 @@ export function App() {
   const roll = state.roll;
   // Screening overrides rendering only. It never dispatches viewer actions,
   // so the table, loupe, film mode, brightness and saved views are unchanged.
-  const [screeningChoice, setScreeningChoice] = useState<ScreeningChoice>({ reel: 'loupe-walk', pace: 'normal', format: '16:9' });
+  const [screeningChoice, setScreeningChoice] = useState<ScreeningChoice>({ reel: 'tracking', pace: 'normal', format: '16:9' });
   const [screeningPicker, setScreeningPicker] = useState(false);
   const [screening, setScreening] = useState<ScreeningSession | null>(null);
   const [screeningExport, setScreeningExport] = useState<'picker' | 'preview' | null>(null);
@@ -186,7 +186,7 @@ export function App() {
     const [title, ...rest] = roll.label.split(' · ');
     return { title: title || 'Untitled roll', stock: getFilmStock(state.filmStockId).displayName, format: roll.format ? rest.join(' · ') || FILM_FORMATS[roll.format].label : FILM_FORMATS['135'].label, frames: roll.frames.length };
   }, [roll, state.filmStockId]);
-  const screeningOptions = () => ({ stockType: getFilmStock(state.filmStockId).type, reducedMotion: isReducedMotion, loupe: { scale: state.loupe.scale, type: state.loupe.type } });
+  const screeningOptions = () => ({ stockType: getFilmStock(state.filmStockId).type, reducedMotion: isReducedMotion });
   const startScreening = (mode: 'preview' | 'export') => {
     if (state.roomMode !== 'inspect' || state.loupe.isActive || state.isTransitioning) return;
     const session = new ScreeningSession(roll, screeningChoice, screeningOptions(), screeningCredits, state.viewportAspect);

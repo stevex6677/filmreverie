@@ -31,6 +31,8 @@ dialog.screening-picker .is-primary, div.screening-export .is-primary { backgrou
 
 .screening-player { position:absolute; inset:0; z-index:40; color:#efe9da; }
 .screening-overlay { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+/* Every reel opens from black; cover the table until the first screening frame is drawn. */
+.screening-overlay:not([data-drawn]) { background:#000; }
 /* Specific enough to override the touch layout's generic button styling. */
 .screening-player .screening-stage { position:absolute; inset:0; width:100%; height:100%; min-width:0; min-height:0; padding:0; border:0; border-radius:0; background:transparent; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .screening-player[data-controls=hidden] { cursor:none; }

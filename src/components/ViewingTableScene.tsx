@@ -202,7 +202,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
           type={state.loupe.type}
           touchInput={state.touchPointer}
           physicalScale={state.loupe.scale}
-          suspended={!showRoll}
+          suspended={!showRoll || !!screening}
           opticalEffects={state.loupe.opticalEffects}
           isActive={state.roomMode === "inspect" && state.loupe.isActive}
           targetX={state.loupe.worldX}
@@ -215,7 +215,6 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
           magnification={state.loupe.magnification}
           brightness={state.tableBrightness}
           isDeterministic={isDeterministic || isReducedMotion || state.loupe.inspecting}
-          screening={screening ? () => screening.sample.loupe : undefined}
           onClick={() => {
             if (screening) return;
             if (state.roomMode === "inspect") {

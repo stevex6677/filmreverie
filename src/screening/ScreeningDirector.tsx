@@ -62,6 +62,7 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
     if (!ctx) return;
     ctx.clearRect(0, 0, width, height);
     drawScreeningOverlay(ctx, width, height, session.sample, session.credits);
+    overlay.dataset.drawn = 'true';
   }, -1.5);
 
   // Restore every override when the screening ends, at any point.

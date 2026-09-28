@@ -6,7 +6,6 @@ import { FILM_UNIT, FRAME_GAP_MM, formatLayout } from '../../src/data/filmFormat
 import { FILM_RENDER_SCALE } from '../../src/data/physicalScale';
 import { ROLL_FRAMES } from '../../src/data/rollManifest';
 import { getStripDimensions } from '../../src/utils/loupeMapping';
-import { loupeGeometry, LOUPE_SIZE_SCALE } from '../../src/utils/loupeView';
 import { TABLE_CENTER_Z } from '../../src/utils/cameraBounds';
 import { createScreeningTimeline, breakBoundaries, type ReelOptions } from '../../src/screening/reels';
 import { PACES, PACE_SCALE, REEL_IDS, revealEdge, type ReelId, type ScreeningTimeline } from '../../src/screening/timeline';
@@ -18,8 +17,7 @@ const free: RollDefinition = { rollId: 'free', label: 'Free · 35mm · Free', fr
   frameWidths: frames(14).map((_, i) => freeLayout.frameHeight * [1.5, 1, 2.2, .75][i % 4]), stripLength: 230 * FILM_UNIT };
 const single: RollDefinition = { ...BASELINE_ROLL, rollId: 'one', frames: frames(1) };
 const ROLLS = { baseline: BASELINE_ROLL, full: FULL_ROLL_FIXTURE, medium, free, single };
-const loupe = { scale: FILM_RENDER_SCALE * LOUPE_SIZE_SCALE.medium, type: 'classic' as const };
-const options = (reel: ReelId, extra: Partial<ReelOptions> = {}): ReelOptions => ({ reel, pace: 'normal', aspect: 16 / 9, stockType: 'negative', loupe, ...extra });
+const options = (reel: ReelId, extra: Partial<ReelOptions> = {}): ReelOptions => ({ reel, pace: 'normal', aspect: 16 / 9, stockType: 'negative', ...extra });
 const samples = (timeline: ScreeningTimeline, step = 1 / 30) => Array.from({ length: Math.floor(timeline.duration / step) + 1 }, (_, i) => timeline.sample(i * step));
 const ACT_ORDER = { establish: 0, tour: 1, break: 1, return: 2 };
 
@@ -48,7 +46,7 @@ describe('M22 screening timelines', () => {
       expect(timeline.segments.at(-1)!.act).toBe('return');
       expect(timeline.segments.some(segment => segment.act === 'tour')).toBe(true);
       for (let i = 1; i < timeline.segments.length; i++) expect(timeline.segments[i].start).toBeCloseTo(timeline.segments[i - 1].start + timeline.segments[i - 1].duration, 9);
-      expect(timeline.cards.map(card => card.kind)).toEqual(['title', 'end']);
+      expect(timeline.cards.map(card => card.kind)).toEqual(reel === 'projector' ? ['countdown', 'title', 'end'] : ['title', 'end']);
       const starts = roll.frames.map((_, i) => timeline.frameStart(i));
       expect(starts).toEqual([...starts].sort((a, b) => a - b));
       expect(new Set(starts).size).toBe(roll.frames.length);
@@ -78,7 +76,7 @@ describe('M22 screening timelines', () => {
       const hold = (roll: RollDefinition) => Math.min(...createScreeningTimeline(roll, options(reel)).segments.filter(s => s.kind === 'frame').map(s => s.duration));
       expect(hold(medium)).toBeGreaterThan(hold(BASELINE_ROLL));
     }
-    const walk = createScreeningTimeline(FULL_ROLL_FIXTURE, options('loupe-walk'));
+    const walk = createScreeningTimeline(FULL_ROLL_FIXTURE, options('tracking'));
     // About 3–4 s per frame across the tour, including inspections and breaks.
     const tour = walk.segments.filter(s => s.act === 'tour' || s.act === 'break').reduce((sum, s) => sum + s.duration, 0);
     expect(tour / 36).toBeGreaterThan(3); expect(tour / 36).toBeLessThan(4.2);
@@ -90,25 +88,25 @@ describe('M22 screening timelines', () => {
     for (const beat of projector.beats) expect(Math.abs((beat - projector.beats[0]) / .3 - Math.round((beat - projector.beats[0]) / .3))).toBeLessThan(1e-6);
   });
 
-  it('keep the camera above the table and loupe and aimed at the film for every roll and aspect', () => {
+  it('keep the camera above the table and aimed at the film for every roll and aspect', () => {
     for (const [name, roll] of Object.entries(ROLLS)) for (const aspect of [16 / 9, 9 / 16, 1]) for (const reel of REEL_IDS) {
       const timeline = createScreeningTimeline(roll, options(reel, { aspect }));
       const strips = createRollLayout(roll);
       const halfWidth = Math.max(...strips.map(s => getStripDimensions(s.layout).width * s.scale / 2));
+      // Projector may look one frame beyond a strip's end while its shutter hides the jump.
+      const pitch = Math.max(...roll.frames.map((_, i) => { const frame = locateFrame(roll, i); return ((frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) + frame.strip.layout.gap) * roll.scale; }));
       const halfHeight = strips[0].y + getStripDimensions(strips[0].layout).height * roll.scale / 2;
-      const radius = loupeGeometry('classic').radius * loupe.scale;
       for (const sample of samples(timeline, 1 / 15)) {
         const { zoom, pan, tilt } = sample.camera;
         expect([zoom, pan.x, pan.z, tilt, sample.light, sample.fade].every(Number.isFinite), name).toBe(true);
         const height = zoom * Math.cos(tilt);
         expect(height).toBeGreaterThan(.03);
-        if (sample.loupe) expect(height, `${name} ${reel} ${sample.kind}`).toBeGreaterThan(.008 + sample.loupe.lift + .222 * loupe.scale);
-        expect(Math.abs(pan.x), `${name} ${reel} ${aspect}`).toBeLessThanOrEqual(halfWidth + radius * 1.6);
+        expect(Math.abs(pan.x), `${name} ${reel} ${aspect}`).toBeLessThanOrEqual(halfWidth + (reel === 'projector' ? pitch : 1e-9));
         expect(Math.abs(TABLE_CENTER_Z - pan.z)).toBeLessThanOrEqual(halfHeight + 1e-6);
         expect(tilt).toBeGreaterThanOrEqual(0); expect(tilt).toBeLessThanOrEqual(50 * Math.PI / 180);
       }
       // A focused frame is centered and mostly visible in the requested aspect.
-      for (const segment of timeline.segments.filter(s => s.kind === 'frame' && reel !== 'loupe-walk')) {
+      for (const segment of timeline.segments.filter(s => s.kind === 'frame' && reel !== 'tracking')) {
         const frame = locateFrame(roll, segment.frameIndex), pose = segment.camera[1];
         expect(pose.pan.x).toBeCloseTo(frame.x, 9); expect(TABLE_CENTER_Z - pose.pan.z).toBeCloseTo(frame.y, 9);
         const width = (frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) * roll.scale;
@@ -128,7 +126,7 @@ describe('M22 screening timelines', () => {
       expect(timeline.sample(timeline.duration - 2).light).toBe(1);
       for (const segment of timeline.segments.filter(s => s.kind === 'frame')) expect(segment.reveal![1]).toBe(segment.frameIndex + 1);
     }
-    for (const reel of ['loupe-walk', 'projector'] as const) expect(createScreeningTimeline(BASELINE_ROLL, options(reel)).sample(10).reveal).toBeNull();
+    for (const reel of ['tracking', 'projector'] as const) expect(createScreeningTimeline(BASELINE_ROLL, options(reel)).sample(10).reveal).toBeNull();
   });
 
   it('places the develop band continuously along each strip, including free-format frames', () => {
@@ -147,8 +145,8 @@ describe('M22 screening timelines', () => {
       const timeline = createScreeningTimeline(FULL_ROLL_FIXTURE, options(reel, { reducedMotion: true }));
       expect(timeline.reducedMotion).toBe(true);
       for (const segment of timeline.segments) {
-        expect(segment.blur).toBe(0); expect(segment.arc).toBe(0); expect(segment.light.flicker).toBeUndefined();
-        const moves = JSON.stringify(segment.camera[0]) !== JSON.stringify(segment.camera[1]) || (segment.loupe && JSON.stringify(segment.loupe[0]) !== JSON.stringify(segment.loupe[1]));
+        expect(segment.blur).toBe(0); expect(segment.weave).toBe(false); expect(segment.light.flicker).toBeUndefined();
+        const moves = JSON.stringify(segment.camera[0]) !== JSON.stringify(segment.camera[1]);
         if (moves && segment.kind !== 'develop') expect(segment.cut, `${reel} ${segment.kind}`).toBe(true);
         if (segment.cut) expect(segment.duration).toBeGreaterThanOrEqual(1.1 - 1e-9);
       }
@@ -166,9 +164,9 @@ describe('M22 screening timelines', () => {
     for (const reel of REEL_IDS) {
       const timeline = createScreeningTimeline(BASELINE_ROLL, options(reel));
       expect(timeline.sample(0).fade).toBe(1);
-      const [title, end] = timeline.cards;
+      const [title, end] = timeline.cards.filter(card => card.kind !== 'countdown');
       expect(title.start).toBeLessThan(timeline.frameStart(0)); expect(end.end).toBe(timeline.duration);
-      expect(timeline.sample((title.start + title.end) / 2).card).toEqual({ kind: 'title', opacity: 1 });
+      expect(timeline.sample((title.start + title.end) / 2).card).toMatchObject({ kind: 'title', opacity: 1 });
       expect(timeline.sample(title.end + .01).card).toBeNull();
       expect(timeline.sample(timeline.duration - 1).card?.kind).toBe('end');
       expect(timeline.sample(timeline.duration).fade).toBe(1);
@@ -186,11 +184,62 @@ describe('M22 screening timelines', () => {
   });
 });
 
+describe('M22 reel revisions (2026-09-27 feedback)', () => {
+  it('Tracking Shot moves the camera in on details without the loupe', () => {
+    const timeline = createScreeningTimeline(FULL_ROLL_FIXTURE, options('tracking'));
+    expect(timeline.segments.filter(s => s.kind === 'detail').length).toBeGreaterThanOrEqual(5);
+    for (const segment of timeline.segments.filter(s => s.kind === 'detail')) {
+      expect(segment.camera[0].zoom).toBeLessThan(createScreeningTimeline(FULL_ROLL_FIXTURE, options('develop')).segments.find(s => s.kind === 'push' && s.frameIndex === segment.frameIndex)!.camera[1].zoom);
+      expect(segment.camera[0].pan.x).not.toBe(segment.camera[1].pan.x);
+    }
+    expect(Object.keys(timeline.sample(20))).not.toContain('loupe');
+  });
+
+  it('Develop brings the table light up smoothly, without flicker', () => {
+    for (const stockType of ['negative', 'reversal'] as const) {
+      const timeline = createScreeningTimeline(FULL_ROLL_FIXTURE, options('develop', { stockType }));
+      const opening = samples(timeline, 1 / 60).filter(sample => sample.act === 'establish').map(sample => sample.light);
+      expect(opening[0]).toBe(0); expect(opening.at(-1)).toBe(1);
+      for (let i = 1; i < opening.length; i++) expect(opening[i]).toBeGreaterThanOrEqual(opening[i - 1]);
+    }
+  });
+
+  it('Projector always brings the next photograph in from the right, hiding strip jumps behind the shutter', () => {
+    for (const [name, roll] of Object.entries(ROLLS)) for (const aspect of [16 / 9, 9 / 16]) {
+      const timeline = createScreeningTimeline(roll, options('projector', { aspect }));
+      expect(timeline.cards[0].kind).toBe('countdown');
+      const advances = timeline.segments.filter(s => s.kind === 'advance');
+      expect(advances.length, name).toBeGreaterThanOrEqual(roll.frames.length);
+      for (const segment of advances) {
+        // Camera moves right, so the film image moves left; never vertically.
+        expect(segment.camera[1].pan.x, `${name} ${segment.frameIndex}`).toBeGreaterThan(segment.camera[0].pan.x);
+        expect(segment.camera[1].pan.z).toBeCloseTo(segment.camera[0].pan.z, 12);
+        expect(segment.camera[0].yaw).toBe(0); expect(segment.camera[1].yaw).toBe(0);
+      }
+      const ordered = timeline.segments;
+      for (let i = 1; i < ordered.length; i++) {
+        const before = ordered[i - 1], after = ordered[i];
+        if (JSON.stringify(before.camera[1]) === JSON.stringify(after.camera[0])) continue;
+        // The only discontinuity is a strip change with the shutter fully closed.
+        expect(before.shutter, name).toBe('close'); expect(after.shutter).toBe('open');
+        expect(timeline.sample(before.start + before.duration - 1e-6).shutter).toBeGreaterThan(.99);
+      }
+      expect(samples(timeline, 1 / 24).some(sample => sample.dust > 0 && sample.shutter > 0)).toBe(true);
+      const hold = ordered.find(s => s.kind === 'frame')!;
+      const poses = [.2, .5, .8].map(u => timeline.sample(hold.start + hold.duration * u).camera.pan.x);
+      expect(new Set(poses).size).toBe(3); // gate weave
+      expect(Math.max(...poses) - Math.min(...poses)).toBeLessThan(hold.aperture!.width * .01);
+    }
+    const reduced = createScreeningTimeline(FULL_ROLL_FIXTURE, options('projector', { reducedMotion: true }));
+    expect(samples(reduced, .1).every(sample => sample.dust === 0)).toBe(true);
+  });
+});
+
 describe('M22 screening session', () => {
   it('plays, pauses, seeks by frame and never advances while paused or exporting', async () => {
     const { ScreeningSession } = await import('../../src/screening/session');
     const credits = { title: 'Roll', stock: 'Portra 400', format: '35mm', frames: 36 };
-    const session = new ScreeningSession(FULL_ROLL_FIXTURE, { reel: 'develop', pace: 'normal', format: '16:9' }, { stockType: 'negative', loupe }, credits, 4 / 3);
+    const session = new ScreeningSession(FULL_ROLL_FIXTURE, { reel: 'develop', pace: 'normal', format: '16:9' }, { stockType: 'negative' }, credits, 4 / 3);
     const events: number[] = []; session.subscribe(() => events.push(session.time));
     session.tick(.05); expect(session.time).toBeCloseTo(.05);
     session.tick(5); expect(session.time).toBeCloseTo(.15); // a stalled frame advances at most 0.1 s
