@@ -114,7 +114,8 @@ H.264 MP4 at 1280 × 720, 720 × 1280 or 720 × 720, entirely in the browser wit
 WebCodecs and an in-repo MP4 writer; nothing is uploaded. It works for published,
 guest and offline rolls, and saves through the share sheet (iPad: Save Video) or a
 download. The export code loads on demand and is part of offline preparation.
-iPad Safari is the acceptance target; physical-device evidence is pending. See
+iPad Safari is the acceptance target; exports have been reported working on an iPad and
+an iPhone, with detailed device measurements still to be recorded. See
 [Screening review](docs/SCREENING_REVIEW.md). `npm run validate:m22` runs the
 production build, cumulative integration/E2E suites and standalone viewer gates.
 
