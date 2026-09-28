@@ -10,6 +10,8 @@ A desktop, iPhone and iPad experience for exploring a 3D darkroom, inspecting ph
 
 **M21 is implemented locally under the user's “implement m21” instruction, overriding M20 sequencing.** Owner publishing, the public gallery and visitor-local/offline separation are implemented. **Validation remains open: the cumulative browser gate is not clean, and hosted acceptance requires explicit authorization and real account/identity configuration.** No production provisioning or DNS/billing changes were performed. See [M21 review](docs/M21_REVIEW.md) and [Cloudflare deployment guide](docs/CLOUD_GALLERY.md).
 
+**M22 (Screening) is planned from the 2026-09-27 design discussion and not started.** It is visual only: audio and background music are deferred by the user's 2026-09-27 instruction.
+
 ## Progress TODO
 
 - [x] **M1–M8 — Core film viewer:** Five-photo viewer, room/table journey, realistic film and loupe, zoom/pan, and light-table dimming. Accepted 2026-09-11.
@@ -49,6 +51,18 @@ A desktop, iPhone and iPad experience for exploring a 3D darkroom, inspecting ph
   - [ ] **M21.5 — Validate production and prepare review:** The Free-Worker cutover passed the local app/Worker builds, 285 integration tests and desktop Admin publish/guest-isolation E2E. A local five-photo route diagnostic bounded fake R2 calls; actual Cloudflare Free CPU/subrequest, hosted storage/authentication/DNS and physical Safari/Home Screen acceptance remain open. Historical cumulative browser results are retained in the review, not represented as a current cutover pass.
   - **Acceptance:** All M21 design and validation requirements below pass; anonymous visitors cannot upload or retrieve private content; publishing requires neither a Git commit nor an app redeploy.
   - **Human approval:** Pending — implementation available for review, with cumulative and hosted validation unresolved.
+
+- [ ] **M22 — Screening: automatic roll tours and video export**
+  - **Outcome:** Anyone viewing a roll can press **Screen roll** to watch an automatic, cinematic tour of the whole roll on the light table in one of three reels, then export it as a silent 720p MP4 video.
+  - **Dependencies:** Accepted table Overview/Focus, physical loupe, film shaders and negative/positive transition, table brightness and `rollLayout.ts` framing. M21's public read-only route and `/guest` libraries define who can view a roll.
+  - **Scope:** iPad Safari (browser and Home Screen) first. iPhone and desktop must not be blocked by the design, but their layouts and acceptance are deferred. Video is 1280 × 720 (or the equivalent 720-pixel short edge), 30 fps H.264 MP4 — deliberately conservative until iPad performance is measured. Rendering and encoding stay entirely in the browser; no server rendering or uploads. Audio is out of scope.
+  - [ ] **M22.1 — iPad feasibility spike:** On a physical iPad, render the actual table scene frame by frame at 720p and encode with WebCodecs `VideoEncoder` into MP4. Measure export speed, memory, thermals and Save Video behavior; choose the muxer library and decide whether a `MediaRecorder` fallback is needed. Record results before building the reels.
+  - [ ] **M22.2 — Timeline engine and live playback:** Deterministic reel timeline, Screen roll entry, playback controls, exact state restoration and the **Loupe Walk** reel.
+  - [ ] **M22.3 — Develop and Projector reels:** Spatial negative→positive reveal for Develop (backlight reveal for reversal stock) and gate-style advance for Projector (heavier, sprocket-free advance for 120).
+  - [ ] **M22.4 — Video export:** 720p offline frame-stepped export, title/end cards, progress/cancel, and share/save on iPad.
+  - [ ] **M22.5 — Validate and prepare review:** `npm run validate:m22` and physical iPad evidence in proposed `docs/SCREENING_REVIEW.md`.
+  - **Acceptance:** All M22 design and validation requirements below pass on a physical iPad; every reel visits every frame in order with overview and focus stages; exiting restores the prior table state; exported videos play and save to Photos.
+  - **Human approval:** Pending — not started.
 
 ### Historical validation limitations
 
@@ -177,6 +191,51 @@ Record results, commit IDs, source/checksum verification, screenshots and limita
 - **Production and devices:** Verify canonical HTTPS and redirects at `filmreverie.app`, direct image delivery/CORS, owner login, upload and public viewing on desktop and phone/iPad-sized browsers. Inspect actual rendered photographs and controls. Record physical Safari/Home Screen evidence separately from emulation.
 - **Verification gate:** `npm run validate:m21` runs the production app build, Worker type-check/dry-run, cumulative integration/E2E suites and existing standalone viewer gates, including deterministic behavior/security regression coverage. Hosted smoke checks remain separate; local workerd or mocked storage is not deployment evidence.
 - **Delivery:** Update deployment/privacy/offline instructions for Cloudflare Pages, Worker, Access, R2 and DNS, including secret names (never values), backups, restore/withdrawal behavior, current quota/cost expectations and origin migration steps. Record actual commands, hosted checks, screenshots and unresolved limitations; leave M21 open as **Awaiting human review** until accepted.
+
+## M22 design
+
+### Product and access
+
+- The feature is named **Screening**. A **Screen roll** control on the light table (Overview or Focus, loupe put away) opens a reel picker with Preview and Export actions.
+- Anyone who can view a roll can screen and export it: the owner in Admin, anonymous visitors on the read-only public gallery, `/guest` local rolls and offline saved rolls. Screening must not write roll data or saved views, and must not upload anything. Public exports use only the published viewing derivatives and published roll metadata.
+- iPad Safari is the only acceptance target for this milestone. Keep controls touch-first (44 px targets, safe areas) and avoid iPad-only assumptions in the timeline and export code, so that iPhone and desktop can be added later.
+
+### Reels
+
+Each reel has three acts: **Establish** (whole roll on the lit table) → **Tour** (frame-by-frame focus, with a short overview break at each strip boundary) → **Return** (whole roll). Short rolls get fewer overview breaks; 120 rolls get fewer, longer holds.
+
+- **Loupe Walk:** A low, angled camera over the table. The physical loupe lifts from its resting place and glides along each strip, crossing the rebate (sprocket holes, edge numbers) between photographs. It pauses on each frame and, every few frames, enters Inspection at 4×/8× to pan across a detail. During each overview break the loupe moves across to the next strip; at the end it is set down. Pacing is about 3–4 s per frame. Use depth of field only if the iPad budget allows it.
+- **Develop:** Opens in darkness. The table flickers on and the whole roll appears as orange-masked negatives. A band of light moves along the roll, turning each frame from negative to positive as it passes, and the camera pushes in to fill the screen with each photo as it turns. Overview breaks show developed strips beside undeveloped ones; the Return is the whole roll in positive. Reversal stock has no negative stage, so the reveal is the backlight coming up behind each frame. Requires a spatial reveal uniform in the film shader rather than the current global mode transition.
+- **Projector:** Establish on the whole roll, then push into a fixed gate position. Each frame jumps into place with motion blur (sprocket holes and frame numbers flash past), then holds with a slight gate flicker. Occasional speed-ups through a run of frames resolve on a held frame. Pacing is about 0.6–1.5 s per frame; its frame changes use a regular rhythm so music beats can be added later. 120 film advances more slowly and heavily, without sprockets.
+- **Pace:** Relaxed / Normal / Brisk scales each reel's timeline. **Reduced motion** replaces fast moves, blur and flicker with slow cuts and crossfades.
+
+### Timeline and playback
+
+- A reel is a pure, deterministic function `(roll, reel, aspect, pace, t) → screening state`: camera pose, loupe pose and magnification, reveal progress, table brightness, film mode, card opacity and current frame. Keep timing segments explicit so a future soundtrack can align them to beats without redesigning the reels. The same timeline drives live preview and video export, and can be tested without WebGL.
+- Use the existing scene, strips, loupe and shaders; do not build a separate screening scene. Derive framing from `fitRollView`/`locateFrame` with an explicit aspect ratio, not from the live viewport.
+- Live preview controls: play/pause, previous/next frame (seek to that frame's timeline segment), and exit. A tap on the scene pauses. Exiting at any point restores the previous inspection level, active frame, loupe state, table brightness, film mode and saved framing. Hiding the page pauses preview.
+
+### Video export
+
+- Render frame by frame instead of recording the screen in real time: for each frame n, apply the timeline state at `n / 30` s, render to an export-sized render target, and encode it with WebCodecs `VideoEncoder` (H.264) into MP4 through a small muxer library chosen in M22.1 (recheck license and bundle size). A slow device exports more slowly but produces smooth video.
+- **Formats:** 16:9 (1280 × 720) is required; 9:16 (720 × 1280) and 1:1 (720 × 720) are included, subject to the spike. Vertical overviews may turn the roll 90° so the strips run vertically.
+- Load full-resolution photograph textures for the whole roll before export and release them afterwards. Load the export code and muxer as a lazy chunk so they do not affect app startup; include them in offline preparation so export works offline.
+- Draw title and end cards (roll label, film stock, format, optional small *filmreverie.app* mark) into the rendered frames, because DOM overlays are not captured. Never include private metadata, source filenames or storage references.
+- Show a full-screen export view with the current frame, progress, estimated time remaining and Cancel. Hold a screen wake lock where available; pause encoding while the page is hidden and resume afterwards. Cancellation, errors and memory pressure must leave the table and libraries unchanged.
+- Deliver through the Web Share API with a file (iPad: Save Video / Photos), falling back to a download. File names are derived from a sanitized roll label.
+- If WebCodecs H.264 is unavailable, show a clear unsupported message. A real-time `canvas.captureStream()` + `MediaRecorder` fallback is added only if M22.1 shows it is needed on the target iPadOS.
+
+### Deferred: background music
+
+Audio is not part of M22. A later milestone may add predefined tracks generated with Suno to fit the existing reels, subject to checking Suno's commercial-use and redistribution terms at that time. Ideas discussed on 2026-09-27 for that milestone: one default track per reel; tracks made as intro, loop and outro with beat metadata so the timeline can line up with them; and a test of iPad `AudioEncoder` AAC support.
+
+## M22 validation and review
+
+- **Integration:** Timeline determinism; every frame visited once and in order; Establish/Tour/Return stages and strip-boundary overview breaks are present; durations for each pace; camera never clips the table or leaves film framing; all aspect ratios; 35 mm, 120, free-format, single-frame and 36-frame rolls; reversal stocks in Develop; reduced-motion timelines. Screening performs no roll-library or saved-view writes.
+- **E2E:** Screen roll start, pause, seek, exit and exact state restoration from Overview, Focus and after loupe use. Export produces an MP4 with the expected dimensions, frame rate, duration and decodable frames. Cancel and failure paths; public read-only route (no writes or upload requests); `/guest` and offline-saved rolls; offline export with a prepared app. Check the rendered frames themselves, not only ready labels.
+- **Regression:** Table Focus/Overview, loupe, film modes, brightness, shelves, imports, public gallery and offline behavior.
+- **Physical iPad evidence:** Record the device model and iPadOS version, export time and memory for a 36-frame 35 mm roll and a 120 roll at 720p, thermal behavior, background/foreground interruption, and saving to Photos in both Safari and the Home Screen app. Inspect exported videos and report observations; saving a video is not evidence of review. Browser emulation is not iPad acceptance.
+- **Gate:** `npm run validate:m22` runs the production build, the cumulative integration and E2E suites, and the existing standalone viewer gates. Record commands, revisions, captures and limitations in proposed `docs/SCREENING_REVIEW.md`, and leave M22 open as **Awaiting human review** until accepted.
 
 ## Progress protocol
 
