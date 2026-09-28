@@ -78,6 +78,8 @@ export class ScreeningSession {
   pause() { this.playing = false; this.emit(); }
   toggle() { if (this.playing) this.pause(); else this.play(); }
   step(direction: -1 | 1) {
+    // From the establishing shot, Next goes to the first frame.
+    if (direction > 0 && this.sample.act === 'establish') { this.seek(this.timeline.frameStart(0)); return; }
     const current = this.sample.frameIndex, start = this.timeline.frameStart(current);
     // Previous restarts the current frame first, like a media player.
     const target = direction < 0 && this.time - start > 1 ? current : current + direction;

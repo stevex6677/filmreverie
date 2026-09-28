@@ -35,8 +35,8 @@ export default defineConfig({
   reporter: [["list"]],
   projects: [
     { name: 'desktop', testIgnore: /m15-.*\.spec\.ts/, use:{channel:'chrome'} },
-    { name: 'mobile-chrome', testMatch: /(?:m(?:15|16|17|18|19|20|21)-.*|free-rolls)\.spec\.ts/, use: { channel:'chrome', viewport: {width:390,height:844}, hasTouch:true, isMobile:true, deviceScaleFactor:1 } },
-    { name: 'mobile-webkit', testMatch: /(?:m(?:15|16|17|18|19|20|21)-.*|free-rolls)\.spec\.ts/, testIgnore: /m15-touch-input\.spec\.ts/, use: { browserName:'webkit', channel:undefined, launchOptions:{args:[]}, viewport:{width:390,height:844},hasTouch:true,isMobile:true,deviceScaleFactor:1 } },
+    { name: 'mobile-chrome', testMatch: /(?:m(?:15|16|17|18|19|20|21|22)-.*|free-rolls)\.spec\.ts/, use: { channel:'chrome', viewport: {width:390,height:844}, hasTouch:true, isMobile:true, deviceScaleFactor:1 } },
+    { name: 'mobile-webkit', testMatch: /(?:m(?:15|16|17|18|19|20|21|22)-.*|free-rolls)\.spec\.ts/, testIgnore: /m15-touch-input\.spec\.ts/, use: { browserName:'webkit', channel:undefined, launchOptions:{args:[]}, viewport:{width:390,height:844},hasTouch:true,isMobile:true,deviceScaleFactor:1 } },
   ],
   use: {
     baseURL,

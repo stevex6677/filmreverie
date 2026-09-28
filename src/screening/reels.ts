@@ -89,7 +89,7 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
         } else b.step('tour', 'glide', i, 1.9, { camera: walk(i), loupe: at(i), arc: loupeRadius * .4, beat: true });
       }
       if (inspections.has(i)) {
-        const magnification = inspected++ % 2 ? 8 : 4;
+        const magnification = inspected++ % 2 ? 4 : 8;
         const detail = { x: frame.x + wide * frame.strip.scale * .22, y: frame.y - frame.strip.layout.frameHeight * frame.strip.scale * .14, lift: 0, magnification };
         b.step('tour', 'frame', i, 1.1 * holdScale, { camera: drift(walk(i), .5), drift: true });
         b.step('tour', 'descend', i, 1, { camera: inspect(at(i)), loupe: at(i, 0, magnification) });

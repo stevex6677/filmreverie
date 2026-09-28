@@ -12,10 +12,21 @@ const uniformsOf = (object: THREE.Object3D): Uniforms | undefined => ((object as
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /** Apply a sample's light and develop band to the actual table materials. */
+const spillCache = new WeakMap<THREE.Scene, THREE.PointLight[]>();
+function spillLights(scene: THREE.Scene) {
+  let lights = spillCache.get(scene);
+  if (!lights?.length || lights.some(light => !light.parent)) {
+    lights = [];
+    scene.traverse(object => { if (object.name === 'table-spill') lights!.push(object as THREE.PointLight); });
+    spillCache.set(scene, lights);
+  }
+  return lights;
+}
+
 function applySample(table: THREE.Object3D, scene: THREE.Scene, roll: RollDefinition, sample: ScreeningSample | null, brightness: number) {
   const light = getTableIllumination(brightness), scale = sample?.light ?? 1;
   table.traverse(object => { const uniforms = uniformsOf(object); if (uniforms?.uTableOutput) uniforms.uTableOutput.value = light.output * scale; });
-  scene.traverse(object => { if (object.name === 'table-spill') (object as THREE.PointLight).intensity = light.spillIntensity * scale; });
+  for (const spill of spillLights(scene)) spill.intensity = light.spillIntensity * scale;
   const reveal = sample?.reveal;
   for (const strip of table.children) {
     const index = strip.userData.stripIndex;

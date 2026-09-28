@@ -185,3 +185,25 @@ describe('M22 screening timelines', () => {
     }
   });
 });
+
+describe('M22 screening session', () => {
+  it('plays, pauses, seeks by frame and never advances while paused or exporting', async () => {
+    const { ScreeningSession } = await import('../../src/screening/session');
+    const credits = { title: 'Roll', stock: 'Portra 400', format: '35mm', frames: 36 };
+    const session = new ScreeningSession(FULL_ROLL_FIXTURE, { reel: 'develop', pace: 'normal', format: '16:9' }, { stockType: 'negative', loupe }, credits, 4 / 3);
+    const events: number[] = []; session.subscribe(() => events.push(session.time));
+    session.tick(.05); expect(session.time).toBeCloseTo(.05);
+    session.tick(5); expect(session.time).toBeCloseTo(.15); // a stalled frame advances at most 0.1 s
+    session.pause(); session.tick(1); expect(session.time).toBeCloseTo(.15);
+    session.step(1); expect(session.sample.frameIndex).toBe(0); expect(session.time).toBe(session.timeline.frameStart(0));
+    session.step(1); expect(session.sample.frameIndex).toBe(1);
+    session.seek(session.timeline.frameStart(1) + 1.5); session.step(-1); expect(session.time).toBe(session.timeline.frameStart(1));
+    session.step(-1); expect(session.time).toBe(session.timeline.frameStart(0));
+    session.seek(session.timeline.frameStart(35)); session.step(1); expect(session.sample.act).toBe('return');
+    const moment = session.time; session.setAspect(16 / 9);
+    expect(session.time).toBe(moment); expect(session.timeline.aspect).toBeCloseTo(16 / 9);
+    session.setExporting(true); session.play(); session.tick(1); expect(session.time).toBe(moment);
+    session.setExporting(false); session.seek(session.timeline.duration); session.play(); expect(session.time).toBe(0);
+    expect(events.length).toBeGreaterThan(5);
+  });
+});
