@@ -10,7 +10,7 @@ A desktop, iPhone and iPad experience for exploring a 3D darkroom, inspecting ph
 
 **M21 is implemented locally under the user's “implement m21” instruction, overriding M20 sequencing.** Owner publishing, the public gallery and visitor-local/offline separation are implemented. **Validation remains open: the cumulative browser gate is not clean, and hosted acceptance requires explicit authorization and real account/identity configuration.** No production provisioning or DNS/billing changes were performed. See [M21 review](docs/M21_REVIEW.md) and [Cloudflare deployment guide](docs/CLOUD_GALLERY.md).
 
-**M22 (Screening) is planned from the 2026-09-27 design discussion and not started.** It is visual only: audio and background music are deferred by the user's 2026-09-27 instruction.
+**M22 (Screening) is implemented locally under the user's 2026-09-27 “do M22” instruction and awaits human review.** It is visual only: audio and background music are deferred by the user's 2026-09-27 instruction. The physical iPad spike and acceptance are open; see [Screening review](docs/SCREENING_REVIEW.md).
 
 ## Progress TODO
 
@@ -57,12 +57,13 @@ A desktop, iPhone and iPad experience for exploring a 3D darkroom, inspecting ph
   - **Dependencies:** Accepted table Overview/Focus, physical loupe, film shaders and negative/positive transition, table brightness and `rollLayout.ts` framing. M21's public read-only route and `/guest` libraries define who can view a roll.
   - **Scope:** iPad Safari (browser and Home Screen) first. iPhone and desktop must not be blocked by the design, but their layouts and acceptance are deferred. Video is 1280 × 720 (or the equivalent 720-pixel short edge), 30 fps H.264 MP4 — deliberately conservative until iPad performance is measured. Rendering and encoding stay entirely in the browser; no server rendering or uploads. Audio is out of scope.
   - [ ] **M22.1 — iPad feasibility spike:** On a physical iPad, render the actual table scene frame by frame at 720p and encode with WebCodecs `VideoEncoder` into MP4. Measure export speed, memory, thermals and Save Video behavior; choose the muxer library and decide whether a `MediaRecorder` fallback is needed. Record results before building the reels.
-  - [ ] **M22.2 — Timeline engine and live playback:** Deterministic reel timeline, Screen roll entry, playback controls, exact state restoration and the **Loupe Walk** reel.
-  - [ ] **M22.3 — Develop and Projector reels:** Spatial negative→positive reveal for Develop (backlight reveal for reversal stock) and gate-style advance for Projector (heavier, sprocket-free advance for 120).
-  - [ ] **M22.4 — Video export:** 720p offline frame-stepped export, title/end cards, progress/cancel, and share/save on iPad.
-  - [ ] **M22.5 — Validate and prepare review:** `npm run validate:m22` and physical iPad evidence in proposed `docs/SCREENING_REVIEW.md`.
+    - *Done without a device:* muxer chosen (in-repo MP4 writer; mp4-muxer is deprecated, Mediabunny is MPL-2.0 and large); the real table scene is rendered frame by frame and encoded in desktop Chrome (36-frame 720p Loupe Walk: 4617 frames in 166 s, 95.8 MB). *Open:* every physical iPad measurement, thermals, Save Video and the `MediaRecorder` decision. The reels were built before this spike under the user's instruction to complete M22 without further decisions.
+  - [x] **M22.2 — Timeline engine and live playback:** Deterministic reel timeline, Screen roll entry, playback controls, exact state restoration and the **Loupe Walk** reel.
+  - [x] **M22.3 — Develop and Projector reels:** Spatial negative→positive reveal for Develop (backlight reveal for reversal stock) and gate-style advance for Projector (heavier, sprocket-free advance for 120).
+  - [x] **M22.4 — Video export:** 720p offline frame-stepped export, title/end cards, progress/cancel, and share/save on iPad. Share/save uses Web Share with a download fallback; iPad Save Video is unverified.
+  - [ ] **M22.5 — Validate and prepare review:** `npm run validate:m22` and physical iPad evidence in proposed `docs/SCREENING_REVIEW.md`. The review record and local browser evidence exist; physical iPad evidence does not.
   - **Acceptance:** All M22 design and validation requirements below pass on a physical iPad; every reel visits every frame in order with overview and focus stages; exiting restores the prior table state; exported videos play and save to Photos.
-  - **Human approval:** Pending — not started.
+  - **Human approval:** Pending — awaiting human review; physical iPad validation open.
 
 ### Historical validation limitations
 
@@ -239,7 +240,7 @@ Audio is not part of M22. A later milestone may add predefined tracks generated 
 
 ## Progress protocol
 
-The user explicitly requested M21 before M20 acceptance. Continue M21 validation from [the review record](docs/M21_REVIEW.md), preserving M20's unresolved history. Update implementation progress, blockers and actual validation evidence; do not claim deployment, physical-device acceptance or human approval from local checks. No commit is authorized by this request.
+M22 is implemented and awaiting review; record physical iPad evidence in [the Screening review](docs/SCREENING_REVIEW.md) before acceptance. The user explicitly requested M21 before M20 acceptance. Continue M21 validation from [the review record](docs/M21_REVIEW.md), preserving M20's unresolved history. Update implementation progress, blockers and actual validation evidence; do not claim deployment, physical-device acceptance or human approval from local checks. No commit is authorized by this request.
 
 ## Handoff checklist
 
@@ -248,3 +249,4 @@ The user explicitly requested M21 before M20 acceptance. Continue M21 validation
 - Finish hosted checks only after explicit deployment/billing/DNS authorization and real account/owner configuration; no credentials or private photographs belong in Git.
 - Keep M20 unaccepted until its separate human review. Browser emulation does not establish physical iOS acceptance.
 - M21 remains open at human review. Record all remaining cumulative or hosted failures without silently shrinking the acceptance contract.
+- M22 remains open at human review. Its physical iPad spike and Save Video checks are the next steps; do not infer them from desktop or emulated runs.

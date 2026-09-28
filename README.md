@@ -93,6 +93,27 @@ server; the guest darkroom remains browser-local.
 `npm run validate:m21` includes the app/Worker builds, cumulative integration/E2E
 suites and all three standalone viewer gates; hosted checks remain separate.
 
+### 8. Screening: roll tours and video export
+On the light table (Overview or Focus, loupe put away), **Screen roll** plays an
+automatic tour of the whole roll in the actual table scene: **Loupe Walk** (the
+loupe glides along each strip and inspects details), **Develop** (a band of light
+turns each negative positive, or brings up the backlight behind reversal film)
+or **Projector** (frames jump into a fixed gate on a regular beat). Each reel has
+an establishing shot, a frame-by-frame tour with overview breaks at strip
+boundaries, and a closing shot, at Relaxed, Normal or Brisk pace; reduced motion
+uses slow cuts instead of fast moves, blur and flicker. Preview supports
+play/pause, previous/next frame, tap to pause and exit; exiting restores the table
+exactly, and screening never writes rolls or saved views.
+
+**Export video** renders the same timeline frame by frame into a silent 30 fps
+H.264 MP4 at 1280 × 720, 720 × 1280 or 720 × 720, entirely in the browser with
+WebCodecs and an in-repo MP4 writer; nothing is uploaded. It works for published,
+guest and offline rolls, and saves through the share sheet (iPad: Save Video) or a
+download. The export code loads on demand and is part of offline preparation.
+iPad Safari is the acceptance target; physical-device evidence is pending. See
+[Screening review](docs/SCREENING_REVIEW.md). `npm run validate:m22` runs the
+production build, cumulative integration/E2E suites and standalone viewer gates.
+
 ---
 
 ## Getting Started
