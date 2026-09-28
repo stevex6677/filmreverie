@@ -7,12 +7,48 @@ physical iPad acceptance have not been performed**: no iPad was available to
 this session, and Playwright WebKit cannot be installed on this macOS 13 host.
 Browser emulation is not iPad acceptance. Nothing was pushed or deployed.
 
+## Review revision (2026-09-27)
+
+After the user reviewed the first build (commit `ed4ee42`):
+
+- **Loupe Walk → Tracking Shot.** The loupe added nothing, so it is hidden
+  during every screening and its timeline tracks were removed (`Loupe.tsx` is
+  back to its pre-M22 form). The low tracking camera stays; every sixth frame it
+  pushes in to an 18° close-up and drifts across a detail.
+- **Develop without flicker.** The opening previously struck the table light
+  like a fluorescent tube (0 → 55% → 5% → 80% → 25% → 100%). Now the title
+  shows over the dark table and the light rises smoothly as it fades; an
+  integration test checks that brightness never decreases in the opening. The
+  overlay canvas starts black until its first draw, avoiding a one-frame flash.
+- **Projector direction and feel.** Photographs always enter from the right
+  and leave to the left. A change of strip continues past the strip's end with
+  the shutter closing, then re-enters the next strip from its right as it opens;
+  tests check that every advance moves the camera rightward with no vertical
+  motion and that the only discontinuity is behind a fully closed shutter.
+  Lighter effects: an Academy countdown (5–2) that fades up from black, warm
+  lamp light, a bloom on the gate plate, shutter darkening during each
+  pull-down, slow gate weave (<1% of frame width), and occasional dust and a
+  hair in the gate. Dust, hair, weave and flicker are off with reduced motion.
+  Wall projection is deferred.
+- **Deferred:** three new reels (Darkroom, Flyover, Orbit) are designed in the
+  implementation plan as M22.6.
+
+Reviewed exports after the revision (5-frame example roll, 16:9, Normal):
+Tracking Shot shows no loupe and a detail push-in on frame 3; the Develop
+opening goes black → title → smooth rise → negatives; Projector shows the
+countdown, then each photograph sliding in from the right through a white-lit
+gate, with the neighbours masked. Verification: 317 integration tests and all
+11 M22 browser cases (8 desktop, 3 phone-size Chrome) pass.
+
+The sections below describe the first build; where they mention Loupe Walk,
+its loupe or the tube strike, the revision above supersedes them.
+
 ## What was built
 
 | Part | State |
 | --- | --- |
 | M22.1 feasibility spike | Engineering decisions made and measured on a desktop Mac (below). **Physical iPad measurements, thermals and Save Video behavior remain open.** |
-| M22.2 timeline, live playback, Loupe Walk | Implemented. |
+| M22.2 timeline, live playback, Loupe Walk (now Tracking Shot) | Implemented. |
 | M22.3 Develop and Projector | Implemented. |
 | M22.4 video export | Implemented. |
 | M22.5 validation and review | This record; cumulative gate results below. |

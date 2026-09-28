@@ -95,10 +95,11 @@ suites and all three standalone viewer gates; hosted checks remain separate.
 
 ### 8. Screening: roll tours and video export
 On the light table (Overview or Focus, loupe put away), **Screen roll** plays an
-automatic tour of the whole roll in the actual table scene: **Loupe Walk** (the
-loupe glides along each strip and inspects details), **Develop** (a band of light
-turns each negative positive, or brings up the backlight behind reversal film)
-or **Projector** (frames jump into a fixed gate on a regular beat). Each reel has
+automatic tour of the whole roll in the actual table scene: **Tracking Shot** (a
+low camera tracks along each strip and moves in on details), **Develop** (a band
+of light turns each negative positive, or brings up the backlight behind reversal
+film) or **Projector** (after a countdown leader, frames slide in from the right
+into a lit gate on a regular beat). Each reel has
 an establishing shot, a frame-by-frame tour with overview breaks at strip
 boundaries, and a closing shot, at Relaxed, Normal or Brisk pace; reduced motion
 uses slow cuts instead of fast moves, blur and flicker. Preview supports
