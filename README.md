@@ -100,7 +100,9 @@ low camera tracks along each strip and moves in on details), **Develop** (a band
 of light turns each negative positive, or brings up the backlight behind reversal
 film) or **Projector** (the room goes dark, a countdown is projected in the lamp-lit
 gate, and frames slide in from the right on a regular beat), **Darkroom** (from the
-room to the light table and back) or **Orbit** (slow arcs around each photograph). Each reel has
+room to the light table and back), **Orbit** (slow arcs around each photograph),
+**Drying Line** (each strip becomes a line of prints hung in the darkroom) or
+**Documentary** (each photograph fills the screen, drifting and dissolving). Each reel has
 an establishing shot, a frame-by-frame tour with overview breaks at strip
 boundaries, and a closing shot, at Relaxed, Normal or Brisk pace; reduced motion
 uses slow cuts instead of fast moves, blur and flicker. Preview supports

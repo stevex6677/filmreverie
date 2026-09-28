@@ -7,6 +7,34 @@ physical iPad acceptance have not been performed**: no iPad was available to
 this session, and Playwright WebKit cannot be installed on this macOS 13 host.
 Browser emulation is not iPad acceptance. Nothing was pushed or deployed.
 
+## Drying Line and Documentary (M22.7, 2026-09-27/28)
+
+Chosen by the user from three further designs (Contact Sheet not chosen).
+
+- **Drying Line:** strips → lines of 5-inch prints on the left wall above the
+  printing station (a pure layout in `src/screening/prints.ts`, clear of the
+  bench and inside the room), lit by a warm viewing lamp. Opening rises above
+  the table and turns past the printing station to a wide shot centred on
+  every line; the tour tracks toward the table so prints pass right to left;
+  breaks glance back at the table's strip; the close shows the print wall with
+  the table glowing.
+- **Documentary:** full-screen photographs with a ~10% push-in and a pan toward
+  the longer side, joined by true cross-dissolves: the director renders the
+  outgoing shot once (at export size during export) and fades it over the
+  incoming one. Rotated photographs are turned upright (derived from the film
+  shader's rotation: 90° → camera −90°, 270° → +90°, 180° → 180°). Photographs
+  shown whole (e.g. landscape in 9:16) get a black letterbox that fades in and
+  out; upright photographs in 16:9 are pillarboxed.
+- **Bug found and fixed:** a second export from the picker could start before
+  the scene registered its renderer and fail with "The light table is not
+  ready to render". Export now waits up to 5 s for it.
+- Reviewed exported frame sheets for both reels in 16:9 and 9:16, including a
+  frame-by-frame look across a dissolve. Verification: 321 integration tests
+  and all 15 M22 browser cases (11 desktop, 4 phone-size Chrome). The browser
+  checks include the preview dissolve drawing the outgoing shot opaque at its
+  start, and an exported dissolve whose midpoint is closer to the blend of both
+  photographs than to either.
+
 ## Additional reels: Darkroom, Flyover, Orbit (M22.6, 2026-09-27)
 
 **Flyover was removed after review** (the user did not like it); Darkroom and
