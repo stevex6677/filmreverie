@@ -1,3 +1,4 @@
+import { isLoupeSize, isLoupeType, LOUPE_SIZE_SCALE } from './utils/loupeView';
 import { RollEditor } from "./components/RollEditor";
 import { UpdateNotice } from "./components/UpdateNotice";
 import { createRuntimeRoll } from "./storage/rollRuntime";
@@ -144,6 +145,8 @@ export function App() {
       const initial = createInitialViewerState(initialRoomMode, initialRoll);
       try {
         const preference = JSON.parse(localStorage.getItem('darkroom-loupe-preferences') ?? 'null');
+        if (isLoupeType(preference?.type)) initial.loupe.type = preference.type;
+        if (isLoupeSize(preference?.size)) { initial.loupe.size = preference.size; initial.loupe.scale = initial.roll.scale * LOUPE_SIZE_SCALE[initial.loupe.size]; }
         if (preference && typeof preference.opticalEffects === 'boolean') initial.loupe.opticalEffects = preference.opticalEffects;
         if (preference && Number.isFinite(preference.magnification) && preference.magnification >= 1.5 && preference.magnification <= 10) initial.loupe.magnification = preference.magnification;
       } catch { /* The loupe works when storage is unavailable. */ }
@@ -151,8 +154,8 @@ export function App() {
     }
   );
   useEffect(() => {
-    try { localStorage.setItem('darkroom-loupe-preferences', JSON.stringify({ opticalEffects: state.loupe.opticalEffects, magnification: state.loupe.magnification })); } catch { /* Optional preference. */ }
-  }, [state.loupe.opticalEffects, state.loupe.magnification]);
+    try { localStorage.setItem('darkroom-loupe-preferences', JSON.stringify({ type: state.loupe.type, size: state.loupe.size, opticalEffects: state.loupe.opticalEffects, magnification: state.loupe.magnification })); } catch { /* Optional preference. */ }
+  }, [state.loupe.type, state.loupe.size, state.loupe.opticalEffects, state.loupe.magnification]);
 
   useEffect(() => {
     if (!appReady || !cameraSettled || state.roomMode !== 'room') return;
@@ -304,6 +307,8 @@ export function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (state.cameraDisplay || editorOpen || cloudDialogOpen || sheet==='frames') return;
+      // Panel controls own their keys; the focused film can still move the loupe.
+      if (sheet==='loupe' && !(e.key.startsWith('Arrow') && e.target instanceof HTMLElement && e.target.closest('.canvas-wrapper'))) return;
       if(sheet==='tools' && e.key==='Escape'){setSheet(null);return;}
       // Ignore when typing in input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
@@ -432,6 +437,8 @@ export function App() {
       data-loupe-active={state.loupe.isActive ? "true" : "false"}
       data-loupe-state={state.loupe.inspecting ? 'inspection' : state.loupe.isActive ? 'activated' : 'inactivated'}
       data-loupe-effects={String(state.loupe.opticalEffects)}
+      data-loupe-type={state.loupe.type}
+      data-loupe-size={state.loupe.size}
       data-active-frame={state.loupe.frameIndex + 1}
       data-reduced-motion={isReducedMotion ? "true" : "false"}
     >

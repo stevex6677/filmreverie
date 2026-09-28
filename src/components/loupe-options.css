@@ -1,0 +1,63 @@
+/* The options expand within the same dock as the loupe actions. */
+.table-controls .loupe-controls { position:absolute; bottom:calc(40px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); box-sizing:border-box; width:max-content; max-width:calc(100% - 24px); padding:6px; border:1px solid #484b48; border-radius:16px; color:#e8e7df; background:#1c201ff7; box-shadow:0 8px 32px #0004; pointer-events:auto; }
+.table-controls .loupe-controls.is-expanded { width:370px; }
+.loupe-toolbar { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.loupe-toolbar .loupe-actions { display:flex; gap:4px; }
+.table-controls .loupe-toolbar button { padding:9px 11px; white-space:nowrap; background:transparent; border-color:transparent; }
+.table-controls .loupe-toolbar button:hover { background:#ffffff09; }
+.table-controls .loupe-toolbar .loupe-customize { display:flex; align-items:center; justify-content:center; gap:8px; }
+.table-controls .loupe-customize[aria-expanded=true] { background:#d9bc8612; border-color:#d9bc8650; color:#f1d6a4; }
+.loupe-settings-content { max-height:calc(var(--visible-height,100dvh) - 134px - env(safe-area-inset-bottom)); padding:8px 10px 16px; margin-bottom:6px; overflow-y:auto; overscroll-behavior:contain; border-bottom:1px solid #ffffff16; outline:none; }
+.loupe-settings-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.loupe-settings-header h2 { margin:0; font-size:.9rem; font-weight:500; }
+.table-controls .loupe-settings-header button { padding:8px 12px; border-color:transparent; background:transparent; color:#d9bc86; font-size:.78rem; }
+.loupe-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px 12px; }
+.loupe-options fieldset:first-child,.loupe-effects-row { grid-column:1 / -1; }
+.film-panel .loupe-options { grid-template-columns:1fr; }
+.loupe-options fieldset { min-width:0; margin:0; padding:0; border:0; }
+.loupe-options legend { padding:0; margin-bottom:8px; font-size:.72rem; font-weight:500; color:#c8c9c5; }
+.loupe-style-choices,.loupe-size-choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.loupe-size-choices { grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
+.loupe-size-choices .loupe-choice-card { min-height:44px; padding:6px 2px; font-size:.72rem; }
+.loupe-size-choices .loupe-size-icon { display:none; }
+.loupe-choice { position:relative; cursor:pointer; }
+.loupe-choice input { position:absolute; width:1px; height:1px; opacity:0; }
+.loupe-choice-card { position:relative; display:flex; align-items:center; justify-content:center; gap:6px; min-height:48px; padding:8px 6px; border:1px solid #444744; border-radius:10px; background:#ffffff03; color:#efeee6; text-align:center; font-size:.76rem; }
+.loupe-style-choices .loupe-choice-card { display:grid; grid-template-columns:32px 1fr; column-gap:8px; row-gap:3px; min-height:60px; padding:8px; text-align:left; }
+.loupe-choice-card strong { font-size:.78rem; font-weight:500; align-self:end; }
+.loupe-choice-card small { color:#b0b4b1; font-size:.63rem; align-self:start; }
+.loupe-choice:hover .loupe-choice-card { border-color:#9b9b8b; background:#ffffff08; }
+.loupe-choice input:checked + .loupe-choice-card { border-color:#d9bc86; background:#d9bc8612; color:#f1d6a4; }
+.loupe-choice input:focus-visible + .loupe-choice-card { outline:2px solid #f1d6a4; outline-offset:3px; }
+.loupe-choice-check { position:absolute; top:3px; right:5px; color:#f1d6a4; font-size:.65rem; visibility:hidden; }
+.loupe-choice input:checked + .loupe-choice-card .loupe-choice-check { visibility:visible; }
+.loupe-size-icon { display:block; flex-shrink:0; width:19px; height:19px; border:1px solid currentColor; border-radius:50%; margin:3px; }
+.loupe-size-icon.is-small { width:13px; height:13px; margin:6px; }
+.loupe-size-icon.is-large { width:25px; height:25px; margin:0; }
+.loupe-icon { position:relative; grid-row:1 / 3; display:inline-block; width:32px; height:30px; flex-shrink:0; }
+.loupe-icon-classic { border-radius:45% 45% 30% 30%; background:repeating-linear-gradient(90deg,#151817 0 3px,#333735 4px,#151817 5px); box-shadow:0 3px 2px #0009,inset 0 -4px 1px #9eaba844; }
+.loupe-icon-classic span { position:absolute; inset:0 2px 12px; border:3px solid #171b19; border-radius:50%; background:radial-gradient(ellipse at 40% 35%,#8b9b9c,#263e44 50%,#091819); box-shadow:0 0 0 1px #525a55; }
+.loupe-icon-glass { border-radius:50% 50% 42% 42%; border:1px solid #bfccc6aa; background:linear-gradient(155deg,transparent 42%,#869c8b44 43% 52%,transparent 53%); box-shadow:inset 0 -2px 2px #cee0dc25,0 3px 3px #0003; }
+.loupe-options .table-magnification { display:flex; gap:4px; }
+.table-controls .loupe-options .table-magnification button { flex:1; padding:6px; font-size:.78rem; border-radius:10px; min-height:44px; background:#ffffff03; }
+.table-controls .loupe-options .table-magnification button[aria-pressed=true] { background:#d9bc8612; }
+.loupe-effects-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:12px; border-top:1px solid #ffffff12; font-size:.75rem; }
+.loupe-effects-row small { display:block; margin-top:4px; color:#969e98; font-size:.65rem; }
+.table-controls .loupe-effects-row button { min-width:54px; min-height:44px; padding:6px 10px; font-size:.75rem; }
+.table-controls .loupe-effects-row button[aria-checked=true] { border-color:#dbbd86; color:#f1d6a4; }
+@media(max-width:700px) {
+  .table-controls .loupe-controls.is-expanded { width:calc(100% - 24px); max-width:370px; }
+  .table-controls .loupe-toolbar button { padding:8px 9px; font-size:.8rem; }
+  .loupe-toolbar { gap:4px; }
+}
+@media(max-height:500px) {
+  .table-controls .loupe-controls { bottom:max(8px,env(safe-area-inset-bottom)); }
+  .loupe-settings-content { max-height:calc(var(--visible-height,100dvh) - 82px - env(safe-area-inset-bottom)); padding-bottom:10px; }
+  .loupe-settings-header { margin-bottom:4px; }
+  .loupe-options { gap:10px; }
+  .loupe-style-choices .loupe-choice-card { min-height:58px; padding-block:7px; }
+}
+
+@media(min-width:1000px) {
+  .table-controls .loupe-controls { left:auto; right:20px; transform:none; }
+}

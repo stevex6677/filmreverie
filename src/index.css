@@ -1102,24 +1102,13 @@ button:disabled { opacity: .4; cursor: default; }
 
 /* M17: one reachable control strip for a physical loupe on every screen. */
 .table-actions,.loupe-actions { display:flex; gap:6px; align-items:center; }
-.loupe-controls { position:absolute; bottom:calc(40px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:12px; width:max-content; max-width:calc(100% - 24px); padding:8px; background:#1b1e23f5; border:1px solid #41454a; border-radius:14px; pointer-events:auto; box-shadow:0 6px 24px #0004; }
-.loupe-controls .table-magnification { display:flex; gap:3px; }
-.loupe-controls button { white-space:nowrap; }
 .has-loupe .table-caption { bottom:calc(14px + env(safe-area-inset-bottom)); }
 .is-loupe-inspection .table-feedback { top:max(18px,env(safe-area-inset-top)); }
 .is-loupe-inspection .table-caption { color:#e5e4dc; text-shadow:0 1px 4px #000; }
 @media (max-width:700px) {
   .has-loupe.is-focus .table-header { top:0; bottom:auto; align-items:flex-start; background:linear-gradient(#13151bdd,transparent); }
-  .loupe-controls { gap:6px; padding:6px; }
-  .loupe-controls button { padding:8px 10px; }
-  .is-loupe-inspection .loupe-controls { width:calc(100% - 24px); box-sizing:border-box; }
-  .is-loupe-inspection .loupe-controls > button:last-child { flex-basis:100%; }
 }
-@media (max-height:500px) {
-  .loupe-controls { bottom:max(8px,env(safe-area-inset-bottom)); }
-  .is-loupe-inspection .loupe-controls { width:max-content; flex-wrap:nowrap; }
-  .is-loupe-inspection .loupe-controls > button:last-child { flex-basis:auto; }
-}
+
 .has-loupe .table-caption { left:50%; right:auto; transform:translateX(-50%); width:max-content; max-width:calc(100% - 24px); padding:3px 8px; border-radius:6px; color:#e8e7df; background:#1b1e23dd; }
 
 /* Saved rolls inhabit the cabinet. HTML hit targets follow its actual 3D cells. */

@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
+import { Raycaster, Sphere, Vector2, Vector3 } from 'three';
 import { ViewerAction, ViewerState, viewerReducer } from '../state/viewerState';
 import { tablePointAt, tableInputCamera, TOP_DOWN } from '../utils/tableCamera';
 import { fitRollView } from '../utils/rollLayout';
 import { TABLE_SURFACE_Y, TABLE_CENTER_Z } from '../utils/cameraBounds';
-import { LOUPE_LENS_HEIGHT, LOUPE_RADIUS } from '../utils/loupeView';
+import { loupeGeometry } from '../utils/loupeView';
 
 /** One gesture owner for the physical object and the close-eye view. */
 export function LoupeNavigation({ state, dispatch, blocked }: { state: ViewerState; dispatch: React.Dispatch<ViewerAction>; blocked: boolean }) {
@@ -12,6 +13,7 @@ export function LoupeNavigation({ state, dispatch, blocked }: { state: ViewerSta
   const live = useRef(state); live.current = state;
   useEffect(() => {
     const canvas = gl.domElement;
+    const raycaster = new Raycaster();
     const contacts = new Map<number, { x: number; y: number }>();
     let owner: 'loupe' | 'table' | 'inspection' | 'parked' = 'table';
     let origin = { x: 0, y: 0 }, moved = false, multiple = false;
@@ -23,8 +25,14 @@ export function LoupeNavigation({ state, dispatch, blocked }: { state: ViewerSta
       const s = live.current, touch = e.pointerType !== 'mouse';
       if (blocked || s.roomMode !== 'inspect' || e.button > 0) return;
       const [sampleX, sampleY] = (canvas.dataset.loupeSample ?? '').split(',').map(Number);
-      const point = tablePointAt(camera, canvas, e.clientX, e.clientY, TABLE_SURFACE_Y + .008 + LOUPE_LENS_HEIGHT * s.loupe.scale);
-      const hit = !!point && Math.hypot(point.x - sampleX, point.z - (TABLE_CENTER_Z - sampleY)) <= LOUPE_RADIUS * s.loupe.scale;
+      const point = tablePointAt(camera, canvas, e.clientX, e.clientY, TABLE_SURFACE_Y + .008 + loupeGeometry(s.loupe.type).lensHeight * s.loupe.scale);
+      let hit = !!point && Math.hypot(point.x - sampleX, point.z - (TABLE_CENTER_Z - sampleY)) <= loupeGeometry(s.loupe.type).radius * s.loupe.scale;
+      if (s.loupe.type === 'glass') {
+        const rect = canvas.getBoundingClientRect();
+        raycaster.setFromCamera(new Vector2((e.clientX-rect.left)/rect.width*2-1, 1-(e.clientY-rect.top)/rect.height*2), camera);
+        const intersection = raycaster.ray.intersectSphere(new Sphere(new Vector3(sampleX, TABLE_SURFACE_Y+.008, TABLE_CENTER_Z-sampleY), loupeGeometry('glass').radius*s.loupe.scale), new Vector3());
+        hit = !!intersection && intersection.y >= TABLE_SURFACE_Y+.008;
+      }
       if (!contacts.size && !s.loupe.inspecting && !(s.loupe.isActive && touch) && !hit) { owner = 'table'; moved = false; return; }
       consume(e);
       if (s.isTransitioning) return;
@@ -51,11 +59,11 @@ export function LoupeNavigation({ state, dispatch, blocked }: { state: ViewerSta
       const dy = !wasMoved && !multiple ? next.y-origin.y : next.y-old.y;
       if (owner === 'inspection') {
         const radius = Number(canvas.dataset.loupeDisplay?.split(',')[2]) || 120;
-        const wpp = LOUPE_RADIUS * s.loupe.scale / (radius * s.loupe.magnification);
+        const wpp = loupeGeometry(s.loupe.type).radius * s.loupe.scale / (radius * s.loupe.magnification);
         // Ignore contact separation completely; centroid translation still moves.
         send({ type: 'MOVE_LOUPE', dx: -dx*wpp, dy: dy*wpp });
       } else if (owner === 'loupe') {
-        const height = TABLE_SURFACE_Y + .008 + LOUPE_LENS_HEIGHT * s.loupe.scale;
+        const height = TABLE_SURFACE_Y + .008 + loupeGeometry(s.loupe.type).lensHeight * s.loupe.scale;
         const from = tablePointAt(camera, canvas, next.x - dx, next.y - dy, height), to = tablePointAt(camera, canvas, next.x, next.y, height);
         if (from && to) send({ type: 'MOVE_LOUPE', dx: to.x - from.x, dy: from.z - to.z });
       } else if (owner === 'table') {

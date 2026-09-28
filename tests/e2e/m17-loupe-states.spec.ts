@@ -3,14 +3,14 @@ import { DEFAULT_LAYOUT } from '../../src/utils/loupeMapping';
 import { test, expect, Page } from '@playwright/test';
 import { getPerforationPositions } from '../../src/utils/loupeMapping';
 import { PNG } from 'pngjs';
-import { captureCanvas } from './helpers/viewing';
+import { captureCanvas, openLoupeSettings, closeLoupeSettings } from './helpers/viewing';
 import { getRegionMeanDifference, getRegionStats } from './helpers/pixelAnalysis';
 const MIN_MOVEMENT = .001 * BASELINE_ROLL.scale; // Same native-film movement threshold after physical scale conversion.
 const ready=async(page:Page)=>{await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:30000});await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});};
 const display=async(page:Page)=>(await page.locator('canvas').getAttribute('data-loupe-display'))!.split(',').map(Number);
 const sample=async(page:Page)=>(await page.locator('canvas').getAttribute('data-loupe-sample'))!.split(',').map(Number);
 const pose=async(page:Page)=>(await page.locator('canvas').getAttribute('data-camera-position'))!.split(',').map(Number);
-const open=async(page:Page)=>{await page.goto('/guest?mode=inspect');await ready(page);await page.getByRole('button',{name:'Choose frame',exact:true}).click();await page.getByRole('button',{name:'Open frame 3',exact:true}).click();await ready(page);await page.getByTestId('loupe-activate').click();await page.waitForTimeout(350);};
+const open=async(page:Page)=>{await page.goto('/guest?mode=inspect');await ready(page);await page.locator('.canvas-wrapper').focus();await page.keyboard.press('Enter');await ready(page);await page.getByRole('button',{name:'Choose frame',exact:true}).click();await page.getByRole('button',{name:'Open frame 3',exact:true}).click();await ready(page);await page.getByTestId('loupe-activate').click();await page.waitForTimeout(350);};
 
 // Chromium exercises native contacts through CDP; WebKit exercises its Pointer
 // Event path with dispatched contacts (physical Safari ergonomics remain review).
@@ -48,7 +48,7 @@ test('M17 pickup preserves physical size while camera zoom changes apparent size
   expect(await canvas.getAttribute('data-loupe-scale')).toBe(scale);expect((await display(page))[2]).toBeCloseTo(nearRadius,1);
 });
 
-test('M17 drag versus tap, smooth eye approach, optical effects and exact pull back',async({page,browserName},info)=>{
+test('M17 drag versus tap, smooth lens framing, optical effects and exact pull back',async({page,browserName},info)=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await open(page);const original=await pose(page),before=await sample(page);const [x,y]=await display(page);
   await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x+34,y-15,{steps:8});await page.mouse.up();await page.waitForTimeout(350);
@@ -56,14 +56,18 @@ test('M17 drag versus tap, smooth eye approach, optical effects and exact pull b
   const [cx,cy]=await display(page);await page.mouse.click(cx,cy);
   await expect(page.locator('main')).toHaveAttribute('data-loupe-state','inspection');
   await page.waitForTimeout(80);const intermediate=await pose(page);
-  await ready(page);const close=await pose(page);expect(close[1]).toBeLessThan(original[1]);expect(intermediate[1]).toBeLessThan(original[1]);expect(intermediate[1]).toBeGreaterThan(close[1]);
+  await ready(page);const close=await pose(page);
+  // An enlarged lens can require a slight pull back from an already close
+  // table view. Inspection must animate toward its framing in either direction.
+  const travel=close[1]-original[1];expect(Math.abs(travel)).toBeGreaterThan(.0001);
+  const progress=(intermediate[1]-original[1])/travel;expect(progress).toBeGreaterThan(0);expect(progress).toBeLessThan(1);
   const [lx,ly,r]=await display(page);expect(r).toBeGreaterThan(Math.min(page.viewportSize()!.width,page.viewportSize()!.height)*.42);
   await page.screenshot({path:info.outputPath('inspection-initial.png')});
   const on=PNG.sync.read(await captureCanvas(page));expect(getRegionStats(on,Math.round(lx),Math.round(ly),Math.round(r*.4)).stdDev).toBeGreaterThan(3);
   await page.screenshot({path:info.outputPath('inspection-effects-on.png')});
-  await page.getByTestId('loupe-effects').click();await expect(page.locator('main')).toHaveAttribute('data-loupe-effects','false');await page.waitForTimeout(100);
+  await openLoupeSettings(page);await page.getByTestId('loupe-effects').click();await closeLoupeSettings(page);await expect(page.locator('main')).toHaveAttribute('data-loupe-effects','false');await page.waitForTimeout(100);
   const off=PNG.sync.read(await captureCanvas(page));expect(getRegionMeanDifference(on,off,Math.round(lx+r*.60),Math.round(ly),15)).toBeGreaterThan(.2);
-  await page.getByTestId('mag-btn-8x').click();await page.waitForTimeout(150);expect(await pose(page)).toEqual(close);
+  await openLoupeSettings(page);await page.getByTestId('mag-btn-8x').click();await closeLoupeSettings(page);await page.waitForTimeout(150);expect(await pose(page)).toEqual(close);
   expect(getRegionMeanDifference(off,PNG.sync.read(await captureCanvas(page)),Math.round(lx),Math.round(ly),Math.round(r*.6))).toBeGreaterThan(2);
   await page.screenshot({path:info.outputPath('inspection-effects-off-8x.png')});
   await page.mouse.move(lx,ly);if(browserName==='webkit'){await page.locator('canvas').dispatchEvent('wheel',{deltaY:-600,cancelable:true});await page.locator('canvas').dispatchEvent('wheel',{deltaY:600,cancelable:true});}else{await page.mouse.wheel(0,-600);await page.mouse.wheel(0,600);}await page.waitForTimeout(200);expect(await pose(page)).toEqual(close);
@@ -75,7 +79,7 @@ test('M17 drag versus tap, smooth eye approach, optical effects and exact pull b
   await page.screenshot({path:info.outputPath('activated-return.png')});
   await page.getByTestId('put-away-loupe').click();await expect(page.locator('main')).toHaveAttribute('data-loupe-state','inactivated');
   await page.reload();await ready(page);await page.getByTestId('loupe-activate').click();await page.getByTestId('inspect-loupe').click();await ready(page);
-  await expect(page.locator('main')).toHaveAttribute('data-loupe-effects','false');await expect(page.getByTestId('mag-btn-8x')).toHaveAttribute('aria-pressed','true');expect(errors).toEqual([]);
+  await expect(page.locator('main')).toHaveAttribute('data-loupe-effects','false');await openLoupeSettings(page);await expect(page.getByTestId('mag-btn-8x')).toHaveAttribute('aria-pressed','true');expect(errors).toEqual([]);
 });
 
 test('M17 touch drag preserves grab point; pinch cannot inspect or zoom the eye; translation works',async({page,browserName},info)=>{
@@ -96,7 +100,7 @@ test('M17 touch drag preserves grab point; pinch cannot inspect or zoom the eye;
   await page.getByTestId('inspect-loupe').click();await ready(page);
   for(const [width,height] of [[820,1180],[390,844],[375,667],[844,390],[1180,820]]){
     await page.setViewportSize({width,height});await page.waitForTimeout(250);await ready(page);
-    await expect(page.getByTestId('inspect-loupe')).toBeVisible();await expect(page.getByTestId('loupe-effects')).toBeVisible();
+    await expect(page.getByTestId('inspect-loupe')).toBeVisible();await expect(page.getByTestId('loupe-customize')).toBeVisible();
     for(const b of await page.locator('.loupe-controls button').all()) {const box=(await b.boundingBox())!;expect(box.x).toBeGreaterThanOrEqual(0);expect(box.y).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(width+1);expect(box.y+box.height).toBeLessThanOrEqual(height+1);}
     const current=await sample(page);expect(current[0]).toBeCloseTo(translated[0]);expect(current[1]).toBeCloseTo(translated[1]);
     await page.screenshot({path:info.outputPath(`inspection-${width}x${height}.png`)});

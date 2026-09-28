@@ -92,3 +92,12 @@ export async function placeLoupeAtScreenPoint(page: Page, x: number, y: number, 
   const finalDisplay=(await canvas.evaluate(el=>(el as HTMLElement).dataset.loupeDisplay!)).split(',').map(Number);
   return {x:Math.round(finalDisplay[0]),y:Math.round(finalDisplay[1])};
 }
+
+export async function openLoupeSettings(page: Page) {
+  if (await page.getByRole('region', { name: 'Loupe settings', exact: true }).isVisible()) return;
+  await page.getByTestId('loupe-customize').click();
+  await expect(page.getByRole('region', { name: 'Loupe settings', exact: true })).toBeVisible();
+}
+export async function closeLoupeSettings(page: Page) {
+  if (await page.getByRole('region', { name: 'Loupe settings', exact: true }).isVisible()) await page.getByRole('button', { name: 'Done', exact: true }).click();
+}

@@ -32,8 +32,8 @@ For complete physical standards (KS-1870 / ISO 1007), coordinate spaces, modific
 
 ### 3. Physical Loupe & Optical Magnification
 - **Tactile Inspection Loupe:** Drag to inspect fine film grain and edge markings across frames.
-- **Magnification Modes:** Discrete presets (2.5x, 4x, 8x) and continuous optical macro zoom up to 1000%.
-- **Fixed-Size Optical Barrel:** Authentic glass shading, feathered reflections, and distortion.
+- **Magnification Modes:** Discrete presets (2×, 4×, 8×) and keyboard adjustment up to 10×.
+- **Loupe Styles & Sizes:** Choose the classic optical barrel or a clear glass hemisphere, each in Small, Medium or Large. Open Loupe settings to expand a single dock containing style, size, magnification and optical effects. Drag the loupe or explore its lens while settings stay open; Done or Escape collapses the dock. The glass hemisphere preserves transmitted colors without simulated reflections or a cloudy tint. Size changes the viewing area independently of magnification. Style and size are remembered across rolls and visits.
 
 ### 4. Flexible Roll Sizing & Multi-Format Support
 - **Film Formats:** Support for **35mm** (36 × 24 mm) and **120 medium format** (6×4.5, 6×6, 6×7, 6×9).

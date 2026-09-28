@@ -8,7 +8,7 @@ import { getFilmStock } from '../data/filmStocks';
 import { focusFrameLayout } from '../utils/rollLayout';
 import { photoCropPreview } from '../utils/photoFraming';
 import { FilmStripHeader } from './FilmStripHeader';
-export type MobileSheet = 'tools' | 'frames' | null;
+export type MobileSheet = 'tools' | 'frames' | 'loupe' | null;
 export function MobileControls({state,dispatch,onOpenLibrary,onOpenRoom,onOpenTable,onOpenCameras,sheet,setSheet,emptyRollMessage,ownerActions,createAction,roomNavigation=false,roomOnly=false}:{state:ViewerState;dispatch:React.Dispatch<ViewerAction>;onOpenLibrary:()=>void;onOpenRoom:()=>void;onOpenTable:()=>void;onOpenCameras?:()=>void;sheet:MobileSheet;setSheet:(s:MobileSheet)=>void;emptyRollMessage?:string;createAction?:ReactNode;ownerActions?:ReactNode;roomNavigation?:boolean;roomOnly?:boolean}) {
   const dialog=useRef<HTMLDialogElement>(null);
   const room=roomOnly || state.roomMode==='room',stock=getFilmStock(state.filmStockId);

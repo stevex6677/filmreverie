@@ -67,7 +67,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   const multi = state.roll !== BASELINE_ROLL;
   const tableSize = lightTableSize(state.roll);
   const strips = useMemo(() => createRollLayout(state.roll), [state.roll]);
-  const view = state.loupe.inspecting ? loupeInspectionView(state.loupe.worldX, state.loupe.worldY, state.loupe.scale, size.width / size.height) : { zoom: state.inspectZoom, pan: state.inspectPan };
+  const view = state.loupe.inspecting ? loupeInspectionView(state.loupe.worldX, state.loupe.worldY, state.loupe.scale, size.width / size.height, state.loupe.type) : { zoom: state.inspectZoom, pan: state.inspectPan };
   const priority = state.loupe.isActive ? state.loupe.frameIndex : state.activeFrameIndex;
   const gate=focusFrameLayout(state.roll,priority);
   const projected=gate.frameWidth*state.roll.scale/(2*view.zoom*Math.tan(Math.PI/8))*size.height*gl.getPixelRatio();
@@ -187,6 +187,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
 
         {/* Magnifying Loupe */}
         <Loupe
+          type={state.loupe.type}
           touchInput={state.touchPointer}
           physicalScale={state.loupe.scale}
           suspended={!showRoll}

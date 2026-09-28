@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialViewerState, viewerReducer, ViewerAction } from '../../src/state/viewerState';
 import { FULL_ROLL_FIXTURE, locateFrame } from '../../src/utils/rollLayout';
-import { loupeInspectionView } from '../../src/utils/loupeView';
+import { loupeInspectionView, LOUPE_SIZE_SCALE } from '../../src/utils/loupeView';
 
 const active = () => viewerReducer(createInitialViewerState(), { type:'SET_LOUPE_ACTIVE', active:true });
 const inspecting = () => viewerReducer(viewerReducer(active(), {type:'INSPECT_LOUPE'}), {type:'SET_TRANSITIONING',isTransitioning:false});
@@ -16,7 +16,7 @@ describe('M17 three-state physical loupe',()=>{
           s=viewerReducer(s,{type:'SET_TABLE_ZOOM',zoom});
           const before=s.inspectZoom;
           s=viewerReducer(s,{type:'SET_LOUPE_ACTIVE',active:true});
-          expect(s.loupe.scale).toBe(physicalScale);expect(s.loupe.scale/roll.scale).toBe(1);expect(s.inspectZoom).toBe(before);
+          expect(s.loupe.scale).toBe(physicalScale);expect(s.loupe.scale/roll.scale).toBeCloseTo(LOUPE_SIZE_SCALE[s.loupe.size]);expect(s.inspectZoom).toBe(before);
           s=viewerReducer(s,{type:'SET_LOUPE_ACTIVE',active:false});
           expect(s.loupe.scale).toBe(physicalScale);
         }

@@ -1,7 +1,7 @@
 import { createRollLayout, BASELINE_ROLL, RollDefinition, InspectionLevel, locateFrame, mapRollPoint, fitRollView, clampRollPan, clampFocusPan, anchoredZoom } from "../utils/rollLayout";
 import { DEFAULT_FILM_STOCK_ID, FilmStockId, getFilmStock, isFilmStockId } from "../data/filmStocks";
 import { DEFAULT_LAYOUT, getFrameCenter } from "../utils/loupeMapping";
-import { clampLoupePosition } from '../utils/loupeView';
+import { clampLoupePosition, isLoupeSize, isLoupeType, LOUPE_SIZE_SCALE, type LoupeSize, type LoupeType } from '../utils/loupeView';
 import {
   DEFAULT_ROOM_POSE,
   RoomCameraPose,
@@ -20,6 +20,8 @@ export type FilmMode = "negative" | "positive";
 export type RoomMode = "inspect" | "room";
 
 export interface LoupeState {
+  type: LoupeType;
+  size: LoupeSize;
   isActive: boolean;
   inspecting: boolean;
   opticalEffects: boolean;
@@ -90,10 +92,12 @@ export const INITIAL_VIEWER_STATE: ViewerState = {
   filmStockId: DEFAULT_FILM_STOCK_ID,
   filmStrength: DEFAULT_FILM_STRENGTH,
   loupe: {
+    type: 'classic',
+    size: 'medium',
     isActive: false,
     inspecting: false,
     opticalEffects: true,
-    scale: 1,
+    scale: BASELINE_ROLL.scale * LOUPE_SIZE_SCALE.medium,
     worldX: defaultFrameCenter.x,
     worldY: defaultFrameCenter.y,
     frameIndex: 0,
@@ -126,7 +130,7 @@ export function createInitialViewerState(initialRoomMode: RoomMode = "inspect", 
     ...INITIAL_VIEWER_STATE,
     roomMode: initialRoomMode,
     roll,
-    loupe: { ...INITIAL_VIEWER_STATE.loupe, scale: roll.scale, worldX: locateFrame(roll, 0).x, worldY: locateFrame(roll, 0).y },
+    loupe: { ...INITIAL_VIEWER_STATE.loupe, scale: roll.scale * LOUPE_SIZE_SCALE[INITIAL_VIEWER_STATE.loupe.size], worldX: locateFrame(roll, 0).x, worldY: locateFrame(roll, 0).y },
     savedRoomPose: { ...DEFAULT_ROOM_POSE },
     inspectZoom: fitRollView(roll, "roll", 0).zoom,
     inspectPan: { x: 0, z: TABLE_CENTER_Z },
@@ -146,6 +150,8 @@ export type ViewerAction =
   | { type: "INSPECT_LOUPE" }
   | { type: "PULL_BACK_LOUPE" }
   | { type: "SET_LOUPE_EFFECTS"; enabled: boolean }
+  | { type: "SET_LOUPE_TYPE"; loupeType: LoupeType }
+  | { type: "SET_LOUPE_SIZE"; size: LoupeSize }
   | { type: "MOVE_LOUPE"; dx: number; dy: number }
   | { type: "INPUT_TOUCH"; active: boolean }
   | { type: "TOUCH_POINTER"; active: boolean }
@@ -232,6 +238,10 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       return { ...state, loupe: { ...state.loupe, inspecting: false }, isTransitioning: true, transitionKind: 'loupe' };
     case "SET_LOUPE_EFFECTS":
       return { ...state, loupe: { ...state.loupe, opticalEffects: action.enabled } };
+    case "SET_LOUPE_TYPE":
+      return isLoupeType(action.loupeType) ? { ...state, loupe: { ...state.loupe, type: action.loupeType } } : state;
+    case "SET_LOUPE_SIZE":
+      return isLoupeSize(action.size) ? { ...state, loupe: { ...state.loupe, size: action.size, scale: state.roll.scale * LOUPE_SIZE_SCALE[action.size] } } : state;
     case "MOVE_LOUPE":
       if (!state.loupe.isActive || state.isTransitioning || ![action.dx, action.dy].every(Number.isFinite)) return state;
       return viewerReducer(state, { type: 'SET_LOUPE_POSITION', x: state.loupe.worldX + action.dx, y: state.loupe.worldY + action.dy });
@@ -273,6 +283,9 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       next.savedRoomPose = state.savedRoomPose;
       next.loupe.opticalEffects = state.loupe.opticalEffects;
       next.loupe.magnification = state.loupe.magnification;
+      next.loupe.type = state.loupe.type;
+      next.loupe.size = state.loupe.size;
+      next.loupe.scale = action.roll.scale * LOUPE_SIZE_SCALE[state.loupe.size];
       next.touchInput = state.touchInput;
       next.touchPointer = state.touchPointer;
       next.viewportAspect = state.viewportAspect;
