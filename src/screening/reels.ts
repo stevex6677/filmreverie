@@ -10,13 +10,12 @@ export interface ReelOptions {
   stockType: 'negative' | 'reversal';
 }
 
-export const REEL_LABEL: Record<ReelId, string> = { tracking: 'Tracking Shot', develop: 'Develop', projector: 'Projector', darkroom: 'Darkroom', flyover: 'Flyover', orbit: 'Orbit' };
+export const REEL_LABEL: Record<ReelId, string> = { tracking: 'Tracking Shot', develop: 'Develop', projector: 'Projector', darkroom: 'Darkroom', orbit: 'Orbit' };
 export const REEL_DESCRIPTION: Record<ReelId, string> = {
   tracking: 'A low camera tracks along each strip and moves in on details.',
   develop: 'A band of light turns each negative into a photograph.',
   projector: 'After a countdown, each frame slides into a lit projector gate.',
   darkroom: 'From the darkroom to the light table, and back into the room.',
-  flyover: 'A low flight over the film that rises over each photograph.',
   orbit: 'Slow arcs around each photograph on the glowing table.',
 };
 export const PACE_LABEL: Record<Pace, string> = { relaxed: 'Relaxed', normal: 'Normal', brisk: 'Brisk' };
@@ -169,46 +168,6 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     const end = b.time;
     b.step('return', 'close', n - 1, 3.4, { camera: cabinet, light: 0, ambient: 1 });
     b.card('end', end + b.seconds(.4), b.time);
-    b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
-    return finishTimeline(b, { ...info, revealMode: null });
-  }
-
-  if (options.reel === 'flyover') {
-    // A drone-like camera skims just above the film, looking across the strip
-    // and travelling rightward so photographs pass from right to left. Over each
-    // frame it rises and pitches down until the photograph fills the screen.
-    const skimHeight = .018, skimTilt = degrees(78);
-    const skim = (x: number, index: number): CameraPose => ({ zoom: skimHeight / Math.cos(skimTilt), pan: tablePan(x, frameAt(index).y), tilt: skimTilt, yaw: 0 });
-    const before = (index: number) => { const frame = frameAt(index); return skim(frame.x - frame.width / 2 - frame.gap / 2, index); };
-    const after = (index: number) => { const frame = frameAt(index); return skim(frame.x + frame.width / 2 + frame.gap / 2, index); };
-    const top = (index: number): CameraPose => ({ ...f.frame(index), zoom: f.frame(index).zoom * .9 });
-    const b = new TimelineBuilder(f.overview, scale, reduced);
-    b.fade(b.seconds(.8), 0);
-    b.step('establish', 'open', 0, 3, { camera: drift(f.overview), drift: true });
-    b.card('title', b.seconds(.4), b.seconds(2.8));
-    b.step('tour', 'push-in', 0, 2.2, { camera: reduced ? top(0) : before(0), beat: true });
-    for (let i = 0; i < n; i++) {
-      if (i > 0 && frameAt(i).localIndex === 0) {
-        // A banking climb off the strip, then a turning descent onto the next.
-        const bank: CameraPose = { ...f.overview, zoom: f.overview.zoom * .8, pan: tablePan(0, (frameAt(i - 1).y + frameAt(i).y) / 2), tilt: degrees(45), roll: degrees(12) };
-        if (breaks.has(i)) {
-          b.step('break', 'pull-back', i, 1.4, { camera: bank });
-          b.step('break', 'overview', i, 1, { camera: { ...f.overview, tilt: degrees(20) } });
-          b.step('break', 'push-in', i, 1.6, { camera: reduced ? top(i) : { ...before(i), roll: 0 }, beat: true });
-        } else {
-          b.step('tour', 'rise', i, 1, { camera: { ...bank, zoom: bank.zoom * .7 } });
-          b.step('tour', 'push-in', i, 1.2, { camera: reduced ? top(i) : before(i), beat: true });
-        }
-      } else if (i > 0 && reduced) b.step('tour', 'glide', i, 1, { camera: top(i), beat: true });
-      if (!reduced) b.step('tour', 'rise', i, 1, { camera: top(i), beat: i > 0 && frameAt(i).localIndex > 0 });
-      b.step('tour', 'frame', i, .6 * holdScale, { camera: drift(top(i), .3), drift: true });
-      // Dive back down to skim the gap after the frame.
-      if (!reduced) b.step('tour', 'descend', i, .9, { camera: after(i) });
-    }
-    b.step('return', 'pull-back', n - 1, 2.2, { camera: f.overview });
-    const end = b.time;
-    b.step('return', 'close', n - 1, 3.4, { camera: drift(f.overview), drift: true });
-    b.card('end', end + b.seconds(.3), b.time);
     b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
     return finishTimeline(b, { ...info, revealMode: null });
   }

@@ -101,15 +101,14 @@ describe('M22 screening timelines', () => {
       for (const sample of samples(timeline, 1 / 15)) {
         const { zoom, pan, tilt } = sample.camera, eye = poseEye(sample.camera);
         expect([zoom, pan.x, pan.z, tilt, sample.light, sample.fade, ...eye].every(Number.isFinite), name).toBe(true);
-        // Flyover skims ~3 mm above the film (which lies ~5 mm above the diffuser); others stay well clear.
-        expect(eye[1] - TABLE_SURFACE_Y, `${name} ${reel} ${sample.kind}`).toBeGreaterThan(reel === 'flyover' ? .012 : .03);
+        expect(eye[1] - TABLE_SURFACE_Y, `${name} ${reel} ${sample.kind}`).toBeGreaterThan(.03);
         const room = reel === 'darkroom' && (sample.act === 'establish' || sample.act === 'return');
         if (room) {
           // Room shots stay inside the room, looking at most slightly up (as the room view does).
           expect(Math.abs(eye[0])).toBeLessThan(ROOM_ENVELOPE.width / 2); expect(eye[2]).toBeGreaterThan(ROOM_ENVELOPE.front); expect(eye[2]).toBeLessThan(ROOM_ENVELOPE.back);
           expect(tilt).toBeLessThanOrEqual(100 * Math.PI / 180);
         } else {
-          expect(Math.abs(pan.x), `${name} ${reel} ${aspect}`).toBeLessThanOrEqual(halfWidth + (reel === 'projector' || reel === 'flyover' ? pitch : 1e-9));
+          expect(Math.abs(pan.x), `${name} ${reel} ${aspect}`).toBeLessThanOrEqual(halfWidth + (reel === 'projector' ? pitch : 1e-9));
           expect(Math.abs(TABLE_CENTER_Z - pan.z)).toBeLessThanOrEqual(halfHeight + 1e-6);
           expect(tilt).toBeLessThanOrEqual(80 * Math.PI / 180 + 1e-9);
         }

@@ -49,7 +49,7 @@ async function library(page: Page, name = 'darkroom-guest-rolls') {
 }
 const player = (page: Page) => page.getByTestId('screening-player');
 const time = async (page: Page) => Number(await player(page).getAttribute('data-time'));
-async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Projector' | 'Darkroom' | 'Flyover' | 'Orbit', pace = 'Normal', format = '16:9') {
+async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Projector' | 'Darkroom' | 'Orbit', pace = 'Normal', format = '16:9') {
   // Phones hide the Focus header button; Settings offers Screen roll in every layout.
   if (await page.getByTestId('screen-roll').isVisible()) await page.getByTestId('screen-roll').click();
   else { await openViewingTools(page); await page.getByTestId('screen-roll-tools').click(); }
@@ -214,15 +214,15 @@ test('Screen roll waits for the loupe to be put away, hides it while screening a
   await expect(page.locator('main')).toHaveAttribute('data-loupe-state', 'activated');
 });
 
-test('Darkroom, Flyover and Orbit preview in the actual scene, seek by frame and restore the table', async ({ page }, info) => {
+test('Darkroom and Orbit preview in the actual scene, seek by frame and restore the table', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/guest?mode=inspect&deterministic=true'); await ready(page);
   const before = await table(page), stored = await library(page);
   const overview = PNG.sync.read(await captureCanvas(page));
   await page.getByTestId('screen-roll').click();
-  await expect(page.getByRole('dialog', { name: 'Screen roll' }).getByRole('radio')).toHaveCount(6 + 3 + 3);
+  await expect(page.getByRole('dialog', { name: 'Screen roll' }).getByRole('radio')).toHaveCount(5 + 3 + 3);
   await page.getByRole('button', { name: 'Close', exact: true }).click();
-  for (const [reel, id] of [['Darkroom', 'darkroom'], ['Flyover', 'flyover'], ['Orbit', 'orbit']] as const) {
+  for (const [reel, id] of [['Darkroom', 'darkroom'], ['Orbit', 'orbit']] as const) {
     await (await pickReel(page, reel, 'Brisk')).getByTestId('screening-preview').click();
     await expect(page.locator('main')).toHaveAttribute('data-screening-reel', id);
     await expect.poll(() => time(page), { timeout: 30000 }).toBeGreaterThan(2);

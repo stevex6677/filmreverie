@@ -9,6 +9,9 @@ Browser emulation is not iPad acceptance. Nothing was pushed or deployed.
 
 ## Additional reels: Darkroom, Flyover, Orbit (M22.6, 2026-09-27)
 
+**Flyover was removed after review** (the user did not like it); Darkroom and
+Orbit were kept. The Flyover notes below are historical.
+
 Implemented at the user's request (Projector left unchanged: its leader
 stops at 2, as a real SMPTE/Academy leader does). Camera poses gained an
 optional target height, roll and field of view.
