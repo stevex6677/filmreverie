@@ -115,7 +115,7 @@ describe('M22 screening timelines', () => {
         expect(2 * pose.zoom * Math.tan(Math.PI / 8) * aspect).toBeGreaterThan(width * .9);
       }
     }
-  });
+  }, 60000); // An exhaustive sweep of every roll, aspect and reel.
 
   it('develop reveals every negative in order and uses a backlight reveal for reversal stock', () => {
     for (const stockType of ['negative', 'reversal'] as const) {

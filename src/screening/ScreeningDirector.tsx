@@ -90,10 +90,11 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
         resize(width, height, 1);
       },
       async prepare(time, signal) {
-        const index = session.timeline.sample(time).frameIndex, ahead = session.timeline.sample(time + 1.5).frameIndex;
+        // The loader keeps the focused frame and its neighbours resident; the
+        // photograph on screen is always loaded before it is rendered.
+        const index = session.timeline.sample(time).frameIndex;
         if (session.focusFrame !== index) { session.focusFrame = index; session.emit(); }
-        // Every rendered frame uses the loaded photograph, never a placeholder.
-        for (let waited = 0; !(session.textureReady(index) && session.textureReady(ahead)) && waited < 20000; waited += 25) {
+        for (let waited = 0; !session.textureReady(index) && waited < 20000; waited += 25) {
           if (signal.aborted) return;
           await wait(25);
         }

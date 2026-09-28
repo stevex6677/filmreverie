@@ -66,7 +66,8 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     const loupeRadius = loupeGeometry(options.loupe.type).radius * options.loupe.scale;
     const bottom = f.strips[f.strips.length - 1];
     const rest: LoupePose = { x: f.halfWidth + loupeRadius * 1.6, y: bottom.y, lift: 0, magnification: 4 };
-    const establishing = f.whole((rest.x + loupeRadius * 2.2) * 2, f.span * 1.2);
+    // The loupe's raised rim projects outward in perspective; keep it clear of the edge.
+    const establishing = f.whole((rest.x * 1.12 + loupeRadius * 2.4) * 2, f.span * 1.2);
     const at = (index: number, lift = 0, magnification = 4): LoupePose => { const frame = locateFrame(roll, index); return { x: frame.x, y: frame.y, lift, magnification }; };
     // A low, angled eye that follows the lens along the film.
     const walk = (index: number, point: LoupePose = at(index)): CameraPose => ({ zoom: f.frame(index).zoom * 1.85, pan: tablePan(point.x, point.y), tilt: degrees(32), yaw: degrees(-8) });
