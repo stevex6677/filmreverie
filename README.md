@@ -93,6 +93,31 @@ server; the guest darkroom remains browser-local.
 `npm run validate:m21` includes the app/Worker builds, cumulative integration/E2E
 suites and all three standalone viewer gates; hosted checks remain separate.
 
+### 8. Screening: roll tours and video export
+On the light table (Overview or Focus, loupe put away), **Screen roll** plays an
+automatic tour of the whole roll in the actual table scene: **Tracking Shot** (a
+low camera tracks along each strip and moves in on details), **Develop** (a band
+of light turns each negative positive, or brings up the backlight behind reversal
+film) or **Projector** (the room goes dark, a countdown is projected in the lamp-lit
+gate, and frames slide in from the right on a regular beat), **Darkroom** (from the
+room to the light table and back), **Orbit** (slow arcs around each photograph),
+**Drying Line** (each strip becomes a line of prints hung in the darkroom) or
+**Documentary** (each photograph fills the screen, drifting and dissolving). Each reel has
+an establishing shot, a frame-by-frame tour with overview breaks at strip
+boundaries, and a closing shot, at Relaxed, Normal or Brisk pace; reduced motion
+uses slow cuts instead of fast moves, blur and flicker. Preview supports
+play/pause, previous/next frame, tap to pause and exit; exiting restores the table
+exactly, and screening never writes rolls or saved views.
+
+**Export video** renders the same timeline frame by frame into a silent 30 fps
+H.264 MP4 at 1280 × 720, 720 × 1280 or 720 × 720, entirely in the browser with
+WebCodecs and an in-repo MP4 writer; nothing is uploaded. It works for published,
+guest and offline rolls, and saves through the share sheet (iPad: Save Video) or a
+download. The export code loads on demand and is part of offline preparation.
+iPad Safari is the acceptance target; physical-device evidence is pending. See
+[Screening review](docs/SCREENING_REVIEW.md). `npm run validate:m22` runs the
+production build, cumulative integration/E2E suites and standalone viewer gates.
+
 ---
 
 ## Getting Started

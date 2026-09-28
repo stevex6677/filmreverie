@@ -77,5 +77,7 @@ export function useRollTextures(roll:RollDefinition,priority:number,retry:number
     const detail=i===priority?[...snapshot.loaded].filter(([k])=>k.startsWith(`detail:${frame.src}:`)).sort((a,b)=>Number(b[0].split(':').at(-1))-Number(a[0].split(':').at(-1)))[0]?.[1]:undefined;
     return detail??snapshot.loaded.get(frame.src)??(frame.thumbnailSrc?snapshot.loaded.get(frame.thumbnailSrc):undefined)??placeholder;
   });
-  return {textures,failed:snapshot.failed,settled:snapshot.settled,loadedCount:snapshot.loaded.size,bytes:snapshot.bytes,detailStatus:snapshot.detailStatus};
+  // Viewing-resolution readiness per frame (a failed source is final, not pending).
+  const ready=roll.frames.map(frame=>snapshot.loaded.has(frame.src)||snapshot.failed.includes(frame.src));
+  return {textures,ready,failed:snapshot.failed,settled:snapshot.settled,loadedCount:snapshot.loaded.size,bytes:snapshot.bytes,detailStatus:snapshot.detailStatus};
 }

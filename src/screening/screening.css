@@ -1,0 +1,64 @@
+/* Screening: touch-first (44 px targets) and safe-area aware for iPad first. */
+.screen-roll-button { display:inline-flex; align-items:center; gap:8px; }
+.table-controls .screen-roll-button.is-launch { position:absolute; left:50%; bottom:calc(34px + env(safe-area-inset-bottom)); transform:translateX(-50%); padding:10px 18px; border-radius:22px; background:#1b1e23f2; border-color:#5a5446; color:#f1dfc3; box-shadow:0 8px 28px #0004; }
+.table-controls .screen-roll-button.is-launch:hover { background:#262a30; border-color:#d9bc86; }
+/* Phones keep the one-row Focus header; Overview and Settings still offer Screen roll. */
+@media(max-width:480px) { .table-header .screen-roll-button { display:none; } }
+
+.screening-picker { position:fixed; inset:0; margin:auto; height:fit-content; width:min(560px,calc(100vw - 24px)); max-height:calc(var(--visible-height,100dvh) - 24px); padding:0; border:1px solid #4b4e53; border-radius:18px; background:#1a1d21; color:#ebe7dc; box-shadow:0 24px 80px #000a; }
+.screening-picker::backdrop { background:#050607b0; }
+.screening-picker-body { max-height:calc(var(--visible-height,100dvh) - 24px); box-sizing:border-box; overflow-y:auto; overscroll-behavior:contain; padding:18px 20px max(18px,env(safe-area-inset-bottom)); }
+.screening-picker header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.screening-picker h2 { margin:0; font:400 1.35rem Georgia,serif; }
+dialog.screening-picker button { min-width:44px; min-height:44px; padding:10px 16px; border:1px solid #4a4d51; border-radius:10px; background:#25282d; color:inherit; font:inherit; cursor:pointer; }
+dialog.screening-picker header button { border-color:transparent; background:transparent; font-size:1.4rem; padding:0; }
+.screening-picker fieldset { margin:0 0 14px; padding:0; border:0; min-width:0; }
+.screening-picker legend { margin-bottom:8px; font-size:.75rem; color:#bdb8aa; letter-spacing:.04em; text-transform:uppercase; }
+.screening-reels { display:grid; gap:8px; }
+@media(min-width:620px) { .screening-picker { width:min(680px,calc(100vw - 24px)); } .screening-reels { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+.screening-segmented { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+.screening-choice { position:relative; cursor:pointer; }
+.screening-choice input { position:absolute; opacity:0; width:1px; height:1px; }
+.screening-choice-card { display:flex; flex-direction:column; justify-content:center; gap:3px; min-height:44px; padding:9px 12px; border:1px solid #43464a; border-radius:11px; background:#ffffff04; }
+.screening-segmented .screening-choice-card { align-items:center; text-align:center; padding:7px 4px; }
+.screening-choice-card strong { font-weight:500; font-size:.92rem; }
+.screening-choice-card small { color:#aaa9a0; font-size:.74rem; }
+.screening-choice input:checked + .screening-choice-card { border-color:#d9bc86; background:#d9bc8614; color:#f3dbac; }
+.screening-choice input:focus-visible + .screening-choice-card { outline:2px solid #f1d6a4; outline-offset:2px; }
+.screening-estimate { margin:4px 0 2px; font-size:.9rem; }
+.screening-note { margin:4px 0 0; color:#9fa19b; font-size:.75rem; }
+.screening-picker footer { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+dialog.screening-picker .is-primary, div.screening-export .is-primary { background:#d9bc86; border-color:#d9bc86; color:#1b1a16; font-weight:600; }
+
+.screening-player { position:absolute; inset:0; z-index:40; color:#efe9da; }
+.screening-overlay { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+/* Every reel opens from black; cover the table until the first screening frame is drawn. */
+.screening-overlay:not([data-drawn]) { background:#000; }
+/* Specific enough to override the touch layout's generic button styling. */
+.screening-player .screening-stage { position:absolute; inset:0; width:100%; height:100%; min-width:0; min-height:0; padding:0; border:0; border-radius:0; background:transparent; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.screening-player[data-controls=hidden] { cursor:none; }
+.screening-player[data-controls=hidden] .screening-top, .screening-player[data-controls=hidden] .screening-bar { opacity:0; pointer-events:none; }
+.screening-top { position:absolute; top:0; left:0; right:0; display:flex; align-items:center; gap:14px; padding:max(14px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 14px max(16px,env(safe-area-inset-left)); background:linear-gradient(#000a,transparent); transition:opacity .3s; pointer-events:none; }
+.screening-title { font:400 .95rem Georgia,serif; color:#d8cfb8; }
+.screening-bar { position:absolute; left:50%; bottom:calc(22px + env(safe-area-inset-bottom)); transform:translateX(-50%); display:flex; align-items:center; gap:6px; width:max-content; max-width:calc(100% - 24px); padding:6px; border:1px solid #3e4144; border-radius:16px; background:#16181bf0; box-shadow:0 10px 36px #0006; transition:opacity .3s; }
+.screening-player button:not(.screening-stage) { min-width:44px; min-height:44px; padding:8px 12px; border:1px solid transparent; border-radius:10px; background:transparent; color:inherit; font:inherit; font-size:.9rem; cursor:pointer; pointer-events:auto; }
+.screening-player button:not(.screening-stage):hover { background:#ffffff10; }
+.screening-player button:focus-visible { outline:2px solid #f1d6a4; outline-offset:2px; }
+.screening-exit { border-color:#4a4d51 !important; background:#16181bd0 !important; }
+.screening-counter { min-width:62px; text-align:center; font-variant-numeric:tabular-nums; }
+.screening-counter span, .screening-clock { color:#a9a698; font-size:.8rem; font-variant-numeric:tabular-nums; }
+.screening-bar progress { width:min(220px,22vw); height:4px; accent-color:#d9bc86; }
+.screening-export-button { border-color:#5a5446 !important; }
+@media(max-width:700px) {
+  .screening-bar { flex-wrap:wrap; justify-content:center; width:calc(100% - 24px); }
+  .screening-bar progress { order:5; width:100%; }
+  .screening-clock { display:none; }
+}
+
+.screening-export { position:fixed; inset:0; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:max(24px,env(safe-area-inset-top)) 20px max(24px,env(safe-area-inset-bottom)); background:#0c0d0f; color:#ebe7dc; text-align:center; }
+.screening-export h2 { margin:0; font:400 1.4rem Georgia,serif; }
+.screening-export-preview { width:auto; height:auto; max-width:min(720px,92vw); max-height:min(52vh,var(--visible-height,100dvh) - 260px); border:1px solid #33363a; border-radius:8px; background:#000; }
+.screening-export progress { width:min(520px,86vw); height:6px; accent-color:#d9bc86; }
+.screening-export p { max-width:560px; margin:0; font-variant-numeric:tabular-nums; }
+div.screening-export button { min-width:44px; min-height:44px; padding:10px 18px; border:1px solid #4a4d51; border-radius:10px; background:#25282d; color:inherit; font:inherit; cursor:pointer; }
+.screening-export-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }

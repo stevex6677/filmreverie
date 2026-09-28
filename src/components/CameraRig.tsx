@@ -15,6 +15,8 @@ import {
 } from "../utils/cameraBounds";
 import { TableAngle, TOP_DOWN, tableCameraPose, tablePointAt } from "../utils/tableCamera";
 import { RoomMode } from "../state/viewerState";
+import type { CameraPose } from "../screening/timeline";
+import { applyScreeningPose } from "../screening/camera";
 
 interface CameraRigProps {
   shelfDetailSlot?: number;
@@ -44,6 +46,8 @@ interface CameraRigProps {
   livePose?: React.MutableRefObject<{ zoom: number; pan: { x: number; z: number }; active: boolean }>;
   isDeterministic?: boolean;
   isReducedMotion?: boolean;
+  /** Screening owns the camera while it returns a pose; the table is restored afterwards. */
+  screeningPose?: () => CameraPose | null;
 }
 
 export const CameraRig: React.FC<CameraRigProps> = ({
@@ -74,6 +78,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   livePose,
   isDeterministic = false,
   isReducedMotion = false,
+  screeningPose,
 }) => {
   const { camera, gl, size } = useThree();
   const cabinetFrame = useRef({ height: .65, width: .94, center: .5 });
@@ -134,6 +139,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   const shelfFlight = useRef<{ key: string; elapsed: number; position: THREE.Vector3; rotation: THREE.Quaternion; fov: number } | null>(null);
   const navigationBlocked = isTransitioning && !shelfTransition && !journeyTransition;
   const renderedAngle = useRef({ ...tableAngle });
+  const screening = useRef(false);
 
   // Spacebar tracking for table pan
   useEffect(() => {
@@ -340,6 +346,17 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   useFrame((_, delta) => {
     const inspecting = roomMode === "inspect";
     const perspective = camera as THREE.PerspectiveCamera;
+    const screen = screeningPose?.();
+    if (screen) {
+      applyScreeningPose(perspective, screen);
+      flight.current = null; lastTarget.current = ''; screening.current = true;
+      gl.domElement.dataset.cameraPosition = camera.position.toArray().join(",");
+      gl.domElement.dataset.cameraQuaternion = camera.quaternion.toArray().join(",");
+      return;
+    }
+    // Exiting a screening returns to the unchanged table pose in one frame.
+    const resumed = screening.current;
+    if (resumed) { screening.current = false; renderedAngle.current = { ...tableAngle }; }
     const live = livePose?.current;
     const effectiveZoom = (live?.active && inspecting) ? live.zoom : inspectZoom;
     const effectivePan = (live?.active && inspecting) ? live.pan : inspectPan;
@@ -380,7 +397,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     const detailJourney = detailMotion.current.moving;
     const automaticShelfMotion = shelfTransition || detailJourney;
     const angleChanging = Math.abs(renderedAngle.current.tilt - tableAngle.tilt) + Math.abs(renderedAngle.current.yaw - tableAngle.yaw) > .00001;
-    const immediate = angleDragging || isDeterministic || isReducedMotion || (!inspecting && !isTransitioning && !detailJourney) || ((touchInput || loupeInspection || live?.active) && !isTransitioning && !angleChanging && !detailJourney);
+    const immediate = resumed || angleDragging || isDeterministic || isReducedMotion || (!inspecting && !isTransitioning && !detailJourney) || ((touchInput || loupeInspection || live?.active) && !isTransitioning && !angleChanging && !detailJourney);
     const moving = !immediate && (camera.position.distanceTo(targetPos.current) > .001 || camera.quaternion.angleTo(desired.quaternion) > .001 || isPanningTableRef.current);
     if (moving !== wasMovingRef.current) { wasMovingRef.current = moving; onCameraMotion?.(moving); }
     // A finite shelf flight avoids waiting for an exponential tail to settle.

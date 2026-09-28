@@ -3,7 +3,7 @@ import { BASELINE_ROLL, createRollLayout, lightTableSize, focusFrameLayout, loca
 import { useRollTextures } from "../utils/useRollTextures";
 import { useThree, useFrame } from "@react-three/fiber";
 import { getFilmStock } from "../data/filmStocks";
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import * as THREE from "three";
 import { TABLE_SURFACE_Y, TABLE_CENTER_Z } from "../utils/cameraBounds";
 import { ViewerAction, ViewerState } from "../state/viewerState";
@@ -24,6 +24,11 @@ import { ShelfNavigation } from './ShelfNavigation';
 import { roomHitTarget } from '../utils/roomHitTarget';
 import { CameraShelf } from './CameraShelf';
 import type { CameraCollectionProgress } from '../utils/loadCameraModel';
+import type { ScreeningSession } from '../screening/session';
+import { ScreeningDirector } from '../screening/ScreeningDirector';
+import { DryingLine } from '../screening/DryingLine';
+
+const idle = () => () => {};
 
 interface ViewingTableSceneProps {
   showRoll?: boolean;
@@ -39,6 +44,8 @@ interface ViewingTableSceneProps {
   onLoadProgress?: (progress: { loaded: number; total: number; settled: boolean }) => void;
   onFirstFrameRendered?: () => void;
   onCameraSettled?: (progress: CameraCollectionProgress) => void;
+  /** An active screening overrides rendering only; viewer state is untouched. */
+  screening?: ScreeningSession | null;
 }
 
 export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
@@ -51,6 +58,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   onLoadProgress,
   onFirstFrameRendered,
   onCameraSettled,
+  screening = null,
 }) => {
   const packagingTextures = usePackagingTextures();
   const tableGroupRef = useRef<THREE.Group>(null);
@@ -68,13 +76,15 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   const tableSize = lightTableSize(state.roll);
   const strips = useMemo(() => createRollLayout(state.roll), [state.roll]);
   const view = state.loupe.inspecting ? loupeInspectionView(state.loupe.worldX, state.loupe.worldY, state.loupe.scale, size.width / size.height, state.loupe.type) : { zoom: state.inspectZoom, pan: state.inspectPan };
-  const priority = state.loupe.isActive ? state.loupe.frameIndex : state.activeFrameIndex;
+  const screeningFocus = useSyncExternalStore(screening?.subscribe ?? idle, () => screening?.focusFrame ?? -1);
+  const priority = screening ? screeningFocus : state.loupe.isActive ? state.loupe.frameIndex : state.activeFrameIndex;
   const gate=focusFrameLayout(state.roll,priority);
   const projected=gate.frameWidth*state.roll.scale/(2*view.zoom*Math.tan(Math.PI/8))*size.height*gl.getPixelRatio();
   const selected=state.roll.frames[priority];
   const sourcePixels=photoSourceDemand(projected,selected.aspectRatio,gate.frameWidth/gate.frameHeight,selected.rotation??0);
-  const demand=state.roomMode === "inspect" && !state.isTransitioning && !state.cameraMoving ? sourcePixels*(state.loupe.isActive?state.loupe.magnification:1) : 0;
-  const { textures, failed, settled, bytes, loadedCount, detailStatus } = useRollTextures(state.roll, priority, state.assetRetry, demand, gl.capabilities.maxTextureSize);
+  const demand=!screening && state.roomMode === "inspect" && !state.isTransitioning && !state.cameraMoving ? sourcePixels*(state.loupe.isActive?state.loupe.magnification:1) : 0;
+  const { textures, ready, failed, settled, bytes, loadedCount, detailStatus } = useRollTextures(state.roll, priority, state.assetRetry, demand, gl.capabilities.maxTextureSize);
+  useEffect(() => { if (screening) screening.textureReady = index => ready[index] ?? true; }, [screening, ready]);
   useEffect(()=>{gl.domElement.dataset.textureIds=JSON.stringify(textures.map(t=>t.uuid));gl.domElement.dataset.textureBytes=String(bytes);gl.domElement.dataset.textureCount=String(loadedCount);gl.domElement.dataset.detailStatus=detailStatus;gl.domElement.dataset.textureEdge=String(Math.max(textures[state.activeFrameIndex]?.image?.width||0,textures[state.activeFrameIndex]?.image?.height||0));},[bytes,loadedCount,detailStatus,textures,state.activeFrameIndex,gl]);
   useEffect(() => { dispatch({ type: "ASSET_STATUS", failures: failed, loading: !settled, detailStatus }); }, [failed, settled, detailStatus, dispatch]);
   useEffect(() => {
@@ -91,6 +101,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   const isPositive = state.filmMode === "positive";
 
   const handleFrameSelect = (index: number) => {
+    if (screening) return;
     if (state.isTransitioning && state.transitionKind !== "inspection" && state.transitionKind !== 'shelf' && state.transitionKind !== 'journey') return;
     if (state.roomMode === "room") {
       dispatch({ type: "APPROACH_TABLE" });
@@ -101,7 +112,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   };
 
   const handleTableClick = () => {
-    if (!showRoll || (state.isTransitioning && state.transitionKind !== 'shelf' && state.transitionKind !== 'journey')) return;
+    if (screening || !showRoll || (state.isTransitioning && state.transitionKind !== 'shelf' && state.transitionKind !== 'journey')) return;
     if (state.roomMode === "room") {
       dispatch({ type: "APPROACH_TABLE" });
     }
@@ -151,7 +162,10 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         onTransitionComplete={() => dispatch({ type: "SET_TRANSITIONING", isTransitioning: false })}
         isDeterministic={isDeterministic}
         isReducedMotion={isReducedMotion}
+        screeningPose={screening ? () => screening.sample.camera : undefined}
       />
+      {screening && <ScreeningDirector session={screening} table={tableGroupRef} roll={state.roll} brightness={state.tableBrightness} />}
+      {screening?.choice.reel === 'drying-line' && showRoll && <DryingLine roll={state.roll} textures={textures} stockId={state.filmStockId} filmStrength={state.filmStrength} session={screening} />}
 
       {/* Surrounding 3D Darkroom Environment & Workbench */}
       <DarkroomRoom cabinetOnly={cabinetOnly} benchWidth={Math.max(4.4, tableSize.width + .8)} brightness={state.tableBrightness} roomBrightness={state.roomBrightness} immediate={isDeterministic || isReducedMotion} />
@@ -179,7 +193,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
           onClick={handleTableClick}
         />
 
-        {showRoll && strips.map(strip => <group key={strip.index} position={[0, strip.y, multi ? 0.003 : 0]} scale={strip.scale}>
+        {showRoll && strips.map(strip => <group key={strip.index} userData={{ stripIndex: strip.index, frameWidth: strip.layout.frameWidth }} position={[0, strip.y, multi ? 0.003 : 0]} scale={strip.scale}>
           <FilmStrip frames={strip.frames} stock={getFilmStock(state.filmStockId)} textures={textures.slice(strip.offset, strip.offset + strip.frames.length)}
             filmStrength={state.filmStrength} isPositive={isPositive} layout={strip.layout} brightness={state.tableBrightness}
             onSelectFrame={index => handleFrameSelect(strip.offset + index)} />
@@ -190,7 +204,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
           type={state.loupe.type}
           touchInput={state.touchPointer}
           physicalScale={state.loupe.scale}
-          suspended={!showRoll}
+          suspended={!showRoll || !!screening}
           opticalEffects={state.loupe.opticalEffects}
           isActive={state.roomMode === "inspect" && state.loupe.isActive}
           targetX={state.loupe.worldX}
@@ -204,6 +218,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
           brightness={state.tableBrightness}
           isDeterministic={isDeterministic || isReducedMotion || state.loupe.inspecting}
           onClick={() => {
+            if (screening) return;
             if (state.roomMode === "inspect") {
               dispatch({ type: state.loupe.isActive ? 'INSPECT_LOUPE' : 'TOGGLE_LOUPE' });
             } else {
