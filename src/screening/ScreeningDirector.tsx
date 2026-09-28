@@ -93,7 +93,7 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
   useEffect(() => {
     let composite: HTMLCanvasElement | null = null, clock = 0;
     let outgoing: { key: number; canvas: HTMLCanvasElement } | null = null;
-    let saved: { ratio: number; width: number; height: number; time: number } | null = null;
+    let saved: { ratio: number; width: number; height: number; time: number; frameloop: 'always' | 'demand' | 'never' } | null = null;
     const perspective = camera as THREE.PerspectiveCamera;
     const resize = (width: number, height: number, ratio: number) => {
       gl.setPixelRatio(ratio); gl.setSize(width, height, false);
@@ -101,11 +101,13 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
     };
     session.engine = {
       async begin(width, height) {
-        // Export renders each frame itself; wait for the live loop to stop.
-        for (let i = 0; get().frameloop !== 'never' && i < 120; i++) await wait(16);
-        if (get().frameloop !== 'never') throw new Error('Rendering is still running.');
+        // Export renders each frame itself. Stop the live loop directly rather
+        // than waiting for React to pass the Canvas a new prop: on an iPad that
+        // re-render did not arrive in time ("Rendering is still running").
+        const state = get(), frameloop = state.frameloop;
+        state.setFrameloop('never');
         const buffer = gl.getSize(new THREE.Vector2());
-        saved = { ratio: gl.getPixelRatio(), width: buffer.x, height: buffer.y, time: session.time };
+        saved = { ratio: gl.getPixelRatio(), width: buffer.x, height: buffer.y, time: session.time, frameloop };
         composite = document.createElement('canvas'); composite.width = width; composite.height = height;
         clock = get().clock.elapsedTime;
         session.setAspect(width / height);
@@ -160,7 +162,7 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
         perspective.aspect = size.width / size.height; perspective.updateProjectionMatrix();
         session.setAspect(size.width / size.height);
         // The preview resumes where it was paused, not at the video's last frame.
-        if (saved) session.seek(saved.time);
+        if (saved) { session.seek(saved.time); get().setFrameloop(saved.frameloop); }
         composite = null; saved = null; outgoing = null;
       },
     };
