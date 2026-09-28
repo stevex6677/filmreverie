@@ -48,3 +48,27 @@ describe('M22 MP4 writer', () => {
     expect(() => new Mp4Writer(2, 2).finish()).toThrow(/No video/);
   });
 });
+
+describe('M22 MP4 writer with Annex B input', () => {
+  const start = [0, 0, 0, 1];
+  const sps = [0x67, 0x64, 0x00, 0x28, 0xac, 0xd9], pps = [0x68, 0xee, 0x3c, 0x80], idr = [0x65, 0x88, 0x84, 0x21], p = [0x41, 0x9a, 0x21];
+  const annexB = (units: number[][], index: number, key: boolean): VideoChunk => {
+    const data = new Uint8Array(units.flatMap((unit, i) => [...(i ? [0, 0, 1] : start), ...unit]));
+    return { type: key ? 'key' : 'delta', timestamp: Math.round(index * 1e6 / 30), duration: Math.round(1e6 / 30), byteLength: data.length, copyTo: dest => dest.set(data) };
+  };
+  it('builds avcC from in-band parameter sets and stores length-prefixed samples', async () => {
+    const writer = new Mp4Writer(1280, 720);
+    writer.add(annexB([[0x09, 0xf0], sps, pps, idr], 0, true));
+    writer.add(annexB([p], 1, false));
+    const bytes = new Uint8Array(await writer.finish().arrayBuffer()), mp4 = readMp4(bytes);
+    expect(mp4.hasAvcC).toBe(true);
+    // Sample 1: one length-prefixed IDR unit, without AUD, SPS or PPS.
+    expect(mp4.sizes).toEqual([4 + idr.length, 4 + p.length]);
+    expect([...bytes.subarray(mp4.chunkOffset, mp4.chunkOffset + 8)]).toEqual([0, 0, 0, idr.length, ...idr]);
+  });
+  it('treats encoder avcC output as length-prefixed even when a unit is 256–511 bytes', async () => {
+    const writer = new Mp4Writer(2, 2), payload = new Uint8Array(4 + 300); payload.set([0, 0, 1, 44, 0x65]);
+    writer.add({ type: 'key', timestamp: 0, duration: 33333, byteLength: payload.length, copyTo: dest => dest.set(payload) }, { decoderConfig: { description } });
+    expect(readMp4(new Uint8Array(await writer.finish().arrayBuffer())).sizes).toEqual([304]);
+  });
+});

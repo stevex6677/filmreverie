@@ -38,11 +38,31 @@ function toBytes(source: AllowSharedBufferSource) {
     ? new Uint8Array(source.slice(0)) : new Uint8Array((source as ArrayBufferView).buffer.slice((source as ArrayBufferView).byteOffset, (source as ArrayBufferView).byteOffset + (source as ArrayBufferView).byteLength));
 }
 
+/** Split an Annex B byte stream (start-code delimited) into NAL units. */
+export function annexBUnits(data: Uint8Array): Uint8Array[] {
+  const starts: { at: number; size: number }[] = [];
+  for (let i = 0; i + 3 <= data.length; i++) {
+    if (data[i] === 0 && data[i + 1] === 0 && data[i + 2] === 1) { starts.push({ at: i + 3, size: i > 0 && data[i - 1] === 0 ? 4 : 3 }); i += 2; }
+  }
+  return starts.map((start, n) => data.subarray(start.at, n + 1 < starts.length ? starts[n + 1].at - starts[n + 1].size : data.length)).filter(unit => unit.length);
+}
+export const isAnnexB = (data: Uint8Array) => data.length > 4 && data[0] === 0 && data[1] === 0 && (data[2] === 1 || (data[2] === 0 && data[3] === 1));
+
+/** AVCDecoderConfigurationRecord from one SPS and one PPS. */
+export function avcDecoderConfig(sps: Uint8Array, pps: Uint8Array) {
+  const profile = sps[1], high = [100, 110, 122, 144].includes(profile);
+  return concat([new Uint8Array([1, profile, sps[2], sps[3], 0xff, 0xe1]), u16(sps.length), sps, u8(1), u16(pps.length), pps,
+    // High profiles carry chroma format and bit depths (4:2:0, 8-bit), with no SPS extensions.
+    ...(high ? [new Uint8Array([0xfc | 1, 0xf8, 0xf8, 0])] : [])]);
+}
+
 export class Mp4Writer {
   private samples: { data: Uint8Array; pts: number; key: boolean }[] = [];
   private description: Uint8Array | null = null;
   private colorSpace: VideoColorSpaceInit | undefined;
   private lastDuration = 0;
+  /** Decided on the first chunk: WebCodecs avcC output, or Annex B to convert. */
+  private annexB: boolean | null = null;
   readonly timescale = 90000;
   constructor(readonly width: number, readonly height: number) {}
 
@@ -53,7 +73,18 @@ export class Mp4Writer {
     if (metadata?.decoderConfig?.description) this.description = toBytes(metadata.decoderConfig.description);
     if (metadata?.decoderConfig?.colorSpace) this.colorSpace = metadata.decoderConfig.colorSpace;
     if (!this.samples.length && chunk.type !== 'key') throw new Error('The first video chunk must be a key frame.');
-    const data = new Uint8Array(chunk.byteLength); chunk.copyTo(data);
+    let data = new Uint8Array(chunk.byteLength); chunk.copyTo(data);
+    // A 256–511 byte length-prefixed unit also starts 00 00 01, so decide once.
+    if (this.annexB === null) this.annexB = !this.description && isAnnexB(data);
+    // Some encoders (WebKit among them) may emit Annex B with in-band parameter
+    // sets instead of avcC. Build the record from them and store length-prefixed
+    // NAL units without the parameter sets or access unit delimiters.
+    if (this.annexB) {
+      const units = annexBUnits(data), type = (unit: Uint8Array) => unit[0] & 0x1f;
+      const sps = units.find(unit => type(unit) === 7), pps = units.find(unit => type(unit) === 8);
+      if (!this.description && sps && pps) this.description = avcDecoderConfig(sps, pps);
+      data = concat(units.filter(unit => ![7, 8, 9].includes(type(unit))).flatMap(unit => [u32(unit.length), unit]));
+    }
     this.samples.push({ data, pts: Math.round(chunk.timestamp * this.timescale / 1e6), key: chunk.type === 'key' });
     if (chunk.duration) this.lastDuration = Math.round(chunk.duration * this.timescale / 1e6);
   }
