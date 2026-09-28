@@ -7,6 +7,34 @@ physical iPad acceptance have not been performed**: no iPad was available to
 this session, and Playwright WebKit cannot be installed on this macOS 13 host.
 Browser emulation is not iPad acceptance. Nothing was pushed or deployed.
 
+## Additional reels: Darkroom, Flyover, Orbit (M22.6, 2026-09-27)
+
+Implemented at the user's request (Projector left unchanged: its leader
+stops at 2, as a real SMPTE/Academy leader does). Camera poses gained an
+optional target height, roll and field of view.
+
+- **Darkroom:** standing eye on the film cabinet in the dim safelit room with
+  the table off (title) → tilt down to the table → dolly across the room as the
+  table glows on → lateral dolly along each strip at 24° with a 12° drop-in on
+  every frame → at strip breaks a rise and 20° turn → lift back to eye level and
+  turn to the cabinet as the table dims (end card over the room).
+- **Flyover:** skims ~3 mm above the film at 78°, looking across the strip and
+  travelling rightward, so the near sprocket rail streams past in the
+  foreground and photographs pass right to left; rises and pitches down over
+  each frame until it fills the screen, then dives into the next gap. Strip
+  changes: a banking (12°) climb and descent. Reduced motion cuts between
+  top-down reveals.
+- **Orbit:** grazing, edge-on opening along the strips rising to a
+  three-quarter view; each frame gets a descending 35° arc that resolves
+  top-down (alternating direction); breaks are a slow 90° orbit; the close is a
+  180° orbit climbing to top-down.
+- Reviewed exported frame sheets for all three in 16:9 and 9:16 (5-frame
+  example roll). Verification: 318 integration tests (eye-position checks for
+  every reel, roll, aspect and time) and all 14 M22 browser cases (10 desktop,
+  4 phone-size Chrome), including previews of all three reels with exact
+  restoration and a Darkroom export whose dim room opening and lit table tour
+  were decoded in the page.
+
 ## Second review revision (2026-09-27)
 
 - **Projector.** Counting down to 2 and then cutting to the table read as
