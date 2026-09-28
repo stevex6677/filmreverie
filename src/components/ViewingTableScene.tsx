@@ -26,6 +26,7 @@ import { CameraShelf } from './CameraShelf';
 import type { CameraCollectionProgress } from '../utils/loadCameraModel';
 import type { ScreeningSession } from '../screening/session';
 import { ScreeningDirector } from '../screening/ScreeningDirector';
+import { DryingLine } from '../screening/DryingLine';
 
 const idle = () => () => {};
 
@@ -164,6 +165,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         screeningPose={screening ? () => screening.sample.camera : undefined}
       />
       {screening && <ScreeningDirector session={screening} table={tableGroupRef} roll={state.roll} brightness={state.tableBrightness} />}
+      {screening?.choice.reel === 'drying-line' && showRoll && <DryingLine roll={state.roll} textures={textures} stockId={state.filmStockId} filmStrength={state.filmStrength} session={screening} />}
 
       {/* Surrounding 3D Darkroom Environment & Workbench */}
       <DarkroomRoom cabinetOnly={cabinetOnly} benchWidth={Math.max(4.4, tableSize.width + .8)} brightness={state.tableBrightness} roomBrightness={state.roomBrightness} immediate={isDeterministic || isReducedMotion} />

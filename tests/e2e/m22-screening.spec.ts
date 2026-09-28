@@ -49,7 +49,7 @@ async function library(page: Page, name = 'darkroom-guest-rolls') {
 }
 const player = (page: Page) => page.getByTestId('screening-player');
 const time = async (page: Page) => Number(await player(page).getAttribute('data-time'));
-async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Projector' | 'Darkroom' | 'Orbit', pace = 'Normal', format = '16:9') {
+async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Projector' | 'Darkroom' | 'Orbit' | 'Drying Line' | 'Documentary', pace = 'Normal', format = '16:9') {
   // Phones hide the Focus header button; Settings offers Screen roll in every layout.
   if (await page.getByTestId('screen-roll').isVisible()) await page.getByTestId('screen-roll').click();
   else { await openViewingTools(page); await page.getByTestId('screen-roll-tools').click(); }
@@ -84,7 +84,13 @@ async function inspectVideo(page: Page, times: { leader?: number; middle?: numbe
       const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
       let sum = 0, square = 0;
       for (let i = 0; i < data.length; i += 4) { const l = (data[i] + data[i + 1] + data[i + 2]) / 3; sum += l; square += l * l; }
-      const n = data.length / 4; return { mean: sum / n, deviation: Math.sqrt(square / n - (sum / n) ** 2) };
+      const n = data.length / 4;
+      // A coarse, area-averaged luminance grid for pixel-wise comparisons.
+      const small = document.createElement('canvas'); small.width = 32; small.height = 18;
+      const tiny = small.getContext('2d')!; tiny.imageSmoothingQuality = 'high'; tiny.drawImage(canvas, 0, 0, 32, 18);
+      const cells = tiny.getImageData(0, 0, 32, 18).data, grid: number[] = [];
+      for (let i = 0; i < cells.length; i += 4) grid.push((cells[i] + cells[i + 1] + cells[i + 2]) / 3);
+      return { mean: sum / n, deviation: Math.sqrt(square / n - (sum / n) ** 2), grid };
     };
     return { width: video.videoWidth, height: video.videoHeight, duration: video.duration, start: await frame(.05), leader: await frame(times.leader ?? 1.6), middle: await frame(times.middle ?? video.duration * .45), later: await frame(times.later ?? video.duration * .6) };
   }, times);
@@ -214,15 +220,15 @@ test('Screen roll waits for the loupe to be put away, hides it while screening a
   await expect(page.locator('main')).toHaveAttribute('data-loupe-state', 'activated');
 });
 
-test('Darkroom and Orbit preview in the actual scene, seek by frame and restore the table', async ({ page }, info) => {
+test('Darkroom, Orbit, Drying Line and Documentary preview in the actual scene, seek by frame and restore the table', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/guest?mode=inspect&deterministic=true'); await ready(page);
   const before = await table(page), stored = await library(page);
   const overview = PNG.sync.read(await captureCanvas(page));
   await page.getByTestId('screen-roll').click();
-  await expect(page.getByRole('dialog', { name: 'Screen roll' }).getByRole('radio')).toHaveCount(5 + 3 + 3);
+  await expect(page.getByRole('dialog', { name: 'Screen roll' }).getByRole('radio')).toHaveCount(7 + 3 + 3);
   await page.getByRole('button', { name: 'Close', exact: true }).click();
-  for (const [reel, id] of [['Darkroom', 'darkroom'], ['Orbit', 'orbit']] as const) {
+  for (const [reel, id] of [['Darkroom', 'darkroom'], ['Orbit', 'orbit'], ['Drying Line', 'drying-line'], ['Documentary', 'documentary']] as const) {
     await (await pickReel(page, reel, 'Brisk')).getByTestId('screening-preview').click();
     await expect(page.locator('main')).toHaveAttribute('data-screening-reel', id);
     await expect.poll(() => time(page), { timeout: 30000 }).toBeGreaterThan(2);
@@ -234,6 +240,12 @@ test('Darkroom and Orbit preview in the actual scene, seek by frame and restore 
     const shot = PNG.sync.read(await captureCanvas(page, { path: info.outputPath(`${id}-frame.png`) }));
     expect(getRegionStats(shot, shot.width / 2 | 0, shot.height / 2 | 0, 200).stdDev, id).toBeGreaterThan(6);
     expect(getRegionMeanDifference(shot, overview, shot.width / 2 | 0, shot.height / 2 | 0, 200), id).toBeGreaterThan(2);
+    if (id === 'documentary') {
+      // Next lands at the start of a cross-dissolve: the outgoing photograph
+      // is drawn, fully opaque, over the incoming one.
+      const alpha = await page.locator('.screening-overlay').evaluate((node: HTMLCanvasElement) => node.getContext('2d')!.getImageData(node.width / 2 | 0, node.height / 2 | 0, 1, 1).data[3]);
+      expect(alpha).toBeGreaterThan(240);
+    }
     await page.getByTestId('screening-exit').click();
     await expectRestored(page, before);
   }
@@ -279,6 +291,37 @@ test('exports a decodable 720p H.264 MP4 of the whole reel without writes or upl
   expect(await library(page)).toBe(stored);
   expect(requests.filter(request => request.method !== 'GET' || request.url.includes('/api/'))).toEqual([]);
   expect(errors).toEqual([]);
+});
+
+test('Documentary exports real cross-dissolves and Drying Line exports its prints', async ({ page }, info) => {
+  test.skip(info.project.name === 'mobile-chrome', 'Export is covered on desktop Chrome and WebKit.');
+  await page.goto('/guest?mode=inspect&deterministic=true&screening_seconds=11'); await ready(page);
+  const before = await table(page);
+  const timeline = createScreeningTimeline(BASELINE_ROLL, { reel: 'documentary', pace: 'brisk', aspect: 16 / 9, stockType: 'negative' });
+  const into = timeline.segments.find(s => s.dissolve)!;
+  await (await pickReel(page, 'Documentary', 'Brisk')).getByTestId('screening-export').click();
+  await expect(page.getByTestId('screening-export-view')).toHaveAttribute('data-phase', 'done', { timeout: 120000 });
+  const video = await inspectVideo(page, { leader: into.start - .15, middle: into.start + into.duration / 2, later: into.start + into.duration + .15 });
+  // Midway, the picture is a blend of the outgoing and incoming photographs:
+  // closer to their average than to either one.
+  const distance = (a: number[], b: number[]) => a.reduce((sum, value, i) => sum + Math.abs(value - b[i]), 0) / a.length;
+  const blend = video.leader.grid.map((value, i) => (value + video.later.grid[i]) / 2);
+  expect(distance(video.leader.grid, video.later.grid)).toBeGreaterThan(15);
+  expect(distance(video.middle.grid, blend)).toBeLessThan(distance(video.middle.grid, video.leader.grid) * .8);
+  expect(distance(video.middle.grid, blend)).toBeLessThan(distance(video.middle.grid, video.later.grid) * .8);
+  expect((await download(page, info.outputPath('documentary.mp4'))).name).toBe('roll-01-documentary.mp4');
+  await page.getByTestId('screening-export-done').click();
+  await expectRestored(page, before);
+
+  const prints = createScreeningTimeline(BASELINE_ROLL, { reel: 'drying-line', pace: 'brisk', aspect: 16 / 9, stockType: 'negative' });
+  const print = prints.segments.find(s => s.kind === 'frame')!;
+  await (await pickReel(page, 'Drying Line', 'Brisk')).getByTestId('screening-export').click();
+  await expect(page.getByTestId('screening-export-view')).toHaveAttribute('data-phase', 'done', { timeout: 120000 });
+  const hung = await inspectVideo(page, { leader: print.start + .3 });
+  // A lamp-lit print on the dark wall: bright paper and photograph, detailed.
+  expect(hung.leader.deviation).toBeGreaterThan(25); expect(hung.leader.mean).toBeGreaterThan(35);
+  await page.getByTestId('screening-export-done').click();
+  await expectRestored(page, before);
 });
 
 test('Darkroom exports its room shots and the table tour as H.264', async ({ page }, info) => {

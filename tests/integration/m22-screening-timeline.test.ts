@@ -102,7 +102,7 @@ describe('M22 screening timelines', () => {
         const { zoom, pan, tilt } = sample.camera, eye = poseEye(sample.camera);
         expect([zoom, pan.x, pan.z, tilt, sample.light, sample.fade, ...eye].every(Number.isFinite), name).toBe(true);
         expect(eye[1] - TABLE_SURFACE_Y, `${name} ${reel} ${sample.kind}`).toBeGreaterThan(.03);
-        const room = reel === 'darkroom' && (sample.act === 'establish' || sample.act === 'return');
+        const room = (reel === 'darkroom' && (sample.act === 'establish' || sample.act === 'return')) || reel === 'drying-line';
         if (room) {
           // Room shots stay inside the room, looking at most slightly up (as the room view does).
           expect(Math.abs(eye[0])).toBeLessThan(ROOM_ENVELOPE.width / 2); expect(eye[2]).toBeGreaterThan(ROOM_ENVELOPE.front); expect(eye[2]).toBeLessThan(ROOM_ENVELOPE.back);
@@ -116,7 +116,7 @@ describe('M22 screening timelines', () => {
         expect(Math.abs(sample.camera.roll ?? 0)).toBeLessThanOrEqual(15 * Math.PI / 180);
       }
       // A focused frame is centered and mostly visible in the requested aspect.
-      for (const segment of timeline.segments.filter(s => s.kind === 'frame' && reel !== 'tracking' && reel !== 'darkroom')) {
+      for (const segment of timeline.segments.filter(s => s.kind === 'frame' && !['tracking', 'darkroom', 'drying-line', 'documentary'].includes(reel))) {
         const frame = locateFrame(roll, segment.frameIndex), pose = segment.camera[1];
         expect(pose.pan.x).toBeCloseTo(frame.x, 9); expect(TABLE_CENTER_Z - pose.pan.z).toBeCloseTo(frame.y, 9);
         const width = (frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) * roll.scale;
@@ -290,5 +290,80 @@ describe('M22 Develop opening (2026-09-27 review)', () => {
       expect(on.ambient).toEqual([1, 0]);
       expect(timeline.sample(on.start + on.duration + .01).light).toBe(1);
     }
+  });
+});
+
+describe('M22 Drying Line and Documentary', () => {
+  it('hangs one print per frame, one line per strip, along the left wall and clear of the bench', async () => {
+    const { printLayout, PRINT_WALL_X } = await import('../../src/screening/prints');
+    for (const [name, roll] of Object.entries(ROLLS)) {
+      const { prints, lines } = printLayout(roll);
+      expect(prints.map(p => p.index), name).toEqual(roll.frames.map((_, i) => i));
+      expect(lines).toHaveLength(createRollLayout(roll).length);
+      for (const print of prints) {
+        expect(print.center[0]).toBe(PRINT_WALL_X);
+        expect(print.center[1] - print.paper.height / 2, name).toBeGreaterThan(-.78); // above the printing bench top
+        expect(print.hang[1]).toBeLessThan(ROOM_ENVELOPE.ceiling - .6);
+        expect(print.center[2]).toBeGreaterThan(ROOM_ENVELOPE.front + .5); expect(print.center[2]).toBeLessThan(ROOM_ENVELOPE.back - .5);
+        expect(print.photo.width).toBeLessThan(print.paper.width); expect(print.photo.height).toBeLessThan(print.paper.height);
+      }
+      // Along a line, prints run toward the table (−z), without overlapping.
+      for (let i = 1; i < prints.length; i++) if (prints[i].line === prints[i - 1].line) {
+        expect(prints[i - 1].center[2] - prints[i].center[2], name).toBeGreaterThan((prints[i - 1].paper.width + prints[i].paper.width) / 2);
+      }
+      const timeline = createScreeningTimeline(roll, options('drying-line'));
+      for (const segment of timeline.segments.filter(s => s.kind === 'frame')) {
+        const print = prints[segment.frameIndex], pose = segment.camera[0];
+        expect(pose.pan.x).toBeCloseTo(print.center[0], 9); expect(pose.pan.z).toBeCloseTo(print.center[2], 9);
+        expect(TABLE_SURFACE_Y + (pose.height ?? 0)).toBeCloseTo(print.center[1], 9);
+        expect(poseEye(pose)[0]).toBeGreaterThan(PRINT_WALL_X + .3);
+      }
+    }
+  });
+
+  it('dissolves into every photograph after the first, drifting and pushing in within the photo', () => {
+    for (const [name, roll] of Object.entries(ROLLS)) for (const aspect of [16 / 9, 9 / 16]) {
+      const timeline = createScreeningTimeline(roll, options('documentary', { aspect }));
+      for (let i = 1; i < roll.frames.length; i++) {
+        const into = timeline.segments.find(s => s.frameIndex === i && s.dissolve)!;
+        expect(into, `${name} ${i}`).toBeDefined();
+        const start = timeline.sample(into.start + 1e-4), middle = timeline.sample(into.start + into.duration / 2);
+        expect(start.dissolve!.amount).toBeLessThan(.01); expect(middle.dissolve!.amount).toBeCloseTo(.5, 1);
+        expect(start.dissolve!.from).toBeLessThan(into.start);
+        // The outgoing image is the shot just before: the previous photograph or a strip overview.
+        expect(timeline.sample(start.dissolve!.from).segment).toBe(timeline.segments.indexOf(into) - 1);
+        expect(timeline.sample(into.start + into.duration + 1e-4).dissolve).toBeNull();
+      }
+      for (const segment of timeline.segments.filter(s => s.kind === 'frame')) {
+        const frame = locateFrame(roll, segment.frameIndex), [a, b] = segment.camera;
+        expect(b.zoom / a.zoom, name).toBeLessThan(.97); expect(b.zoom / a.zoom).toBeGreaterThan(.85);
+        const width = (frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) * roll.scale;
+        for (const pose of [a, b]) {
+          expect(Math.abs(pose.pan.x - frame.x)).toBeLessThanOrEqual(width / 2);
+          expect(Math.abs(TABLE_CENTER_Z - pose.pan.z - frame.y)).toBeLessThanOrEqual(frame.strip.layout.frameHeight * roll.scale / 2);
+        }
+      }
+    }
+    const reduced = createScreeningTimeline(FULL_ROLL_FIXTURE, options('documentary', { reducedMotion: true }));
+    for (const segment of reduced.segments.filter(s => s.kind === 'frame' || s.dissolve)) {
+      expect(segment.camera[0]).toEqual(segment.camera[1]); expect(segment.cut).toBe(false);
+    }
+    expect(reduced.segments.filter(s => s.dissolve)).toHaveLength(35);
+  });
+
+  it('turns the camera so rotated photographs stand upright', () => {
+    const rotated = { ...BASELINE_ROLL, rollId: 'rot', frames: BASELINE_ROLL.frames.map((frame, i) => ({ ...frame, rotation: [0, 90, 180, 270, 0][i] })) };
+    const timeline = createScreeningTimeline(rotated, options('documentary'));
+    const yaws = [0, 1, 2, 3].map(i => timeline.segments.find(s => s.kind === 'frame' && s.frameIndex === i)!.camera[1].yaw);
+    expect(yaws).toEqual([0, -Math.PI / 2, Math.PI, Math.PI / 2]);
+    // Upright photographs in landscape video are shown whole, pillarboxed in black.
+    const mattes = [0, 1, 2, 3].map(i => timeline.segments.find(s => s.kind === 'frame' && s.frameIndex === i)!.matte);
+    expect(mattes[0]).toBeNull(); expect(mattes[2]).toBeNull();
+    expect(mattes[1]!.height).toBeGreaterThan(mattes[1]!.width); expect(mattes[3]!.alpha).toEqual([1, 1]);
+    // Landscape photographs in portrait video are letterboxed, fading in and out.
+    const tall = createScreeningTimeline(BASELINE_ROLL, options('documentary', { aspect: 9 / 16 }));
+    expect(tall.segments.filter(s => s.kind === 'frame').every(s => s.matte && s.matte.width > s.matte.height)).toBe(true);
+    expect(tall.segments.find(s => s.kind === 'push-in')!.matte!.alpha).toEqual([0, 1]);
+    expect(tall.segments.find(s => s.act === 'return')!.matte!.alpha).toEqual([1, 0]);
   });
 });

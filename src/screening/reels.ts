@@ -1,8 +1,9 @@
 import { createRollLayout, fitRollView, locateFrame, type RollDefinition } from '../utils/rollLayout';
 import { getStripDimensions } from '../utils/loupeMapping';
-import { finishTimeline, lookAtPose, PACE_SCALE, tablePan, TimelineBuilder, type CameraPose, type Pace, type ReelId, type ScreeningTimeline } from './timeline';
+import { finishTimeline, lerpCamera, lookAtPose, PACE_SCALE, tablePan, TimelineBuilder, type CameraPose, type Pace, type ReelId, type ScreeningTimeline } from './timeline';
 import { ROOM_CAMERA_FOV, ROOM_EYE, TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../utils/cameraBounds';
 import { SHELF_ORIGIN } from '../data/physicalScale';
+import { printLayout } from './prints';
 
 export interface ReelOptions {
   reel: ReelId; pace: Pace; aspect: number; reducedMotion?: boolean;
@@ -10,13 +11,15 @@ export interface ReelOptions {
   stockType: 'negative' | 'reversal';
 }
 
-export const REEL_LABEL: Record<ReelId, string> = { tracking: 'Tracking Shot', develop: 'Develop', projector: 'Projector', darkroom: 'Darkroom', orbit: 'Orbit' };
+export const REEL_LABEL: Record<ReelId, string> = { tracking: 'Tracking Shot', develop: 'Develop', projector: 'Projector', darkroom: 'Darkroom', orbit: 'Orbit', 'drying-line': 'Drying Line', documentary: 'Documentary' };
 export const REEL_DESCRIPTION: Record<ReelId, string> = {
   tracking: 'A low camera tracks along each strip and moves in on details.',
   develop: 'A band of light turns each negative into a photograph.',
   projector: 'After a countdown, each frame slides into a lit projector gate.',
   darkroom: 'From the darkroom to the light table, and back into the room.',
   orbit: 'Slow arcs around each photograph on the glowing table.',
+  'drying-line': 'Each strip becomes a line of prints hung in the darkroom.',
+  documentary: 'Each photograph fills the screen, drifting and dissolving.',
 };
 export const PACE_LABEL: Record<Pace, string> = { relaxed: 'Relaxed', normal: 'Normal', brisk: 'Brisk' };
 
@@ -198,6 +201,112 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     const end = b.time;
     b.step('return', 'close', n - 1, 3.6, { camera: f.overview, ease: 'inOut' });
     b.card('end', end + b.seconds(.6), b.time);
+    b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
+    return finishTimeline(b, { ...info, revealMode: null });
+  }
+
+  if (options.reel === 'drying-line') {
+    // From the lit table to the print wall: a wide shot of every line, then a
+    // track along each line toward the table (−z), so prints pass right to left.
+    const layout = printLayout(roll);
+    const printPose = (index: number): CameraPose => {
+      const print = layout.prints[index], fov = 40, tan = Math.tan(fov * Math.PI / 360);
+      const distance = Math.max(print.paper.height * 1.4, print.paper.width * 1.45 / aspect) / (2 * tan);
+      return lookAtPose([print.center[0] + distance, print.center[1] + .03, print.center[2]], print.center, fov);
+    };
+    const glance = (index: number): CameraPose => {
+      const frame = frameAt(index);
+      return lookAtPose([-1.7, .15, 1.5], [0, TABLE_SURFACE_Y, TABLE_CENTER_Z - frame.strip.y], 34);
+    };
+    // Frame every line of prints: centred on them, far enough to show them all.
+    const zs = layout.prints.map(print => print.center[2]), ys = layout.lines.map(line => line.y);
+    const middle: [number, number, number] = [layout.prints[0].center[0], (Math.max(...ys) + Math.min(...ys)) / 2 - .15, (Math.max(...zs) + Math.min(...zs)) / 2];
+    const across = Math.max(...zs) - Math.min(...zs) + .8, high = Math.max(...ys) - Math.min(...ys) + .7;
+    const reach = Math.min(2.9, Math.max(high, across / aspect) / (2 * Math.tan(31 * Math.PI / 180)));
+    const wall = lookAtPose([middle[0] + reach, middle[1] + .05, middle[2]], middle, 62);
+    // Rise from the table first, so the turn toward the wall passes through open air.
+    const raised = lookAtPose([0, .35, .7], [0, TABLE_SURFACE_Y, TABLE_CENTER_Z], 55);
+    const closing = lookAtPose([-.4, 1.1, 5.4], [-2.4, -.3, 1.8], 62);
+    const b = new TimelineBuilder(f.overview, scale, reduced);
+    b.fade(b.seconds(.8), 0);
+    b.step('establish', 'open', 0, 3, { camera: drift(f.overview), drift: true });
+    b.card('title', b.seconds(.4), b.seconds(2.8));
+    b.step('establish', 'rise', 0, 1.8, { camera: raised });
+    b.step('establish', 'rise', 0, 2.4, { camera: wall });
+    b.step('establish', 'open', 0, 1.2, { camera: { ...wall, zoom: wall.zoom * .97 }, drift: true });
+    b.step('tour', 'push-in', 0, 2, { camera: printPose(0), beat: true });
+    for (let i = 0; i < n; i++) {
+      if (i > 0) {
+        if (frameAt(i).localIndex === 0 && breaks.has(i)) {
+          b.step('break', 'pull-back', i, 1.8, { camera: glance(i) });
+          b.step('break', 'overview', i, 1.2, { camera: { ...glance(i), zoom: glance(i).zoom * .96 }, drift: true });
+          b.step('break', 'push-in', i, 1.8, { camera: printPose(i), beat: true });
+        } else b.step('tour', 'glide', i, frameAt(i).localIndex === 0 ? 1.6 : 1.1, { camera: printPose(i), beat: true });
+      }
+      b.step('tour', 'frame', i, 1.9 * holdScale, { camera: { ...printPose(i), zoom: printPose(i).zoom * .94 }, drift: true });
+    }
+    b.step('return', 'pull-back', n - 1, 2.6, { camera: closing });
+    const end = b.time;
+    b.step('return', 'close', n - 1, 3.4, { camera: { ...closing, zoom: closing.zoom * 1.04 }, drift: true });
+    b.card('end', end + b.seconds(.4), b.time);
+    b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
+    return finishTimeline(b, { ...info, revealMode: null });
+  }
+
+  if (options.reel === 'documentary') {
+    // Photograph first: each one fills the screen, drifts slowly (pushing in
+    // ~10% and panning toward its longer side) and dissolves into the next.
+    const kenBurns = (index: number) => {
+      const frame = frameAt(index), photo = roll.frames[index], rotation = ((photo.rotation ?? 0) % 360 + 360) % 360;
+      const height = frame.strip.layout.frameHeight * frame.strip.scale;
+      // Turn the camera so the photograph stands upright. The film shader rotates
+      // the image clockwise by \`rotation\`, so its top faces film +x at 90°.
+      const yaw = rotation === 90 ? -Math.PI / 2 : rotation === 270 ? Math.PI / 2 : rotation === 180 ? Math.PI : 0;
+      const [w, h] = rotation % 180 ? [height, frame.width] : [frame.width, height];
+      const photoAspect = w / h, mismatch = Math.max(photoAspect / aspect, aspect / photoAspect);
+      // Fill the screen unless the shapes differ a lot; then show the whole photograph.
+      const visible = mismatch < 1.35 ? Math.min(h, w / aspect) * .97 : Math.max(h, w / aspect) * 1.04;
+      const zoom = visible / (2 * TAN), inner = visible * .9;
+      const slackX = Math.max(0, (w - inner * aspect) / 2), slackY = Math.max(0, (h - inner) / 2);
+      const sign = index % 2 ? 1 : -1, horizontal = slackX >= slackY;
+      const offset = (amount: number) => {
+        const sx = horizontal ? amount * slackX * .8 : 0, sy = horizontal ? 0 : amount * slackY * .8;
+        return { x: frame.x + sx * Math.cos(yaw) - sy * Math.sin(yaw), z: TABLE_CENTER_Z - frame.y - sx * Math.sin(yaw) - sy * Math.cos(yaw) };
+      };
+      const start: CameraPose = { zoom, pan: offset(-sign), tilt: 0, yaw };
+      const end: CameraPose = { zoom: zoom * .9, pan: offset(sign), tilt: 0, yaw };
+      // A photograph shown whole is letterboxed (or pillarboxed) in black.
+      const matte = mismatch < 1.35 ? undefined : { x: frame.x, z: TABLE_CENTER_Z - frame.y, width: w, height: h };
+      return { start, end, matte };
+    };
+    const dissolve = 1, drifting = 3.2 * holdScale;
+    const b = new TimelineBuilder(f.overview, scale, reduced);
+    b.fade(b.seconds(.8), 0);
+    b.step('establish', 'open', 0, 3, { camera: drift(f.overview), drift: true });
+    b.card('title', b.seconds(.4), b.seconds(2.8));
+    const first = kenBurns(0).matte;
+    b.step('tour', 'push-in', 0, 2, { camera: kenBurns(0).start, beat: true, matte: first && { ...first, alpha: [0, 1] } });
+    for (let i = 0; i < n; i++) {
+      const { start, end, matte } = kenBurns(i), middle = lerpCamera(start, end, dissolve / (dissolve + drifting));
+      const previous = i > 0 ? kenBurns(i - 1).matte : undefined;
+      if (i > 0) {
+        if (frameAt(i).localIndex === 0 && breaks.has(i)) {
+          const strip: CameraPose = { ...f.fit(frameAt(i - 1).strip.frames.length * frameAt(i - 1).width * 1.15, f.stripHeight * 1.6, 0, frameAt(i - 1).strip.y), tilt: degrees(18) };
+          b.step('break', 'pull-back', i, 1.6, { camera: strip, matte: previous && { ...previous, alpha: [1, 0] } });
+          b.step('break', 'overview', i, 1.2, { camera: drift(strip, .5), drift: true });
+        }
+        // The next photograph appears beneath the outgoing one as it fades.
+        b.camera = start;
+        b.step('tour', 'glide', i, dissolve, { camera: middle, dissolve: true, ease: 'linear', drift: true, beat: true, matte });
+      }
+      // The first photograph arrives by the push-in and drifts for the whole span.
+      b.step('tour', 'frame', i, i === 0 ? dissolve + drifting : drifting, { camera: end, ease: 'linear', drift: true, matte });
+    }
+    const last = kenBurns(n - 1).matte;
+    b.step('return', 'pull-back', n - 1, 2.2, { camera: f.overview, matte: last && { ...last, alpha: [1, 0] } });
+    const end = b.time;
+    b.step('return', 'close', n - 1, 3.4, { camera: drift(f.overview), drift: true });
+    b.card('end', end + b.seconds(.3), b.time);
     b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
     return finishTimeline(b, { ...info, revealMode: null });
   }

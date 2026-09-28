@@ -94,6 +94,21 @@ function drawProjection(ctx: CanvasRenderingContext2D, width: number, height: nu
   ctx.restore();
 }
 
+/** Black bars around a photograph shown whole, placed from the camera pose. */
+function drawMatte(ctx: CanvasRenderingContext2D, width: number, height: number, sample: ScreeningSample) {
+  const matte = sample.matte!, camera = sample.camera, fov = (camera.fov ?? 45) * Math.PI / 180;
+  const visibleHeight = 2 * camera.zoom * Math.tan(fov / 2), visibleWidth = visibleHeight * width / height;
+  const dx = matte.x - camera.pan.x, dz = matte.z - camera.pan.z, c = Math.cos(camera.yaw), s = Math.sin(camera.yaw);
+  // Screen right is (cos yaw, −sin yaw) and screen up (−sin yaw, −cos yaw) on the table plane.
+  const right = dx * c - dz * s, up = -dx * s - dz * c;
+  const w = matte.width / visibleWidth * width, h = matte.height / visibleHeight * height;
+  const x = width / 2 + right / visibleWidth * width - w / 2, y = height / 2 - up / visibleHeight * height - h / 2;
+  ctx.save();
+  ctx.fillStyle = `rgba(0,0,0,${matte.alpha.toFixed(3)})`;
+  ctx.beginPath(); ctx.rect(0, 0, width, height); ctx.rect(x, y, w, h); ctx.fill('evenodd');
+  ctx.restore();
+}
+
 /** An Academy-style leader counting 5 to 2 with a sweeping hand, projected into the gate. */
 function drawCountdown(ctx: CanvasRenderingContext2D, left: number, top: number, width: number, height: number, elapsed: number, duration: number, reducedMotion: boolean) {
   const count = 4, step = duration / count, index = Math.min(count - 1, Math.floor(elapsed / step));
@@ -124,6 +139,7 @@ function drawCountdown(ctx: CanvasRenderingContext2D, left: number, top: number,
 export function drawScreeningOverlay(ctx: CanvasRenderingContext2D, width: number, height: number, sample: ScreeningSample, credits: ScreeningCredits) {
   const short = Math.min(width, height);
   if ((sample.gate > 0 || sample.lamp !== null) && sample.aperture) drawProjection(ctx, width, height, sample);
+  if (sample.matte && sample.matte.alpha > 0) drawMatte(ctx, width, height, sample);
   if (sample.fade > 0) { ctx.fillStyle = `rgba(0,0,0,${sample.fade.toFixed(3)})`; ctx.fillRect(0, 0, width, height); }
   const card = sample.card;
   if (!card || card.opacity <= 0) return;

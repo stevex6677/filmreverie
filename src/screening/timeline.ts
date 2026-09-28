@@ -6,7 +6,7 @@ import { TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../utils/cameraBounds';
 // timeline drives live preview and frame-stepped export, and is tested without
 // WebGL. Segments keep explicit timing so a later soundtrack can align to beats.
 
-export const REEL_IDS = ['tracking', 'develop', 'projector', 'darkroom', 'orbit'] as const;
+export const REEL_IDS = ['tracking', 'develop', 'projector', 'darkroom', 'orbit', 'drying-line', 'documentary'] as const;
 export type ReelId = typeof REEL_IDS[number];
 export const PACES = ['relaxed', 'normal', 'brisk'] as const;
 export type Pace = typeof PACES[number];
@@ -42,6 +42,10 @@ export interface Segment {
   lamp: [number, number] | null;
   /** Dim room light on the unlit diffuser, 0–1. */
   ambient: [number, number];
+  /** Cross-dissolve from the image just before this segment. */
+  dissolve: boolean;
+  /** Black matte around a photograph shown whole (world center and upright size), fading by `alpha`. */
+  matte: { x: number; z: number; width: number; height: number; alpha: [number, number] } | null;
   /** Reduced motion: hold, dip through dark, then hold at the destination. */
   cut: boolean;
 }
@@ -59,6 +63,9 @@ export interface ScreeningSample {
   /** Projector dust and hair in the gate (off with reduced motion). */
   dust: number;
   lamp: number | null; ambient: number;
+  /** Outgoing shot (a moment before `start`) fading over this one; `key` identifies the transition. */
+  dissolve: { key: number; from: number; amount: number } | null;
+  matte: { x: number; z: number; width: number; height: number; alpha: number } | null;
   reducedMotion: boolean;
 }
 
@@ -133,7 +140,8 @@ export class TimelineBuilder {
   constructor(public camera: CameraPose, private scale: number, private reduced: boolean) {}
   seconds(value: number) { return value * this.scale; }
   step(act: Act, kind: SegmentKind, frameIndex: number, seconds: number, to: {
-    camera?: CameraPose; light?: number; flicker?: 'gate'; shutter?: Shutter; weave?: boolean; lamp?: number | null; ambient?: number;
+    camera?: CameraPose; light?: number; flicker?: 'gate'; shutter?: Shutter; weave?: boolean; lamp?: number | null; ambient?: number; dissolve?: boolean;
+    matte?: Omit<NonNullable<Segment['matte']>, 'alpha'> & { alpha?: [number, number] };
     reveal?: number; blur?: number; gate?: number; aperture?: Segment['aperture']; ease?: Ease; beat?: boolean; drift?: boolean;
   } = {}) {
     let camera = to.camera ?? this.camera;
@@ -151,7 +159,8 @@ export class TimelineBuilder {
       aperture: to.aperture === undefined ? this.aperture : to.aperture, ease: to.ease ?? 'inOut', cut,
       shutter: to.shutter ?? null, weave: !this.reduced && !!to.weave,
       lamp: to.lamp === null ? null : to.lamp === undefined ? (this.lamp === null ? null : [this.lamp, this.lamp]) : [this.lamp ?? to.lamp, to.lamp],
-      ambient: [this.ambient, to.ambient ?? this.ambient] });
+      ambient: [this.ambient, to.ambient ?? this.ambient], dissolve: !!to.dissolve,
+      matte: to.matte ? { ...to.matte, alpha: to.matte.alpha ?? [1, 1] } : null });
     this.time += duration; this.camera = camera;
     this.light = to.light ?? this.light;
     this.gate = to.gate ?? this.gate;
@@ -200,6 +209,8 @@ export function finishTimeline(builder: TimelineBuilder, info: { reel: ReelId; p
       dust: info.reducedMotion ? 0 : gate, reducedMotion: info.reducedMotion,
       lamp: segment.lamp ? lerp(segment.lamp[0], segment.lamp[1], eased) : null,
       ambient: lerp(segment.ambient[0], segment.ambient[1], eased),
+      matte: segment.matte ? { ...segment.matte, alpha: lerp(segment.matte.alpha[0], segment.matte.alpha[1], eased) } : null,
+      dissolve: segment.dissolve && local < 1 ? { key: index, from: Math.max(0, segment.start - 1e-3), amount: EASE.inOut(local) } : null,
     };
   };
   return { ...info, duration, segments, cards, fades, beats: builder.beats, sample,

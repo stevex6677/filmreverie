@@ -16,6 +16,7 @@ import {
 import { TableAngle, TOP_DOWN, tableCameraPose, tablePointAt } from "../utils/tableCamera";
 import { RoomMode } from "../state/viewerState";
 import type { CameraPose } from "../screening/timeline";
+import { applyScreeningPose } from "../screening/camera";
 
 interface CameraRigProps {
   shelfDetailSlot?: number;
@@ -347,13 +348,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     const perspective = camera as THREE.PerspectiveCamera;
     const screen = screeningPose?.();
     if (screen) {
-      const pose = tableCameraPose(screen.zoom, screen.pan, { tilt: screen.tilt, yaw: screen.yaw });
-      const lift = screen.height ?? 0;
-      camera.position.set(pose.position[0], pose.position[1] + lift, pose.position[2]); camera.up.set(...pose.up);
-      camera.lookAt(pose.target[0], pose.target[1] + lift, pose.target[2]);
-      if (screen.roll) camera.rotateZ(screen.roll);
-      perspective.fov = screen.fov ?? 45; perspective.near = Math.min(.04, screen.zoom * .025); perspective.updateProjectionMatrix();
-      camera.updateMatrixWorld();
+      applyScreeningPose(perspective, screen);
       flight.current = null; lastTarget.current = ''; screening.current = true;
       gl.domElement.dataset.cameraPosition = camera.position.toArray().join(",");
       gl.domElement.dataset.cameraQuaternion = camera.quaternion.toArray().join(",");

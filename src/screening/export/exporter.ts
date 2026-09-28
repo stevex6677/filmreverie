@@ -36,6 +36,10 @@ export async function exportScreening(session: ScreeningSession, format: ExportF
   const { width, height } = EXPORT_FORMATS[format];
   const config = await findEncoderConfig(width, height);
   if (!config) throw new ExportUnsupportedError('This browser cannot encode H.264 video.');
+  // The scene registers its renderer in its own effect, which can run after
+  // this view's effect when the export code is already loaded.
+  for (let waited = 0; !session.engine && waited < 5000 && !signal.aborted; waited += 16) await pause(16);
+  if (signal.aborted) throw abortError();
   const engine = session.engine;
   if (!engine) throw new Error('The light table is not ready to render.');
   const writer = new Mp4Writer(width, height);

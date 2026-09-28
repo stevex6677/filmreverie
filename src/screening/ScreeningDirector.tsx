@@ -5,6 +5,7 @@ import { getTableIllumination } from '../shaders/tableIllumination';
 import type { RollDefinition } from '../utils/rollLayout';
 import { revealEdge, type ScreeningSample } from './timeline';
 import { drawScreeningOverlay } from './overlay';
+import { applyScreeningPose } from './camera';
 import type { ScreeningSession } from './session';
 
 type Uniforms = Record<string, THREE.IUniform>;
@@ -55,17 +56,31 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
   const latest = useRef({ brightness, size }); latest.current = { brightness, size };
   useEffect(() => { if (!session.exporting) session.setAspect(size.width / size.height); }, [session, size.width, size.height]);
 
+  // A cross-dissolve holds one render of the outgoing shot and fades it out.
+  const preview = useRef<{ key: number; canvas: HTMLCanvasElement } | null>(null);
+
   useFrame((_, delta) => session.tick(delta), -3);
   useFrame(() => {
     if (table.current) applySample(table.current, scene, roll, session.sample, latest.current.brightness);
     const overlay = session.overlay;
     if (!overlay || session.exporting) return;
+    const dissolve = session.sample.dissolve;
+    if (dissolve && preview.current?.key !== dissolve.key) {
+      const perspective = camera as THREE.PerspectiveCamera, canvas = preview.current?.canvas ?? document.createElement('canvas');
+      applyScreeningPose(perspective, session.timeline.sample(dissolve.from).camera);
+      gl.render(scene, camera);
+      canvas.width = gl.domElement.width; canvas.height = gl.domElement.height;
+      canvas.getContext('2d')?.drawImage(gl.domElement, 0, 0);
+      applyScreeningPose(perspective, session.sample.camera);
+      preview.current = { key: dissolve.key, canvas };
+    }
     const ratio = Math.min(2, window.devicePixelRatio || 1);
     const width = Math.round(overlay.clientWidth * ratio), height = Math.round(overlay.clientHeight * ratio);
     if (overlay.width !== width || overlay.height !== height) { overlay.width = width; overlay.height = height; }
     const ctx = overlay.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, width, height);
+    if (dissolve && preview.current) { ctx.globalAlpha = 1 - dissolve.amount; ctx.drawImage(preview.current.canvas, 0, 0, width, height); ctx.globalAlpha = 1; }
     drawScreeningOverlay(ctx, width, height, session.sample, session.credits);
     overlay.dataset.drawn = 'true';
   }, -1.5);
@@ -77,6 +92,7 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
 
   useEffect(() => {
     let composite: HTMLCanvasElement | null = null, clock = 0;
+    let outgoing: { key: number; canvas: HTMLCanvasElement } | null = null;
     let saved: { ratio: number; width: number; height: number; time: number } | null = null;
     const perspective = camera as THREE.PerspectiveCamera;
     const resize = (width: number, height: number, ratio: number) => {
@@ -112,6 +128,15 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
         if (buffer.x !== width || buffer.y !== height || gl.getPixelRatio() !== 1) resize(width, height, 1);
         const ctx = composite!.getContext('2d')!;
         const base = session.timeline.sample(time);
+        if (base.dissolve && outgoing?.key !== base.dissolve.key) {
+          // Render the outgoing shot once, at the exact export size.
+          const canvas = outgoing?.canvas ?? document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          session.time = base.dissolve.from; session.sample = session.timeline.sample(session.time);
+          clock += 1 / 30; advance(clock, true, get());
+          canvas.getContext('2d')!.drawImage(gl.domElement, 0, 0, width, height);
+          outgoing = { key: base.dissolve.key, canvas };
+        }
         // Motion blur: average sub-frames across a 270° shutter during fast advances.
         const steps = base.blur > .05 ? 5 : 1;
         for (let step = 0; step < steps; step++) {
@@ -122,6 +147,7 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
           ctx.globalAlpha = 1 / (step + 1);
           ctx.drawImage(gl.domElement, 0, 0, width, height);
         }
+        if (base.dissolve && outgoing) { ctx.globalAlpha = 1 - base.dissolve.amount; ctx.drawImage(outgoing.canvas, 0, 0, width, height); }
         ctx.globalAlpha = 1;
         session.time = time; session.sample = base;
         drawScreeningOverlay(ctx, width, height, base, session.credits);
@@ -135,7 +161,7 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
         session.setAspect(size.width / size.height);
         // The preview resumes where it was paused, not at the video's last frame.
         if (saved) session.seek(saved.time);
-        composite = null; saved = null;
+        composite = null; saved = null; outgoing = null;
       },
     };
     return () => { session.engine = null; };
