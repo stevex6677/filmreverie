@@ -7,6 +7,26 @@ physical iPad acceptance have not been performed**: no iPad was available to
 this session, and Playwright WebKit cannot be installed on this macOS 13 host.
 Browser emulation is not iPad acceptance. Nothing was pushed or deployed.
 
+## Second review revision (2026-09-27)
+
+- **Projector.** Counting down to 2 and then cutting to the table read as
+  strange, and the push into the gate showed a half-formed white aperture over
+  the table (user screenshot, 120 roll). Now the title shows on the lit table,
+  the room fades to black, the camera settles on the gate in the dark, and the
+  projector lamp warms up an empty gate drawn entirely by the overlay (warm
+  white, soft bloom, nothing of the table behind it). The 5–2 leader is
+  projected inside that gate, black leader follows, and the first photograph
+  opens on the shutter. The projection is not interrupted by overview breaks;
+  at the end the shutter closes and the room lights return on the whole roll
+  with the end card.
+- **Develop.** The table starts off with dim room light on the diffuser (a
+  screening-only `uAmbient` panel term), showing the black strip and its
+  sprocket holes on grey. After the title the table switches on in 0.12 s
+  (0.8 s with reduced motion) and reveals the negatives.
+- Verified with 318 integration tests, all 11 M22 browser cases, reviewed
+  export frame sheets for Projector and Develop, and live-preview captures of
+  the lamp gate and countdown.
+
 ## Review revision (2026-09-27)
 
 After the user reviewed the first build (commit `ed4ee42`):
