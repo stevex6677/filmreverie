@@ -1,11 +1,31 @@
 # M22 — Screening review
 
-Status: **Implemented locally; awaiting human review.** The three reels, live
-preview, exact restoration and in-browser MP4 export work in desktop and
-phone-emulated Chrome. **The physical iPad spike (M22.1 measurements) and
-physical iPad acceptance have not been performed**: no iPad was available to
-this session, and Playwright WebKit cannot be installed on this macOS 13 host.
-Browser emulation is not iPad acceptance. Nothing was pushed or deployed.
+Status: **Implemented and merged to `master`; awaiting human review.** Seven
+reels, live preview, exact restoration and in-browser MP4 export work in
+desktop and phone-emulated Chrome. **On 2026-09-28 the user reported that video
+export works on their physical iPad and iPhone** after the fixes below. The
+detailed device measurements (models, OS versions, export time, memory,
+thermals, interruption, saving to Photos) were not recorded and remain open.
+Playwright WebKit cannot be installed on this macOS 13 host. Nothing was
+pushed or deployed.
+
+## Physical device report (2026-09-28)
+
+- **First iPad attempt:** "The video could not be finished". The error named no
+  step, so export was hardened for WebKit (`0adc915`): each H.264
+  configuration is probed by encoding one frame, Annex B encoder output is
+  converted (avcC from in-band SPS/PPS), and errors name the failing step.
+- **Second iPad attempt:** "Preparing the light table failed (Rendering is still
+  running.)". The export waited up to 2 s for React to pass the Canvas
+  `frameloop="never"`; on the iPad that re-render did not arrive in time. The
+  engine now stops and restores R3F's loop itself (`4d07f15`).
+- **After `4d07f15`:** the user reported that export works on both the iPad and
+  the iPhone. This is a user report, not a measured acceptance run: the
+  browser (Safari, Chrome or Home Screen), OS versions, reels, formats, export
+  times and whether videos were saved to Photos were not recorded here.
+- Safari 18.3 on this Mac now allows WebDriver automation (the user ran
+  `safaridriver --enable`), so later WebKit checks can run locally; no Safari
+  export run was completed before the merge.
 
 ## Drying Line and Documentary (M22.7, 2026-09-27/28)
 
@@ -276,11 +296,13 @@ for comparison. No cumulative pass is claimed.
 
 ## Open items before acceptance
 
-1. Physical iPad (Safari and Home Screen app): device model and iPadOS version;
+1. Export works on the user's iPad and iPhone (user report, 2026-09-28). Still to
+   record: device model and OS version; browser (Safari / Home Screen app);
    export time and memory for a 36-frame 35 mm roll and a 120 roll at 720p;
    thermals; background/foreground interruption; Save Video to Photos from the
-   share sheet in both Safari and the Home Screen app; inspect the saved videos.
-2. Decide on a `MediaRecorder` fallback from that result.
+   share sheet; inspection of the saved videos.
+2. `MediaRecorder` fallback: not needed on the user's devices so far, since
+   WebCodecs export works there; revisit only if a device reports it unsupported.
 3. Mobile-WebKit browser runs on a host where Playwright WebKit installs.
 4. iPhone and desktop layouts are usable but not accepted (phones hide Screen
    roll in the Focus header to keep one row; Overview and Settings offer it).
