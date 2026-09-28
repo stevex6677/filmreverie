@@ -17,6 +17,20 @@ function fitText(ctx: CanvasRenderingContext2D, text: string, font: (size: numbe
  */
 export function drawScreeningOverlay(ctx: CanvasRenderingContext2D, width: number, height: number, sample: ScreeningSample, credits: ScreeningCredits) {
   const short = Math.min(width, height);
+  if (sample.gate > 0 && sample.aperture) {
+    // A fixed projector aperture, slightly larger than the frame, with soft edges.
+    const visible = 2 * sample.camera.zoom * Math.tan(Math.PI / 8);
+    const w = Math.min(width, sample.aperture.width * 1.035 / (visible * width / height) * width), h = Math.min(height, sample.aperture.height * 1.05 / visible * height);
+    const x = (width - w) / 2, y = (height - h) / 2, soft = short * .012;
+    ctx.save();
+    ctx.fillStyle = `rgba(3,3,3,${(.94 * sample.gate).toFixed(3)})`;
+    ctx.beginPath(); ctx.rect(0, 0, width, height); ctx.roundRect(x, y, w, h, soft); ctx.fill('evenodd');
+    for (let i = 1; i <= 4; i++) {
+      ctx.strokeStyle = `rgba(3,3,3,${(.94 * sample.gate * (1 - i / 5) * .5).toFixed(3)})`; ctx.lineWidth = soft * i / 2;
+      ctx.beginPath(); ctx.roundRect(x, y, w, h, soft); ctx.stroke();
+    }
+    ctx.restore();
+  }
   if (sample.gate > 0) {
     // A projector gate: darkened corners with a faint, flickering falloff.
     const gradient = ctx.createRadialGradient(width / 2, height / 2, short * .42, width / 2, height / 2, Math.hypot(width, height) * .56);

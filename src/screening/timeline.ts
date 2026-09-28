@@ -27,7 +27,8 @@ export interface Segment {
   arc: number;
   light: { from: number; to: number; flicker?: 'on' | 'gate' };
   reveal: [number, number] | null;
-  blur: number; gate: number; ease: Ease;
+  /** Projector gate strength, and its fixed aperture (world units) while shown. */
+  blur: number; gate: [number, number]; aperture: { width: number; height: number } | null; ease: Ease;
   /** Reduced motion: hold, dip through dark, then hold at the destination. */
   cut: boolean;
 }
@@ -38,7 +39,7 @@ export interface ScreeningSample {
   time: number; act: Act; kind: SegmentKind; segment: number; frameIndex: number;
   camera: CameraPose; loupe: LoupePose | null; light: number;
   reveal: Reveal | null; card: { kind: 'title' | 'end'; opacity: number } | null;
-  fade: number; blur: number; gate: number;
+  fade: number; blur: number; gate: number; aperture: { width: number; height: number } | null;
 }
 
 export interface ScreeningTimeline {
@@ -99,12 +100,14 @@ export class TimelineBuilder {
   fades: FadeKey[] = [{ time: 0, value: 1 }];
   beats: number[] = [];
   light = 1;
+  gate = 0;
+  aperture: Segment['aperture'] = null;
   reveal: number | null = null;
   constructor(public camera: CameraPose, public loupe: LoupePose | null, private scale: number, private reduced: boolean) {}
   seconds(value: number) { return value * this.scale; }
   step(act: Act, kind: SegmentKind, frameIndex: number, seconds: number, to: {
     camera?: CameraPose; loupe?: LoupePose | null; arc?: number; light?: number; flicker?: 'on' | 'gate';
-    reveal?: number; blur?: number; gate?: number; ease?: Ease; beat?: boolean; drift?: boolean;
+    reveal?: number; blur?: number; gate?: number; aperture?: Segment['aperture']; ease?: Ease; beat?: boolean; drift?: boolean;
   } = {}) {
     let camera = to.camera ?? this.camera;
     const loupe = to.loupe === undefined ? this.loupe : to.loupe;
@@ -120,10 +123,12 @@ export class TimelineBuilder {
     if (to.beat) this.beats.push(this.time);
     this.segments.push({ act, kind, start: this.time, duration, frameIndex, camera: [this.camera, camera],
       loupe: this.loupe && loupe ? [this.loupe, loupe] : loupe ? [loupe, loupe] : null,
-      arc: this.reduced ? 0 : to.arc ?? 0, light, reveal, blur: this.reduced ? 0 : to.blur ?? 0, gate: to.gate ?? 0,
-      ease: to.ease ?? 'inOut', cut });
+      arc: this.reduced ? 0 : to.arc ?? 0, light, reveal, blur: this.reduced ? 0 : to.blur ?? 0, gate: [this.gate, to.gate ?? this.gate],
+      aperture: to.aperture === undefined ? this.aperture : to.aperture, ease: to.ease ?? 'inOut', cut });
     this.time += duration; this.camera = camera; this.loupe = loupe;
     this.light = to.light ?? this.light;
+    this.gate = to.gate ?? this.gate;
+    if (to.aperture !== undefined) this.aperture = to.aperture;
     if (to.reveal !== undefined) this.reveal = to.reveal;
   }
   card(kind: CardSpan['kind'], start: number, end: number) { this.cards.push({ kind, start, end, fade: Math.min(this.seconds(.6), (end - start) / 3) }); }
@@ -157,7 +162,8 @@ export function finishTimeline(builder: TimelineBuilder, info: { reel: ReelId; p
       camera, loupe, light: Math.max(0, lightAt(segment.light, eased, time, local)),
       reveal: position === null || !info.revealMode ? null : { mode: info.revealMode, position },
       card: card ? { kind: card.kind, opacity: Math.min(1, (time - card.start) / card.fade, (card.end - time) / card.fade) } : null,
-      fade: Math.max(0, Math.min(1, fade)), blur: segment.blur * Math.sin(Math.PI * local), gate: segment.gate,
+      fade: Math.max(0, Math.min(1, fade)), blur: segment.blur * Math.sin(Math.PI * local),
+      gate: lerp(segment.gate[0], segment.gate[1], eased), aperture: segment.aperture,
     };
   };
   return { ...info, duration, segments, cards, fades, beats: builder.beats, sample,
