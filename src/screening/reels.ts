@@ -33,7 +33,7 @@ function framing(roll: RollDefinition, aspect: number) {
 }
 
 function drift(pose: CameraPose, amount = 1): CameraPose {
-  return { ...pose, zoom: pose.zoom * (1 - .035 * amount), yaw: pose.yaw + degrees(1.6) * amount };
+  return { ...pose, zoom: pose.zoom * (1 - .035 * amount), yaw: pose.yaw + degrees(pose.tilt ? 1.6 : .5) * amount };
 }
 
 /** Breaks are overview shots at strip boundaries. Short rolls get fewer; medium format fewer still. */
@@ -62,11 +62,11 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
   if (options.reel === 'loupe-walk') {
     const loupeRadius = loupeGeometry(options.loupe.type).radius * options.loupe.scale;
     const bottom = f.strips[f.strips.length - 1];
-    const rest: LoupePose = { x: f.halfWidth + loupeRadius * 1.5, y: bottom.y, lift: 0, magnification: 4 };
-    const establishing = f.fit((rest.x + loupeRadius * 1.3) * 2 * 1.04, f.span * 1.2);
+    const rest: LoupePose = { x: f.halfWidth + loupeRadius * 1.6, y: bottom.y, lift: 0, magnification: 4 };
+    const establishing = f.fit((rest.x + loupeRadius * 2.2) * 2, f.span * 1.2);
     const at = (index: number, lift = 0, magnification = 4): LoupePose => { const frame = locateFrame(roll, index); return { x: frame.x, y: frame.y, lift, magnification }; };
     // A low, angled eye that follows the lens along the film.
-    const walk = (index: number, point: LoupePose = at(index)): CameraPose => ({ zoom: f.frame(index).zoom * 1.5, pan: tablePan(point.x, point.y), tilt: degrees(42), yaw: degrees(-8) });
+    const walk = (index: number, point: LoupePose = at(index)): CameraPose => ({ zoom: f.frame(index).zoom * 1.85, pan: tablePan(point.x, point.y), tilt: degrees(32), yaw: degrees(-8) });
     const inspect = (point: LoupePose): CameraPose => { const view = loupeInspectionView(point.x, point.y, options.loupe.scale, aspect, options.loupe.type); return { zoom: view.zoom, pan: view.pan, tilt: 0, yaw: 0 }; };
     const inspections = new Set(Array.from({ length: n }, (_, i) => i).filter(i => n < 6 ? i === Math.floor(n / 2) : i % 6 === 2));
     const b = new TimelineBuilder(establishing, rest, scale, reduced);

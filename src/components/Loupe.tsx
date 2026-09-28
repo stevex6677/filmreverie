@@ -5,6 +5,7 @@ import { createLoupeShaderMaterial } from '../shaders/loupeShader';
 import { captureLoupeScene, createLoupeRenderTarget, updateTableIllumination } from '../shaders/tableIllumination';
 import { TABLE_SURFACE_Y, TABLE_CENTER_Z } from '../utils/cameraBounds';
 import { LOUPE_LENS_HEIGHT, LOUPE_LENS_RADIUS, LOUPE_REST, loupeGeometry, type LoupeType } from '../utils/loupeView';
+import type { LoupePose } from '../screening/timeline';
 
 interface LoupeProps {
   type?: LoupeType;
@@ -12,10 +13,12 @@ interface LoupeProps {
   isActive: boolean; targetX: number; targetY: number; frameIndex: number; u: number; v: number;
   texture: THREE.Texture; isPositive: boolean; magnification?: number; brightness?: number;
   isDeterministic?: boolean; onClick?: () => void;
+  /** Screening pose: undefined when not screening, null to rest the loupe. */
+  screening?: () => LoupePose | null | undefined;
 }
 
 export const Loupe: React.FC<LoupeProps> = ({ type = 'classic', physicalScale = 1, suspended = false, opticalEffects = true,
-  isActive, targetX, targetY, u, v, texture, isPositive, magnification = 4, brightness = 1, isDeterministic = false, onClick }) => {
+  isActive, targetX, targetY, u, v, texture, isPositive, magnification = 4, brightness = 1, isDeterministic = false, onClick, screening }) => {
   const group = useRef<THREE.Group>(null), ribs = useRef<THREE.InstancedMesh>(null);
   const geometry = loupeGeometry(type);
   const dome = useMemo(() => {
@@ -59,13 +62,15 @@ export const Loupe: React.FC<LoupeProps> = ({ type = 'classic', physicalScale = 
 
   useFrame(({ gl, scene, camera, size },delta) => {
     if(!group.current)return;
-    const pos=new THREE.Vector3(isActive?targetX:LOUPE_REST.x,isActive?targetY:LOUPE_REST.y,.008);
-    if(isDeterministic)group.current.position.copy(pos);
+    const directed=screening?.();
+    const active=directed===undefined?isActive:!!directed, power=directed?directed.magnification:magnification;
+    const pos=directed?new THREE.Vector3(directed.x,directed.y,.008+directed.lift):new THREE.Vector3(active?targetX:LOUPE_REST.x,active?targetY:LOUPE_REST.y,.008);
+    if(isDeterministic||directed!==undefined)group.current.position.copy(pos);
     else group.current.position.lerp(pos,1-Math.exp(-delta*28));
     group.current.scale.setScalar(physicalScale);group.current.visible=!suspended;
     group.current.updateWorldMatrix(true,true);
     const sample=group.current.getWorldPosition(new THREE.Vector3());
-    const half=geometry.lensRadius*physicalScale/Math.max(1,magnification);
+    const half=geometry.lensRadius*physicalScale/Math.max(1,power);
     capture.left=-half;capture.right=half;capture.top=half;capture.bottom=-half;
     capture.position.set(sample.x,TABLE_SURFACE_Y+.3,sample.z);capture.up.set(0,0,-1);
     capture.lookAt(sample.x,TABLE_SURFACE_Y,sample.z);capture.updateProjectionMatrix();
@@ -79,17 +84,18 @@ export const Loupe: React.FC<LoupeProps> = ({ type = 'classic', physicalScale = 
     }
     lens.uniforms.uDomeContext.value=domeContext?.texture ?? renderTarget.texture;
     lens.uniforms.uTexture.value=renderTarget.texture;lens.uniforms.uUseSceneCapture.value=1;
-    lens.uniforms.uCenterUv.value.set(u,v);lens.uniforms.uMagnification.value=magnification;
-    lens.uniforms.uActive.value=isActive?1:0;lens.uniforms.uModeTransition.value=isPositive?1:0;
+    lens.uniforms.uCenterUv.value.set(u,v);lens.uniforms.uMagnification.value=power;
+    lens.uniforms.uActive.value=active?1:0;lens.uniforms.uModeTransition.value=isPositive?1:0;
     lens.uniforms.uOpticalEffects.value=opticalEffects?1:0;updateTableIllumination(lens,brightness);
     lens.uniforms.uGlassDome.value=type==='glass'?1:0;
-    const center=new THREE.Vector3(sample.x,TABLE_SURFACE_Y+.008+geometry.lensHeight*physicalScale,sample.z).project(camera);
-    const edge=new THREE.Vector3(sample.x+geometry.radius*physicalScale,TABLE_SURFACE_Y+.008+geometry.lensHeight*physicalScale,sample.z).project(camera);
+    const lensY=sample.y+geometry.lensHeight*physicalScale;
+    const center=new THREE.Vector3(sample.x,lensY,sample.z).project(camera);
+    const edge=new THREE.Vector3(sample.x+geometry.radius*physicalScale,lensY,sample.z).project(camera);
     const radius=Math.abs(edge.x-center.x)*size.width/2;
     gl.domElement.dataset.loupeSample=`${sample.x},${TABLE_CENTER_Z-sample.z}`;
     gl.domElement.dataset.loupeDisplay=`${(center.x+1)*size.width/2},${(1-center.y)*size.height/2},${radius}`;
     gl.domElement.dataset.loupeVisible=String(!suspended);
-    gl.domElement.dataset.loupeMagnification=String(magnification);
+    gl.domElement.dataset.loupeMagnification=String(power);
     gl.domElement.dataset.loupeScale=String(physicalScale);
     gl.domElement.dataset.loupeType=type;
   }, -1);

@@ -53,6 +53,7 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
   const offset = photoCropOffset(photo?.aspectRatio ?? frameWidth / layout.frameHeight, frameWidth / layout.frameHeight, rotation, photo?.cropPosition);
   material.uniforms.uPhotoOffset.value.set(offset.x, -offset.y);
   material.uniforms.uPhotoRotation.value = rotation * Math.PI / 180;
+  material.uniforms.uRevealSpan.value.set(center.x - frameWidth / 2, frameWidth);
   updateTableIllumination(material, brightness);
   updateFilmLook(material, stockId, filmStrength, frameWidth / FILM_UNIT, layout.frameHeight / FILM_UNIT, filmGrainSeed(photo?.id ?? String(index)));
 

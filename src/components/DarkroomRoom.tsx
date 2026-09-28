@@ -26,7 +26,7 @@ export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ cabinetOnly = false,
       <RoomZones />
       {/* Short-range distributed bounce from the diffuser onto nearby objects. */}
       {[-1.45, 0, 1.45].map(x => (
-        <pointLight key={x} position={[x, -0.27, -0.10]} color="#edf2f7"
+        <pointLight key={x} name="table-spill" position={[x, -0.27, -0.10]} color="#edf2f7"
           intensity={getTableIllumination(brightness).spillIntensity} distance={1.2} decay={2} />
       ))}
 

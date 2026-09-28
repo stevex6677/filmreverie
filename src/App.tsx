@@ -4,7 +4,7 @@ import { UpdateNotice } from "./components/UpdateNotice";
 import { createRuntimeRoll } from "./storage/rollRuntime";
 import { SavedView, StoredRoll, storageMessage } from "./storage/rollRepository";
 import { BASELINE_ROLL, FULL_ROLL_FIXTURE, LOCAL_ROLL, validateRoll } from "./utils/rollLayout";
-import { useReducer, useEffect, useMemo, useState, useRef, useCallback, Suspense } from "react";
+import { useReducer, useEffect, useMemo, useState, useRef, useCallback, useSyncExternalStore, Suspense, lazy } from "react";
 import * as THREE from "three";
 import { DISPLAY_EXPOSURE } from "./shaders/tableIllumination";
 import { Canvas } from "@react-three/fiber";
@@ -41,6 +41,16 @@ import { usePublishedShelf } from './cloud/publicShelf';
 import { guestRollRepository, guestActiveRollKey, guestWelcomeKey } from './storage/guestRolls';
 import { GuestWelcome } from './components/GuestWelcome';
 import './cloud/navigation.css';
+import { getFilmStock } from './data/filmStocks';
+import { FILM_FORMATS } from './data/filmFormats';
+import { EXPORT_FORMATS, ScreeningSession, type ScreeningChoice, type ScreeningCredits } from './screening/session';
+import { ScreeningPicker, ScreeningPlayer } from './screening/ScreeningUI';
+import { createScreeningTimeline } from './screening/reels';
+import { screeningFileName } from './screening/overlay';
+
+// Export code (encoder and MP4 writer) loads on demand, not at startup.
+const ScreeningExportView = lazy(() => import('./screening/ScreeningExportView'));
+const idle = () => () => {};
 
 
 function LoadingFallback() {
@@ -165,6 +175,29 @@ export function App() {
   }, [appReady, cameraSettled, state.roomMode]);
 
   const roll = state.roll;
+  // Screening overrides rendering only. It never dispatches viewer actions,
+  // so the table, loupe, film mode, brightness and saved views are unchanged.
+  const [screeningChoice, setScreeningChoice] = useState<ScreeningChoice>({ reel: 'loupe-walk', pace: 'normal', format: '16:9' });
+  const [screeningPicker, setScreeningPicker] = useState(false);
+  const [screening, setScreening] = useState<ScreeningSession | null>(null);
+  const [screeningExport, setScreeningExport] = useState<'picker' | 'preview' | null>(null);
+  const screeningExporting = useSyncExternalStore(screening?.subscribe ?? idle, () => screening?.exporting ?? false);
+  const screeningCredits = useMemo<ScreeningCredits>(() => {
+    const [title, ...rest] = roll.label.split(' · ');
+    return { title: title || 'Untitled roll', stock: getFilmStock(state.filmStockId).displayName, format: roll.format ? rest.join(' · ') || FILM_FORMATS[roll.format].label : FILM_FORMATS['135'].label, frames: roll.frames.length };
+  }, [roll, state.filmStockId]);
+  const screeningOptions = () => ({ stockType: getFilmStock(state.filmStockId).type, reducedMotion: isReducedMotion, loupe: { scale: state.loupe.scale, type: state.loupe.type } });
+  const startScreening = (mode: 'preview' | 'export') => {
+    if (state.roomMode !== 'inspect' || state.loupe.isActive || state.isTransitioning) return;
+    const session = new ScreeningSession(roll, screeningChoice, screeningOptions(), screeningCredits, state.viewportAspect);
+    if (mode === 'export') session.pause();
+    setScreeningPicker(false); setSheet(null); setScreening(session); setScreeningExport(mode === 'export' ? 'picker' : null);
+  };
+  const exitScreening = () => {
+    setScreeningExport(null); setScreening(null);
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-testid="screen-roll"]')?.focus({ preventScroll: true }));
+  };
+  useEffect(() => { setScreening(null); setScreeningExport(null); setScreeningPicker(false); }, [roll, state.roomMode]);
   useCameraNavigation(state, dispatch);
   const closeCamera = useCallback(() => dispatch({ type: 'CLOSE_CAMERA' }), []);
   useEffect(()=>setSheet(null),[state.roomMode]);
@@ -306,6 +339,7 @@ export function App() {
   // Keyboard shortcut support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (screening || screeningPicker) return;
       if (state.cameraDisplay || editorOpen || cloudDialogOpen || sheet==='frames') return;
       // Panel controls own their keys; the focused film can still move the loupe.
       if (sheet==='loupe' && !(e.key.startsWith('Arrow') && e.target instanceof HTMLElement && e.target.closest('.canvas-wrapper'))) return;
@@ -382,7 +416,7 @@ export function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.cameraDisplay, state.roomMode, state.adjustingView, state.shelfFocused, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, state.loupe, roll, editorOpen, cloudDialogOpen, sheet]);
+  }, [state.cameraDisplay, state.roomMode, state.adjustingView, state.shelfFocused, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, state.loupe, roll, editorOpen, cloudDialogOpen, sheet, screening, screeningPicker]);
 
   const localError = new URLSearchParams(window.location.search).get("roll") === "local" ? validateRoll(LOCAL_ROLL) : null;
   if (localError) return <>
@@ -441,6 +475,8 @@ export function App() {
       data-loupe-size={state.loupe.size}
       data-active-frame={state.loupe.frameIndex + 1}
       data-reduced-motion={isReducedMotion ? "true" : "false"}
+      data-screening={screening ? screeningExport ? 'export' : 'preview' : ''}
+      data-screening-reel={screening?.choice.reel ?? ''}
     >
       {injectedError || state.error ? (
         <div className="darkroom-error-fallback" data-testid="error-banner">
@@ -465,7 +501,7 @@ export function App() {
           <div className="canvas-wrapper" tabIndex={state.cameraDisplay ? -1 : 0} aria-hidden={!!state.cameraDisplay} aria-label="Film viewer">
             <Canvas shadows key={canvasVersion}
               onCreated={({gl})=>{gl.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();setContextLost(true);});gl.domElement.addEventListener('webglcontextrestored',()=>setContextLost(false));}}
-              frameloop={state.cameraDisplay || editorOpen || cloudDialogOpen || sheet === 'frames' || hidden || contextLost ? "never" : "always"}
+              frameloop={state.cameraDisplay || editorOpen || cloudDialogOpen || sheet === 'frames' || hidden || contextLost || screeningExporting ? "never" : "always"}
               camera={initialCamera}
               dpr={[1, Math.min(typeof window !== "undefined" ? window.devicePixelRatio : 1, 1.5)]}
               gl={{
@@ -483,7 +519,7 @@ export function App() {
                 coverSource={canManageRolls ? managedCoverSource : published.cover}
                 shelf={shelf}
                 shelfPortal={shelfPortal}
-                inputBlocked={!!state.cameraDisplay || editorOpen || cloudDialogOpen || sheet==='frames' || (state.roomMode==='room' && !!sheet) || hidden || contextLost}
+                inputBlocked={!!state.cameraDisplay || editorOpen || cloudDialogOpen || sheet==='frames' || (state.roomMode==='room' && !!sheet) || hidden || contextLost || !!screening || screeningPicker}
                 state={state}
                 dispatch={dispatch}
                 isDeterministic={isDeterministic}
@@ -491,6 +527,7 @@ export function App() {
                 onLoadProgress={handleLoadProgress}
                 onFirstFrameRendered={handleFirstFrameRendered}
                 onCameraSettled={handleCameraSettled}
+                screening={screening}
               />
             </Canvas>
           </div>
@@ -547,7 +584,17 @@ export function App() {
               <MobileControls roomOnly state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenRoom={openRoom} onOpenTable={openTable} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} ownerActions={ownerActions} createAction={createAction} />
               <p>{emptyRollMessage}</p>
             </div>
-          : <TableControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenRoom={openRoom} onOpenTable={openTable} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} ownerActions={ownerActions} createAction={createAction} />)}
+          : screening
+            ? <ScreeningPlayer session={screening} onExit={exitScreening} onExport={() => { screening.pause(); setScreeningExport('preview'); }} />
+            : <TableControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenRoom={openRoom} onOpenTable={openTable} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} ownerActions={ownerActions} createAction={createAction} onScreen={() => setScreeningPicker(true)} />)}
+      {screeningPicker && !screening && <ScreeningPicker choice={screeningChoice} onChange={setScreeningChoice} frames={roll.frames.length} reducedMotion={isReducedMotion}
+        durationFor={choice => createScreeningTimeline(roll, { ...screeningOptions(), reel: choice.reel, pace: choice.pace, aspect: EXPORT_FORMATS[choice.format].width / EXPORT_FORMATS[choice.format].height }).duration}
+        onClose={() => setScreeningPicker(false)} onPreview={() => startScreening('preview')} onExport={() => startScreening('export')} />}
+      {screening && screeningExport && <Suspense fallback={<div className="screening-export" role="status">Preparing video export…</div>}>
+        <ScreeningExportView session={screening} format={screening.choice.format} fileName={screeningFileName(screeningCredits.title, screening.choice.reel)}
+          maxSeconds={isDeterministic && Number(new URLSearchParams(location.search).get('screening_seconds')) > 0 ? Number(new URLSearchParams(location.search).get('screening_seconds')) : undefined}
+          onClose={() => { if (screeningExport === 'picker') exitScreening(); else setScreeningExport(null); }} />
+      </Suspense>}
       {state.cameraDisplay && <CameraDisplayView stockId={state.filmStockId} id={state.cameraDisplay} onBack={closeCamera} reducedMotion={isReducedMotion} />}
       {libraryError && <div className="library-notice" role="alert">{libraryError}<button onClick={() => { setLibraryError(""); openShelf(); }}>Open shelf</button></div>}
       {editorOpen && <RollEditor publication={!isGuest} repository={repository} onDelete={deleteRoll} editId={editingRollId} onClose={() => { setEditorOpen(false); setEditingRollId(undefined); }} onOpen={openSaved} />}

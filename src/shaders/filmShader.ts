@@ -15,6 +15,28 @@ export const FILM_ORANGE_MASK = new THREE.Color(0.88, 0.46, 0.18);
 // Source exposure stays fixed; the dimmer changes transmitted light only.
 export const FILM_EXPOSURE = 1.0;
 
+// Screening's spatial develop band. uReveal = (edge, softness, mode, glow) in
+// strip-local layout units; mode 0 is off, 1 turns negative to positive and 2
+// brings up the backlight behind reversal film. uRevealSpan maps UV to strip x.
+export const REVEAL_GLSL = `
+  uniform vec4 uReveal;
+  uniform vec2 uRevealSpan;
+  float revealMask() {
+    float x = uRevealSpan.x + vUv.x * uRevealSpan.y;
+    return 1.0 - smoothstep(uReveal.x - uReveal.y, uReveal.x + uReveal.y, x);
+  }
+  float revealMode(float mode) { return uReveal.z > 0.5 && uReveal.z < 1.5 ? revealMask() : mode; }
+  float revealLight() {
+    if (uReveal.z < 0.5) return 1.0;
+    float x = uRevealSpan.x + vUv.x * uRevealSpan.y;
+    float band = uReveal.w * exp(-pow((x - uReveal.x) / max(uReveal.y * 2.5, 1e-5), 2.0));
+    return (uReveal.z > 1.5 ? mix(0.035, 1.0, revealMask()) : 1.0) + band;
+  }
+`;
+export function revealUniforms(x0 = 0, width = 1) {
+  return { uReveal: { value: new THREE.Vector4() }, uRevealSpan: { value: new THREE.Vector2(x0, width) } };
+}
+
 export const FilmFragmentShader = `
   uniform sampler2D uTexture;
   uniform float uModeTransition;
@@ -28,13 +50,14 @@ export const FilmFragmentShader = `
   varying vec2 vUv;
   ${FILM_TRANSMISSION_GLSL}
   ${FILM_LOOK_GLSL}
+  ${REVEAL_GLSL}
   void main() {
     vec2 p = (vUv - 0.5) * uPhotoCrop + uPhotoOffset;
     float c = cos(uPhotoRotation), s = sin(uPhotoRotation);
     vec2 photoUV = vec2(c * p.x - s * p.y, s * p.x + c * p.y) + 0.5;
     vec3 source = texture2D(uTexture, clamp(photoUV, vec2(0.0), vec2(1.0))).rgb * uExposure;
-    vec3 transmission = filmTransmittance(applyFilmLook(source, vUv), uModeTransition, uOrangeMask);
-    gl_FragColor = vec4(transmitTableLight(transmission, uTableOutput, uSurfaceReflection), 1.0);
+    vec3 transmission = filmTransmittance(applyFilmLook(source, vUv), revealMode(uModeTransition), uOrangeMask);
+    gl_FragColor = vec4(transmitTableLight(transmission, uTableOutput * revealLight(), uSurfaceReflection), 1.0);
     ${DISPLAY_FRAGMENT}
   }
 `;
@@ -52,6 +75,7 @@ export function createFilmShaderMaterial(texture: THREE.Texture, isPositive: boo
       uModeTransition: { value: isPositive ? 1.0 : 0.0 },
       uOrangeMask: { value: base.clone() },
       uExposure: { value: FILM_EXPOSURE },
+      ...revealUniforms(),
       ...illuminationUniforms(brightness),
     },
   });
@@ -69,6 +93,7 @@ export function createRebateMaterial(texture: THREE.Texture, brightness = 1, isP
     uniforms: { uGates: { value: gates }, uTexture: { value: texture }, uModeTransition: { value: isPositive && negativeStock ? 1 : 0 }, uRebateBase: { value: base.clone() }, uBaseOpacity: { value: baseOpacity },
       uRailFraction: { value: layout && size ? layout.marginY / size.height : 0 },
       uGateInset: { value: size ? new THREE.Vector2((.55 / 36 * .05) / size.width, (.55 / 36 * .05) / size.height) : new THREE.Vector2() },
+      ...revealUniforms(size ? -size.width / 2 : 0, size?.width ?? 1),
       ...illuminationUniforms(brightness) },
     fragmentShader: `
       uniform sampler2D uTexture;
@@ -81,6 +106,7 @@ export function createRebateMaterial(texture: THREE.Texture, brightness = 1, isP
       uniform vec2 uGates[${gates.length}];
       uniform vec2 uGateInset;
       varying vec2 vUv;
+      ${REVEAL_GLSL}
       void main() {
         vec4 rebate;
         if (uRailFraction > 0.0) {
@@ -107,8 +133,8 @@ export function createRebateMaterial(texture: THREE.Texture, brightness = 1, isP
         // Normalize away the orange mask before reversing the entire rebate,
         // including its lettering. E-6 is already positive and bypasses this.
         vec3 positive = vec3(0.004) + max(vec3(0.0), vec3(1.0) - rebate.rgb / max(uRebateBase, vec3(0.001))) * 0.5;
-        vec3 transmission = mix(rebate.rgb * 0.5, positive, uModeTransition);
-        gl_FragColor = vec4(transmission * uTableOutput + vec3(uSurfaceReflection), 1.0);
+        vec3 transmission = mix(rebate.rgb * 0.5, positive, revealMode(uModeTransition));
+        gl_FragColor = vec4(transmission * uTableOutput * revealLight() + vec3(uSurfaceReflection), 1.0);
         ${DISPLAY_FRAGMENT}
       }
     `,

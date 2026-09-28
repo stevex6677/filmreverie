@@ -11,8 +11,9 @@ import { photoCropPreview } from '../utils/photoFraming';
 import { MobileSheet } from './MobileControls';
 import { FilmStockInfo } from './FilmStockInfo';
 import { FilmStripHeader } from './FilmStripHeader';
+import { ScreenRollButton } from '../screening/ScreeningUI';
 
-export function TableControls({state,dispatch,onOpenLibrary,onOpenRoom,onOpenTable,onOpenCameras,sheet,setSheet,ownerActions,createAction}:{state:ViewerState;dispatch:Dispatch<ViewerAction>;onOpenLibrary:()=>void;onOpenRoom:()=>void;onOpenTable:()=>void;onOpenCameras:()=>void;sheet:MobileSheet;setSheet:(sheet:MobileSheet)=>void;createAction?:ReactNode;ownerActions?:ReactNode}) {
+export function TableControls({state,dispatch,onOpenLibrary,onOpenRoom,onOpenTable,onOpenCameras,sheet,setSheet,ownerActions,createAction,onScreen}:{state:ViewerState;dispatch:Dispatch<ViewerAction>;onOpenLibrary:()=>void;onOpenRoom:()=>void;onOpenTable:()=>void;onOpenCameras:()=>void;sheet:MobileSheet;setSheet:(sheet:MobileSheet)=>void;createAction?:ReactNode;ownerActions?:ReactNode;onScreen?:()=>void}) {
   const root=useRef<HTMLDivElement>(null), panel=useRef<HTMLDialogElement>(null);
   const [quiet,setQuiet]=useState(false);
   const stock=getFilmStock(state.filmStockId);
@@ -50,13 +51,17 @@ export function TableControls({state,dispatch,onOpenLibrary,onOpenRoom,onOpenTab
 
   usePanelDismiss(panel, !!sheet && sheet!=='loupe', ()=>setSheet(null));
   const next=(delta:number)=>dispatch({type:'OPEN_FRAME',frameIndex:state.activeFrameIndex+delta});
+  // Screening starts from a settled table with the loupe put away.
+  const screen=onScreen&&!state.loupe.isActive&&!state.adjustingView?()=>{setSheet(null);onScreen();}:undefined;
+  const screenBlocked=state.isTransitioning||state.assetsLoading;
   return <div ref={root} className={`table-controls ${focus?'is-focus':''} ${inspecting?'is-loupe-inspection':''} ${state.loupe.isActive?'has-loupe':''}`} data-quiet={quiet} data-testid="controls-panel">
     {!focus && !inspecting && <FilmStripHeader state={state} onOpenRoom={onOpenRoom} onOpenLibrary={onOpenLibrary} onOpenTable={onOpenTable} onOpenCameras={onOpenCameras} onOpenSettings={()=>setSheet(sheet==='tools'?null:'tools')} settingsOpen={sheet==='tools'} onToggleLoupe={()=>{setSheet(null);dispatch({type:'TOGGLE_LOUPE'});}} ownerActions={ownerActions} createAction={createAction} />}
     {focus&&!inspecting&&<header className="table-header">
       <button className="table-back" onClick={()=>dispatch({type:'SHOW_OVERVIEW'})}>← Overview</button>
-      <div className="table-actions">{!state.loupe.isActive&&<button data-testid="loupe-activate" onClick={()=>dispatch({type:'SET_LOUPE_ACTIVE',active:true})}>Loupe</button>}<button data-panel-toggle className="table-adjust" aria-haspopup="dialog" onClick={()=>setSheet('tools')}>Settings</button>{ownerActions}</div>
+      <div className="table-actions">{screen&&<ScreenRollButton disabled={screenBlocked} onClick={screen}/>}{!state.loupe.isActive&&<button data-testid="loupe-activate" onClick={()=>dispatch({type:'SET_LOUPE_ACTIVE',active:true})}>Loupe</button>}<button data-panel-toggle className="table-adjust" aria-haspopup="dialog" onClick={()=>setSheet('tools')}>Settings</button>{ownerActions}</div>
     </header>}
 
+    {!focus&&!inspecting&&screen&&!sheet&&<ScreenRollButton launch disabled={screenBlocked} onClick={screen}/>}
     {state.adjustingView && <nav className="table-navigation table-angle-controls" aria-label="View angle">
       <button onClick={()=>dispatch({type:'SET_ADJUSTING_VIEW',active:false})}>Done</button>
       <output aria-label="Current view angle">Tilt {Math.round(state.tableAngle.tilt*180/Math.PI)}° · Yaw {Math.round(state.tableAngle.yaw*180/Math.PI)}°</output>
