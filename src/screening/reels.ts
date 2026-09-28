@@ -100,14 +100,14 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
 
   if (options.reel === 'develop') {
     const b = new TimelineBuilder(f.overview, scale, reduced);
-    b.light = 0; b.reveal = 0;
-    b.fade(b.seconds(.8), 0);
-    // The title shows over the dark table; the light then comes up smoothly as
-    // it fades, so brightness only ever rises (no strike, flicker or pumping).
-    b.step('establish', 'open', 0, 2.6, { light: 0, reveal: 0 });
-    b.card('title', b.seconds(.5), b.seconds(3.2));
-    b.step('establish', 'open', 0, 1.8, { light: 1 });
-    b.step('establish', 'open', 0, 1.2, { camera: drift(f.overview, .5), drift: true });
+    // The light table is off; dim room light shows the black film on a grey
+    // diffuser. After the title it switches on at once, revealing the negatives.
+    b.light = 0; b.reveal = 0; b.ambient = 1;
+    b.fade(b.seconds(.9), 0);
+    b.step('establish', 'open', 0, 3.4, { light: 0, reveal: 0, camera: drift(f.overview, .5), drift: true });
+    b.card('title', b.seconds(.6), b.seconds(3));
+    b.step('establish', 'open', 0, reduced ? .8 : .12, { light: 1, ambient: 0, ease: 'linear' });
+    b.step('establish', 'open', 0, 1.4, { camera: drift(f.overview), drift: true });
     for (let i = 0; i < n; i++) {
       const frame = f.frame(i);
       if (i > 0 && locateFrame(roll, i).localIndex === 0 && breaks.has(i)) {
@@ -127,9 +127,12 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     return finishTimeline(b, { ...info, revealMode: options.stockType === 'reversal' ? 'backlight' : 'polarity' });
   }
 
-  // Projector: a countdown leader, then a fixed, lit gate. Every photograph
-  // enters from the right and leaves to the left, whatever its place on the table;
-  // a jump to another strip is hidden behind the closed shutter.
+  // Projector: the title on the lit table, then the room goes dark and the
+  // projector lamp warms up an empty gate. The countdown leader is projected in
+  // it, then black leader, and the first photograph opens on the shutter.
+  // Every later photograph enters from the right and leaves to the left,
+  // whatever its place on the table; a move to another strip is hidden behind
+  // the closed shutter. No overview breaks interrupt the projection.
   const beat = .6;
   const width = (index: number) => { const frame = locateFrame(roll, index); return (frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) * frame.strip.scale; };
   const gate = (index: number): CameraPose => { const pose = f.frame(index); return { ...pose, zoom: pose.zoom * .8 }; };
@@ -142,35 +145,30 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
   const period = (i: number) => {
     if (medium || n < 10) return medium ? 2.5 : 2;
     const phase = i % 9;
-    return phase >= 5 && phase <= 7 ? .5 : phase === 8 ? 3 : 2;
+    // A change of strip needs a full beat for its hidden jump, even in a speed-up.
+    return phase >= 5 && phase <= 7 ? (locateFrame(roll, i).localIndex === 0 ? 1 : .5) : phase === 8 ? 3 : 2;
   };
   const advance = { blur: medium ? .6 : 1, beat: true };
   const b = new TimelineBuilder(f.overview, scale, reduced);
-  b.fade(b.seconds(.3), 0);
-  const leader = b.seconds(4.4);
-  b.card('countdown', 0, leader, 0);
-  b.step('establish', 'open', 0, 4.4 + 3, { camera: drift(f.overview), drift: true });
-  b.card('title', leader + b.seconds(.3), b.time);
-  if (reduced) b.step('tour', 'push-in', 0, 1.8, { camera: gate(0), gate: 1, aperture: aperture(0), beat: true });
-  else {
-    b.step('tour', 'push-in', 0, 1.8, { camera: shifted(0, -1), gate: 1, aperture: aperture(0) });
-    b.step('tour', 'advance', 0, jump, { ...advance, camera: gate(0), shutter: 'pulse', ease: medium ? 'heavy' : 'snap' });
-  }
+  b.fade(b.seconds(.8), 0);
+  b.step('establish', 'open', 0, 3, { camera: drift(f.overview), drift: true });
+  b.card('title', b.seconds(.4), b.seconds(2.8));
+  // Room lights down; in the dark the camera settles on the gate.
+  const dark = b.time;
+  b.step('establish', 'open', 0, 1, {});
+  b.fade(dark, 0); b.fade(b.time, 1); b.fade(b.time + 1e-3, 0);
+  b.camera = gate(0); b.aperture = aperture(0);
+  b.step('establish', 'open', 0, 1.4, { lamp: 1, gate: 1 });
+  const leader = b.time;
+  b.step('establish', 'open', 0, 3.6, {});
+  b.card('countdown', leader, b.time, 0);
+  b.step('establish', 'open', 0, .45, { lamp: 0, ease: 'out' });
+  b.step('tour', 'reveal', 0, jump, { lamp: null, shutter: 'open', beat: true });
   // Beats fall on a regular grid: each frame's period includes its advance.
   for (let i = 0; i < n; i++) {
-    let hold = period(i) * beat - (i === 0 && !reduced ? jump : 0);
+    let hold = period(i) * beat - (i === 0 ? jump : 0);
     if (i > 0) {
-      const newStrip = locateFrame(roll, i).localIndex === 0;
-      if (newStrip && breaks.has(i)) {
-        b.step('break', 'pull-back', i, 2 * beat, { camera: f.overview, gate: 0 });
-        b.step('break', 'overview', i, beat, {});
-        if (reduced) b.step('break', 'push-in', i, 2 * beat, { camera: gate(i), gate: 1, aperture: aperture(i), beat: true });
-        else {
-          b.step('break', 'push-in', i, 2 * beat, { camera: shifted(i, -1), gate: 1, aperture: aperture(i) });
-          b.step('tour', 'advance', i, jump, { ...advance, camera: gate(i), shutter: 'pulse', ease: medium ? 'heavy' : 'snap' });
-          hold -= jump;
-        }
-      } else if (newStrip && !reduced) {
+      if (locateFrame(roll, i).localIndex === 0 && !reduced) {
         // Carry on leftward past the strip's end, then enter the next strip from its right.
         const half = jump * (medium ? .5 : .7);
         b.step('tour', 'advance', i, half, { ...advance, camera: shifted(i - 1, 1), shutter: 'close', ease: 'in' });
@@ -184,7 +182,14 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     }
     b.step('tour', 'frame', i, Math.max(.08, hold), { flicker: 'gate', light: 1, weave: true });
   }
-  b.step('return', 'pull-back', n - 1, 2 * beat, { camera: f.overview, gate: 0 });
+  // The shutter closes on the last frame; the room lights come back up on the roll.
+  b.step('return', 'close', n - 1, .5, { shutter: 'close' });
+  b.step('return', 'close', n - 1, .4, { lamp: 0 });
+  const lights = b.time;
+  b.fade(lights - 1e-3, 0); b.fade(lights, 1);
+  b.camera = f.overview; b.gate = 0;
+  b.step('return', 'pull-back', n - 1, 1.2, { lamp: null });
+  b.fade(b.time, 0);
   const end = b.time;
   b.step('return', 'close', n - 1, 3.4, { camera: drift(f.overview), drift: true });
   b.card('end', end + b.seconds(.3), b.time);

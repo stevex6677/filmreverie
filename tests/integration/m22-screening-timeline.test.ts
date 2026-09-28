@@ -46,7 +46,7 @@ describe('M22 screening timelines', () => {
       expect(timeline.segments.at(-1)!.act).toBe('return');
       expect(timeline.segments.some(segment => segment.act === 'tour')).toBe(true);
       for (let i = 1; i < timeline.segments.length; i++) expect(timeline.segments[i].start).toBeCloseTo(timeline.segments[i - 1].start + timeline.segments[i - 1].duration, 9);
-      expect(timeline.cards.map(card => card.kind)).toEqual(reel === 'projector' ? ['countdown', 'title', 'end'] : ['title', 'end']);
+      expect(timeline.cards.map(card => card.kind)).toEqual(reel === 'projector' ? ['title', 'countdown', 'end'] : ['title', 'end']);
       const starts = roll.frames.map((_, i) => timeline.frameStart(i));
       expect(starts).toEqual([...starts].sort((a, b) => a - b));
       expect(new Set(starts).size).toBe(roll.frames.length);
@@ -55,7 +55,9 @@ describe('M22 screening timelines', () => {
 
   it('take an overview break at strip boundaries, fewer on short and medium-format rolls', () => {
     const boundaries = createRollLayout(FULL_ROLL_FIXTURE).slice(1).map(strip => strip.offset);
-    for (const reel of REEL_IDS) {
+    // Projector never leaves the projection for an overview (2026-09-27 review).
+    expect(createScreeningTimeline(FULL_ROLL_FIXTURE, options('projector')).segments.some(s => s.act === 'break')).toBe(false);
+    for (const reel of ['tracking', 'develop'] as const) {
       const timeline = createScreeningTimeline(FULL_ROLL_FIXTURE, options(reel));
       for (const boundary of boundaries) expect(timeline.segments.some(s => s.act === 'break' && s.kind === 'overview' && s.frameIndex === boundary), `${reel} ${boundary}`).toBe(true);
       expect(timeline.segments.filter(s => s.act === 'break' && s.kind === 'overview')).toHaveLength(boundaries.length);
@@ -207,9 +209,17 @@ describe('M22 reel revisions (2026-09-27 feedback)', () => {
   it('Projector always brings the next photograph in from the right, hiding strip jumps behind the shutter', () => {
     for (const [name, roll] of Object.entries(ROLLS)) for (const aspect of [16 / 9, 9 / 16]) {
       const timeline = createScreeningTimeline(roll, options('projector', { aspect }));
-      expect(timeline.cards[0].kind).toBe('countdown');
+      const countdown = timeline.cards.find(card => card.kind === 'countdown')!;
+      // The countdown is projected in the lamp-lit gate, straight before the first photograph.
+      for (const t of [countdown.start + .01, (countdown.start + countdown.end) / 2, countdown.end - .01]) {
+        const sample = timeline.sample(t);
+        expect(sample.lamp, name).toBe(1); expect(sample.fade).toBe(0); expect(sample.aperture).not.toBeNull();
+      }
+      const reveal = timeline.segments.find(s => s.kind === 'reveal')!;
+      expect(reveal.frameIndex).toBe(0); expect(reveal.start - countdown.end).toBeLessThan(.6);
+      expect(timeline.segments.filter(s => s.start > countdown.end && s.start < reveal.start).every(s => s.lamp !== null)).toBe(true);
       const advances = timeline.segments.filter(s => s.kind === 'advance');
-      expect(advances.length, name).toBeGreaterThanOrEqual(roll.frames.length);
+      expect(advances.length, name).toBeGreaterThanOrEqual(roll.frames.length - 1); // the first opens on the shutter
       for (const segment of advances) {
         // Camera moves right, so the film image moves left; never vertically.
         expect(segment.camera[1].pan.x, `${name} ${segment.frameIndex}`).toBeGreaterThan(segment.camera[0].pan.x);
@@ -220,9 +230,11 @@ describe('M22 reel revisions (2026-09-27 feedback)', () => {
       for (let i = 1; i < ordered.length; i++) {
         const before = ordered[i - 1], after = ordered[i];
         if (JSON.stringify(before.camera[1]) === JSON.stringify(after.camera[0])) continue;
-        // The only discontinuity is a strip change with the shutter fully closed.
-        expect(before.shutter, name).toBe('close'); expect(after.shutter).toBe('open');
-        expect(timeline.sample(before.start + before.duration - 1e-6).shutter).toBeGreaterThan(.99);
+        // Cuts happen only in darkness: a strip change behind the closed shutter,
+        // or moving to and from the gate while the room is black.
+        const end = timeline.sample(before.start + before.duration - 1e-6), start = timeline.sample(after.start);
+        const hidden = (sample: typeof end) => sample.shutter > .99 || sample.fade > .99 || sample.lamp === 0;
+        expect(hidden(end) && hidden(start), `${name} ${before.kind}→${after.kind}`).toBe(true);
       }
       expect(samples(timeline, 1 / 24).some(sample => sample.dust > 0 && sample.shutter > 0)).toBe(true);
       const hold = ordered.find(s => s.kind === 'frame')!;
@@ -254,5 +266,21 @@ describe('M22 screening session', () => {
     session.setExporting(true); session.play(); session.tick(1); expect(session.time).toBe(moment);
     session.setExporting(false); session.seek(session.timeline.duration); session.play(); expect(session.time).toBe(0);
     expect(events.length).toBeGreaterThan(5);
+  });
+});
+
+describe('M22 Develop opening (2026-09-27 review)', () => {
+  it('shows black film on a dim diffuser, then switches the table on at once', () => {
+    for (const reducedMotion of [false, true]) {
+      const timeline = createScreeningTimeline(FULL_ROLL_FIXTURE, options('develop', { reducedMotion }));
+      const title = timeline.cards[0];
+      const dim = timeline.sample((title.start + title.end) / 2);
+      expect(dim.light).toBe(0); expect(dim.ambient).toBe(1); expect(dim.fade).toBe(0);
+      const on = timeline.segments.find(s => s.light.from === 0 && s.light.to === 1)!;
+      expect(on.start).toBeGreaterThanOrEqual(title.end - 1e-9);
+      expect(on.duration).toBeLessThanOrEqual(reducedMotion ? .8 : .15);
+      expect(on.ambient).toEqual([1, 0]);
+      expect(timeline.sample(on.start + on.duration + .01).light).toBe(1);
+    }
   });
 });

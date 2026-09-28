@@ -12,7 +12,7 @@ export const PACES = ['relaxed', 'normal', 'brisk'] as const;
 export type Pace = typeof PACES[number];
 export const PACE_SCALE: Record<Pace, number> = { relaxed: 1.3, normal: 1, brisk: .72 };
 export type Act = 'establish' | 'tour' | 'break' | 'return';
-export type SegmentKind = 'open' | 'glide' | 'frame' | 'descend' | 'detail' | 'rise' | 'push' | 'develop' | 'advance'
+export type SegmentKind = 'open' | 'glide' | 'frame' | 'descend' | 'detail' | 'rise' | 'push' | 'develop' | 'advance' | 'reveal'
   | 'pull-back' | 'overview' | 'push-in' | 'close';
 
 export interface CameraPose { zoom: number; pan: { x: number; z: number }; tilt: number; yaw: number }
@@ -31,6 +31,10 @@ export interface Segment {
   shutter: Shutter | null;
   /** The film drifts slightly inside the fixed gate. */
   weave: boolean;
+  /** Projector lamp in an empty gate, drawn over black (null when film is in the gate). */
+  lamp: [number, number] | null;
+  /** Dim room light on the unlit diffuser, 0–1. */
+  ambient: [number, number];
   /** Reduced motion: hold, dip through dark, then hold at the destination. */
   cut: boolean;
 }
@@ -47,6 +51,7 @@ export interface ScreeningSample {
   shutter: number;
   /** Projector dust and hair in the gate (off with reduced motion). */
   dust: number;
+  lamp: number | null; ambient: number;
   reducedMotion: boolean;
 }
 
@@ -109,12 +114,14 @@ export class TimelineBuilder {
   beats: number[] = [];
   light = 1;
   gate = 0;
+  lamp: number | null = null;
+  ambient = 0;
   aperture: Segment['aperture'] = null;
   reveal: number | null = null;
   constructor(public camera: CameraPose, private scale: number, private reduced: boolean) {}
   seconds(value: number) { return value * this.scale; }
   step(act: Act, kind: SegmentKind, frameIndex: number, seconds: number, to: {
-    camera?: CameraPose; light?: number; flicker?: 'gate'; shutter?: Shutter; weave?: boolean;
+    camera?: CameraPose; light?: number; flicker?: 'gate'; shutter?: Shutter; weave?: boolean; lamp?: number | null; ambient?: number;
     reveal?: number; blur?: number; gate?: number; aperture?: Segment['aperture']; ease?: Ease; beat?: boolean; drift?: boolean;
   } = {}) {
     let camera = to.camera ?? this.camera;
@@ -130,10 +137,14 @@ export class TimelineBuilder {
     this.segments.push({ act, kind, start: this.time, duration, frameIndex, camera: [this.camera, camera],
       light, reveal, blur: this.reduced ? 0 : to.blur ?? 0, gate: [this.gate, to.gate ?? this.gate],
       aperture: to.aperture === undefined ? this.aperture : to.aperture, ease: to.ease ?? 'inOut', cut,
-      shutter: to.shutter ?? null, weave: !this.reduced && !!to.weave });
+      shutter: to.shutter ?? null, weave: !this.reduced && !!to.weave,
+      lamp: to.lamp === null ? null : to.lamp === undefined ? (this.lamp === null ? null : [this.lamp, this.lamp]) : [this.lamp ?? to.lamp, to.lamp],
+      ambient: [this.ambient, to.ambient ?? this.ambient] });
     this.time += duration; this.camera = camera;
     this.light = to.light ?? this.light;
     this.gate = to.gate ?? this.gate;
+    if (to.lamp !== undefined) this.lamp = to.lamp;
+    this.ambient = to.ambient ?? this.ambient;
     if (to.aperture !== undefined) this.aperture = to.aperture;
     if (to.reveal !== undefined) this.reveal = to.reveal;
   }
@@ -175,6 +186,8 @@ export function finishTimeline(builder: TimelineBuilder, info: { reel: ReelId; p
       fade: Math.max(0, Math.min(1, fade)), blur: segment.blur * Math.sin(Math.PI * local),
       gate, aperture: segment.aperture, shutter: shutterAt(segment.shutter, local),
       dust: info.reducedMotion ? 0 : gate, reducedMotion: info.reducedMotion,
+      lamp: segment.lamp ? lerp(segment.lamp[0], segment.lamp[1], eased) : null,
+      ambient: lerp(segment.ambient[0], segment.ambient[1], eased),
     };
   };
   return { ...info, duration, segments, cards, fades, beats: builder.beats, sample,

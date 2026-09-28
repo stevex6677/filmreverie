@@ -22,30 +22,59 @@ function random(seed: number) {
  * darkening during pull-down, dust and a hair in the gate, and a fixed
  * aperture slightly larger than the frame.
  */
+function drawDust(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, sample: ScreeningSample, short: number) {
+  const tick = Math.floor(sample.time * 24);
+  ctx.fillStyle = `rgba(12,10,8,${(.55 * sample.dust).toFixed(3)})`;
+  for (let i = 0; i < 3; i++) {
+    if (random(tick * 7 + i) > .28) continue;
+    const r = short * (.0015 + .003 * random(tick * 13 + i));
+    ctx.beginPath(); ctx.ellipse(x + w * random(tick * 3 + i * 5), y + h * random(tick * 11 + i * 3), r, r * (.6 + .6 * random(tick + i)), random(tick * 5 + i) * Math.PI, 0, Math.PI * 2); ctx.fill();
+  }
+  // A hair caught at the lower-left edge of the gate, trembling slightly.
+  const tremble = Math.sin(sample.time * 9) * short * .002;
+  ctx.strokeStyle = `rgba(10,8,6,${(.45 * sample.dust).toFixed(3)})`; ctx.lineWidth = Math.max(1, short * .0016);
+  ctx.beginPath(); ctx.moveTo(x - 2, y + h * .78);
+  ctx.bezierCurveTo(x + w * .05, y + h * .74 + tremble, x + w * .03, y + h * .9, x + w * .09 + tremble, y + h * .95); ctx.stroke();
+}
+
+/**
+ * The empty gate before and after the film: black surroundings and the lamp's
+ * soft, warm light warming up in the aperture. The countdown leader is
+ * projected inside it. Nothing of the table shows through.
+ */
+function drawLamp(ctx: CanvasRenderingContext2D, width: number, height: number, rect: { x: number; y: number; w: number; h: number }, sample: ScreeningSample) {
+  const { x, y, w, h } = rect, short = Math.min(width, height), lamp = Math.max(0, Math.min(1, sample.lamp ?? 0)), soft = short * .014;
+  ctx.save();
+  ctx.fillStyle = '#030303'; ctx.fillRect(0, 0, width, height);
+  if (lamp > 0) {
+    for (let i = 3; i >= 1; i--) {
+      ctx.strokeStyle = `rgba(255,196,130,${(.06 * lamp / i).toFixed(3)})`; ctx.lineWidth = soft * i * 2.4;
+      ctx.beginPath(); ctx.roundRect(x, y, w, h, soft); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, soft); ctx.clip();
+    const glow = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, Math.hypot(w, h) * .55);
+    glow.addColorStop(0, 'rgb(255,246,228)'); glow.addColorStop(1, 'rgb(214,192,160)');
+    ctx.globalAlpha = lamp; ctx.fillStyle = glow; ctx.fillRect(x, y, w, h);
+    const card = sample.card;
+    if (card?.kind === 'countdown') drawCountdown(ctx, x, y, w, h, card.elapsed, card.duration, sample.reducedMotion);
+    ctx.globalAlpha = 1;
+    if (sample.dust > 0) drawDust(ctx, x, y, w, h, { ...sample, dust: sample.dust * lamp }, short);
+  }
+  ctx.restore();
+}
+
 function drawProjection(ctx: CanvasRenderingContext2D, width: number, height: number, sample: ScreeningSample) {
   const short = Math.min(width, height), gate = sample.gate, aperture = sample.aperture!;
   const visible = 2 * sample.camera.zoom * Math.tan(Math.PI / 8);
   const w = Math.min(width, aperture.width * 1.035 / (visible * width / height) * width), h = Math.min(height, aperture.height * 1.05 / visible * height);
   const x = (width - w) / 2, y = (height - h) / 2, soft = short * .014;
+  if (sample.lamp !== null) { drawLamp(ctx, width, height, { x, y, w, h }, sample); return; }
   ctx.save();
   // Warm tungsten light with slightly lifted blacks, as on a projection screen.
   ctx.fillStyle = `rgba(255,176,96,${(.08 * gate).toFixed(3)})`;
   ctx.fillRect(x, y, w, h);
   if (sample.shutter > 0) { ctx.fillStyle = `rgba(0,0,0,${Math.min(1, sample.shutter * gate).toFixed(3)})`; ctx.fillRect(x, y, w, h); }
-  if (sample.dust > 0 && sample.shutter < .5) {
-    const tick = Math.floor(sample.time * 24);
-    ctx.fillStyle = `rgba(12,10,8,${(.55 * sample.dust).toFixed(3)})`;
-    for (let i = 0; i < 3; i++) {
-      if (random(tick * 7 + i) > .28) continue;
-      const r = short * (.0015 + .003 * random(tick * 13 + i));
-      ctx.beginPath(); ctx.ellipse(x + w * random(tick * 3 + i * 5), y + h * random(tick * 11 + i * 3), r, r * (.6 + .6 * random(tick + i)), random(tick * 5 + i) * Math.PI, 0, Math.PI * 2); ctx.fill();
-    }
-    // A hair caught at the lower-left edge of the gate, trembling slightly.
-    const tremble = Math.sin(sample.time * 9) * short * .002;
-    ctx.strokeStyle = `rgba(10,8,6,${(.45 * sample.dust).toFixed(3)})`; ctx.lineWidth = Math.max(1, short * .0016);
-    ctx.beginPath(); ctx.moveTo(x - 2, y + h * .78);
-    ctx.bezierCurveTo(x + w * .05, y + h * .74 + tremble, x + w * .03, y + h * .9, x + w * .09 + tremble, y + h * .95); ctx.stroke();
-  }
+  if (sample.dust > 0 && sample.shutter < .5) drawDust(ctx, x, y, w, h, sample, short);
   // Light spilling onto the gate plate, then the plate itself.
   for (let i = 1; i <= 3; i++) {
     ctx.strokeStyle = `rgba(255,196,130,${(.05 * gate / i).toFixed(3)})`; ctx.lineWidth = soft * i * 2.2;
@@ -65,23 +94,23 @@ function drawProjection(ctx: CanvasRenderingContext2D, width: number, height: nu
   ctx.restore();
 }
 
-/** An Academy-style leader counting 5 to 2, with a sweeping hand. */
-function drawCountdown(ctx: CanvasRenderingContext2D, width: number, height: number, elapsed: number, duration: number, reducedMotion: boolean) {
+/** An Academy-style leader counting 5 to 2 with a sweeping hand, projected into the gate. */
+function drawCountdown(ctx: CanvasRenderingContext2D, left: number, top: number, width: number, height: number, elapsed: number, duration: number, reducedMotion: boolean) {
   const count = 4, step = duration / count, index = Math.min(count - 1, Math.floor(elapsed / step));
   const number = 5 - index, progress = reducedMotion ? 0 : (elapsed - index * step) / step;
-  const cx = width / 2, cy = height / 2, short = Math.min(width, height), radius = short * .38;
+  const cx = left + width / 2, cy = top + height / 2, short = Math.min(width, height), radius = short * .38;
   const flick = reducedMotion ? 0 : random(Math.floor(elapsed * 24)) * .05;
   ctx.save();
-  ctx.fillStyle = `rgb(${Math.round(150 - flick * 200)},${Math.round(146 - flick * 200)},${Math.round(138 - flick * 200)})`;
-  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = `rgb(${Math.round(176 - flick * 200)},${Math.round(168 - flick * 200)},${Math.round(152 - flick * 200)})`;
+  ctx.fillRect(left, top, width, height);
   if (progress > 0) {
-    ctx.fillStyle = 'rgba(40,38,34,.35)';
+    ctx.fillStyle = 'rgba(40,38,34,.3)';
     ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, Math.hypot(width, height), -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2); ctx.closePath(); ctx.fill();
   }
-  ctx.strokeStyle = 'rgba(245,242,232,.9)'; ctx.lineWidth = Math.max(2, short * .006);
+  ctx.strokeStyle = 'rgba(250,246,236,.9)'; ctx.lineWidth = Math.max(2, short * .008);
   for (const r of [radius, radius * .84]) { ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke(); }
-  ctx.strokeStyle = 'rgba(25,24,22,.8)'; ctx.lineWidth = Math.max(1, short * .003);
-  ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(width, cy); ctx.moveTo(cx, 0); ctx.lineTo(cx, height); ctx.stroke();
+  ctx.strokeStyle = 'rgba(25,24,22,.7)'; ctx.lineWidth = Math.max(1, short * .004);
+  ctx.beginPath(); ctx.moveTo(left, cy); ctx.lineTo(left + width, cy); ctx.moveTo(cx, top); ctx.lineTo(cx, top + height); ctx.stroke();
   ctx.fillStyle = '#141311'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.font = `700 ${Math.round(radius * 1.25)}px ${SANS}`;
   ctx.fillText(String(number), cx, cy + radius * .05);
@@ -94,16 +123,12 @@ function drawCountdown(ctx: CanvasRenderingContext2D, width: number, height: num
  */
 export function drawScreeningOverlay(ctx: CanvasRenderingContext2D, width: number, height: number, sample: ScreeningSample, credits: ScreeningCredits) {
   const short = Math.min(width, height);
-  if (sample.gate > 0 && sample.aperture) drawProjection(ctx, width, height, sample);
+  if ((sample.gate > 0 || sample.lamp !== null) && sample.aperture) drawProjection(ctx, width, height, sample);
   if (sample.fade > 0) { ctx.fillStyle = `rgba(0,0,0,${sample.fade.toFixed(3)})`; ctx.fillRect(0, 0, width, height); }
   const card = sample.card;
   if (!card || card.opacity <= 0) return;
-  if (card.kind === 'countdown') {
-    drawCountdown(ctx, width, height, card.elapsed, card.duration, sample.reducedMotion);
-    // The leader, like every reel, comes up out of black.
-    if (sample.fade > 0) { ctx.fillStyle = `rgba(0,0,0,${sample.fade.toFixed(3)})`; ctx.fillRect(0, 0, width, height); }
-    return;
-  }
+  // The countdown is part of the projection, drawn inside the lamp-lit gate.
+  if (card.kind === 'countdown') return;
   ctx.save();
   ctx.globalAlpha = card.opacity;
   ctx.fillStyle = 'rgba(8,8,7,.55)'; ctx.fillRect(0, 0, width, height);

@@ -25,7 +25,12 @@ function spillLights(scene: THREE.Scene) {
 
 function applySample(table: THREE.Object3D, scene: THREE.Scene, roll: RollDefinition, sample: ScreeningSample | null, brightness: number) {
   const light = getTableIllumination(brightness), scale = sample?.light ?? 1;
-  table.traverse(object => { const uniforms = uniformsOf(object); if (uniforms?.uTableOutput) uniforms.uTableOutput.value = light.output * scale; });
+  const ambient = .06 * (sample?.ambient ?? 0);
+  table.traverse(object => {
+    const uniforms = uniformsOf(object);
+    if (uniforms?.uTableOutput) uniforms.uTableOutput.value = light.output * scale;
+    if (uniforms?.uAmbient) uniforms.uAmbient.value = ambient;
+  });
   for (const spill of spillLights(scene)) spill.intensity = light.spillIntensity * scale;
   const reveal = sample?.reveal;
   for (const strip of table.children) {

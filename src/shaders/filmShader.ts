@@ -144,13 +144,15 @@ export function createRebateMaterial(texture: THREE.Texture, brightness = 1, isP
 export function createPanelMaterial(brightness = 1) {
   return new THREE.ShaderMaterial({
     vertexShader: FilmVertexShader,
-    uniforms: illuminationUniforms(brightness),
+    // uAmbient: dim room light on the diffuser, used by screenings while the table is off.
+    uniforms: { ...illuminationUniforms(brightness), uAmbient: { value: 0 } },
     fragmentShader: `
       uniform float uTableOutput;
+      uniform float uAmbient;
       void main() {
         // A uniform neutral diffuser. Film shapes belong to the actual scene,
         // never a baked shadow of a fixed strip layout on the panel itself.
-        gl_FragColor = vec4(vec3(uTableOutput), 1.0);
+        gl_FragColor = vec4(vec3(uTableOutput + uAmbient), 1.0);
         ${DISPLAY_FRAGMENT}
       }
     `,

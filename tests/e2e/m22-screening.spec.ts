@@ -74,8 +74,8 @@ async function expectRestored(page: Page, before: Awaited<ReturnType<typeof tabl
   await expect.poll(() => table(page)).toEqual(before);
 }
 /** Plays the finished video in the page and returns its size and frame contrast. */
-async function inspectVideo(page: Page) {
-  return page.getByTestId('screening-export-video').evaluate(async (video: HTMLVideoElement) => {
+async function inspectVideo(page: Page, times: { leader?: number; middle?: number; later?: number } = {}) {
+  return page.getByTestId('screening-export-video').evaluate(async (video: HTMLVideoElement, times) => {
     if (video.readyState < 2) await new Promise(resolve => video.addEventListener('loadeddata', resolve, { once: true }));
     const frame = async (at: number) => {
       video.currentTime = at; await new Promise(resolve => video.addEventListener('seeked', resolve, { once: true }));
@@ -86,8 +86,8 @@ async function inspectVideo(page: Page) {
       for (let i = 0; i < data.length; i += 4) { const l = (data[i] + data[i + 1] + data[i + 2]) / 3; sum += l; square += l * l; }
       const n = data.length / 4; return { mean: sum / n, deviation: Math.sqrt(square / n - (sum / n) ** 2) };
     };
-    return { width: video.videoWidth, height: video.videoHeight, duration: video.duration, start: await frame(.05), leader: await frame(1.6), middle: await frame(video.duration * .45), later: await frame(video.duration * .6) };
-  });
+    return { width: video.videoWidth, height: video.videoHeight, duration: video.duration, start: await frame(.05), leader: await frame(times.leader ?? 1.6), middle: await frame(times.middle ?? video.duration * .45), later: await frame(times.later ?? video.duration * .6) };
+  }, times);
 }
 async function download(page: Page, path: string) {
   const [file] = await Promise.all([page.waitForEvent('download'), page.getByTestId('screening-download').click()]);
@@ -163,9 +163,10 @@ test('Develop from Focus reveals the roll in the scene, and exit restores Focus,
   const focus = PNG.sync.read(await captureCanvas(page));
   expect(before).toMatchObject({ focusMode: 'true', selectedFrame: '3', filmMode: 'negative' });
   await (await pickReel(page, 'Develop', 'Brisk')).getByTestId('screening-preview').click();
-  // The table is dark at the open; the band then develops each frame.
+  // The table is off at the open: black film on a dim diffuser, lit only by the room.
   await page.getByTestId('screening-toggle').click();
-  expect(await renderedDeviation(page)).toBeLessThan(8);
+  const opening = PNG.sync.read(await captureCanvas(page, { path: info.outputPath('develop-unlit.png') }));
+  expect(getRegionStats(opening, opening.width / 2 | 0, opening.height / 2 | 0, 300).meanLum).toBeLessThan(60);
   await page.getByTestId('screening-next').click(); await page.getByTestId('screening-next').click();
   await expect(player(page)).toHaveAttribute('data-frame', '2');
   await page.getByTestId('screening-toggle').click();
@@ -219,7 +220,8 @@ test('exports a decodable 720p H.264 MP4 of the whole reel without writes or upl
   const requests = watchRequests(page);
   await page.goto('/guest?mode=inspect&deterministic=true'); await ready(page);
   const before = await table(page), stored = await library(page);
-  const expected = createScreeningTimeline(BASELINE_ROLL, { reel: 'projector', pace: 'brisk', aspect: 16 / 9, stockType: 'negative' }).duration;
+  const timeline = createScreeningTimeline(BASELINE_ROLL, { reel: 'projector', pace: 'brisk', aspect: 16 / 9, stockType: 'negative' });
+  const expected = timeline.duration, countdown = timeline.cards.find(card => card.kind === 'countdown')!;
   await (await pickReel(page, 'Projector', 'Brisk')).getByTestId('screening-export').click();
   const view = page.getByTestId('screening-export-view');
   await expect(view).toHaveAttribute('data-phase', 'rendering');
@@ -228,12 +230,12 @@ test('exports a decodable 720p H.264 MP4 of the whole reel without writes or upl
   await page.screenshot({ path: info.outputPath('export-progress.png') });
   await expect(view).toHaveAttribute('data-phase', 'done', { timeout: 200000 });
   await expect(page.getByTestId('screening-download')).toBeVisible();
-  const video = await inspectVideo(page);
+  const video = await inspectVideo(page, { leader: (countdown.start + countdown.end) / 2, middle: timeline.frameStart(1) + .4, later: timeline.frameStart(3) + .4 });
   expect([video.width, video.height]).toEqual([1280, 720]);
   expect(video.duration).toBeCloseTo(Math.round(expected * 30) / 30, 1);
   expect(video.start.mean).toBeLessThan(60);
-  // The countdown leader: a mid-grey field with a dark numeral.
-  expect(video.leader.mean).toBeGreaterThan(70); expect(video.leader.mean).toBeLessThan(180); expect(video.leader.deviation).toBeGreaterThan(8);
+  // The countdown is projected in the gate: a lit leader on black surroundings.
+  expect(video.leader.mean).toBeGreaterThan(40); expect(video.leader.mean).toBeLessThan(160); expect(video.leader.deviation).toBeGreaterThan(30);
   expect(video.middle.deviation).toBeGreaterThan(12);
   expect(Math.abs(video.middle.mean - video.later.mean) + Math.abs(video.middle.deviation - video.later.deviation)).toBeGreaterThan(.5);
   await page.screenshot({ path: info.outputPath('export-done.png') });
