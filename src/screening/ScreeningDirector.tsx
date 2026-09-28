@@ -71,7 +71,7 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
 
   useEffect(() => {
     let composite: HTMLCanvasElement | null = null, clock = 0;
-    let saved: { ratio: number; width: number; height: number } | null = null;
+    let saved: { ratio: number; width: number; height: number; time: number } | null = null;
     const perspective = camera as THREE.PerspectiveCamera;
     const resize = (width: number, height: number, ratio: number) => {
       gl.setPixelRatio(ratio); gl.setSize(width, height, false);
@@ -83,7 +83,7 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
         for (let i = 0; get().frameloop !== 'never' && i < 120; i++) await wait(16);
         if (get().frameloop !== 'never') throw new Error('Rendering is still running.');
         const buffer = gl.getSize(new THREE.Vector2());
-        saved = { ratio: gl.getPixelRatio(), width: buffer.x, height: buffer.y };
+        saved = { ratio: gl.getPixelRatio(), width: buffer.x, height: buffer.y, time: session.time };
         composite = document.createElement('canvas'); composite.width = width; composite.height = height;
         clock = get().clock.elapsedTime;
         session.setAspect(width / height);
@@ -123,9 +123,12 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
       },
       end() {
         const { size } = latest.current;
-        if (saved) resize(saved.width / saved.ratio, saved.height / saved.ratio, saved.ratio);
+        // getSize() is in CSS pixels; the pixel ratio is restored separately.
+        if (saved) resize(saved.width, saved.height, saved.ratio);
         perspective.aspect = size.width / size.height; perspective.updateProjectionMatrix();
         session.setAspect(size.width / size.height);
+        // The preview resumes where it was paused, not at the video's last frame.
+        if (saved) session.seek(saved.time);
         composite = null; saved = null;
       },
     };

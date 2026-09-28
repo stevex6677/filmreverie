@@ -57,6 +57,7 @@ export async function exportScreening(session: ScreeningSession, format: ExportF
       if (failure) throw failure;
       const time = frame / EXPORT_FPS;
       await engine.prepare(time, signal);
+      if (signal.aborted) throw abortError();
       const canvas = engine.render(time);
       const video = new VideoFrame(canvas, { timestamp: Math.round(frame * 1e6 / EXPORT_FPS), duration: Math.round(1e6 / EXPORT_FPS) });
       try { encoder.encode(video, { keyFrame: frame % (2 * EXPORT_FPS) === 0 }); } finally { video.close(); }

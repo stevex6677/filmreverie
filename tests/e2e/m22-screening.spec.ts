@@ -51,7 +51,9 @@ async function library(page: Page, name = 'darkroom-guest-rolls') {
 const player = (page: Page) => page.getByTestId('screening-player');
 const time = async (page: Page) => Number(await player(page).getAttribute('data-time'));
 async function pickReel(page: Page, reel: 'Loupe Walk' | 'Develop' | 'Projector', pace = 'Normal', format = '16:9') {
-  await page.getByTestId('screen-roll').click();
+  // Phones hide the Focus header button; Settings offers Screen roll in every layout.
+  if (await page.getByTestId('screen-roll').isVisible()) await page.getByTestId('screen-roll').click();
+  else { await openViewingTools(page); await page.getByTestId('screen-roll-tools').click(); }
   const picker = page.getByRole('dialog', { name: 'Screen roll' });
   await expect(picker).toBeVisible();
   await picker.getByRole('radio', { name: new RegExp(`^${reel}`) }).check();
@@ -247,16 +249,22 @@ test('exports a decodable 720p H.264 MP4 of the whole reel without writes or upl
   expect(errors).toEqual([]);
 });
 
-test('export Cancel and an unavailable encoder leave the table and library unchanged', async ({ page }, info) => {
+test.describe('high-density display', () => {
+test.use({ deviceScaleFactor: 2 });
+test('export Cancel and an unavailable encoder leave the table, its resolution and the library unchanged', async ({ page }, info) => {
   test.skip(info.project.name === 'mobile-chrome', 'Encoder paths are covered on desktop Chrome and WebKit.');
   await page.goto('/guest?mode=inspect&deterministic=true'); await ready(page);
   await openFrame(page, 2);
   const before = await table(page), stored = await library(page);
+  const resolution = () => scene(page).evaluate((node: HTMLCanvasElement) => [node.width, node.height, node.clientWidth, node.clientHeight]);
+  const pixels = await resolution();
+  expect(pixels[0]).toBeGreaterThan(pixels[2]);
   await (await pickReel(page, 'Loupe Walk')).getByTestId('screening-export').click();
   await expect.poll(async () => Number(await page.getByTestId('screening-export-progress').getAttribute('value')), { timeout: 60000 }).toBeGreaterThan(5);
   await page.getByTestId('screening-export-cancel').click();
   await expect(page.getByTestId('screening-export-view')).toHaveCount(0);
   await expectRestored(page, before);
+  await expect.poll(resolution).toEqual(pixels);
   // The canvas renders the live table again after the frame-stepped export.
   const first = await captureCanvas(page), second = await captureCanvas(page);
   expect(getRegionMeanDifference(PNG.sync.read(first), PNG.sync.read(second), 400, 300, 200)).toBeLessThan(1);
@@ -268,7 +276,9 @@ test('export Cancel and an unavailable encoder leave the table and library uncha
   await expect(page.getByTestId('screening-export-view')).toContainText('cannot encode H.264');
   await page.getByRole('button', { name: 'Close', exact: true }).click();
   await expectRestored(page, before);
+  expect(await resolution()).toEqual(pixels);
   expect(await library(page)).toBe(stored);
+});
 });
 
 test('a single-frame 120 roll screens without sprockets and exports portrait video', async ({ page }, info) => {

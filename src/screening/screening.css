@@ -2,7 +2,7 @@
 .screen-roll-button { display:inline-flex; align-items:center; gap:8px; }
 .table-controls .screen-roll-button.is-launch { position:absolute; left:50%; bottom:calc(34px + env(safe-area-inset-bottom)); transform:translateX(-50%); padding:10px 18px; border-radius:22px; background:#1b1e23f2; border-color:#5a5446; color:#f1dfc3; box-shadow:0 8px 28px #0004; }
 .table-controls .screen-roll-button.is-launch:hover { background:#262a30; border-color:#d9bc86; }
-/* Phones keep the one-row Focus header; Overview still offers Screen roll there. */
+/* Phones keep the one-row Focus header; Overview and Settings still offer Screen roll. */
 @media(max-width:480px) { .table-header .screen-roll-button { display:none; } }
 
 .screening-picker { position:fixed; inset:0; margin:auto; height:fit-content; width:min(560px,calc(100vw - 24px)); max-height:calc(var(--visible-height,100dvh) - 24px); padding:0; border:1px solid #4b4e53; border-radius:18px; background:#1a1d21; color:#ebe7dc; box-shadow:0 24px 80px #000a; }
