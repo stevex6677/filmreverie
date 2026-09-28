@@ -49,7 +49,7 @@ async function library(page: Page, name = 'darkroom-guest-rolls') {
 }
 const player = (page: Page) => page.getByTestId('screening-player');
 const time = async (page: Page) => Number(await player(page).getAttribute('data-time'));
-async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Projector', pace = 'Normal', format = '16:9') {
+async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Projector' | 'Darkroom' | 'Flyover' | 'Orbit', pace = 'Normal', format = '16:9') {
   // Phones hide the Focus header button; Settings offers Screen roll in every layout.
   if (await page.getByTestId('screen-roll').isVisible()) await page.getByTestId('screen-roll').click();
   else { await openViewingTools(page); await page.getByTestId('screen-roll-tools').click(); }
@@ -214,6 +214,33 @@ test('Screen roll waits for the loupe to be put away, hides it while screening a
   await expect(page.locator('main')).toHaveAttribute('data-loupe-state', 'activated');
 });
 
+test('Darkroom, Flyover and Orbit preview in the actual scene, seek by frame and restore the table', async ({ page }, info) => {
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/guest?mode=inspect&deterministic=true'); await ready(page);
+  const before = await table(page), stored = await library(page);
+  const overview = PNG.sync.read(await captureCanvas(page));
+  await page.getByTestId('screen-roll').click();
+  await expect(page.getByRole('dialog', { name: 'Screen roll' }).getByRole('radio')).toHaveCount(6 + 3 + 3);
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  for (const [reel, id] of [['Darkroom', 'darkroom'], ['Flyover', 'flyover'], ['Orbit', 'orbit']] as const) {
+    await (await pickReel(page, reel, 'Brisk')).getByTestId('screening-preview').click();
+    await expect(page.locator('main')).toHaveAttribute('data-screening-reel', id);
+    await expect.poll(() => time(page), { timeout: 30000 }).toBeGreaterThan(2);
+    await page.getByTestId('screening-toggle').click();
+    await page.getByTestId('screening-next').click();
+    const frame = Number(await player(page).getAttribute('data-frame'));
+    await page.getByTestId('screening-next').click();
+    await expect(player(page)).toHaveAttribute('data-frame', String(frame + 1));
+    const shot = PNG.sync.read(await captureCanvas(page, { path: info.outputPath(`${id}-frame.png`) }));
+    expect(getRegionStats(shot, shot.width / 2 | 0, shot.height / 2 | 0, 200).stdDev, id).toBeGreaterThan(6);
+    expect(getRegionMeanDifference(shot, overview, shot.width / 2 | 0, shot.height / 2 | 0, 200), id).toBeGreaterThan(2);
+    await page.getByTestId('screening-exit').click();
+    await expectRestored(page, before);
+  }
+  expect(await library(page)).toBe(stored);
+  expect(errors).toEqual([]);
+});
+
 test('exports a decodable 720p H.264 MP4 of the whole reel without writes or uploads', async ({ page }, info) => {
   test.skip(info.project.name === 'mobile-chrome', 'Desktop Chrome covers the Chrome encoder; WebKit covers Safari.');
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
@@ -252,6 +279,23 @@ test('exports a decodable 720p H.264 MP4 of the whole reel without writes or upl
   expect(await library(page)).toBe(stored);
   expect(requests.filter(request => request.method !== 'GET' || request.url.includes('/api/'))).toEqual([]);
   expect(errors).toEqual([]);
+});
+
+test('Darkroom exports its room shots and the table tour as H.264', async ({ page }, info) => {
+  test.skip(info.project.name === 'mobile-chrome', 'Export is covered on desktop Chrome and WebKit.');
+  await page.goto('/guest?mode=inspect&deterministic=true&screening_seconds=12'); await ready(page);
+  const before = await table(page);
+  await (await pickReel(page, 'Darkroom', 'Brisk')).getByTestId('screening-export').click();
+  await expect(page.getByTestId('screening-export-view')).toHaveAttribute('data-phase', 'done', { timeout: 120000 });
+  const video = await inspectVideo(page, { leader: 2, middle: 9, later: 11 });
+  // The room opening is dim; the lit table tour is bright and detailed.
+  expect(video.leader.mean).toBeLessThan(70);
+  expect(video.middle.mean).toBeGreaterThan(video.leader.mean + 20); expect(video.middle.deviation).toBeGreaterThan(12);
+  const { name, mp4 } = await download(page, info.outputPath('darkroom.mp4'));
+  expect(name).toBe('roll-01-darkroom.mp4');
+  expect(mp4.stts.reduce((n, [count]) => n + count, 0)).toBe(360);
+  await page.getByTestId('screening-export-done').click();
+  await expectRestored(page, before);
 });
 
 test.describe('high-density display', () => {

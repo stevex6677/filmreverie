@@ -348,8 +348,11 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     const screen = screeningPose?.();
     if (screen) {
       const pose = tableCameraPose(screen.zoom, screen.pan, { tilt: screen.tilt, yaw: screen.yaw });
-      camera.position.set(...pose.position); camera.up.set(...pose.up); camera.lookAt(...pose.target);
-      perspective.fov = 45; perspective.near = Math.min(.04, screen.zoom * .025); perspective.updateProjectionMatrix();
+      const lift = screen.height ?? 0;
+      camera.position.set(pose.position[0], pose.position[1] + lift, pose.position[2]); camera.up.set(...pose.up);
+      camera.lookAt(pose.target[0], pose.target[1] + lift, pose.target[2]);
+      if (screen.roll) camera.rotateZ(screen.roll);
+      perspective.fov = screen.fov ?? 45; perspective.near = Math.min(.04, screen.zoom * .025); perspective.updateProjectionMatrix();
       camera.updateMatrixWorld();
       flight.current = null; lastTarget.current = ''; screening.current = true;
       gl.domElement.dataset.cameraPosition = camera.position.toArray().join(",");

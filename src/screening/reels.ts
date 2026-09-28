@@ -1,6 +1,8 @@
 import { createRollLayout, fitRollView, locateFrame, type RollDefinition } from '../utils/rollLayout';
 import { getStripDimensions } from '../utils/loupeMapping';
-import { finishTimeline, PACE_SCALE, tablePan, TimelineBuilder, type CameraPose, type Pace, type ReelId, type ScreeningTimeline } from './timeline';
+import { finishTimeline, lookAtPose, PACE_SCALE, tablePan, TimelineBuilder, type CameraPose, type Pace, type ReelId, type ScreeningTimeline } from './timeline';
+import { ROOM_CAMERA_FOV, ROOM_EYE, TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../utils/cameraBounds';
+import { SHELF_ORIGIN } from '../data/physicalScale';
 
 export interface ReelOptions {
   reel: ReelId; pace: Pace; aspect: number; reducedMotion?: boolean;
@@ -8,11 +10,14 @@ export interface ReelOptions {
   stockType: 'negative' | 'reversal';
 }
 
-export const REEL_LABEL: Record<ReelId, string> = { tracking: 'Tracking Shot', develop: 'Develop', projector: 'Projector' };
+export const REEL_LABEL: Record<ReelId, string> = { tracking: 'Tracking Shot', develop: 'Develop', projector: 'Projector', darkroom: 'Darkroom', flyover: 'Flyover', orbit: 'Orbit' };
 export const REEL_DESCRIPTION: Record<ReelId, string> = {
   tracking: 'A low camera tracks along each strip and moves in on details.',
   develop: 'A band of light turns each negative into a photograph.',
   projector: 'After a countdown, each frame slides into a lit projector gate.',
+  darkroom: 'From the darkroom to the light table, and back into the room.',
+  flyover: 'A low flight over the film that rises over each photograph.',
+  orbit: 'Slow arcs around each photograph on the glowing table.',
 };
 export const PACE_LABEL: Record<Pace, string> = { relaxed: 'Relaxed', normal: 'Normal', brisk: 'Brisk' };
 
@@ -125,6 +130,117 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     b.card('end', close + b.seconds(.4), b.time);
     b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
     return finishTimeline(b, { ...info, revealMode: options.stockType === 'reversal' ? 'backlight' : 'polarity' });
+  }
+
+  // Frame geometry shared by the travelling reels, in world units.
+  const frameAt = (index: number) => { const frame = locateFrame(roll, index); return { ...frame, width: (frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) * frame.strip.scale, gap: frame.strip.layout.gap * frame.strip.scale }; };
+
+  if (options.reel === 'darkroom') {
+    // Open in the room, looking over the table at the film cabinet with the
+    // table off; tilt down and dolly across the room as it glows on; tour each
+    // strip with a lateral dolly; then lift back to eye level as the table dims.
+    const fov = Math.min(90, 2 * Math.atan(Math.tan(ROOM_CAMERA_FOV * Math.PI / 360) * Math.max(1, 1.6 / aspect)) * 180 / Math.PI);
+    const cabinet = lookAtPose(ROOM_EYE, SHELF_ORIGIN, fov);
+    const toward = lookAtPose(ROOM_EYE, [0, TABLE_SURFACE_Y, TABLE_CENTER_Z], fov);
+    const above: CameraPose = { ...f.overview, zoom: f.overview.zoom * 1.35, tilt: degrees(30) };
+    const dolly = (index: number): CameraPose => { const frame = frameAt(index); return { zoom: f.frame(index).zoom * 1.5, pan: tablePan(frame.x, frame.y), tilt: degrees(24), yaw: 0 }; };
+    const drop = (index: number): CameraPose => ({ ...dolly(index), zoom: f.frame(index).zoom * 1.05, tilt: degrees(12) });
+    const turned: CameraPose = { ...f.overview, zoom: f.overview.zoom * 1.1, tilt: degrees(36), yaw: f.overview.yaw + degrees(20) };
+    const b = new TimelineBuilder(cabinet, scale, reduced);
+    b.light = 0; b.ambient = 1;
+    b.fade(b.seconds(1), 0);
+    b.step('establish', 'open', 0, 3, { camera: { ...cabinet, yaw: cabinet.yaw + degrees(2) }, drift: true });
+    b.card('title', b.seconds(.5), b.seconds(3));
+    b.step('establish', 'push', 0, 2, { camera: toward });
+    b.step('establish', 'push', 0, 3.2, { camera: above, light: 1, ambient: 0, ease: 'inOut' });
+    b.step('tour', 'push-in', 0, 1.8, { camera: dolly(0), beat: true });
+    for (let i = 0; i < n; i++) {
+      if (i > 0) {
+        if (frameAt(i).localIndex > 0) b.step('tour', 'glide', i, 1, { camera: dolly(i), beat: true });
+        else if (breaks.has(i)) {
+          b.step('break', 'pull-back', i, 1.6, { camera: turned });
+          b.step('break', 'overview', i, 1.4, { camera: drift(turned, .5), drift: true });
+          b.step('break', 'push-in', i, 1.6, { camera: dolly(i), beat: true });
+        } else b.step('tour', 'glide', i, 1.8, { camera: dolly(i), beat: true });
+      }
+      b.step('tour', 'frame', i, 1.6 * holdScale, { camera: drop(i) });
+    }
+    b.step('return', 'pull-back', n - 1, 2.6, { camera: toward, light: .35 });
+    const end = b.time;
+    b.step('return', 'close', n - 1, 3.4, { camera: cabinet, light: 0, ambient: 1 });
+    b.card('end', end + b.seconds(.4), b.time);
+    b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
+    return finishTimeline(b, { ...info, revealMode: null });
+  }
+
+  if (options.reel === 'flyover') {
+    // A drone-like camera skims just above the film, looking across the strip
+    // and travelling rightward so photographs pass from right to left. Over each
+    // frame it rises and pitches down until the photograph fills the screen.
+    const skimHeight = .018, skimTilt = degrees(78);
+    const skim = (x: number, index: number): CameraPose => ({ zoom: skimHeight / Math.cos(skimTilt), pan: tablePan(x, frameAt(index).y), tilt: skimTilt, yaw: 0 });
+    const before = (index: number) => { const frame = frameAt(index); return skim(frame.x - frame.width / 2 - frame.gap / 2, index); };
+    const after = (index: number) => { const frame = frameAt(index); return skim(frame.x + frame.width / 2 + frame.gap / 2, index); };
+    const top = (index: number): CameraPose => ({ ...f.frame(index), zoom: f.frame(index).zoom * .9 });
+    const b = new TimelineBuilder(f.overview, scale, reduced);
+    b.fade(b.seconds(.8), 0);
+    b.step('establish', 'open', 0, 3, { camera: drift(f.overview), drift: true });
+    b.card('title', b.seconds(.4), b.seconds(2.8));
+    b.step('tour', 'push-in', 0, 2.2, { camera: reduced ? top(0) : before(0), beat: true });
+    for (let i = 0; i < n; i++) {
+      if (i > 0 && frameAt(i).localIndex === 0) {
+        // A banking climb off the strip, then a turning descent onto the next.
+        const bank: CameraPose = { ...f.overview, zoom: f.overview.zoom * .8, pan: tablePan(0, (frameAt(i - 1).y + frameAt(i).y) / 2), tilt: degrees(45), roll: degrees(12) };
+        if (breaks.has(i)) {
+          b.step('break', 'pull-back', i, 1.4, { camera: bank });
+          b.step('break', 'overview', i, 1, { camera: { ...f.overview, tilt: degrees(20) } });
+          b.step('break', 'push-in', i, 1.6, { camera: reduced ? top(i) : { ...before(i), roll: 0 }, beat: true });
+        } else {
+          b.step('tour', 'rise', i, 1, { camera: { ...bank, zoom: bank.zoom * .7 } });
+          b.step('tour', 'push-in', i, 1.2, { camera: reduced ? top(i) : before(i), beat: true });
+        }
+      } else if (i > 0 && reduced) b.step('tour', 'glide', i, 1, { camera: top(i), beat: true });
+      if (!reduced) b.step('tour', 'rise', i, 1, { camera: top(i), beat: i > 0 && frameAt(i).localIndex > 0 });
+      b.step('tour', 'frame', i, .6 * holdScale, { camera: drift(top(i), .3), drift: true });
+      // Dive back down to skim the gap after the frame.
+      if (!reduced) b.step('tour', 'descend', i, .9, { camera: after(i) });
+    }
+    b.step('return', 'pull-back', n - 1, 2.2, { camera: f.overview });
+    const end = b.time;
+    b.step('return', 'close', n - 1, 3.4, { camera: drift(f.overview), drift: true });
+    b.card('end', end + b.seconds(.3), b.time);
+    b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
+    return finishTimeline(b, { ...info, revealMode: null });
+  }
+
+  if (options.reel === 'orbit') {
+    // Each photograph gets a slow descending arc that resolves top-down, so the
+    // curled film shows parallax against the glowing diffuser.
+    const base = f.overview.yaw;
+    const start = (index: number): CameraPose => { const frame = f.frame(index); return { ...frame, zoom: frame.zoom * 1.4, tilt: degrees(50), yaw: (index % 2 ? 1 : -1) * degrees(35) }; };
+    const high = (yaw: number): CameraPose => ({ ...f.overview, zoom: f.overview.zoom * 1.15, tilt: degrees(42), yaw: base + degrees(yaw) });
+    // Low and edge-on along the strips, but never closer than ~5 cm above a short roll.
+    const grazing: CameraPose = { ...f.overview, zoom: Math.max(f.overview.zoom * .9, .3), tilt: degrees(80), yaw: degrees(90) };
+    const b = new TimelineBuilder(grazing, scale, reduced);
+    b.fade(b.seconds(1), 0);
+    b.step('establish', 'open', 0, 1.6, { camera: { ...grazing, yaw: degrees(84) }, drift: true });
+    b.step('establish', 'rise', 0, 2.6, { camera: { ...f.overview, zoom: f.overview.zoom * 1.2, tilt: degrees(50), yaw: base + degrees(30) } });
+    b.card('title', b.seconds(.6), b.seconds(3.8));
+    for (let i = 0; i < n; i++) {
+      if (i > 0 && frameAt(i).localIndex === 0 && breaks.has(i)) {
+        b.step('break', 'pull-back', i, 1.4, { camera: high(-45) });
+        b.step('break', 'overview', i, 3, { camera: high(45), ease: 'inOut' });
+      }
+      b.step('tour', 'push', i, i === 0 ? 1.6 : 1, { camera: start(i), beat: true });
+      b.step('tour', 'orbit', i, 2 * holdScale, { camera: f.frame(i), ease: 'inOut' });
+      b.step('tour', 'frame', i, .7 * holdScale, { camera: drift(f.frame(i), .3), drift: true });
+    }
+    b.step('return', 'pull-back', n - 1, 1.6, { camera: { ...f.overview, zoom: f.overview.zoom * 1.2, tilt: degrees(60), yaw: base - Math.PI } });
+    const end = b.time;
+    b.step('return', 'close', n - 1, 3.6, { camera: f.overview, ease: 'inOut' });
+    b.card('end', end + b.seconds(.6), b.time);
+    b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
+    return finishTimeline(b, { ...info, revealMode: null });
   }
 
   // Projector: the title on the lit table, then the room goes dark and the

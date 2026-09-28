@@ -1,21 +1,28 @@
 import { createRollLayout, type RollDefinition } from '../utils/rollLayout';
 import { getFrameBounds, getStripDimensions } from '../utils/loupeMapping';
-import { TABLE_CENTER_Z } from '../utils/cameraBounds';
+import { TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../utils/cameraBounds';
 
 // A screening is a pure function of (roll, reel, aspect, pace, t). The same
 // timeline drives live preview and frame-stepped export, and is tested without
 // WebGL. Segments keep explicit timing so a later soundtrack can align to beats.
 
-export const REEL_IDS = ['tracking', 'develop', 'projector'] as const;
+export const REEL_IDS = ['tracking', 'develop', 'projector', 'darkroom', 'flyover', 'orbit'] as const;
 export type ReelId = typeof REEL_IDS[number];
 export const PACES = ['relaxed', 'normal', 'brisk'] as const;
 export type Pace = typeof PACES[number];
 export const PACE_SCALE: Record<Pace, number> = { relaxed: 1.3, normal: 1, brisk: .72 };
 export type Act = 'establish' | 'tour' | 'break' | 'return';
-export type SegmentKind = 'open' | 'glide' | 'frame' | 'descend' | 'detail' | 'rise' | 'push' | 'develop' | 'advance' | 'reveal'
+export type SegmentKind = 'open' | 'glide' | 'frame' | 'descend' | 'detail' | 'rise' | 'push' | 'develop' | 'advance' | 'reveal' | 'orbit'
   | 'pull-back' | 'overview' | 'push-in' | 'close';
 
-export interface CameraPose { zoom: number; pan: { x: number; z: number }; tilt: number; yaw: number }
+/**
+ * An orbit around a target: `zoom` is the distance, `pan` the target on the table
+ * plane, `tilt` the angle from vertical and `yaw` the heading. Optional `height`
+ * lifts the target above the table (room shots), `roll` banks the camera, and
+ * `fov` widens the lens (degrees, default 45).
+ */
+export interface CameraPose { zoom: number; pan: { x: number; z: number }; tilt: number; yaw: number; height?: number; roll?: number; fov?: number }
+export const DEFAULT_FOV = 45;
 export type Ease = 'linear' | 'inOut' | 'in' | 'out' | 'snap' | 'heavy';
 /** Projector shutter: a partial blink during a pull-down, or closing/opening around a hidden cut. */
 export type Shutter = 'pulse' | 'close' | 'open';
@@ -81,9 +88,14 @@ export function lerpCamera(a: CameraPose, b: CameraPose, u: number): CameraPose 
   if (u <= 0) return a;
   if (u >= 1) return b;
   // Geometric distance keeps perceived zoom speed constant between a frame and the roll.
-  return { zoom: Math.exp(lerp(Math.log(a.zoom), Math.log(b.zoom), u)), pan: { x: lerp(a.pan.x, b.pan.x, u), z: lerp(a.pan.z, b.pan.z, u) }, tilt: lerp(a.tilt, b.tilt, u), yaw: lerp(a.yaw, b.yaw, u) };
+  const pose: CameraPose = { zoom: Math.exp(lerp(Math.log(a.zoom), Math.log(b.zoom), u)), pan: { x: lerp(a.pan.x, b.pan.x, u), z: lerp(a.pan.z, b.pan.z, u) }, tilt: lerp(a.tilt, b.tilt, u), yaw: lerp(a.yaw, b.yaw, u) };
+  if (a.height || b.height) pose.height = lerp(a.height ?? 0, b.height ?? 0, u);
+  if (a.roll || b.roll) pose.roll = lerp(a.roll ?? 0, b.roll ?? 0, u);
+  if (a.fov || b.fov) pose.fov = lerp(a.fov ?? DEFAULT_FOV, b.fov ?? DEFAULT_FOV, u);
+  return pose;
 }
-const samePose = (a: CameraPose, b: CameraPose) => a.zoom === b.zoom && a.pan.x === b.pan.x && a.pan.z === b.pan.z && a.tilt === b.tilt && a.yaw === b.yaw;
+const samePose = (a: CameraPose, b: CameraPose) => a.zoom === b.zoom && a.pan.x === b.pan.x && a.pan.z === b.pan.z && a.tilt === b.tilt && a.yaw === b.yaw
+  && (a.height ?? 0) === (b.height ?? 0) && (a.roll ?? 0) === (b.roll ?? 0) && (a.fov ?? DEFAULT_FOV) === (b.fov ?? DEFAULT_FOV);
 
 /** Deterministic flicker in [0, 1], stepped like a mains-driven lamp or shutter. */
 export function flicker(time: number, rate = 24) {
@@ -196,6 +208,17 @@ export function finishTimeline(builder: TimelineBuilder, info: { reel: ReelId; p
 
 // Framing uses the requested output aspect, never the live viewport.
 export const tablePan = (x: number, y: number) => ({ x, z: TABLE_CENTER_Z - y });
+
+/** The orbit pose that places the camera at `eye` looking at `target` (world coordinates). */
+export function lookAtPose(eye: readonly [number, number, number], target: readonly [number, number, number], fov = DEFAULT_FOV): CameraPose {
+  const dx = eye[0] - target[0], dy = eye[1] - target[1], dz = eye[2] - target[2], zoom = Math.hypot(dx, dy, dz);
+  return { zoom, pan: { x: target[0], z: target[2] }, tilt: Math.acos(dy / zoom), yaw: Math.atan2(dx, dz), height: target[1] - TABLE_SURFACE_Y, fov };
+}
+/** World position of a pose's camera; shared by tests and bounds checks. */
+export function poseEye(pose: CameraPose): [number, number, number] {
+  const s = Math.sin(pose.tilt), c = Math.cos(pose.tilt), y = TABLE_SURFACE_Y + (pose.height ?? 0);
+  return [pose.pan.x + pose.zoom * s * Math.sin(pose.yaw), y + pose.zoom * c, pose.pan.z + pose.zoom * s * Math.cos(pose.yaw)];
+}
 
 /** Strip-local x (in the strip's unscaled layout units) of a develop band at roll position p. */
 export function revealEdge(roll: RollDefinition, stripIndex: number, position: number) {

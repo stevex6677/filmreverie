@@ -6,9 +6,9 @@ import { FILM_UNIT, FRAME_GAP_MM, formatLayout } from '../../src/data/filmFormat
 import { FILM_RENDER_SCALE } from '../../src/data/physicalScale';
 import { ROLL_FRAMES } from '../../src/data/rollManifest';
 import { getStripDimensions } from '../../src/utils/loupeMapping';
-import { TABLE_CENTER_Z } from '../../src/utils/cameraBounds';
+import { ROOM_ENVELOPE, TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../../src/utils/cameraBounds';
 import { createScreeningTimeline, breakBoundaries, type ReelOptions } from '../../src/screening/reels';
-import { PACES, PACE_SCALE, REEL_IDS, revealEdge, type ReelId, type ScreeningTimeline } from '../../src/screening/timeline';
+import { PACES, PACE_SCALE, REEL_IDS, poseEye, revealEdge, type ReelId, type ScreeningTimeline } from '../../src/screening/timeline';
 
 const frames = (count: number) => Array.from({ length: count }, (_, i) => ({ ...ROLL_FRAMES[i % ROLL_FRAMES.length], id: `f${i + 1}`, order: i + 1 }));
 const medium: RollDefinition = { rollId: 'm', label: 'Medium · 120 · 6×6', frames: frames(12), framesPerStrip: 3, scale: FILM_RENDER_SCALE, layout: formatLayout('66'), format: '66', fixture: false };
@@ -99,16 +99,25 @@ describe('M22 screening timelines', () => {
       const pitch = Math.max(...roll.frames.map((_, i) => { const frame = locateFrame(roll, i); return ((frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) + frame.strip.layout.gap) * roll.scale; }));
       const halfHeight = strips[0].y + getStripDimensions(strips[0].layout).height * roll.scale / 2;
       for (const sample of samples(timeline, 1 / 15)) {
-        const { zoom, pan, tilt } = sample.camera;
-        expect([zoom, pan.x, pan.z, tilt, sample.light, sample.fade].every(Number.isFinite), name).toBe(true);
-        const height = zoom * Math.cos(tilt);
-        expect(height).toBeGreaterThan(.03);
-        expect(Math.abs(pan.x), `${name} ${reel} ${aspect}`).toBeLessThanOrEqual(halfWidth + (reel === 'projector' ? pitch : 1e-9));
-        expect(Math.abs(TABLE_CENTER_Z - pan.z)).toBeLessThanOrEqual(halfHeight + 1e-6);
-        expect(tilt).toBeGreaterThanOrEqual(0); expect(tilt).toBeLessThanOrEqual(50 * Math.PI / 180);
+        const { zoom, pan, tilt } = sample.camera, eye = poseEye(sample.camera);
+        expect([zoom, pan.x, pan.z, tilt, sample.light, sample.fade, ...eye].every(Number.isFinite), name).toBe(true);
+        // Flyover skims ~3 mm above the film (which lies ~5 mm above the diffuser); others stay well clear.
+        expect(eye[1] - TABLE_SURFACE_Y, `${name} ${reel} ${sample.kind}`).toBeGreaterThan(reel === 'flyover' ? .012 : .03);
+        const room = reel === 'darkroom' && (sample.act === 'establish' || sample.act === 'return');
+        if (room) {
+          // Room shots stay inside the room, looking at most slightly up (as the room view does).
+          expect(Math.abs(eye[0])).toBeLessThan(ROOM_ENVELOPE.width / 2); expect(eye[2]).toBeGreaterThan(ROOM_ENVELOPE.front); expect(eye[2]).toBeLessThan(ROOM_ENVELOPE.back);
+          expect(tilt).toBeLessThanOrEqual(100 * Math.PI / 180);
+        } else {
+          expect(Math.abs(pan.x), `${name} ${reel} ${aspect}`).toBeLessThanOrEqual(halfWidth + (reel === 'projector' || reel === 'flyover' ? pitch : 1e-9));
+          expect(Math.abs(TABLE_CENTER_Z - pan.z)).toBeLessThanOrEqual(halfHeight + 1e-6);
+          expect(tilt).toBeLessThanOrEqual(80 * Math.PI / 180 + 1e-9);
+        }
+        expect(tilt).toBeGreaterThanOrEqual(0);
+        expect(Math.abs(sample.camera.roll ?? 0)).toBeLessThanOrEqual(15 * Math.PI / 180);
       }
       // A focused frame is centered and mostly visible in the requested aspect.
-      for (const segment of timeline.segments.filter(s => s.kind === 'frame' && reel !== 'tracking')) {
+      for (const segment of timeline.segments.filter(s => s.kind === 'frame' && reel !== 'tracking' && reel !== 'darkroom')) {
         const frame = locateFrame(roll, segment.frameIndex), pose = segment.camera[1];
         expect(pose.pan.x).toBeCloseTo(frame.x, 9); expect(TABLE_CENTER_Z - pose.pan.z).toBeCloseTo(frame.y, 9);
         const width = (frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) * roll.scale;
