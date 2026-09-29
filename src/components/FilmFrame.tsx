@@ -40,11 +40,15 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
   const meshRef = useRef<THREE.Mesh>(null);
   const center = useMemo(() => getFrameCenter(index, layout), [index, layout]);
 
+  // A new photograph only changes the texture uniform: rebuilding the material
+  // would reset per-frame uniforms (a screening's develop band, table light)
+  // for a frame, and costs a program lookup mid-animation.
   const material = useMemo(() => createFilmShaderMaterial(
     texture, isPositive, brightness,
     negativeMask ? new THREE.Color(negativeMask[0], negativeMask[1], negativeMask[2]) : undefined,
-  ), [texture, isPositive, negativeMask]);
+  ), [isPositive, negativeMask]);
   useEffect(() => () => material.dispose(), [material]);
+  material.uniforms.uTexture.value = texture;
 
   const frameWidth = getFrameWidth(index, layout);
   const rotation = photo?.rotation ?? 0;

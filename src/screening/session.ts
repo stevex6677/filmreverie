@@ -11,7 +11,8 @@ export const EXPORT_FORMATS = {
 export type ExportFormat = keyof typeof EXPORT_FORMATS;
 export const isExportFormat = (value: unknown): value is ExportFormat => typeof value === 'string' && Object.hasOwn(EXPORT_FORMATS, value);
 
-export interface ScreeningChoice { reel: ReelId; pace: Pace; format: ExportFormat }
+/** Reel and pace, and each reel's own settings (kept when switching reels). */
+export interface ScreeningChoice { reel: ReelId; pace: Pace; tuning: Partial<Record<ReelId, readonly number[]>> }
 /** Text drawn into the rendered frames. Never filenames, IDs or storage references. */
 export interface ScreeningCredits { title: string; stock: string; format: string; frames: number }
 
@@ -34,6 +35,8 @@ export class ScreeningSession {
   time = 0;
   playing = true;
   exporting = false;
+  /** Held at its current moment while the scene prepares (shader compilation). */
+  holding = false;
   sample: ScreeningSample;
   /** Frame whose texture loads first; ahead of the camera so it is ready on arrival. */
   focusFrame = 0;
@@ -43,12 +46,12 @@ export class ScreeningSession {
   private listeners = new Set<() => void>();
   private snapshot: ScreeningSnapshot;
 
-  constructor(readonly roll: RollDefinition, readonly choice: ScreeningChoice, readonly options: Omit<ReelOptions, 'reel' | 'pace' | 'aspect'>, readonly credits: ScreeningCredits, aspect: number) {
+  constructor(readonly roll: RollDefinition, readonly choice: ScreeningChoice, readonly options: Omit<ReelOptions, 'reel' | 'pace' | 'aspect' | 'tuning'>, readonly credits: ScreeningCredits, aspect: number) {
     this.timeline = this.build(aspect);
     this.sample = this.timeline.sample(0);
     this.snapshot = this.read();
   }
-  build(aspect: number) { return createScreeningTimeline(this.roll, { ...this.options, reel: this.choice.reel, pace: this.choice.pace, aspect }); }
+  build(aspect: number) { return createScreeningTimeline(this.roll, { ...this.options, reel: this.choice.reel, pace: this.choice.pace, tuning: this.choice.tuning[this.choice.reel], aspect }); }
   setAspect(aspect: number) {
     if (!(aspect > 0) || Math.abs(aspect - this.timeline.aspect) < .001) return;
     // Durations do not depend on aspect, so the current moment is preserved.
@@ -70,7 +73,7 @@ export class ScreeningSession {
     this.emit();
   }
   tick(delta: number) {
-    if (!this.playing || this.exporting) return;
+    if (!this.playing || this.exporting || this.holding) return;
     this.seek(this.time + Math.min(.1, Math.max(0, delta)));
     if (this.time >= this.timeline.duration) { this.playing = false; this.emit(); }
   }

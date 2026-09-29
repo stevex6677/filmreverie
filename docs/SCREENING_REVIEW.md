@@ -27,6 +27,101 @@ pushed or deployed.
   `safaridriver --enable`), so later WebKit checks can run locally; no Safari
   export run was completed before the merge.
 
+## Playback smoothness (M22.9, 2026-09-29)
+
+User report: previews stutter occasionally on an iPad Pro; worry about
+lower-end devices. Measured with frame-interval recording and CPU profiles
+in headless Chrome on this Mac (Intel Iris Plus 650, 2 physical cores), and
+upload timings in Safari 18.3 through safaridriver. Causes found and fixes:
+
+| Cause | Evidence | Fix |
+|---|---|---|
+| Frame time near the 60 fps budget, so some frames miss vsync | Frames alternating 16.7 / 33.4 ms | `governor.ts`: when over 10% of frames in a window (45 frames, or ≥0.6 s) miss 60 fps, playback steps down: bokeh samples 128 → 80, then render scale 0.85 → 0.72 → 0.6 → 0.5; two levels at once below 30 fps. Steps back up after calm windows, waiting twice as long after a failed attempt. Paused frames and export stay at full quality. |
+| Changing resolution resized the canvas and reallocated targets | 67–83 ms frame after each change | The depth-of-field renderer allocates its targets once at canvas size, renders reduced scales into a region of them, and scales up to the unchanged canvas. |
+| Shaders compiling mid-reel | `getProgramInfoLog` in the playback profile | The reel holds its opening black while `compileAsync` and a warm-up of every depth-of-field pass (both scales) run. |
+| Uploading a photograph blocks the main thread | Safari: 26–65 ms per 2400 × 1600 JPEG, decoded or not; photos culled in Focus were first uploaded mid-reel | `progressiveTextures.ts`: a worker decodes full-size photographs; rows upload in ~1 MB strips within 4 ms (playback) or 6 ms per frame, and a texture is used only when complete. The next two photographs decode while one uploads. Thumbnails (sub-millisecond uploads) load directly. A timer keeps loading going on hidden pages. Falls back to `TextureLoader` without Worker/OffscreenCanvas. |
+| Each photograph load re-rendered the whole app and rebuilt shelf geometry | `FilmPackage`/`ExtrudeGeometry` in playback profiles | Unchanged asset status keeps the same state; background loads during a screening are not reported as app loading; room, cabinet and shelf are memoized; a new photograph swaps the film material's texture uniform instead of rebuilding the material. |
+| Overlay canvas cleared every frame | Full-screen 2D layer recomposited at 2× | Cleared only when something was drawn; at most 1.5× density. |
+
+Results (headless Chrome, this Mac): 720p guest roll — no frames over 50 ms
+after the start (a 67–117 ms frame had followed each resolution change);
+2064 × 1548 (iPad drawing buffer) on this weak GPU — the governor reaches its
+lowest level within ~4 s and holds ~30 fps without hitches. Imported
+12 × 2400 px roll — remaining 50–67 ms frames coincide with worker decodes
+competing for this Mac's two cores (the main thread is idle in them); the old
+path decoded on the main thread. Loading a 12-photograph roll to ready takes
+1.5–1.7 s (old loader 1.5–1.6 s); a first version that also sent thumbnails
+through the worker took 1.9–2.6 s and failed the `free-rolls` reload checks
+under load, which pass again.
+
+**Not measured:** Safari frame pacing. The automated Safari window here was
+`hidden` (no animation frames, timers throttled ~10×), so only upload
+timings and worker decoding (which works in Safari 18.3, including
+`imageOrientation: 'from-image'`) were checked in WebKit. No physical iPad,
+iPhone or lower-end device was measured.
+
+## Reel settings, export format step and depth of field (M22.8, 2026-09-28)
+
+User feedback on the picker: (1) the video format belongs to export, (2) each
+reel should have one or two settings special to it, (3) some reels look flat
+without depth of field.
+
+- **Format at export:** the picker no longer shows Video format. Export video
+  (from the picker or the player) opens a format step (16:9, 9:16, 1:1, with
+  the output size) before rendering; Cancel there returns to where it came
+  from, and the last format is remembered for the session.
+- **Reel settings** (`REEL_SETTINGS` in `src/screening/reels.ts`, sliders 0–100,
+  kept per reel, with Reset). The midpoint reproduces the reviewed reel, except
+  Drying Line's Angle, which now defaults slightly along the line so its depth
+  of field shows.
+
+  | Reel | Setting 1 | Setting 2 |
+  |---|---|---|
+  | Tracking Shot | Distance (close ↔ far) | Depth of field (deep ↔ shallow) |
+  | Develop | Push-in (none ↔ close) | Light band (sharp ↔ soft) |
+  | Projector | Gate weave (steady ↔ loose) | Lamp flicker (none ↔ strong) |
+  | Darkroom | Distance (close ↔ far) | Camera height (low ↔ high) |
+  | Orbit | Arc (narrow ↔ wide) | Depth of field (deep ↔ shallow) |
+  | Drying Line | Distance (close ↔ far) | Angle (face on ↔ along the line) |
+  | Documentary | Drift (still ↔ strong) | Dissolve (quick ↔ long; changes the running time) |
+
+  Near the back wall, Drying Line turns less rather than leaving the room.
+- **Depth of field** (`src/screening/depthOfField.ts`) on Tracking Shot,
+  Darkroom, Orbit and Drying Line; Develop, Projector and Documentary look
+  straight down at flat film and stay sharp. While screening, the director
+  renders each frame itself: the scene into a 4× MSAA half-float target with a
+  depth texture; color and linear depth packed into one texture; a tile pass
+  recording the largest blur that can reach each 16 px tile; then a
+  **full-resolution** scatter-as-gather bokeh (after Gustafsson) with hard,
+  even disc edges in linear HDR, followed by the same ACES/sRGB output as the
+  table. Focus is the pose's target distance; blur grows with relative
+  defocus and more for close focus, capped at 3% of the picture height. A
+  paused frame and export use dense sampling (512); a paused frame is redrawn
+  only when it changes. Playback's budget follows the frame rate (128 down to
+  48); sparse samples are jittered per pixel and read a mip level matched to
+  their spacing, so they fill in smoothly. Export uses the same pass,
+  including a dissolve's outgoing shot. Without half-float render targets it
+  falls back to a direct render.
+- **Revision after iPad review (2026-09-29):** the user found the first depth
+  of field fake. Their iPad screenshot showed why: the blur was gathered at
+  540 px tall and stretched ~3× on the iPad (blocky, pixelated discs), and
+  blending it back over the sharp picture left doubled, ragged edges. It was
+  replaced by the full-resolution pass above. Measured in headless Chrome on
+  this Mac's Intel Iris Plus 650 (not representative of an iPad) at the iPad's
+  2064 × 1548 drawing buffer: 19.6 fps without depth of field, 11.7 fps with
+  it; 61 / 48 fps at 1280 × 720.
+- Verification (this Mac): 327 integration tests (new: settings ranges,
+  defaults unchanged, every setting changes its reel, camera bounds at every
+  extreme for three rolls and two aspects, setting semantics, blur model); all
+  16 M22 browser cases on desktop and phone-size Chrome (new: per-reel sliders
+  and Reset, the export format step and its Cancel, and a Tracking Shot at
+  Shallow vs Deep whose near film loses over half its detail while the focus
+  line keeps over 60%); a 16:9 export at Shallow inspected frame by frame for
+  depth of field. After the revision: the same 327 and 16 pass, plus paused,
+  playback and exported frames reviewed at iPad resolution for all four
+  reels. **Not checked:** Safari/WebKit and physical iPad/iPhone frame rate of
+  the depth-of-field pass during playback.
+
 ## Drying Line and Documentary (M22.7, 2026-09-27/28)
 
 Chosen by the user from three further designs (Contact Sheet not chosen).

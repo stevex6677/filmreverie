@@ -1,7 +1,7 @@
 import { createRollLayout, fitRollView, locateFrame, type RollDefinition } from '../utils/rollLayout';
 import { getStripDimensions } from '../utils/loupeMapping';
 import { finishTimeline, lerpCamera, lookAtPose, PACE_SCALE, tablePan, TimelineBuilder, type CameraPose, type Pace, type ReelId, type ScreeningTimeline } from './timeline';
-import { ROOM_CAMERA_FOV, ROOM_EYE, TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../utils/cameraBounds';
+import { ROOM_CAMERA_FOV, ROOM_ENVELOPE, ROOM_EYE, TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../utils/cameraBounds';
 import { SHELF_ORIGIN } from '../data/physicalScale';
 import { printLayout } from './prints';
 
@@ -9,7 +9,33 @@ export interface ReelOptions {
   reel: ReelId; pace: Pace; aspect: number; reducedMotion?: boolean;
   /** Reversal stock has no negative stage; Develop reveals its backlight instead. */
   stockType: 'negative' | 'reversal';
+  /** The reel's own settings, each 0–1 (see REEL_SETTINGS); missing values use the defaults. */
+  tuning?: readonly number[];
 }
+
+/** A setting special to one reel, shown as a slider between two described ends. */
+export interface ReelSetting { label: string; low: string; high: string; initial: number }
+// Two at most per reel. The initial values reproduce the reviewed reels, except
+// Drying Line, which now looks slightly along the line so its depth of field shows.
+export const REEL_SETTINGS: Record<ReelId, readonly ReelSetting[]> = {
+  tracking: [{ label: 'Distance', low: 'Close', high: 'Far', initial: .5 }, { label: 'Depth of field', low: 'Deep', high: 'Shallow', initial: .5 }],
+  develop: [{ label: 'Push-in', low: 'None', high: 'Close', initial: .5 }, { label: 'Light band', low: 'Sharp', high: 'Soft', initial: .5 }],
+  projector: [{ label: 'Gate weave', low: 'Steady', high: 'Loose', initial: .5 }, { label: 'Lamp flicker', low: 'None', high: 'Strong', initial: .5 }],
+  darkroom: [{ label: 'Distance', low: 'Close', high: 'Far', initial: .5 }, { label: 'Camera height', low: 'Low', high: 'High', initial: .5 }],
+  orbit: [{ label: 'Arc', low: 'Narrow', high: 'Wide', initial: .5 }, { label: 'Depth of field', low: 'Deep', high: 'Shallow', initial: .5 }],
+  'drying-line': [{ label: 'Distance', low: 'Close', high: 'Far', initial: .5 }, { label: 'Angle', low: 'Face on', high: 'Along the line', initial: .4 }],
+  documentary: [{ label: 'Drift', low: 'Still', high: 'Strong', initial: .5 }, { label: 'Dissolve', low: 'Quick', high: 'Long', initial: .5 }],
+};
+/** The reel's settings with defaults filled in and values clamped to 0–1. */
+export function reelTuning(reel: ReelId, values?: readonly number[]) {
+  return REEL_SETTINGS[reel].map((setting, i) => { const value = values?.[i]; return Number.isFinite(value) ? Math.max(0, Math.min(1, value!)) : setting.initial; });
+}
+/** A multiplier from 1/range to range, 1 at the midpoint. */
+const around = (u: number, range: number) => range ** (2 * u - 1);
+/** 0 at the low end, 1 at the midpoint, 2.5 at the high end. */
+const amount = (u: number) => u <= .5 ? 2 * u : 1 + 3 * (u - .5);
+// Depth of field for reels that look across the table or into the room.
+const APERTURE = { tracking: .075, darkroom: .035, orbit: .03, 'drying-line': .035 };
 
 export const REEL_LABEL: Record<ReelId, string> = { tracking: 'Tracking Shot', develop: 'Develop', projector: 'Projector', darkroom: 'Darkroom', orbit: 'Orbit', 'drying-line': 'Drying Line', documentary: 'Documentary' };
 export const REEL_DESCRIPTION: Record<ReelId, string> = {
@@ -66,11 +92,13 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
   const n = roll.frames.length;
   const holdScale = medium ? 1.35 : 1;
   const info = { reel: options.reel, pace: options.pace, aspect, reducedMotion: reduced, frameCount: n };
+  const [first, second] = reelTuning(options.reel, options.tuning);
 
   if (options.reel === 'tracking') {
     // A low, angled camera tracks along each strip; every few frames it pushes
     // in close and drifts across a detail of the photograph.
-    const track = (index: number): CameraPose => { const frame = locateFrame(roll, index); return { zoom: f.frame(index).zoom * 1.85, pan: tablePan(frame.x, frame.y), tilt: degrees(32), yaw: degrees(-8) }; };
+    const distance = 1.85 * around(first, 1.5);
+    const track = (index: number): CameraPose => { const frame = locateFrame(roll, index); return { zoom: f.frame(index).zoom * distance, pan: tablePan(frame.x, frame.y), tilt: degrees(32), yaw: degrees(-8) }; };
     const close = (index: number, u: number, v: number): CameraPose => {
       const frame = locateFrame(roll, index), width = (frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) * frame.strip.scale;
       return { zoom: f.frame(index).zoom * .55, pan: tablePan(frame.x + u * width, frame.y + v * frame.strip.layout.frameHeight * frame.strip.scale), tilt: degrees(18), yaw: degrees(-8) };
@@ -102,10 +130,11 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     b.step('return', 'close', n - 1, 3.8, { camera: drift(f.overview), drift: true });
     b.card('end', end + b.seconds(.4), b.time);
     b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
-    return finishTimeline(b, { ...info, revealMode: null });
+    return finishTimeline(b, { ...info, revealMode: null, look: { aperture: APERTURE.tracking * amount(second) } });
   }
 
   if (options.reel === 'develop') {
+    const push = .8 - .4 * (first - .5);
     const b = new TimelineBuilder(f.overview, scale, reduced);
     // The light table is off; dim room light shows the black film on a grey
     // diffuser. After the title it switches on at once, revealing the negatives.
@@ -123,15 +152,15 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
       }
       b.step('tour', 'push', i, i === 0 ? 1.7 : 1.0, { camera: frame, beat: true });
       // The camera pushes in to fill the screen while the band crosses the frame.
-      b.step('tour', 'develop', i, 1.9 * holdScale, { camera: { ...frame, zoom: frame.zoom * .8 }, reveal: i + 1, drift: true });
-      b.step('tour', 'frame', i, .9 * holdScale, { camera: { ...frame, zoom: frame.zoom * .77 }, drift: true });
+      b.step('tour', 'develop', i, 1.9 * holdScale, { camera: { ...frame, zoom: frame.zoom * push }, reveal: i + 1, drift: true });
+      b.step('tour', 'frame', i, .9 * holdScale, { camera: { ...frame, zoom: frame.zoom * (push - .03) }, drift: true });
     }
     b.step('return', 'pull-back', n - 1, 1.7, { camera: f.overview });
     const close = b.time;
     b.step('return', 'close', n - 1, 3.6, { camera: drift(f.overview), drift: true });
     b.card('end', close + b.seconds(.4), b.time);
     b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
-    return finishTimeline(b, { ...info, revealMode: options.stockType === 'reversal' ? 'backlight' : 'polarity' });
+    return finishTimeline(b, { ...info, revealMode: options.stockType === 'reversal' ? 'backlight' : 'polarity', look: { band: .06 * around(second, 3.5) } });
   }
 
   // Frame geometry shared by the travelling reels, in world units.
@@ -145,8 +174,9 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     const cabinet = lookAtPose(ROOM_EYE, SHELF_ORIGIN, fov);
     const toward = lookAtPose(ROOM_EYE, [0, TABLE_SURFACE_Y, TABLE_CENTER_Z], fov);
     const above: CameraPose = { ...f.overview, zoom: f.overview.zoom * 1.35, tilt: degrees(30) };
-    const dolly = (index: number): CameraPose => { const frame = frameAt(index); return { zoom: f.frame(index).zoom * 1.5, pan: tablePan(frame.x, frame.y), tilt: degrees(24), yaw: 0 }; };
-    const drop = (index: number): CameraPose => ({ ...dolly(index), zoom: f.frame(index).zoom * 1.05, tilt: degrees(12) });
+    const distance = around(first, 1.5), height = second - .5;
+    const dolly = (index: number): CameraPose => { const frame = frameAt(index); return { zoom: f.frame(index).zoom * 1.5 * distance, pan: tablePan(frame.x, frame.y), tilt: degrees(24 - 32 * height), yaw: 0 }; };
+    const drop = (index: number): CameraPose => ({ ...dolly(index), zoom: f.frame(index).zoom * 1.05 * distance, tilt: degrees(12 - 20 * height) });
     const turned: CameraPose = { ...f.overview, zoom: f.overview.zoom * 1.1, tilt: degrees(36), yaw: f.overview.yaw + degrees(20) };
     const b = new TimelineBuilder(cabinet, scale, reduced);
     b.light = 0; b.ambient = 1;
@@ -172,14 +202,15 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     b.step('return', 'close', n - 1, 3.4, { camera: cabinet, light: 0, ambient: 1 });
     b.card('end', end + b.seconds(.4), b.time);
     b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
-    return finishTimeline(b, { ...info, revealMode: null });
+    return finishTimeline(b, { ...info, revealMode: null, look: { aperture: APERTURE.darkroom } });
   }
 
   if (options.reel === 'orbit') {
     // Each photograph gets a slow descending arc that resolves top-down, so the
     // curled film shows parallax against the glowing diffuser.
     const base = f.overview.yaw;
-    const start = (index: number): CameraPose => { const frame = f.frame(index); return { ...frame, zoom: frame.zoom * 1.4, tilt: degrees(50), yaw: (index % 2 ? 1 : -1) * degrees(35) }; };
+    const arc = first - .5;
+    const start = (index: number): CameraPose => { const frame = f.frame(index); return { ...frame, zoom: frame.zoom * 1.4, tilt: degrees(50 + 40 * arc), yaw: (index % 2 ? 1 : -1) * degrees(35 + 50 * arc) }; };
     const high = (yaw: number): CameraPose => ({ ...f.overview, zoom: f.overview.zoom * 1.15, tilt: degrees(42), yaw: base + degrees(yaw) });
     // Low and edge-on along the strips, but never closer than ~5 cm above a short roll.
     const grazing: CameraPose = { ...f.overview, zoom: Math.max(f.overview.zoom * .9, .3), tilt: degrees(80), yaw: degrees(90) };
@@ -202,17 +233,21 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     b.step('return', 'close', n - 1, 3.6, { camera: f.overview, ease: 'inOut' });
     b.card('end', end + b.seconds(.6), b.time);
     b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
-    return finishTimeline(b, { ...info, revealMode: null });
+    return finishTimeline(b, { ...info, revealMode: null, look: { aperture: APERTURE.orbit * amount(second) } });
   }
 
   if (options.reel === 'drying-line') {
     // From the lit table to the print wall: a wide shot of every line, then a
     // track along each line toward the table (−z), so prints pass right to left.
     const layout = printLayout(roll);
+    // Seen at an angle, the next prints recede along the line (toward −z, screen right).
+    const angle = degrees(50 * second), range = around(first, 1.6);
     const printPose = (index: number): CameraPose => {
       const print = layout.prints[index], fov = 40, tan = Math.tan(fov * Math.PI / 360);
-      const distance = Math.max(print.paper.height * 1.4, print.paper.width * 1.45 / aspect) / (2 * tan);
-      return lookAtPose([print.center[0] + distance, print.center[1] + .03, print.center[2]], print.center, fov);
+      const distance = range * Math.max(print.paper.height * 1.4, print.paper.width * 1.45 / aspect) / (2 * tan);
+      // Near the back wall the camera turns less, rather than leaving the room.
+      const turn = Math.min(angle, Math.asin(Math.min(1, (ROOM_ENVELOPE.back - .3 - print.center[2]) / distance)));
+      return lookAtPose([print.center[0] + distance * Math.cos(turn), print.center[1] + .03, print.center[2] + distance * Math.sin(turn)], print.center, fov);
     };
     const glance = (index: number): CameraPose => {
       const frame = frameAt(index);
@@ -250,12 +285,13 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     b.step('return', 'close', n - 1, 3.4, { camera: { ...closing, zoom: closing.zoom * 1.04 }, drift: true });
     b.card('end', end + b.seconds(.4), b.time);
     b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
-    return finishTimeline(b, { ...info, revealMode: null });
+    return finishTimeline(b, { ...info, revealMode: null, look: { aperture: APERTURE['drying-line'] } });
   }
 
   if (options.reel === 'documentary') {
     // Photograph first: each one fills the screen, drifts slowly (pushing in
     // ~10% and panning toward its longer side) and dissolves into the next.
+    const push = first <= .5 ? .2 * first : .1 + .2 * (first - .5), pan = .8 * Math.min(1, 2 * first);
     const kenBurns = (index: number) => {
       const frame = frameAt(index), photo = roll.frames[index], rotation = ((photo.rotation ?? 0) % 360 + 360) % 360;
       const height = frame.strip.layout.frameHeight * frame.strip.scale;
@@ -266,26 +302,26 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
       const photoAspect = w / h, mismatch = Math.max(photoAspect / aspect, aspect / photoAspect);
       // Fill the screen unless the shapes differ a lot; then show the whole photograph.
       const visible = mismatch < 1.35 ? Math.min(h, w / aspect) * .97 : Math.max(h, w / aspect) * 1.04;
-      const zoom = visible / (2 * TAN), inner = visible * .9;
+      const zoom = visible / (2 * TAN), inner = visible * (1 - push);
       const slackX = Math.max(0, (w - inner * aspect) / 2), slackY = Math.max(0, (h - inner) / 2);
       const sign = index % 2 ? 1 : -1, horizontal = slackX >= slackY;
       const offset = (amount: number) => {
-        const sx = horizontal ? amount * slackX * .8 : 0, sy = horizontal ? 0 : amount * slackY * .8;
+        const sx = horizontal ? amount * slackX * pan : 0, sy = horizontal ? 0 : amount * slackY * pan;
         return { x: frame.x + sx * Math.cos(yaw) - sy * Math.sin(yaw), z: TABLE_CENTER_Z - frame.y - sx * Math.sin(yaw) - sy * Math.cos(yaw) };
       };
       const start: CameraPose = { zoom, pan: offset(-sign), tilt: 0, yaw };
-      const end: CameraPose = { zoom: zoom * .9, pan: offset(sign), tilt: 0, yaw };
+      const end: CameraPose = { zoom: zoom * (1 - push), pan: offset(sign), tilt: 0, yaw };
       // A photograph shown whole is letterboxed (or pillarboxed) in black.
       const matte = mismatch < 1.35 ? undefined : { x: frame.x, z: TABLE_CENTER_Z - frame.y, width: w, height: h };
       return { start, end, matte };
     };
-    const dissolve = 1, drifting = 3.2 * holdScale;
+    const dissolve = around(second, 2.2), drifting = 3.2 * holdScale;
     const b = new TimelineBuilder(f.overview, scale, reduced);
     b.fade(b.seconds(.8), 0);
     b.step('establish', 'open', 0, 3, { camera: drift(f.overview), drift: true });
     b.card('title', b.seconds(.4), b.seconds(2.8));
-    const first = kenBurns(0).matte;
-    b.step('tour', 'push-in', 0, 2, { camera: kenBurns(0).start, beat: true, matte: first && { ...first, alpha: [0, 1] } });
+    const opening = kenBurns(0).matte;
+    b.step('tour', 'push-in', 0, 2, { camera: kenBurns(0).start, beat: true, matte: opening && { ...opening, alpha: [0, 1] } });
     for (let i = 0; i < n; i++) {
       const { start, end, matte } = kenBurns(i), middle = lerpCamera(start, end, dissolve / (dissolve + drifting));
       const previous = i > 0 ? kenBurns(i - 1).matte : undefined;
@@ -378,5 +414,5 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
   b.step('return', 'close', n - 1, 3.4, { camera: drift(f.overview), drift: true });
   b.card('end', end + b.seconds(.3), b.time);
   b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
-  return finishTimeline(b, { ...info, revealMode: null });
+  return finishTimeline(b, { ...info, revealMode: null, look: { weave: .004 * amount(first), flicker: .045 * amount(second) } });
 }

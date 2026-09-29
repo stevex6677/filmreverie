@@ -259,7 +259,7 @@ describe('M22 screening session', () => {
   it('plays, pauses, seeks by frame and never advances while paused or exporting', async () => {
     const { ScreeningSession } = await import('../../src/screening/session');
     const credits = { title: 'Roll', stock: 'Portra 400', format: '35mm', frames: 36 };
-    const session = new ScreeningSession(FULL_ROLL_FIXTURE, { reel: 'develop', pace: 'normal', format: '16:9' }, { stockType: 'negative' }, credits, 4 / 3);
+    const session = new ScreeningSession(FULL_ROLL_FIXTURE, { reel: 'develop', pace: 'normal', tuning: {} }, { stockType: 'negative' }, credits, 4 / 3);
     const events: number[] = []; session.subscribe(() => events.push(session.time));
     session.tick(.05); expect(session.time).toBeCloseTo(.05);
     session.tick(5); expect(session.time).toBeCloseTo(.15); // a stalled frame advances at most 0.1 s
@@ -365,5 +365,146 @@ describe('M22 Drying Line and Documentary', () => {
     expect(tall.segments.filter(s => s.kind === 'frame').every(s => s.matte && s.matte.width > s.matte.height)).toBe(true);
     expect(tall.segments.find(s => s.kind === 'push-in')!.matte!.alpha).toEqual([0, 1]);
     expect(tall.segments.find(s => s.act === 'return')!.matte!.alpha).toEqual([1, 0]);
+  });
+});
+
+describe('M22 reel settings and depth of field (2026-09-28 feedback)', () => {
+  const EXTREMES = [[0, 0], [1, 1], [0, 1], [1, 0]];
+  it('give every reel at most two settings of its own, clamped, with defaults that change nothing', async () => {
+    const { REEL_SETTINGS, reelTuning } = await import('../../src/screening/reels');
+    for (const reel of REEL_IDS) {
+      const settings = REEL_SETTINGS[reel];
+      expect(settings.length, reel).toBeGreaterThanOrEqual(1); expect(settings.length).toBeLessThanOrEqual(2);
+      expect(new Set(settings.map(s => s.label)).size).toBe(settings.length);
+      expect(reelTuning(reel)).toEqual(settings.map(s => s.initial));
+      expect(reelTuning(reel, [-3, 7])).toEqual([0, 1].slice(0, settings.length));
+      expect(reelTuning(reel, [Number.NaN])).toEqual(settings.map(s => s.initial));
+      const plain = createScreeningTimeline(FULL_ROLL_FIXTURE, options(reel));
+      const explicit = createScreeningTimeline(FULL_ROLL_FIXTURE, options(reel, { tuning: settings.map(s => s.initial) }));
+      expect(explicit.look).toEqual(plain.look);
+      expect(samples(explicit, .37)).toEqual(samples(plain, .37));
+    }
+  });
+
+  it('each setting changes its reel, and the camera stays in bounds at every extreme', async () => {
+    const { REEL_SETTINGS } = await import('../../src/screening/reels');
+    for (const reel of REEL_IDS) for (const index of REEL_SETTINGS[reel].map((_, i) => i)) {
+      const at = (value: number) => { const tuning = REEL_SETTINGS[reel].map(s => s.initial); tuning[index] = value; return createScreeningTimeline(BASELINE_ROLL, options(reel, { tuning })); };
+      const low = at(0), high = at(1);
+      const differs = JSON.stringify(low.look) !== JSON.stringify(high.look) || JSON.stringify(samples(low, .5)) !== JSON.stringify(samples(high, .5));
+      expect(differs, `${reel} ${REEL_SETTINGS[reel][index].label}`).toBe(true);
+    }
+    for (const roll of [BASELINE_ROLL, FULL_ROLL_FIXTURE, medium]) for (const aspect of [16 / 9, 9 / 16]) for (const reel of REEL_IDS) for (const tuning of EXTREMES) {
+      const timeline = createScreeningTimeline(roll, options(reel, { aspect, tuning }));
+      const visits = timeline.segments.filter(segment => segment.kind === 'frame').map(segment => segment.frameIndex);
+      expect(visits).toEqual(roll.frames.map((_, i) => i));
+      for (const sample of samples(timeline, 1 / 5)) {
+        const eye = poseEye(sample.camera);
+        expect([...eye, sample.light, sample.camera.zoom].every(Number.isFinite)).toBe(true);
+        expect(eye[1] - TABLE_SURFACE_Y, `${reel} ${tuning}`).toBeGreaterThan(.03);
+        expect(sample.camera.tilt).toBeGreaterThanOrEqual(0);
+        const room = (reel === 'darkroom' && (sample.act === 'establish' || sample.act === 'return')) || reel === 'drying-line';
+        if (room) { expect(Math.abs(eye[0])).toBeLessThan(ROOM_ENVELOPE.width / 2); expect(eye[2]).toBeGreaterThan(ROOM_ENVELOPE.front); expect(eye[2]).toBeLessThan(ROOM_ENVELOPE.back); }
+        else expect(sample.camera.tilt, `${reel} ${tuning}`).toBeLessThanOrEqual(80 * Math.PI / 180 + 1e-9);
+      }
+    }
+  }, 60000);
+
+  it('map settings to what they name', () => {
+    const at = (reel: ReelId, tuning: number[]) => createScreeningTimeline(FULL_ROLL_FIXTURE, options(reel, { tuning }));
+    const frame = (timeline: ScreeningTimeline, i = 3) => timeline.segments.find(s => s.kind === 'frame' && s.frameIndex === i)!;
+    // Distance: the tracking camera is closer or farther from the film.
+    expect(frame(at('tracking', [0, .5])).camera[1].zoom).toBeLessThan(frame(at('tracking', [.5, .5])).camera[1].zoom * .75);
+    expect(frame(at('tracking', [1, .5])).camera[1].zoom).toBeGreaterThan(frame(at('tracking', [.5, .5])).camera[1].zoom * 1.3);
+    // Depth of field: none at Deep, stronger toward Shallow; only reels that look across the scene have it.
+    expect(at('tracking', [.5, 0]).look.aperture).toBe(0);
+    expect(at('tracking', [.5, 1]).look.aperture).toBeGreaterThan(at('tracking', [.5, .5]).look.aperture * 2);
+    for (const reel of ['tracking', 'darkroom', 'orbit', 'drying-line'] as const) expect(at(reel, []).look.aperture, reel).toBeGreaterThan(0);
+    for (const reel of ['develop', 'projector', 'documentary'] as const) expect(at(reel, []).look.aperture, reel).toBe(0);
+    // Develop: no push-in at None; the band softens toward Soft.
+    const still = frame(at('develop', [0, .5]));
+    expect(still.camera[1].zoom).toBeGreaterThan(frame(at('develop', [.5, .5])).camera[1].zoom * 1.15);
+    expect(at('develop', [.5, 1]).look.band).toBeGreaterThan(at('develop', [.5, 0]).look.band * 5);
+    // Projector: a steady gate and lamp at the low ends.
+    const steady = at('projector', [0, 0]);
+    expect(steady.look.weave).toBe(0); expect(steady.look.flicker).toBe(0);
+    const held = steady.segments.find(s => s.kind === 'frame' && s.frameIndex === 2)!;
+    expect(steady.sample(held.start + .1).camera).toEqual(steady.sample(held.start + .3).camera);
+    expect(steady.sample(held.start + .1).light).toBe(steady.sample(held.start + .3).light);
+    // Darkroom: a higher camera looks more nearly straight down.
+    expect(frame(at('darkroom', [.5, 1])).camera[1].tilt).toBeLessThan(frame(at('darkroom', [.5, 0])).camera[1].tilt);
+    // Orbit: a wider arc swings farther around the photograph.
+    const arc = (tuning: number[]) => Math.abs(at('orbit', tuning).segments.find(s => s.kind === 'orbit' && s.frameIndex === 3)!.camera[0].yaw);
+    expect(arc([1, .5])).toBeGreaterThan(arc([0, .5]) * 3);
+    // Drying Line: face on at the low end; along the line, the camera stands back toward +z.
+    const print = (tuning: number[]) => { const pose = frame(at('drying-line', tuning)).camera[0]; return poseEye(pose)[2] - pose.pan.z; };
+    expect(print([.5, 0])).toBeCloseTo(0, 6); expect(print([.5, 1])).toBeGreaterThan(.3);
+    // Documentary: Still holds each photograph; the dissolve length sets the running time.
+    for (const segment of at('documentary', [0, .5]).segments.filter(s => s.kind === 'frame')) {
+      const [a, b] = segment.camera;
+      expect(b.zoom).toBeCloseTo(a.zoom, 9); expect(b.pan.x).toBeCloseTo(a.pan.x, 9); expect(b.pan.z).toBeCloseTo(a.pan.z, 9);
+    }
+    const quick = at('documentary', [.5, 0]), long = at('documentary', [.5, 1]);
+    expect(long.duration - quick.duration).toBeGreaterThan(35 * 1.5);
+    expect(long.segments.find(s => s.dissolve)!.duration).toBeGreaterThan(quick.segments.find(s => s.dissolve)!.duration * 3);
+  });
+
+  it('blurs by relative defocus, not at the focus distance, and more for close focus', async () => {
+    const { blurFraction, MAX_BLUR } = await import('../../src/screening/depthOfField');
+    expect(blurFraction(.05, .2, .2)).toBe(0);
+    expect(blurFraction(.05, .2, .26)).toBeGreaterThan(blurFraction(.05, .2, .22));
+    expect(blurFraction(.05, .2, 100)).toBe(MAX_BLUR);
+    expect(blurFraction(.02, .15, .15 * 1.3)).toBeGreaterThan(blurFraction(.02, 3, 3 * 1.3));
+    expect(blurFraction(0, .2, 5)).toBe(0);
+  });
+});
+
+describe('M22 playback smoothness (2026-09-29 feedback)', () => {
+  it('steps quality down when frames miss 60 fps, back up after smooth playback, and backs off a level that fails again', async () => {
+    const { PlaybackGovernor, QUALITY_LEVELS } = await import('../../src/screening/governor');
+    const run = (governor: InstanceType<typeof PlaybackGovernor>, interval: number, frames: number) => { for (let i = 0; i < frames; i++) governor.frame(interval); };
+    const governor = new PlaybackGovernor();
+    run(governor, 1 / 60, 600); expect(governor.level).toBe(0);
+    // Occasional late frames (under 10%) are tolerated.
+    for (let i = 0; i < 600; i++) governor.frame(i % 20 === 0 ? 1 / 30 : 1 / 60);
+    expect(governor.level).toBe(0);
+    // Steady 30 fps steps all the way down: samples first, then resolution.
+    run(governor, 1 / 30, 2000);
+    expect(governor.level).toBe(QUALITY_LEVELS.length - 1);
+    const scales = QUALITY_LEVELS.map(q => q.scale), samples = QUALITY_LEVELS.map(q => q.samples);
+    expect(scales).toEqual([...scales].sort((a, b) => b - a)); expect(samples).toEqual([...samples].sort((a, b) => b - a));
+    expect(QUALITY_LEVELS[1].scale).toBe(1); expect(Math.min(...scales)).toBeGreaterThanOrEqual(.5);
+    // Pauses and hidden pages are ignored.
+    const idle = new PlaybackGovernor(); run(idle, 2, 500); run(idle, 0, 500); expect(idle.level).toBe(0);
+    // A slow device (15 fps) reaches the lowest level within a few seconds, two levels at a time.
+    const slow = new PlaybackGovernor(); let frames = 0;
+    while (slow.level < QUALITY_LEVELS.length - 1 && frames < 1000) { slow.frame(1 / 15); frames++; }
+    expect(frames / 15).toBeLessThan(6);
+    // Frames until the level changes, at a steady interval.
+    const until = (interval: number) => { const from = governor.level; let n = 0; while (governor.level === from && n < 5000) { governor.frame(interval); n++; } return n; };
+    const top = QUALITY_LEVELS.length - 1;
+    // Smooth playback climbs back one level at a time, after a few calm seconds.
+    const first = until(1 / 60);
+    expect(governor.level).toBe(top - 1); expect(first / 60).toBeGreaterThan(1.5); expect(first / 60).toBeLessThan(4);
+    // A restored level that fails at once waits about twice as long before the next attempt.
+    expect(until(1 / 30) / 30).toBeLessThan(1.5); expect(governor.level).toBe(top);
+    const second = until(1 / 60);
+    expect(governor.level).toBe(top - 1); expect(second).toBeGreaterThan(first * 1.6);
+  });
+
+  it('holds the timeline while the scene prepares', async () => {
+    const { ScreeningSession } = await import('../../src/screening/session');
+    const session = new ScreeningSession(BASELINE_ROLL, { reel: 'tracking', pace: 'normal', tuning: {} }, { stockType: 'negative' }, { title: 'Roll', stock: 'Portra 400', format: '35mm', frames: 5 }, 16 / 9);
+    session.holding = true; session.tick(.05); expect(session.time).toBe(0);
+    session.holding = false; session.tick(.05); expect(session.time).toBeCloseTo(.05);
+  });
+
+  it('knows when the overlay has nothing to draw', async () => {
+    const { overlayIsEmpty } = await import('../../src/screening/overlay');
+    const tracking = createScreeningTimeline(BASELINE_ROLL, options('tracking'));
+    expect(overlayIsEmpty(tracking.sample(0))).toBe(false); // opening from black
+    expect(overlayIsEmpty(tracking.sample(tracking.frameStart(2) + .3))).toBe(true);
+    const projector = createScreeningTimeline(BASELINE_ROLL, options('projector'));
+    expect(overlayIsEmpty(projector.sample(projector.frameStart(2) + .3))).toBe(false); // the lit gate
   });
 });

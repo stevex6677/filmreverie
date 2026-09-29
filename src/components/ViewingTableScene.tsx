@@ -1,9 +1,10 @@
 import { photoSourceDemand } from "../utils/photoFraming";
 import { BASELINE_ROLL, createRollLayout, lightTableSize, focusFrameLayout, locateFrame } from "../utils/rollLayout";
 import { useRollTextures } from "../utils/useRollTextures";
+import { ProgressiveTextureUploader, UPLOAD_BUDGET_MS } from "../utils/progressiveTextures";
 import { useThree, useFrame } from "@react-three/fiber";
 import { getFilmStock } from "../data/filmStocks";
-import React, { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import * as THREE from "three";
 import { TABLE_SURFACE_Y, TABLE_CENTER_Z } from "../utils/cameraBounds";
 import { ViewerAction, ViewerState } from "../state/viewerState";
@@ -83,10 +84,19 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
   const selected=state.roll.frames[priority];
   const sourcePixels=photoSourceDemand(projected,selected.aspectRatio,gate.frameWidth/gate.frameHeight,selected.rotation??0);
   const demand=!screening && state.roomMode === "inspect" && !state.isTransitioning && !state.cameraMoving ? sourcePixels*(state.loupe.isActive?state.loupe.magnification:1) : 0;
-  const { textures, ready, failed, settled, bytes, loadedCount, detailStatus } = useRollTextures(state.roll, priority, state.assetRetry, demand, gl.capabilities.maxTextureSize);
+  // Photographs reach the GPU in strips over a few frames, so loading one never stalls a camera move or screening.
+  const uploader = useMemo(() => new ProgressiveTextureUploader(gl), [gl]);
+  useEffect(() => () => uploader.dispose(), [uploader]);
+  const upload = useCallback((url: string) => uploader.load(url), [uploader]);
+  const prefetch = useCallback((urls: readonly string[]) => uploader.prefetch(urls), [uploader]);
+  const screeningPlaying = useSyncExternalStore(screening?.subscribe ?? idle, () => !!screening?.playing && !screening.exporting);
+  uploader.budget = screeningPlaying ? UPLOAD_BUDGET_MS.playback : UPLOAD_BUDGET_MS.idle;
+  const { textures, ready, failed, settled, bytes, loadedCount, detailStatus } = useRollTextures(state.roll, priority, state.assetRetry, demand, gl.capabilities.maxTextureSize, upload, prefetch);
   useEffect(() => { if (screening) screening.textureReady = index => ready[index] ?? true; }, [screening, ready]);
   useEffect(()=>{gl.domElement.dataset.textureIds=JSON.stringify(textures.map(t=>t.uuid));gl.domElement.dataset.textureBytes=String(bytes);gl.domElement.dataset.textureCount=String(loadedCount);gl.domElement.dataset.detailStatus=detailStatus;gl.domElement.dataset.textureEdge=String(Math.max(textures[state.activeFrameIndex]?.image?.width||0,textures[state.activeFrameIndex]?.image?.height||0));},[bytes,loadedCount,detailStatus,textures,state.activeFrameIndex,gl]);
-  useEffect(() => { dispatch({ type: "ASSET_STATUS", failures: failed, loading: !settled, detailStatus }); }, [failed, settled, detailStatus, dispatch]);
+  // A screening loads upcoming photographs in the background and waits for the
+  // one on screen itself; reporting each load would re-render the whole app mid-reel.
+  useEffect(() => { dispatch({ type: "ASSET_STATUS", failures: failed, loading: !settled && !screening, detailStatus }); }, [failed, settled, detailStatus, dispatch, screening]);
   useEffect(() => {
     onLoadProgress?.({
       loaded: loadedCount,
@@ -123,6 +133,25 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
     livePose.current.zoom = view.zoom;
     livePose.current.pan = view.pan;
   }
+
+  // The room, camera cabinet and film shelf depend on none of the per-frame
+  // table state. Kept out of re-renders from photograph loading and screening
+  // focus changes, which otherwise rebuilt shelf geometry mid-screening.
+  const surroundingsInputs = [cabinetOnly, tableSize.width, tableSize.height, state.tableBrightness, state.roomBrightness, isDeterministic, isReducedMotion, packagingTextures,
+    state.shelfId, onCameraSettled, shelfPortal, state.roomMode, inputBlocked, shelf, dispatch, readOnlyShelf, coverSource, camera, gl, state.roll.rollId, state.isTransitioning, state.transitionKind];
+  const surroundings = useMemo(() => <>
+    {/* Surrounding 3D Darkroom Environment & Workbench */}
+    <DarkroomRoom cabinetOnly={cabinetOnly} benchWidth={Math.max(4.4, tableSize.width + .8)} brightness={state.tableBrightness} roomBrightness={state.roomBrightness} immediate={isDeterministic || isReducedMotion} />
+    <CameraShelf textures={packagingTextures} focused={state.shelfId === 'camera'} load={true} onSettled={onCameraSettled} portal={shelfPortal}
+      interactive={state.roomMode === 'room' && !inputBlocked && state.shelfId !== 'film'}
+      onApproach={() => { shelf.close(); dispatch({ type: 'APPROACH_CAMERA_SHELF' }); }}
+      onOpen={id => dispatch({ type: 'OPEN_CAMERA', id })} />
+    <group visible={!cabinetOnly}><FilmShelf textures={packagingTextures} readOnly={readOnlyShelf} coverSource={coverSource} focused={state.shelfId === 'film'} onApproach={point => {
+      const target = point ? roomHitTarget(camera, gl.domElement, point.x, point.y, tableSize) : 'shelf';
+      if (!target) return;
+      shelf.close(); dispatch({ type: target === 'table' ? 'APPROACH_TABLE' : target === 'camera' ? 'APPROACH_CAMERA_SHELF' : 'APPROACH_SHELF' });
+    }} shelf={shelf} portal={shelfPortal} activeId={state.roll.rollId} interactive={state.roomMode === 'room' && state.shelfId !== 'camera' && !inputBlocked && (!state.isTransitioning || state.transitionKind === 'shelf' || state.transitionKind === 'journey')} /></group>
+  </>, surroundingsInputs);
 
   return (
     <>
@@ -167,17 +196,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       {screening && <ScreeningDirector session={screening} table={tableGroupRef} roll={state.roll} brightness={state.tableBrightness} />}
       {screening?.choice.reel === 'drying-line' && showRoll && <DryingLine roll={state.roll} textures={textures} stockId={state.filmStockId} filmStrength={state.filmStrength} session={screening} />}
 
-      {/* Surrounding 3D Darkroom Environment & Workbench */}
-      <DarkroomRoom cabinetOnly={cabinetOnly} benchWidth={Math.max(4.4, tableSize.width + .8)} brightness={state.tableBrightness} roomBrightness={state.roomBrightness} immediate={isDeterministic || isReducedMotion} />
-      <CameraShelf textures={packagingTextures} focused={state.shelfId === 'camera'} load={true} onSettled={onCameraSettled} portal={shelfPortal}
-        interactive={state.roomMode === 'room' && !inputBlocked && state.shelfId !== 'film'}
-        onApproach={() => { shelf.close(); dispatch({ type: 'APPROACH_CAMERA_SHELF' }); }}
-        onOpen={id => dispatch({ type: 'OPEN_CAMERA', id })} />
-      <group visible={!cabinetOnly}><FilmShelf textures={packagingTextures} readOnly={readOnlyShelf} coverSource={coverSource} focused={state.shelfId === 'film'} onApproach={point => {
-        const target = point ? roomHitTarget(camera, gl.domElement, point.x, point.y, tableSize) : 'shelf';
-        if (!target) return;
-        shelf.close(); dispatch({ type: target === 'table' ? 'APPROACH_TABLE' : target === 'camera' ? 'APPROACH_CAMERA_SHELF' : 'APPROACH_SHELF' });
-      }} shelf={shelf} portal={shelfPortal} activeId={state.roll.rollId} interactive={state.roomMode === 'room' && state.shelfId !== 'camera' && !inputBlocked && (!state.isTransitioning || state.transitionKind === 'shelf' || state.transitionKind === 'journey')} /></group>
+      {surroundings}
 
       {/* Flat Light Table on Workbench (placed horizontally on tabletop) */}
       <group

@@ -1,12 +1,14 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { advance, useFrame, useThree } from '@react-three/fiber';
 import { getTableIllumination } from '../shaders/tableIllumination';
 import type { RollDefinition } from '../utils/rollLayout';
-import { revealEdge, type ScreeningSample } from './timeline';
-import { drawScreeningOverlay } from './overlay';
+import { DEFAULT_LOOK, revealEdge, type ScreeningSample } from './timeline';
+import { drawScreeningOverlay, overlayIsEmpty } from './overlay';
 import { applyScreeningPose } from './camera';
 import type { ScreeningSession } from './session';
+import { DepthOfField } from './depthOfField';
+import { PlaybackGovernor } from './governor';
 
 type Uniforms = Record<string, THREE.IUniform>;
 const uniformsOf = (object: THREE.Object3D): Uniforms | undefined => ((object as THREE.Mesh).material as THREE.ShaderMaterial | undefined)?.uniforms;
@@ -24,7 +26,7 @@ function spillLights(scene: THREE.Scene) {
   return lights;
 }
 
-function applySample(table: THREE.Object3D, scene: THREE.Scene, roll: RollDefinition, sample: ScreeningSample | null, brightness: number) {
+function applySample(table: THREE.Object3D, scene: THREE.Scene, roll: RollDefinition, sample: ScreeningSample | null, brightness: number, band = DEFAULT_LOOK.band) {
   const light = getTableIllumination(brightness), scale = sample?.light ?? 1;
   const ambient = .06 * (sample?.ambient ?? 0);
   table.traverse(object => {
@@ -44,7 +46,7 @@ function applySample(table: THREE.Object3D, scene: THREE.Scene, roll: RollDefini
       const uniforms = uniformsOf(object);
       if (!uniforms?.uReveal) return;
       // The shader derives polarity from the band, leaving the viewer's film mode untouched.
-      uniforms.uReveal.value.set(edge, width * .06, reveal ? reveal.mode === 'polarity' ? 1 : 2 : 0, glow);
+      uniforms.uReveal.value.set(edge, width * band, reveal ? reveal.mode === 'polarity' ? 1 : 2 : 0, glow);
     });
   }
 }
@@ -59,26 +61,74 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
   // A cross-dissolve holds one render of the outgoing shot and fades it out.
   const preview = useRef<{ key: number; canvas: HTMLCanvasElement } | null>(null);
 
+  // While screening, this renders the scene (priority > 0 replaces the default
+  // render), in focus on the pose's target. During playback the governor sets
+  // the bokeh samples and render resolution from the frame rate; a paused
+  // frame is full resolution with dense sampling, redrawn only when it changes
+  // (and twice a second for arriving photographs). Export sets its own size.
+  const lens = useMemo(() => new DepthOfField(), []);
+  useEffect(() => () => lens.dispose(), [lens]);
+  const governor = useMemo(() => new PlaybackGovernor(), [session]);
+  const still = useRef({ key: '', at: 0 });
+  const playbackSamples = () => session.playing ? governor.quality.samples : 512;
+  const draw = (focus: number, samples: number, scale = 1) => lens.render(gl, scene, camera as THREE.PerspectiveCamera, focus, session.timeline.look.aperture, samples, scale);
+
+  // Compile every shader the reel will need (room, prints, depth of field)
+  // before the timeline starts, so no compile interrupts playback. The reel
+  // holds its opening black meanwhile.
+  useEffect(() => {
+    let cancelled = false;
+    session.holding = true;
+    const perspective = camera as THREE.PerspectiveCamera;
+    applyScreeningPose(perspective, session.sample.camera);
+    const warm = async () => {
+      try {
+        lens.warm(gl, scene, perspective, session.sample.camera.zoom, session.timeline.look.aperture);
+        await Promise.race([gl.compileAsync(scene, perspective), wait(4000)]);
+      } catch { /* Compiling on first use still works. */ }
+      if (!cancelled) { session.holding = false; session.emit(); }
+    };
+    void warm();
+    return () => { cancelled = true; session.holding = false; };
+  }, [session, gl, scene, camera]);
+
   useFrame((_, delta) => session.tick(delta), -3);
+  useFrame((_, delta) => {
+    const playing = session.playing && !session.exporting && !session.holding;
+    if (playing && governor.frame(delta)) gl.domElement.dataset.screeningQuality = String(governor.level);
+    if (!playing && !session.exporting) {
+      const key = `${session.time}|${gl.domElement.width}x${gl.domElement.height}|${latest.current.brightness}`, now = performance.now();
+      if (key === still.current.key && now - still.current.at < 500) return;
+      still.current = { key, at: now };
+    } else still.current.key = '';
+    draw(session.sample.camera.zoom, playing ? governor.quality.samples : 512, playing ? governor.quality.scale : 1);
+  }, 1);
+  // A clear overlay is left alone rather than cleared and recomposited every frame.
+  const overlayClear = useRef(false);
   useFrame(() => {
-    if (table.current) applySample(table.current, scene, roll, session.sample, latest.current.brightness);
+    if (table.current) applySample(table.current, scene, roll, session.sample, latest.current.brightness, session.timeline.look.band);
     const overlay = session.overlay;
     if (!overlay || session.exporting) return;
     const dissolve = session.sample.dissolve;
     if (dissolve && preview.current?.key !== dissolve.key) {
       const perspective = camera as THREE.PerspectiveCamera, canvas = preview.current?.canvas ?? document.createElement('canvas');
-      applyScreeningPose(perspective, session.timeline.sample(dissolve.from).camera);
-      gl.render(scene, camera);
+      const outgoing = session.timeline.sample(dissolve.from).camera;
+      applyScreeningPose(perspective, outgoing);
+      draw(outgoing.zoom, playbackSamples(), session.playing ? governor.quality.scale : 1);
+      still.current.key = '';
       canvas.width = gl.domElement.width; canvas.height = gl.domElement.height;
       canvas.getContext('2d')?.drawImage(gl.domElement, 0, 0);
       applyScreeningPose(perspective, session.sample.camera);
       preview.current = { key: dissolve.key, canvas };
     }
-    const ratio = Math.min(2, window.devicePixelRatio || 1);
+    const ratio = Math.min(1.5, window.devicePixelRatio || 1);
     const width = Math.round(overlay.clientWidth * ratio), height = Math.round(overlay.clientHeight * ratio);
-    if (overlay.width !== width || overlay.height !== height) { overlay.width = width; overlay.height = height; }
+    if (overlay.width !== width || overlay.height !== height) { overlay.width = width; overlay.height = height; overlayClear.current = true; }
     const ctx = overlay.getContext('2d');
     if (!ctx) return;
+    const empty = !(dissolve && preview.current) && overlayIsEmpty(session.sample);
+    if (empty && overlayClear.current) { overlay.dataset.drawn = 'true'; return; }
+    overlayClear.current = empty;
     ctx.clearRect(0, 0, width, height);
     if (dissolve && preview.current) { ctx.globalAlpha = 1 - dissolve.amount; ctx.drawImage(preview.current.canvas, 0, 0, width, height); ctx.globalAlpha = 1; }
     drawScreeningOverlay(ctx, width, height, session.sample, session.credits);

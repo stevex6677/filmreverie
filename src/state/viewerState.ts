@@ -313,7 +313,12 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
       if (state.cameraMoving === action.moving) return state;
       return { ...state, cameraMoving: action.moving };
     }
-    case "ASSET_STATUS": return { ...state, assetFailures: action.failures, assetsLoading: action.loading, detailStatus: action.detailStatus ?? "" };
+    case "ASSET_STATUS": {
+      const detailStatus = action.detailStatus ?? "";
+      // Unchanged status keeps the same state, so the app does not re-render for it.
+      if (state.assetsLoading === action.loading && state.detailStatus === detailStatus && state.assetFailures.length === action.failures.length && state.assetFailures.every((failure, i) => failure === action.failures[i])) return state;
+      return { ...state, assetFailures: action.failures, assetsLoading: action.loading, detailStatus };
+    }
     case "RETRY_ASSETS": return { ...state, assetRetry: state.assetRetry + 1 };
     case "VIEWPORT": {
       if (Math.abs(state.viewportAspect - action.aspect) < 0.001) return state;

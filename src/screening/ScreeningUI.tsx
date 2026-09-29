@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { PACE_LABEL, REEL_DESCRIPTION, REEL_LABEL } from './reels';
+import { PACE_LABEL, REEL_DESCRIPTION, REEL_LABEL, REEL_SETTINGS, reelTuning } from './reels';
 import { PACES, REEL_IDS } from './timeline';
-import { EXPORT_FORMATS, useScreeningSnapshot, type ExportFormat, type ScreeningChoice, type ScreeningSession } from './session';
+import { useScreeningSnapshot, type ScreeningChoice, type ScreeningSession } from './session';
 import './screening.css';
 
 export const formatDuration = (seconds: number) => {
@@ -32,13 +32,26 @@ export function ScreeningPicker({ choice, onChange, onPreview, onExport, onClose
     <input type="radio" name={`screening-${key}`} value={String(value)} checked={choice[key] === value} onChange={() => onChange({ ...choice, [key]: value })} />
     <span className="screening-choice-card"><strong>{label}</strong>{detail && <small>{detail}</small>}</span>
   </label>;
+  const settings = REEL_SETTINGS[choice.reel], tuning = reelTuning(choice.reel, choice.tuning[choice.reel]);
+  const tune = (values: readonly number[] | undefined) => onChange({ ...choice, tuning: { ...choice.tuning, [choice.reel]: values } });
+  const adjusted = settings.some((setting, i) => Math.abs(tuning[i] - setting.initial) > .005);
   return <dialog ref={dialog} className="screening-picker" aria-labelledby="screening-picker-title" onCancel={event => { event.preventDefault(); onClose(); }}
     onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     <div className="screening-picker-body">
       <header><h2 id="screening-picker-title">Screen roll</h2><button type="button" aria-label="Close" onClick={onClose}>×</button></header>
       <fieldset className="screening-reels"><legend>Reel</legend>{REEL_IDS.map(reel => radio('reel', reel, REEL_LABEL[reel], REEL_DESCRIPTION[reel]))}</fieldset>
       <fieldset className="screening-segmented"><legend>Pace</legend>{PACES.map(pace => radio('pace', pace, PACE_LABEL[pace]))}</fieldset>
-      <fieldset className="screening-segmented"><legend>Video format</legend>{(Object.keys(EXPORT_FORMATS) as ExportFormat[]).map(format => radio('format', format, format, EXPORT_FORMATS[format].label.replace(/ .*$/, '')))}</fieldset>
+      <fieldset className="screening-tuning" data-testid="screening-tuning">
+        <legend>{REEL_LABEL[choice.reel]} settings</legend>
+        {settings.map((setting, i) => <label key={`${choice.reel}-${i}`} className="screening-slider">
+          <span>{setting.label}</span>
+          <input type="range" min={0} max={100} step={1} value={Math.round(tuning[i] * 100)} data-testid={`screening-setting-${i}`}
+            aria-valuetext={`${setting.label}: ${Math.round(tuning[i] * 100)} of 100, from ${setting.low} to ${setting.high}`}
+            onChange={event => tune(tuning.map((value, j) => j === i ? Number(event.currentTarget.value) / 100 : value))} />
+          <small aria-hidden="true"><span>{setting.low}</span><span>{setting.high}</span></small>
+        </label>)}
+        <button type="button" className="screening-reset" data-testid="screening-reset" disabled={!adjusted} onClick={() => tune(undefined)}>Reset</button>
+      </fieldset>
       <p className="screening-estimate" data-testid="screening-estimate">{formatDuration(durationFor(choice))} · {frames} {frames === 1 ? 'frame' : 'frames'}{reducedMotion ? ' · Reduced motion' : ''}</p>
       <p className="screening-note">Silent 720p video, made on this device. Nothing is uploaded.</p>
       <footer>

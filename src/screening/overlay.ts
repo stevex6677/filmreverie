@@ -136,6 +136,13 @@ function drawCountdown(ctx: CanvasRenderingContext2D, left: number, top: number,
  * Gate, dips to dark and title/end cards. DOM overlays are not captured by
  * export, so the same drawing is composited into every rendered video frame.
  */
+/** True when drawScreeningOverlay would draw nothing for this sample. */
+export function overlayIsEmpty(sample: ScreeningSample) {
+  const card = sample.card;
+  return !((sample.gate > 0 || sample.lamp !== null) && sample.aperture) && !(sample.matte && sample.matte.alpha > 0) && !(sample.fade > 0)
+    && !(card && card.opacity > 0 && card.kind !== 'countdown');
+}
+
 export function drawScreeningOverlay(ctx: CanvasRenderingContext2D, width: number, height: number, sample: ScreeningSample, credits: ScreeningCredits) {
   const short = Math.min(width, height);
   if ((sample.gate > 0 || sample.lamp !== null) && sample.aperture) drawProjection(ctx, width, height, sample);
