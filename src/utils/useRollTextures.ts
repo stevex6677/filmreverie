@@ -13,9 +13,10 @@ export function detailEdge(width: number, height: number, demand: number, limit:
 type Resident={texture:THREE.Texture;bytes:number;used:number;close?:()=>void};
 type Snapshot={loaded:Map<string,THREE.Texture>;failed:string[];settled:boolean;bytes:number;detailStatus:string};
 /** One owner per roll. A single async worker reprioritizes after each completion. */
-export function useRollTextures(roll:RollDefinition,priority:number,retry:number,demand=0,maxTextureSize=4096) {
+/** `upload`, when given, returns a GPU-resident texture without stalling a frame (see progressiveTextures.ts). */
+export function useRollTextures(roll:RollDefinition,priority:number,retry:number,demand=0,maxTextureSize=4096,upload?:(url:string)=>Promise<THREE.Texture>,prefetch?:(urls:readonly string[])=>void) {
   const [snapshot,setSnapshot]=useState<Snapshot>({loaded:new Map(),failed:[],settled:false,bytes:0,detailStatus:''});
-  const inputs=useRef({priority,retry,demand,maxTextureSize});inputs.current={priority,retry,demand,maxTextureSize};
+  const inputs=useRef({priority,retry,demand,maxTextureSize,upload,prefetch});inputs.current={priority,retry,demand,maxTextureSize,upload,prefetch};
   const wake=useRef<()=>void>(()=>{});
   const placeholder=useMemo(()=>{const t=new THREE.DataTexture(new Uint8Array([65,65,65,255]),1,1);t.needsUpdate=true;return t;},[]);
   useEffect(()=>()=>placeholder.dispose(),[placeholder]);
@@ -49,6 +50,7 @@ export function useRollTextures(roll:RollDefinition,priority:number,retry:number
         const key=desired.find(k=>!residents.has(k)&&!errors.has(k));
         if(!key){detailStatus=detailKey?(errors.has(detailKey)?'Detail unavailable. Viewing image retained.':`Detail ready · ${edge}px`):inputs.current.demand>2048&&roll.imported?(frame.original||frame.loadOriginal?'At source resolution.':'Original unavailable. Viewing image retained.'):'';publish(true);break;}
         const isDetail=key.startsWith('detail:');
+        inputs.current.prefetch?.(desired.filter(k=>k!==key&&!k.startsWith('detail:')&&!thumbnails.includes(k)&&!residents.has(k)&&!errors.has(k)));
         evict(isDetail?64*1024*1024:thumbnails.includes(key)?256*256*4:2048*2048*4);
         detailStatus=isDetail?'Loading finer detail…':'';publish(false);
         try{
@@ -58,7 +60,11 @@ export function useRollTextures(roll:RollDefinition,priority:number,retry:number
             const original=frame.original??await frame.loadOriginal!();if(cancelled)break;
             const bitmap=await createImageBitmap(original,{imageOrientation:'from-image',resizeWidth:Math.round(frame.sourceWidth!*ratio),resizeHeight:Math.round(frame.sourceHeight!*ratio),resizeQuality:'high'});
             const canvas=document.createElement('canvas');canvas.width=bitmap.width;canvas.height=bitmap.height;try{const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Detail canvas unavailable');ctx.drawImage(bitmap,0,0);}finally{bitmap.close();}texture=new THREE.CanvasTexture(canvas);close=()=>{canvas.width=canvas.height=1;};
-          }else texture=await loader.loadAsync(key);
+          }else{
+            // Thumbnails upload in well under a millisecond; only full-size photographs go through the worker.
+            const progressive=thumbnails.includes(key)?undefined:inputs.current.upload;
+            texture=progressive?await progressive(key).catch(()=>loader.loadAsync(key)):await loader.loadAsync(key);
+          }
           if(cancelled){texture.dispose();close?.();break;}
           // A stale detail decode must never replace the new destination.
           if(isDetail&&inputs.current.priority!==selected){texture.dispose();close?.();continue;}

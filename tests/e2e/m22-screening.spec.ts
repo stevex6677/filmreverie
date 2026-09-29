@@ -49,7 +49,7 @@ async function library(page: Page, name = 'darkroom-guest-rolls') {
 }
 const player = (page: Page) => page.getByTestId('screening-player');
 const time = async (page: Page) => Number(await player(page).getAttribute('data-time'));
-async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Projector' | 'Darkroom' | 'Orbit' | 'Drying Line' | 'Documentary', pace = 'Normal', format = '16:9') {
+async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Projector' | 'Darkroom' | 'Orbit' | 'Drying Line' | 'Documentary', pace = 'Normal') {
   // Phones hide the Focus header button; Settings offers Screen roll in every layout.
   if (await page.getByTestId('screen-roll').isVisible()) await page.getByTestId('screen-roll').click();
   else { await openViewingTools(page); await page.getByTestId('screen-roll-tools').click(); }
@@ -57,8 +57,14 @@ async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Project
   await expect(picker).toBeVisible();
   await picker.getByRole('radio', { name: new RegExp(`^${reel}`) }).check();
   await picker.getByRole('radio', { name: pace, exact: true }).check();
-  await picker.getByRole('radio', { name: new RegExp(`^${format}`) }).check();
   return picker;
+}
+/** The export's first step chooses the video format. */
+async function startExport(page: Page, format = '16:9') {
+  const view = page.getByTestId('screening-export-view');
+  await expect(view).toHaveAttribute('data-phase', 'setup');
+  await view.getByRole('radio', { name: new RegExp(`^${format}`) }).check();
+  await view.getByTestId('screening-export-start').click();
 }
 async function renderedDeviation(page: Page) {
   const image = PNG.sync.read(await captureCanvas(page));
@@ -226,7 +232,8 @@ test('Darkroom, Orbit, Drying Line and Documentary preview in the actual scene, 
   const before = await table(page), stored = await library(page);
   const overview = PNG.sync.read(await captureCanvas(page));
   await page.getByTestId('screen-roll').click();
-  await expect(page.getByRole('dialog', { name: 'Screen roll' }).getByRole('radio')).toHaveCount(7 + 3 + 3);
+  // Reels and paces; the video format is chosen when exporting.
+  await expect(page.getByRole('dialog', { name: 'Screen roll' }).getByRole('radio')).toHaveCount(7 + 3);
   await page.getByRole('button', { name: 'Close', exact: true }).click();
   for (const [reel, id] of [['Darkroom', 'darkroom'], ['Orbit', 'orbit'], ['Drying Line', 'drying-line'], ['Documentary', 'documentary']] as const) {
     await (await pickReel(page, reel, 'Brisk')).getByTestId('screening-preview').click();
@@ -253,6 +260,74 @@ test('Darkroom, Orbit, Drying Line and Documentary preview in the actual scene, 
   expect(errors).toEqual([]);
 });
 
+/** Mean absolute difference between horizontal neighbours: lower is softer. */
+function detail(image: PNG, x0: number, y0: number, width: number, height: number) {
+  let sum = 0, count = 0;
+  for (let y = y0; y < y0 + height; y++) for (let x = x0; x < x0 + width - 1; x++) {
+    const i = (y * image.width + x) * 4, j = i + 4;
+    sum += Math.abs(image.data[i] - image.data[j]) + Math.abs(image.data[i + 1] - image.data[j + 1]) + Math.abs(image.data[i + 2] - image.data[j + 2]);
+    count++;
+  }
+  return sum / count / 3;
+}
+
+test('each reel has its own settings, the format is chosen on export, and depth of field softens the foreground', async ({ page }, info) => {
+  test.skip(info.project.name === 'mobile-chrome', 'Desktop covers the settings; the phone layout shares the picker.');
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/guest?mode=inspect&deterministic=true'); await ready(page);
+  const before = await table(page);
+  let picker = await pickReel(page, 'Documentary');
+  await expect(picker.getByRole('slider')).toHaveCount(2);
+  await expect(picker.getByTestId('screening-tuning')).toContainText('Drift');
+  await expect(picker.getByTestId('screening-reset')).toBeDisabled();
+  const estimate = await picker.getByTestId('screening-estimate').textContent();
+  await picker.getByTestId('screening-setting-1').fill('100');
+  await expect(picker.getByTestId('screening-estimate')).not.toHaveText(estimate!);
+  // Settings belong to their reel and are kept when switching back.
+  await picker.getByRole('radio', { name: /^Tracking Shot/ }).check();
+  await expect(picker.getByTestId('screening-tuning')).toContainText('Depth of field');
+  await expect(picker.getByTestId('screening-reset')).toBeDisabled();
+  await picker.getByRole('radio', { name: /^Documentary/ }).check();
+  await expect(picker.getByTestId('screening-setting-1')).toHaveValue('100');
+  await picker.getByTestId('screening-reset').click();
+  await expect(picker.getByTestId('screening-estimate')).toHaveText(estimate!);
+  // Export starts with the video format; Cancel there returns to the picker.
+  await picker.getByTestId('screening-export').click();
+  const view = page.getByTestId('screening-export-view');
+  await expect(view).toHaveAttribute('data-phase', 'setup');
+  await expect(view.getByRole('radio')).toHaveCount(3);
+  await view.getByRole('radio', { name: /^1:1/ }).check();
+  await expect(view).toContainText('720 × 720');
+  await page.getByTestId('screening-export-back').click();
+  await expect(view).toHaveCount(0);
+  picker = page.getByRole('dialog', { name: 'Screen roll' });
+  await expect(picker.getByRole('radio', { name: /^Documentary/ })).toBeChecked();
+  await picker.getByRole('button', { name: 'Close', exact: true }).click();
+  await expectRestored(page, before);
+
+  // The same Tracking Shot moment, all sharp and with a shallow depth of field.
+  const shot = async (focus: string, name: string) => {
+    const reel = await pickReel(page, 'Tracking Shot');
+    await reel.getByTestId('screening-setting-1').fill(focus);
+    await reel.getByTestId('screening-preview').click();
+    await page.getByTestId('screening-toggle').click();
+    await page.getByTestId('screening-next').click(); await page.getByTestId('screening-next').click();
+    await expect(player(page)).toHaveAttribute('data-frame', '2');
+    const image = PNG.sync.read(await captureCanvas(page, { path: info.outputPath(name) }));
+    await page.getByTestId('screening-exit').click();
+    await expectRestored(page, before);
+    return image;
+  };
+  const deep = await shot('0', 'tracking-deep.png'), shallow = await shot('100', 'tracking-shallow.png');
+  const { width, height } = deep;
+  // Along the focus line through the frame's center the film stays sharp; the nearer film at the bottom softens.
+  const center = [width * .4 | 0, height * .49 | 0, width * .2 | 0, height * .04 | 0] as const;
+  const near = [width * .05 | 0, height * .72 | 0, width * .5 | 0, height * .1 | 0] as const;
+  expect(detail(shallow, ...near)).toBeLessThan(detail(deep, ...near) * .5);
+  expect(detail(shallow, ...center)).toBeGreaterThan(detail(deep, ...center) * .6);
+  expect(errors).toEqual([]);
+});
+
 test('exports a decodable 720p H.264 MP4 of the whole reel without writes or uploads', async ({ page }, info) => {
   test.skip(info.project.name === 'mobile-chrome', 'Desktop Chrome covers the Chrome encoder; WebKit covers Safari.');
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
@@ -262,6 +337,7 @@ test('exports a decodable 720p H.264 MP4 of the whole reel without writes or upl
   const timeline = createScreeningTimeline(BASELINE_ROLL, { reel: 'projector', pace: 'brisk', aspect: 16 / 9, stockType: 'negative' });
   const expected = timeline.duration, countdown = timeline.cards.find(card => card.kind === 'countdown')!;
   await (await pickReel(page, 'Projector', 'Brisk')).getByTestId('screening-export').click();
+  await startExport(page);
   const view = page.getByTestId('screening-export-view');
   await expect(view).toHaveAttribute('data-phase', 'rendering');
   await expect(page.locator('main')).toHaveAttribute('data-screening', 'export');
@@ -300,6 +376,7 @@ test('Documentary exports real cross-dissolves and Drying Line exports its print
   const timeline = createScreeningTimeline(BASELINE_ROLL, { reel: 'documentary', pace: 'brisk', aspect: 16 / 9, stockType: 'negative' });
   const into = timeline.segments.find(s => s.dissolve)!;
   await (await pickReel(page, 'Documentary', 'Brisk')).getByTestId('screening-export').click();
+  await startExport(page);
   await expect(page.getByTestId('screening-export-view')).toHaveAttribute('data-phase', 'done', { timeout: 120000 });
   const video = await inspectVideo(page, { leader: into.start - .15, middle: into.start + into.duration / 2, later: into.start + into.duration + .15 });
   // Midway, the picture is a blend of the outgoing and incoming photographs:
@@ -316,6 +393,7 @@ test('Documentary exports real cross-dissolves and Drying Line exports its print
   const prints = createScreeningTimeline(BASELINE_ROLL, { reel: 'drying-line', pace: 'brisk', aspect: 16 / 9, stockType: 'negative' });
   const print = prints.segments.find(s => s.kind === 'frame')!;
   await (await pickReel(page, 'Drying Line', 'Brisk')).getByTestId('screening-export').click();
+  await startExport(page);
   await expect(page.getByTestId('screening-export-view')).toHaveAttribute('data-phase', 'done', { timeout: 120000 });
   const hung = await inspectVideo(page, { leader: print.start + .3 });
   // A lamp-lit print on the dark wall: bright paper and photograph, detailed.
@@ -329,6 +407,7 @@ test('Darkroom exports its room shots and the table tour as H.264', async ({ pag
   await page.goto('/guest?mode=inspect&deterministic=true&screening_seconds=12'); await ready(page);
   const before = await table(page);
   await (await pickReel(page, 'Darkroom', 'Brisk')).getByTestId('screening-export').click();
+  await startExport(page);
   await expect(page.getByTestId('screening-export-view')).toHaveAttribute('data-phase', 'done', { timeout: 120000 });
   const video = await inspectVideo(page, { leader: 2, middle: 9, later: 11 });
   // The room opening is dim; the lit table tour is bright and detailed.
@@ -352,6 +431,7 @@ test('export Cancel and an unavailable encoder leave the table, its resolution a
   const pixels = await resolution();
   expect(pixels[0]).toBeGreaterThan(pixels[2]);
   await (await pickReel(page, 'Tracking Shot')).getByTestId('screening-export').click();
+  await startExport(page);
   await expect.poll(async () => Number(await page.getByTestId('screening-export-progress').getAttribute('value')), { timeout: 60000 }).toBeGreaterThan(5);
   await page.getByTestId('screening-export-cancel').click();
   await expect(page.getByTestId('screening-export-view')).toHaveCount(0);
@@ -364,6 +444,7 @@ test('export Cancel and an unavailable encoder leave the table, its resolution a
 
   await page.evaluate(() => { Object.defineProperty(window, 'VideoEncoder', { value: undefined, configurable: true }); });
   await (await pickReel(page, 'Develop')).getByTestId('screening-export').click();
+  await startExport(page);
   await expect(page.getByTestId('screening-export-view')).toHaveAttribute('data-phase', 'unsupported');
   await expect(page.getByTestId('screening-export-view')).toContainText('cannot encode H.264');
   await page.getByRole('button', { name: 'Close', exact: true }).click();
@@ -381,12 +462,13 @@ test('a single-frame 120 roll screens without sprockets and exports portrait vid
   await openRoll(page, 'Medium single');
   await expect(page.locator('main')).toHaveAttribute('data-film-format', '66');
   const before = await table(page), stored = await library(page);
-  await (await pickReel(page, 'Projector', 'Normal', '9:16')).getByTestId('screening-preview').click();
+  await (await pickReel(page, 'Projector', 'Normal')).getByTestId('screening-preview').click();
   await expect(player(page)).toContainText('/ 1');
   await expect.poll(() => time(page), { timeout: 30000 }).toBeGreaterThan(5);
   await page.getByTestId('screening-toggle').click();
   await captureCanvas(page, { path: info.outputPath('medium-gate.png') });
   await page.getByTestId('screening-player-export').click();
+  await startExport(page, '9:16');
   await expect(page.getByTestId('screening-export-view')).toHaveAttribute('data-phase', 'done', { timeout: 120000 });
   const { name, mp4 } = await download(page, info.outputPath('medium.mp4'));
   expect(name).toBe('medium-single-projector.mp4');
@@ -444,7 +526,8 @@ test.describe('public gallery', () => {
       const before = await table(page);
       const requests = watchRequests(page);
       // Reversal film: Develop brings up the backlight behind each frame.
-      await (await pickReel(page, 'Develop', 'Brisk', '1:1')).getByTestId('screening-export').click();
+      await (await pickReel(page, 'Develop', 'Brisk')).getByTestId('screening-export').click();
+      await startExport(page, '1:1');
       await expect(page.getByTestId('screening-export-view')).toHaveAttribute('data-phase', 'done', { timeout: 120000 });
       const { name, mp4 } = await download(page, info.outputPath('public.mp4'));
       expect(name).toBe('harbour-night-develop.mp4');
@@ -474,6 +557,7 @@ test.describe('offline', () => {
       await Promise.all([page.waitForNavigation({ waitUntil: 'load' }), page.evaluate(() => location.reload())]);
       await ready(page);
       await (await pickReel(page, 'Tracking Shot', 'Brisk')).getByTestId('screening-export').click();
+      await startExport(page);
       await expect(page.getByTestId('screening-export-view')).toHaveAttribute('data-phase', 'done', { timeout: 120000 });
       const { mp4 } = await download(page, info.outputPath('offline.mp4'));
       expect(mp4.stts.reduce((n, [count]) => n + count, 0)).toBe(60);

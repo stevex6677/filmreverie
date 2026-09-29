@@ -69,8 +69,19 @@ export interface ScreeningSample {
   reducedMotion: boolean;
 }
 
+/**
+ * Per-reel rendering values set by its tuning. `aperture` is the depth of field:
+ * blur, as a fraction of the picture height, per unit of relative defocus
+ * |1 − focus/depth|, before close-focus scaling (0 keeps everything sharp; see
+ * depthOfField.ts). The camera focuses on its pose target. `band` is the develop band's softness
+ * (fraction of a frame width), `weave` the projector gate weave (fraction of
+ * the aperture) and `flicker` its lamp flicker depth.
+ */
+export interface ScreeningLook { aperture: number; band: number; weave: number; flicker: number }
+export const DEFAULT_LOOK: ScreeningLook = { aperture: 0, band: .06, weave: .004, flicker: .045 };
+
 export interface ScreeningTimeline {
-  reel: ReelId; pace: Pace; aspect: number; reducedMotion: boolean; frameCount: number;
+  reel: ReelId; pace: Pace; aspect: number; reducedMotion: boolean; frameCount: number; look: ScreeningLook;
   duration: number; segments: readonly Segment[]; cards: readonly CardSpan[]; fades: readonly FadeKey[];
   /** Frame-change times. A future soundtrack aligns these to its beat grid. */
   beats: readonly number[];
@@ -110,9 +121,9 @@ export function flicker(time: number, rate = 24) {
   const hash = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
   return hash - Math.floor(hash);
 }
-function lightAt(light: Segment['light'], u: number, time: number) {
+function lightAt(light: Segment['light'], u: number, time: number, depth: number) {
   const base = lerp(light.from, light.to, u);
-  return light.flicker === 'gate' ? base * (1 - .045 * flicker(time)) : base;
+  return light.flicker === 'gate' ? base * (1 - depth * flicker(time)) : base;
 }
 /** Slow, smooth gate weave in [-1, 1] on each axis; deterministic. */
 export function weave(time: number) {
@@ -173,8 +184,9 @@ export class TimelineBuilder {
   fade(time: number, value: number) { this.fades.push({ time, value }); }
 }
 
-export function finishTimeline(builder: TimelineBuilder, info: { reel: ReelId; pace: Pace; aspect: number; reducedMotion: boolean; frameCount: number; revealMode: Reveal['mode'] | null }): ScreeningTimeline {
+export function finishTimeline(builder: TimelineBuilder, { look: tuned, ...info }: { reel: ReelId; pace: Pace; aspect: number; reducedMotion: boolean; frameCount: number; revealMode: Reveal['mode'] | null; look?: Partial<ScreeningLook> }): ScreeningTimeline {
   const segments = builder.segments, cards = builder.cards, duration = builder.time;
+  const look = { ...DEFAULT_LOOK, ...tuned };
   const fades = [...builder.fades].sort((a, b) => a.time - b.time);
   const starts = new Map<number, number>();
   for (const segment of segments) if (segment.act !== 'establish' && !starts.has(segment.frameIndex)) starts.set(segment.frameIndex, segment.start);
@@ -188,7 +200,7 @@ export function finishTimeline(builder: TimelineBuilder, info: { reel: ReelId; p
     let camera = lerpCamera(segment.camera[0], segment.camera[1], eased);
     const gate = lerp(segment.gate[0], segment.gate[1], eased);
     if (segment.weave && segment.aperture) {
-      const drift = weave(time), amount = segment.aperture.width * .004 * gate;
+      const drift = weave(time), amount = segment.aperture.width * look.weave * gate;
       camera = { ...camera, pan: { x: camera.pan.x + drift.x * amount, z: camera.pan.z + drift.y * amount } };
     }
     const position = segment.reveal ? lerp(segment.reveal[0], segment.reveal[1], segment.kind === 'develop' ? local : eased) : null;
@@ -201,7 +213,7 @@ export function finishTimeline(builder: TimelineBuilder, info: { reel: ReelId; p
     const card = cards.find(span => time >= span.start && time <= span.end);
     return {
       time, act: segment.act, kind: segment.kind, segment: index, frameIndex: segment.frameIndex,
-      camera, light: Math.max(0, lightAt(segment.light, eased, time)),
+      camera, light: Math.max(0, lightAt(segment.light, eased, time, look.flicker)),
       reveal: position === null || !info.revealMode ? null : { mode: info.revealMode, position },
       card: card ? { kind: card.kind, opacity: Math.min(1, card.fade > 0 ? (time - card.start) / card.fade : 1, card.fade > 0 ? (card.end - time) / card.fade : 1), elapsed: time - card.start, duration: card.end - card.start } : null,
       fade: Math.max(0, Math.min(1, fade)), blur: segment.blur * Math.sin(Math.PI * local),
@@ -213,7 +225,7 @@ export function finishTimeline(builder: TimelineBuilder, info: { reel: ReelId; p
       dissolve: segment.dissolve && local < 1 ? { key: index, from: Math.max(0, segment.start - 1e-3), amount: EASE.inOut(local) } : null,
     };
   };
-  return { ...info, duration, segments, cards, fades, beats: builder.beats, sample,
+  return { ...info, look, duration, segments, cards, fades, beats: builder.beats, sample,
     frameStart: index => starts.get(Math.max(0, Math.min(info.frameCount - 1, index))) ?? 0 };
 }
 

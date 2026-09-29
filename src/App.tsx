@@ -43,7 +43,7 @@ import { GuestWelcome } from './components/GuestWelcome';
 import './cloud/navigation.css';
 import { getFilmStock } from './data/filmStocks';
 import { FILM_FORMATS } from './data/filmFormats';
-import { EXPORT_FORMATS, ScreeningSession, type ScreeningChoice, type ScreeningCredits } from './screening/session';
+import { ScreeningSession, type ExportFormat, type ScreeningChoice, type ScreeningCredits } from './screening/session';
 import { ScreeningPicker, ScreeningPlayer } from './screening/ScreeningUI';
 import { createScreeningTimeline } from './screening/reels';
 import { screeningFileName } from './screening/overlay';
@@ -177,7 +177,8 @@ export function App() {
   const roll = state.roll;
   // Screening overrides rendering only. It never dispatches viewer actions,
   // so the table, loupe, film mode, brightness and saved views are unchanged.
-  const [screeningChoice, setScreeningChoice] = useState<ScreeningChoice>({ reel: 'tracking', pace: 'normal', format: '16:9' });
+  const [screeningChoice, setScreeningChoice] = useState<ScreeningChoice>({ reel: 'tracking', pace: 'normal', tuning: {} });
+  const [screeningFormat, setScreeningFormat] = useState<ExportFormat>('16:9');
   const [screeningPicker, setScreeningPicker] = useState(false);
   const [screening, setScreening] = useState<ScreeningSession | null>(null);
   const [screeningExport, setScreeningExport] = useState<'picker' | 'preview' | null>(null);
@@ -588,12 +589,17 @@ export function App() {
             ? <ScreeningPlayer session={screening} onExit={exitScreening} onExport={() => { screening.pause(); setScreeningExport('preview'); }} />
             : <TableControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenRoom={openRoom} onOpenTable={openTable} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} ownerActions={ownerActions} createAction={createAction} onScreen={() => setScreeningPicker(true)} />)}
       {screeningPicker && !screening && <ScreeningPicker choice={screeningChoice} onChange={setScreeningChoice} frames={roll.frames.length} reducedMotion={isReducedMotion}
-        durationFor={choice => createScreeningTimeline(roll, { ...screeningOptions(), reel: choice.reel, pace: choice.pace, aspect: EXPORT_FORMATS[choice.format].width / EXPORT_FORMATS[choice.format].height }).duration}
+        durationFor={choice => createScreeningTimeline(roll, { ...screeningOptions(), reel: choice.reel, pace: choice.pace, tuning: choice.tuning[choice.reel], aspect: 16 / 9 }).duration}
         onClose={() => setScreeningPicker(false)} onPreview={() => startScreening('preview')} onExport={() => startScreening('export')} />}
       {screening && screeningExport && <Suspense fallback={<div className="screening-export" role="status">Preparing video export…</div>}>
-        <ScreeningExportView session={screening} format={screening.choice.format} fileName={screeningFileName(screeningCredits.title, screening.choice.reel)}
+        <ScreeningExportView session={screening} initialFormat={screeningFormat} onFormat={setScreeningFormat} fileName={screeningFileName(screeningCredits.title, screening.choice.reel)}
           maxSeconds={isDeterministic && Number(new URLSearchParams(location.search).get('screening_seconds')) > 0 ? Number(new URLSearchParams(location.search).get('screening_seconds')) : undefined}
-          onClose={() => { if (screeningExport === 'picker') exitScreening(); else setScreeningExport(null); }} />
+          onClose={started => {
+            if (screeningExport !== 'picker') setScreeningExport(null);
+            // Cancelling the format step from the picker returns to the picker.
+            else if (started) exitScreening();
+            else { setScreeningExport(null); setScreening(null); setScreeningPicker(true); }
+          }} />
       </Suspense>}
       {state.cameraDisplay && <CameraDisplayView stockId={state.filmStockId} id={state.cameraDisplay} onBack={closeCamera} reducedMotion={isReducedMotion} />}
       {libraryError && <div className="library-notice" role="alert">{libraryError}<button onClick={() => { setLibraryError(""); openShelf(); }}>Open shelf</button></div>}

@@ -105,12 +105,17 @@ room to the light table and back), **Orbit** (slow arcs around each photograph),
 **Documentary** (each photograph fills the screen, drifting and dissolving). Each reel has
 an establishing shot, a frame-by-frame tour with overview breaks at strip
 boundaries, and a closing shot, at Relaxed, Normal or Brisk pace; reduced motion
-uses slow cuts instead of fast moves, blur and flicker. Preview supports
+uses slow cuts instead of fast moves, blur and flicker. Each reel also has two
+settings of its own (for example Distance and Depth of field for Tracking Shot,
+Gate weave and Lamp flicker for Projector, Drift and Dissolve for Documentary).
+Tracking Shot, Darkroom, Orbit and Drying Line render with depth of field,
+focused on the camera's subject. Preview supports
 play/pause, previous/next frame, tap to pause and exit; exiting restores the table
 exactly, and screening never writes rolls or saved views.
 
-**Export video** renders the same timeline frame by frame into a silent 30 fps
-H.264 MP4 at 1280 × 720, 720 × 1280 or 720 × 720, entirely in the browser with
+**Export video** first asks for the video format, then renders the same timeline
+frame by frame into a silent 30 fps H.264 MP4 at 1280 × 720, 720 × 1280 or
+720 × 720, entirely in the browser with
 WebCodecs and an in-repo MP4 writer; nothing is uploaded. It works for published,
 guest and offline rolls, and saves through the share sheet (iPad: Save Video) or a
 download. The export code loads on demand and is part of offline preparation.
