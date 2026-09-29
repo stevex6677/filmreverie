@@ -12,23 +12,62 @@
 .empty-table-controls .owner-nav-actions { margin-left:auto; }
 .cloud-viewing-label { position:absolute; bottom:12px; right:12px; max-width:calc(100% - 32px); z-index:11; pointer-events:none; text-align:center; padding:3px 9px; border-radius:5px; background:#171a1ee8; color:#dfceb0; font-size:11px; }
 @media(max-width:600px) { .owner-nav-actions button, .owner-nav-actions a { padding:6px 9px; font-size:12px; } .cloud-viewing-label { bottom:calc(110px + env(safe-area-inset-bottom)); font-size:10px; } }
-.guest-welcome { width:min(480px,calc(100vw - 32px)); margin:auto; padding:28px; }
-.guest-welcome p { line-height:1.55; }
-.guest-welcome button { min-height:44px; margin-top:12px; }
+.darkroom-app-container .library-dialog.guest-welcome {
+  width:min(540px,calc(100vw - 32px));
+  max-width:calc(100vw - 32px);
+  max-height:calc(var(--visible-height,100dvh) - 32px);
+  margin:auto;
+  padding:0;
+  overflow-y:auto;
+  background:#f3efe6;
+  color:#30362d;
+  border:1px solid #d1c9b7;
+  border-radius:18px;
+  box-shadow:0 24px 90px #0006;
+}
+.guest-welcome::backdrop { background:#0b100dd9; backdrop-filter:blur(8px); }
+.guest-welcome .guest-welcome-body { padding:32px 36px; }
+.guest-welcome .guest-welcome-brand { display:flex; align-items:center; gap:9px; margin-bottom:30px; color:#4d5b48; font-size:11px; font-weight:650; letter-spacing:.12em; text-transform:uppercase; }
+.guest-welcome-brand svg { width:28px; height:28px; flex:none; }
+.guest-welcome .guest-welcome-edition { margin-left:auto; font-size:9px; letter-spacing:.08em; color:#686b5e; border:1px solid #d5d1c3; border-radius:4px; padding:5px 7px; }
+.library-dialog.guest-welcome .guest-welcome-title { margin:0; font:normal 40px/1.1 Georgia,serif; letter-spacing:-1.5px; color:#28372b; }
+.guest-welcome p { margin:0; }
+.guest-welcome .guest-welcome-intro { margin-top:12px; font:italic 19px/1.5 Georgia,serif; color:#72705e; }
+.guest-welcome .guest-welcome-copy { margin-top:22px; color:#555c51; font-size:15px; line-height:1.7; }
+.guest-welcome .guest-welcome-privacy { display:flex; align-items:flex-start; gap:12px; margin-top:24px; padding:17px; border:1px solid #dce0d2; border-radius:10px; background:#e8ecdf; }
+.guest-welcome-privacy svg { width:21px; height:21px; margin-top:1px; flex:none; color:#4c6147; }
+.guest-welcome-privacy strong { display:block; font-size:13px; font-weight:650; color:#3c4e37; }
+.guest-welcome-privacy p { margin-top:5px; font-size:12px; line-height:1.65; color:#596350; }
+.library-dialog.guest-welcome .guest-welcome-enter { display:flex; align-items:center; justify-content:space-between; gap:16px; width:100%; min-height:50px; margin-top:26px; padding:12px 18px; border-radius:8px; background:#354d39; border-color:#354d39; font-size:14px; font-weight:600; }
+.library-dialog.guest-welcome .guest-welcome-enter:hover { background:#263e2a; border-color:#263e2a; }
+.guest-welcome-enter span { font-size:21px; font-weight:400; line-height:1; }
+.guest-welcome .guest-welcome-project { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:22px 36px; border-top:1px solid #ddd6c7; background:#eae5d9; }
+.guest-welcome-project p { font-size:11px; line-height:1.65; color:#727264; }
+.guest-welcome-project .guest-welcome-project-title { margin-bottom:3px; color:#454d40; font-size:12px; font-weight:600; }
+.guest-welcome-project a { display:inline-flex; flex:none; align-items:center; gap:7px; min-height:44px; color:#34472f; font-size:12px; font-weight:650; text-decoration:none; }
+.guest-welcome-project a svg { width:20px; height:20px; }
+.guest-welcome-project a:hover { text-decoration:underline; text-underline-offset:4px; }
+.guest-welcome-external { color:#727a68; font-size:15px; }
+.library-dialog.guest-welcome :focus-visible { outline:2px solid #727f5a; outline-offset:4px; }
+.library-dialog.guest-welcome .guest-welcome-title:focus { outline:none; }
 @media(max-width:759px) {
-  .darkroom-app-container.mobile-layout .guest-welcome {
+  .darkroom-app-container.mobile-layout .library-dialog.guest-welcome {
     inset:auto 0;
     top:50%;
     transform:translateY(-50%);
     margin:auto;
-    width:min(480px,calc(100vw - 32px));
-    max-width:calc(100vw - 32px);
     height:auto;
-    max-height:calc(var(--visible-height,100dvh) - 32px);
-    padding:24px;
-    border:1px solid #bdb6a8;
-    border-radius:10px;
   }
+}
+@media(max-width:480px) {
+  .guest-welcome .guest-welcome-body { padding:26px 24px; }
+  .guest-welcome .guest-welcome-brand { gap:7px; margin-bottom:26px; font-size:10px; }
+  .guest-welcome .guest-welcome-edition { font-size:8px; letter-spacing:.04em; }
+  .library-dialog.guest-welcome .guest-welcome-title { max-width:260px; font-size:38px; }
+  .guest-welcome .guest-welcome-intro { font-size:17px; }
+  .guest-welcome .guest-welcome-copy { font-size:14px; margin-top:18px; }
+  .guest-welcome .guest-welcome-privacy { margin-top:20px; padding:14px; gap:10px; }
+  .guest-welcome .guest-welcome-project { gap:12px; flex-wrap:wrap; padding:18px 24px; }
 }
 .admin-menu { position:relative; }
 .owner-nav-actions .admin-menu > button { min-width:44px; font-size:24px; padding:0 8px; }
