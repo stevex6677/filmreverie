@@ -4,6 +4,7 @@ import App from "./App";
 import "./index.css";
 import "./components/film-strip-header.css";
 import "./components/film-panel.css";
+import "./components/roll-editor.css";
 
 import { startOffline } from "./offline/client";
 startOffline();

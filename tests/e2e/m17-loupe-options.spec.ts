@@ -1,7 +1,7 @@
 import { loupeGeometry, LOUPE_SIZES, LOUPE_SIZE_LABEL, LOUPE_SIZE_SCALE } from '../../src/utils/loupeView';
 import { test, expect, type Page } from '@playwright/test';
 import { PNG } from 'pngjs';
-import { captureCanvas, openLoupeSettings, closeLoupeSettings, openViewingTools, closeViewingTools } from './helpers/viewing';
+import { captureCanvas, openLoupeSettings, closeLoupeSettings } from './helpers/viewing';
 import { getRegionMeanDifference, getRegionStats } from './helpers/pixelAnalysis';
 
 const ready = async (page: Page) => {
@@ -244,9 +244,7 @@ test.describe('clear glass transmission', () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await open(page);
     await closeLoupeSettings(page);
-    await openViewingTools(page);
-    await page.getByTestId('film-strength-slider').fill('0');
-    await closeViewingTools(page);
+    await page.evaluate(() => (window as any).__setFilmStrength(0));
     await openLoupeSettings(page);
     await page.getByRole('radio', { name: 'Glass dome' }).check();
     await page.getByTestId('mag-btn-8x').click();

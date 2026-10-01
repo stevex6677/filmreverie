@@ -2,8 +2,11 @@ import { useRef, useState } from 'react';
 import { DraftPhoto } from '../storage/importPhotos';
 import { FilmFormat, FrameSizing, frameAspect, rollFormatLabel } from '../data/filmFormats';
 import { CropPosition, photoCropOffset, photoCropPreview, photoCropScale } from '../utils/photoFraming';
-export function CropInspector({photo,format,sizing='fixed',disabled=false,onChange}:{photo:DraftPhoto;format:FilmFormat;sizing?:FrameSizing;disabled?:boolean;onChange:(position:CropPosition)=>void}) {
+import { FilmLook, FilmLookCanvas, useDecodedImage } from './FilmLookPreview';
+export function CropInspector({photo,format,sizing='fixed',disabled=false,look,onChange}:{photo:DraftPhoto;format:FilmFormat;sizing?:FrameSizing;disabled?:boolean;look?:FilmLook;onChange:(position:CropPosition)=>void}) {
   const [final,setFinal]=useState(false),[dragging,setDragging]=useState(false);
+  // With a film look, the composition is shown as it will appear on the light table.
+  const image=useDecodedImage(look?photo.reviewPreview??photo.preview:undefined);
   const drag=useRef<{id:number;x:number;y:number;width:number;height:number;position:CropPosition}|null>(null);
   const frame=photo.frame;
   if(!frame)return <div className="crop-unavailable">{photo.error||'Preview unavailable'}</div>;
@@ -23,15 +26,17 @@ export function CropInspector({photo,format,sizing='fixed',disabled=false,onChan
         onPointerCancel={()=>{drag.current=null;setDragging(false);}}
         onPointerUp={e=>{drag.current=null;setDragging(false);if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);}}
         onLostPointerCapture={()=>{drag.current=null;setDragging(false);}}>
-        <img draggable={false} src={photo.reviewPreview??photo.preview} alt={`Crop review: ${photo.filename}`} style={preview} />
+        {look?<FilmLookCanvas image={image} frame={frame} format={format} sizing={sizing} look={look} style={preview} role="img" aria-label={`Crop review: ${photo.filename}`}/>
+          :<img draggable={false} src={photo.reviewPreview??photo.preview} alt={`Crop review: ${photo.filename}`} style={preview} />}
         {!final&&<div data-testid="crop-gate" className="crop-gate" style={{width:`${crop.x*100}%`,height:`${crop.y*100}%`}}/>}
       </div>
     </div>
-    <p>{rollFormatLabel(format,sizing)} · Originals stay unchanged</p>
-    {movable?<><p>Aspect mismatch: edges will be cropped.</p><p>Drag the photograph to recompose within the crop.</p><div className="crop-position-controls">
+    <div className="crop-notes"><p>{rollFormatLabel(format,sizing)} · Originals stay unchanged</p>{look&&<p>Film effect {look.strength}</p>}
+    {movable?<><p>Aspect mismatch: edges will be cropped.</p><p>Drag the photograph to recompose within the crop.</p></>:<p>The whole photograph fits this format.</p>}</div>
+    {movable&&<div className="crop-position-controls">
       {crop.x<1&&<label>Horizontal position<input aria-label="Horizontal crop position" type="range" min="-1" max="1" step="0.01" value={position.x} disabled={disabled} onChange={e=>change(Number(e.target.value),position.y)}/></label>}
       {crop.y<1&&<label>Vertical position<input aria-label="Vertical crop position" type="range" min="-1" max="1" step="0.01" value={position.y} disabled={disabled} onChange={e=>change(position.x,Number(e.target.value))}/></label>}
       <button disabled={disabled||(!position.x&&!position.y)} onClick={()=>change(0,0)}>Center crop</button>
-    </div></>:<p>The whole photograph fits this format.</p>}
+    </div>}
   </section>;
 }

@@ -50,8 +50,9 @@ test("M9: every stock, physical borders, allowed views and keyboard restrictions
   const selector = page.getByLabel("Film stock", {exact: true});
   const app = page.locator("main");
   await expect(selector).toHaveValue("portra-400");
-  await page.getByTestId("film-strength-slider").focus();
-  await page.getByTestId("film-strength-slider").press("Home");
+  // Film strength is edited per roll; deterministic checks compare stocks without the look.
+  await page.evaluate(() => (window as any).__setFilmStrength(0));
+  await expect(app).toHaveAttribute("data-film-strength", "0");
   let lastEdge: ReturnType<typeof parsePng> | undefined;
   let positiveMaster: ReturnType<typeof parsePng> | undefined;
   for (const stock of FILM_STOCKS) {

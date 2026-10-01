@@ -1,0 +1,189 @@
+/* Roll editor: roll identity beside a frame workbench (contact strip, stage, tools). */
+.library-dialog {
+  --editor-ink: #2b2c28; --editor-muted: #686c5f; --editor-line: #cfc8ba; --editor-panel: #f4f1ea;
+  --editor-well: #e7e2d8; --editor-accent: #394b3b; --editor-brass: #8b7448; --editor-stage: #262723;
+}
+.roll-editor-dialog[open] { display:flex; flex-direction:column; width:min(1440px,96vw); height:94dvh; max-height:94dvh; overflow:hidden; padding:20px 26px 16px; }
+.roll-editor-dialog > header { flex:none; align-items:flex-end; padding-bottom:14px; border-bottom:1px solid var(--editor-line); }
+.roll-editor-summary { margin:4px 0 0; color:var(--editor-muted); font-size:13px; overflow-wrap:anywhere; }
+.roll-editor-workspace { flex:1; min-height:0; display:grid; grid-template-columns:clamp(250px,21vw,300px) minmax(0,1fr); gap:22px; padding-top:16px; }
+.roll-editor-workspace > section { min-width:0; min-height:0; }
+/* New rolls review frames in the same fixed-height workbench. */
+.roll-editor-review { flex:1; min-height:0; display:flex; flex-direction:column; }
+.roll-editor-review > .roll-editor-frames { flex:1; }
+.roll-editor-dialog .import-steps, .roll-editor-dialog > h2[data-step-title] { flex:none; }
+.roll-editor-dialog > h2[data-step-title] { margin:12px 0 8px; }
+
+/* Details column */
+.roll-editor-details { overflow-y:auto; overscroll-behavior:contain; padding:2px 18px 12px 2px; border-right:1px solid var(--editor-line); }
+.roll-editor-workspace .roll-editor-details h2[data-step-title] { margin:0 0 14px; font:600 11px/1.4 system-ui,sans-serif; letter-spacing:.16em; text-transform:uppercase; color:#71623e; outline:none; }
+.roll-editor-workspace .library-details { grid-template-columns:1fr; gap:18px; }
+.roll-editor-workspace .library-details > label, .roll-editor-workspace .library-details legend { font-size:13px; font-weight:600; color:#3d4137; }
+.roll-editor-workspace .library-details input:not([type=radio]), .roll-editor-workspace .library-details select { min-width:0; width:100%; font-weight:400; border-radius:6px; }
+.roll-editor-workspace .library-details small { color:var(--editor-muted); font-size:12px; font-weight:400; line-height:1.45; }
+.roll-editor-workspace .film-length { margin:22px 0 0; padding:12px 14px; background:var(--editor-panel); border-radius:8px; font-size:13px; }
+.roll-editor-workspace .film-length p { font-size:12px; color:var(--editor-muted); }
+
+/* Segmented choices keep real radio inputs for forms and assistive technology. */
+.library-dialog fieldset.segmented { display:flex; flex-wrap:nowrap; gap:0; border:0; padding:0; margin:0; min-width:0; }
+.library-dialog fieldset.segmented legend { padding:0; margin-bottom:6px; }
+.library-dialog .segmented label { flex:1 1 auto; min-width:0; display:flex; align-items:center; justify-content:center; gap:6px; min-height:34px; padding:6px 8px; margin-left:-1px; border:1px solid #c3bcad; background:#faf8f3; color:#3d4137; font-size:13px; font-weight:500; cursor:pointer; white-space:nowrap; }
+.library-dialog .segmented label:first-of-type { margin-left:0; border-radius:7px 0 0 7px; }
+.library-dialog .segmented label:last-of-type { border-radius:0 7px 7px 0; }
+.library-dialog .segmented label:has(input:checked) { position:relative; background:var(--editor-accent); border-color:var(--editor-accent); color:#fffaf0; }
+.library-dialog .segmented label:has(input:focus-visible) { outline:2px solid #69572f; outline-offset:2px; z-index:1; }
+.library-dialog .segmented input { color:inherit; appearance:none; flex:none; width:13px; height:13px; margin:0; padding:0; border:1.5px solid currentColor; border-radius:50%; background:transparent; opacity:.6; cursor:pointer; }
+.library-dialog .segmented input:checked { opacity:1; background:radial-gradient(circle, currentColor 0 3px, transparent 3.5px); }
+.library-dialog .segmented input:focus-visible { outline:none; }
+.library-dialog .segmented:disabled label { opacity:.5; cursor:default; }
+
+/* Frames column */
+.library-dialog .roll-editor-frames { display:flex; flex-direction:column; min-height:0; }
+.roll-editor-frames > .review-summary { flex:none; margin:0 0 12px; color:var(--editor-muted); font-size:12px; overflow-wrap:anywhere; }
+.frame-editor { flex:1; min-height:0; display:flex; flex-direction:column; gap:12px; }
+
+.frame-strip { flex:none; min-width:0; }
+.frame-strip-heading { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:4px; }
+.frame-strip-heading h3 { margin:0; font:600 11px/1.4 system-ui,sans-serif; letter-spacing:.16em; text-transform:uppercase; color:#71623e; }
+.frame-strip-heading h3 span { margin-left:4px; color:var(--editor-muted); letter-spacing:0; }
+.frame-strip-heading p { margin:0; font-size:12px; color:var(--editor-muted); }
+.library-dialog .frame-editor .draft-photos { display:flex; gap:6px; overflow-x:auto; overscroll-behavior-x:contain; margin:0; padding:4px 2px 8px; max-height:none; scroll-snap-type:x proximity; }
+.library-dialog .frame-editor .draft-photos li { flex:none; width:auto; display:block; padding:0; border:0; scroll-snap-align:start; }
+.library-dialog .frame-editor .draft-photos li > button { display:grid; justify-items:center; gap:1px; width:auto; min-width:76px; max-width:128px; padding:6px 6px 4px; border:1px solid transparent; border-radius:8px; background:transparent; text-align:center; }
+.library-dialog .frame-editor .draft-photos li > button:hover { background:var(--editor-well); }
+.library-dialog .frame-editor .draft-photos li > button[aria-pressed=true] { background:#e3dbc9; border-color:var(--editor-brass); }
+.library-dialog .frame-editor .draft-preview { width:auto; height:60px; max-height:none; border-radius:2px; box-shadow:0 1px 3px #0003; }
+.library-dialog .frame-editor .draft-photos strong { margin-top:4px; font-size:11px; line-height:1.2; }
+.library-dialog .frame-editor .draft-photos span { margin:0; max-width:112px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; line-height:1.3; color:var(--editor-muted); }
+.library-dialog .frame-editor .draft-photos .photo-issue { color:#923b2d; font-weight:600; }
+.library-dialog .frame-editor .draft-photos .frame-badge { position:absolute; z-index:1; margin:0; padding:0 5px; border-radius:8px; background:#1d1f1bd0; color:#f3e7c9; font:600 10px/16px system-ui,sans-serif; }
+.library-dialog .frame-editor .draft-photos .frame-badge.is-cover { top:3px; left:3px; color:#e9c46f; }
+.library-dialog .frame-editor .draft-photos .frame-badge.is-strength { right:3px; bottom:3px; font-variant-numeric:tabular-nums; }
+
+.frame-workbench { container:frame-workbench / inline-size; flex:1; min-height:0; display:flex; flex-direction:column; border:1px solid var(--editor-line); border-radius:10px; background:var(--editor-panel); overflow:hidden; }
+.frame-toolbar { flex:none; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 10px; border-bottom:1px solid var(--editor-line); }
+.frame-tabs { display:flex; gap:2px; padding:3px; border-radius:8px; background:var(--editor-well); }
+.library-dialog .frame-tabs button { min-height:32px; padding:4px 16px; border:0; border-radius:6px; background:transparent; color:var(--editor-muted); font-weight:600; font-size:13px; }
+.library-dialog .frame-tabs button:hover { background:#dcd5c7; color:var(--editor-ink); }
+.library-dialog .frame-tabs button[aria-selected=true] { background:#fffdf8; color:var(--editor-ink); box-shadow:0 1px 3px #0002; }
+.frame-stepper { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; white-space:nowrap; }
+.frame-stepper small { font-weight:400; color:var(--editor-muted); font-size:13px; }
+.library-dialog .frame-stepper button { width:32px; height:32px; padding:0; border-radius:50%; font-size:20px; line-height:1; }
+
+.frame-tool-panel { flex:1; min-height:0; display:grid; }
+.frame-tool-panel.is-film { grid-template-columns:minmax(0,1fr) clamp(240px,24vw,290px); }
+
+/* Crop tool: a large stage with its crop controls underneath. */
+.library-dialog .frame-tool-panel .crop-inspector { min-height:0; display:grid; grid-template:"head head" auto "stage stage" minmax(0,1fr) "notes controls" auto / minmax(0,1fr) auto; }
+.library-dialog .frame-tool-panel .crop-heading { grid-area:head; padding:8px 12px; color:var(--editor-muted); font-size:12px; }
+.library-dialog .frame-tool-panel .crop-heading button { padding:4px 10px; border-radius:6px; font-size:12px; }
+.library-dialog .frame-tool-panel .crop-stage { grid-area:stage; height:auto; min-height:0; margin:0; padding:18px; border-radius:0; background:var(--editor-stage); container-type:size; --crop-edge:calc(100cqh - 2px); }
+.library-dialog .frame-tool-panel .crop-composition { box-shadow:0 10px 30px #0007; }
+.library-dialog .frame-tool-panel .crop-gate { border-color:#fff9dfcc; box-shadow:0 0 0 999px #0d0e0cb8; }
+.library-dialog .frame-tool-panel .crop-notes { grid-area:notes; align-self:center; padding:8px 12px; }
+.library-dialog .frame-tool-panel .crop-notes p { display:inline; margin:0; font-size:12px; color:var(--editor-muted); }
+.library-dialog .frame-tool-panel .crop-notes p + p::before { content:' · '; }
+.library-dialog .frame-tool-panel .crop-position-controls { grid-area:controls; display:flex; align-items:center; gap:14px; margin:0; padding:8px 12px; }
+.library-dialog .frame-tool-panel .crop-position-controls label { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--editor-muted); }
+.library-dialog .frame-tool-panel .crop-position-controls input { width:120px; padding:0; border:0; background:none; accent-color:var(--editor-accent); }
+.library-dialog .frame-tool-panel .crop-position-controls button { padding:4px 10px; border-radius:6px; font-size:12px; }
+.library-dialog .frame-tool-panel .crop-unavailable { display:grid; place-items:center; color:var(--editor-muted); }
+
+/* Film effect tool: the final print beside its strength controls. */
+.film-look-area { position:relative; min-width:0; min-height:0; display:grid; }
+.film-look-area .film-look-stage { padding-bottom:58px; }
+.library-dialog .film-look-area .segmented.is-compare { position:absolute; left:50%; bottom:12px; transform:translateX(-50%); padding:3px; border-radius:9px; background:#141512d9; box-shadow:0 4px 14px #0006; }
+.library-dialog .film-look-area .segmented.is-compare legend { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.library-dialog .film-look-area .segmented.is-compare label { min-height:28px; margin:0; padding:4px 12px; border:0; border-radius:6px; background:transparent; color:#e9e2d0; font-size:12px; }
+.library-dialog .film-look-area .segmented.is-compare label:has(input:checked) { background:#f4ecd8; color:#22241f; }
+.film-look-stage { min-width:0; min-height:0; display:grid; place-items:center; padding:20px; background:var(--editor-stage); container-type:size; }
+.film-look-stage .crop-unavailable { color:#ddd6c6; }
+.film-look-print { position:relative; width:min(100%, calc(var(--print-aspect) * 100cqh)); background:#000; box-shadow:0 12px 34px #000a; touch-action:pan-y; user-select:none; -webkit-user-select:none; cursor:zoom-out; }
+.film-look-print.is-split { cursor:ew-resize; }
+.film-look-print.is-original { cursor:default; }
+.film-look-print { overflow:hidden; }
+.film-look-print img, .film-look-print canvas { position:absolute; max-width:none; max-height:none; display:block; }
+.film-look-layer { position:absolute; inset:0; overflow:hidden; }
+.film-look-layer[hidden] { display:none; }
+.film-look-tag { position:absolute; top:10px; z-index:2; padding:2px 8px; border-radius:10px; background:#141512c0; color:#f4ead2; font:600 11px/18px system-ui,sans-serif; letter-spacing:.04em; pointer-events:none; }
+.film-look-tag.is-before { left:10px; }
+.film-look-tag.is-after { right:10px; }
+.film-look-divider { position:absolute; top:0; bottom:0; z-index:2; width:2px; margin-left:-1px; background:#fffaf0; box-shadow:0 0 0 1px #0004; }
+.film-look-divider::after { content:'‹ ›'; position:absolute; top:50%; left:50%; width:30px; height:30px; transform:translate(-50%,-50%); display:grid; place-items:center; border-radius:50%; background:#fffaf0; color:#2b2c28; font:700 13px/1 system-ui,sans-serif; box-shadow:0 2px 8px #0006; }
+.film-look-divider:focus-visible { outline:none; }
+.film-look-divider:focus-visible::after { outline:2px solid #e9c46f; outline-offset:2px; }
+
+.film-effect-controls { min-height:0; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:18px; padding:16px; border-left:1px solid var(--editor-line); }
+.film-effect-controls legend, .film-strength > label { font-size:12px; font-weight:600; color:#3d4137; }
+.film-strength { display:grid; grid-template-columns:1fr auto; align-items:baseline; gap:6px 8px; }
+.film-strength output { font:600 22px/1 Georgia,serif; color:var(--editor-ink); font-variant-numeric:tabular-nums; }
+.film-strength output small { font:500 11px system-ui,sans-serif; color:var(--editor-muted); }
+.library-dialog .film-strength input[type=range] { grid-column:1/-1; width:100%; height:28px; margin:0; padding:0; border:0; background:none; accent-color:var(--editor-accent); }
+.film-strength-presets { grid-column:1/-1; display:flex; gap:6px; }
+.library-dialog .film-strength-presets button { flex:1; padding:4px 0; border-radius:6px; font-size:12px; }
+.library-dialog .film-strength-all { align-self:flex-start; padding:6px 12px; border-radius:6px; font-size:12px; }
+.film-effect-note { margin:auto 0 0; font-size:12px; line-height:1.45; color:var(--editor-muted); }
+
+/* Frame actions */
+.frame-details { flex:none; display:flex; align-items:center; justify-content:space-between; gap:8px 16px; flex-wrap:wrap; padding:10px 12px; border-top:1px solid var(--editor-line); }
+.frame-details h3 { min-width:0; margin:0; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.frame-details > label { display:flex; align-items:center; gap:6px; font-size:13px; }
+.frame-details p[role=alert] { margin:0; color:#923b2d; font-size:13px; }
+.library-dialog .frame-details .draft-actions { gap:6px; }
+.library-dialog .frame-details .draft-actions button { padding:6px 12px; border-radius:6px; font-size:13px; }
+.library-dialog .frame-details .frame-remove { color:#873f31; }
+
+.roll-editor-dialog .import-footer { flex:none; position:static; margin-top:12px; padding:12px 0 0; }
+.roll-editor-dialog .delete-roll { margin-right:auto; color:#873f31; }
+/* While reviewing a new roll, film length shares the footer row with the actions. */
+.roll-editor-dialog .import-footer:has(> .film-length) { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:4px 24px; }
+.roll-editor-dialog .import-footer > .film-length { display:grid; grid-template-columns:auto minmax(80px,1fr); align-items:center; gap:2px 12px; margin:0; font-size:13px; }
+.roll-editor-dialog .import-footer > .film-length > div { gap:8px; }
+.roll-editor-dialog .import-footer > .film-length p { grid-column:1/-1; margin:0; font-size:12px; color:var(--editor-muted); }
+.roll-editor-dialog .import-footer > .film-length.is-overfull p { color:#923b2d; }
+.roll-editor-dialog .import-footer:has(> .film-length) .import-footer-actions { gap:10px; }
+
+@media (max-width:1100px) {
+  .roll-editor-workspace { grid-template-columns:230px minmax(0,1fr); gap:18px; }
+  .frame-tool-panel.is-film { grid-template-columns:minmax(0,1fr) 230px; }
+  .film-effect-controls { gap:14px; padding:12px; }
+  .frame-strip-heading p { display:none; }
+}
+@media (max-height:820px) and (min-width:701px) {
+  .roll-editor-dialog > header { padding-bottom:10px; }
+  .roll-editor-dialog h1 { font-size:28px; }
+  .library-dialog .frame-editor .draft-preview { height:46px; }
+  .frame-editor { gap:8px; }
+  .film-effect-controls { gap:12px; padding:12px; }
+  .film-effect-note { display:none; }
+  .roll-editor-dialog .import-steps { margin-top:8px; padding-bottom:8px; }
+  .roll-editor-dialog .import-steps button { padding:4px 10px; }
+  .roll-editor-dialog > h2[data-step-title] { margin:8px 0 0; font-size:21px; }
+  .roll-editor-frames > .review-summary { margin-bottom:6px; }
+  .frame-details { padding:6px 12px; }
+}
+/* A narrow workbench (portrait tablets, phones) puts the print above its controls. */
+@container frame-workbench (max-width:620px) {
+  .frame-tool-panel.is-film { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(240px,1fr) auto; }
+  .film-effect-controls { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); align-items:start; gap:14px 18px; overflow:visible; border-left:0; border-top:1px solid var(--editor-line); }
+  .film-effect-note { grid-column:1/-1; margin:0; }
+}
+@media (max-width:700px) {
+  .mobile-layout .roll-editor-dialog[open], .roll-editor-dialog[open] { width:100%; height:var(--visible-height,100dvh); max-height:var(--visible-height,100dvh); padding:16px; }
+  .roll-editor-workspace { display:block; overflow-y:auto; overscroll-behavior:contain; padding-top:14px; }
+  .roll-editor-details { overflow:visible; padding:0 0 20px; border-right:0; }
+  .library-dialog .roll-editor-frames { display:block; padding-top:18px; border-top:1px solid var(--editor-line); }
+  .frame-strip-heading p { display:none; }
+  .roll-editor-review { display:block; overflow-y:auto; overscroll-behavior:contain; }
+  .frame-workbench { height:auto; }
+  .frame-toolbar { flex-wrap:wrap; }
+  .library-dialog .frame-tool-panel .crop-inspector { grid-template:"head" auto "stage" auto "notes" auto "controls" auto / minmax(0,1fr); }
+  .library-dialog .frame-tool-panel .crop-stage, .film-look-stage { height:clamp(220px,46dvh,380px); padding:12px; }
+  .library-dialog .frame-tool-panel .crop-position-controls { flex-wrap:wrap; }
+  .library-dialog .frame-tool-panel .crop-position-controls label { flex:1 1 100%; }
+  .library-dialog .frame-tool-panel .crop-position-controls input { flex:1; width:auto; }
+  .frame-tool-panel.is-film { grid-template-rows:auto auto; }
+  .roll-editor-dialog .import-footer:has(> .film-length) { grid-template-columns:minmax(0,1fr); }
+  .roll-editor-dialog .import-footer-actions { flex-wrap:wrap; gap:8px; }
+  .roll-editor-dialog .import-footer-actions button { font-size:12px; padding:8px; }
+}

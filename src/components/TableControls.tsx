@@ -1,7 +1,6 @@
 import { LoupeControls } from './LoupeControls';
 import { FilmPanelFrames } from './FilmPanelFrames';
 import { usePanelDismiss } from '../utils/usePanelDismiss';
-import { FilmStrengthControl } from "./FilmStrengthControl";
 import { useEffect, useRef, useState, type Dispatch, type ReactNode } from 'react';
 import { ViewerAction, ViewerState } from '../state/viewerState';
 import { getFilmStock } from '../data/filmStocks';
@@ -87,7 +86,6 @@ export function TableControls({state,dispatch,onOpenLibrary,onOpenRoom,onOpenTab
         </button>;
       })}</div></FilmPanelFrames>:<FilmPanelFrames stockId={state.filmStockId} className="table-fields">
         <FilmStockInfo stockId={state.filmStockId}/>
-        <FilmStrengthControl state={state} dispatch={dispatch}/>
         <div className="table-field"><span>Rendering <output data-testid="mode-badge">{stock.type==='reversal'?'POSITIVE · E-6':state.filmMode.toUpperCase()}</output></span>{stock.type==='negative'&&<button id="mode-toggle" data-testid="mode-toggle" onClick={()=>dispatch({type:'TOGGLE_FILM_MODE'})}>Switch to {state.filmMode==='positive'?'Negative':'Positive'}</button>}</div>
         <label data-testid="dimmer-controls">Table light <output data-testid="brightness-badge"><span data-testid="brightness-value">{Math.round(state.tableBrightness*100)}%</span></output><input id="brightness-slider" data-testid="brightness-slider" aria-label="Light Table Brightness" type="range" min=".3" max="1" step=".01" value={state.tableBrightness} onChange={event=>dispatch({type:'SET_TABLE_BRIGHTNESS',brightness:Number(event.target.value)})}/></label>
         {!focus && !inspecting && <div className="table-field">

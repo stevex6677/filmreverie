@@ -228,3 +228,51 @@ export function applyFilmLookToBuffer(
   }
 }
 
+
+/**
+ * Interactive editor preview. Produces the same values as
+ * applyFilmLookPerceptualPixel, but caches the position-only grain field and
+ * builds a per-strength tone table so slider changes re-render quickly.
+ */
+export function createFilmLookPreview(
+  source: { data: Uint8ClampedArray | Uint8Array },
+  width: number,
+  height: number,
+  look: FilmLook,
+  widthMm = 36,
+  heightMm = 24,
+  seed = 0,
+) {
+  const base = source.data, noise = new Float32Array(width * height);
+  // Mirrors the shader's footprint fade for grain finer than a preview pixel.
+  const footprint = Math.max(widthMm * look.grainPerMm / width, heightMm * look.grainPerMm / height);
+  const resolved = 1.0 - smoothstep(0.8, 2.8, footprint);
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++)
+    noise[y * width + x] = filmNoise(x / width * widthMm * look.grainPerMm, y / height * heightMm * look.grainPerMm, seed);
+  const tone = new Float64Array(256);
+  return (strength: number, target: Uint8ClampedArray) => {
+    const amount = clampFilmStrength(strength) / 50;
+    if (amount <= 0) { target.set(base); return; }
+    const contrast = 1.0 + (look.contrast - 1.0) * amount;
+    for (let i = 0; i < 256; i++) {
+      const c = i / 255.0, a = Math.pow(c, contrast), b = Math.pow(Math.max(1.0 - c, 0), contrast);
+      const s = a / Math.max(a + b, 0.00001);
+      tone[i] = s + amount * (look.shadows * Math.pow(1.0 - s, 3.0) + look.highlights * s * s * (1.0 - s));
+    }
+    const grainAmp = look.grain * Math.pow(amount, 0.8) * resolved;
+    const [tr, tg, tb] = look.color;
+    for (let p = 0, i = 0; p < noise.length; p++, i += 4) {
+      const r = tone[base[i]], g = tone[base[i + 1]], b = tone[base[i + 2]];
+      const luma = r * 0.2126 + g * 0.7152 + b * 0.0722;
+      const colorful = smoothstep(0.015, 0.18, Math.max(r, g, b) - Math.min(r, g, b));
+      const skin = smoothstep(0.0, 0.08, r - g) * smoothstep(0.0, 0.08, g - b);
+      const saturation = 1.0 + (look.saturation - 1.0) * amount * (1.0 - 0.35 * skin);
+      const tint = colorful * amount;
+      const grain = noise[p] * grainAmp * (0.30 + 0.70 * Math.sin(Math.max(0.0, Math.min(1.0, luma)) * Math.PI));
+      target[i] = Math.round(Math.max(0, Math.min(1, luma + (r - luma) * saturation + tr * tint + grain)) * 255.0);
+      target[i + 1] = Math.round(Math.max(0, Math.min(1, luma + (g - luma) * saturation + tg * tint + grain)) * 255.0);
+      target[i + 2] = Math.round(Math.max(0, Math.min(1, luma + (b - luma) * saturation + tb * tint + grain)) * 255.0);
+      target[i + 3] = base[i + 3];
+    }
+  };
+}
