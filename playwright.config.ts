@@ -41,8 +41,8 @@ export default defineConfig({
   use: {
     baseURL,
     // Historical viewer/import cases start directly in the guest darkroom.
-    // The dedicated first-visit spec opts out so it tests the privacy dialog.
-    storageState: { cookies: [], origins: [{ origin: baseURL, localStorage: [{ name: 'darkroom-guest-welcome', value: 'done' }] }] },
+    // The dedicated first-visit specs opt out so they test the privacy dialog and the guided tour.
+    storageState: { cookies: [], origins: [{ origin: baseURL, localStorage: [{ name: 'darkroom-guest-welcome', value: 'done' }, { name: 'film-reverie-intro-tour', value: 'done' }] }] },
     viewport: { width: 1280, height: 800 },
     headless: true,
     launchOptions: {
