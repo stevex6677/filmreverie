@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
@@ -8,13 +8,19 @@ import "./components/roll-editor.css";
 import "./components/camera-display.css";
 
 import { startOffline } from "./offline/client";
-startOffline();
+
+// The promotional showreel is an unlinked page; it loads on demand and does
+// not prepare the offline app.
+const showreel = /^\/showreel\/?$/.test(window.location.pathname);
+const Showreel = lazy(() => import("./showreel/Showreel"));
+if (showreel) document.getElementById("darkroom-loader")?.remove();
+else startOffline();
 
 const root = document.getElementById("root");
 if (root) {
   ReactDOM.createRoot(root).render(
     <React.StrictMode>
-      <App />
+      {showreel ? <Suspense fallback={null}><Showreel /></Suspense> : <App />}
     </React.StrictMode>
   );
 }

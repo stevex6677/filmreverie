@@ -69,10 +69,13 @@ export const Loupe: React.FC<LoupeProps> = ({ type = 'classic', physicalScale = 
     capture.left=-half;capture.right=half;capture.top=half;capture.bottom=-half;
     capture.position.set(sample.x,TABLE_SURFACE_Y+.3,sample.z);capture.up.set(0,0,-1);
     capture.lookAt(sample.x,TABLE_SURFACE_Y,sample.z);capture.updateProjectionMatrix();
-    if(!suspended)captureLoupeScene(gl,scene,capture,renderTarget,group.current);
+    // No capture (a full scene render) while the loupe or any parent is hidden.
+    let inView=!suspended;
+    for(let node=group.current.parent;node&&inView;node=node.parent)inView=node.visible;
+    if(inView)captureLoupeScene(gl,scene,capture,renderTarget,group.current);
     // Keep central detail at full resolution even at 8x. A separate wide
     // capture supplies only the curved periphery, without edge smearing.
-    if (!suspended && domeContext && opticalEffects) {
+    if (inView && domeContext && opticalEffects) {
       const wide = geometry.lensRadius * physicalScale;
       capture.left=-wide;capture.right=wide;capture.top=wide;capture.bottom=-wide;capture.updateProjectionMatrix();
       captureLoupeScene(gl,scene,capture,domeContext,group.current);

@@ -124,6 +124,50 @@ an iPhone, with detailed device measurements still to be recorded. See
 [Screening review](docs/SCREENING_REVIEW.md). `npm run validate:m22` runs the
 production build, cumulative integration/E2E suites and standalone viewer gates.
 
+### 9. Showreel (`/showreel`)
+An unlinked page plays a one-minute, 16:9 promotional film of the app, rendered
+live from code: the light table switching on as a band of light develops the
+negatives, the title over the room, the darkroom's wet side, the film shelf,
+excerpts of the Tracking Shot and Orbit reels, the loupe on the edge printing,
+the photographs through the Documentary, Drying Line and Projector reels, and
+the camera cabinet, ending on a card with filmreverie.app
+and the GitHub link. Titles, captions, light leaks, grain and camera labels are
+drawn over the scene. The page is public to anyone with the URL, is marked
+`noindex`, and is not part of the offline download.
+
+It opens on its **settings**: music (three tracks, each with a short Listen, or
+none) and volume, film grain, vignette, light leaks, and titles and captions.
+Changes show on the frame behind the sheet and are remembered in the browser.
+**Preview** plays the film with its music; the soundtrack's clock drives the
+picture so the two stay together, and each track's beat drop is placed on the
+first cut. **Export video** renders the film frame by frame to a 30 fps H.264
+MP4 at **720p or 1080p**, with the soundtrack as AAC (Opus where AAC encoding
+is unavailable; silent if neither is). Nothing is uploaded. On the 2-core
+development Mac a 720p export takes about 6 minutes and 1080p about 18.
+
+The music is by HoliznaCC0, dedicated to the public domain (CC0), so it can be
+used anywhere without credit: *Families* (default), *Blue Skies* and *City In
+The Rearview*, listed in [`src/data/showreelMusic.json`](src/data/showreelMusic.json).
+`npm run fetch:showreel-music -- --publish` extracts the pinned originals into
+shared `ignored_assets/music/showreel/` and publishes 70 second excerpts to
+`public/assets/music/showreel/`.
+
+The film shows two bundled sample rolls: **Golden Coast** (Kodak Portra 400,
+35mm, 12 frames) and **High Country** (Kodak Ektar 100, 120 6×6, 6 frames).
+Their CC0 photographs from Unsplash, via Wikimedia Commons, are listed with
+credits in [`src/data/showreelRolls.json`](src/data/showreelRolls.json). To use
+other photographs, edit that file and run `npm run fetch:showreel -- --publish`.
+This stores pinned originals read-only in shared `ignored_assets/photos/showreel/`
+and publishes 2048 px sRGB derivatives to `public/assets/photos/showreel/`.
+
+Before playback the page renders the whole film once behind its loading screen
+(a pre-roll), so shaders compile and textures upload before the first shot.
+Query options: `t=12.5` starts at a moment, `paused=1` holds it (skipping the
+settings), `clean=1` skips the settings and controls for screen recording, and
+`size=1920x1080` fixes the stage size. Keyboard: Space plays or pauses, ←/→
+seek (Shift for 5 s), H hides the controls and F toggles full screen. The code
+is in [`src/showreel/`](src/showreel/).
+
 ---
 
 ## Getting Started

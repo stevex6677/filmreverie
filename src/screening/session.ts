@@ -43,6 +43,13 @@ export class ScreeningSession {
   overlay: HTMLCanvasElement | null = null;
   engine: ScreeningEngine | null = null;
   textureReady: (index: number) => boolean = () => true;
+  /**
+   * Playback quality only steps down. A showreel cuts between shots of very
+   * different cost; recovering quality in a cheap shot stutters at the next cut.
+   */
+  steadyQuality = false;
+  /** Extra drawing composited over every preview and exported frame, after the screening overlay. */
+  decorate?: (ctx: CanvasRenderingContext2D, width: number, height: number, sample: ScreeningSample) => void;
   private listeners = new Set<() => void>();
   private snapshot: ScreeningSnapshot;
 

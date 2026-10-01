@@ -1,4 +1,5 @@
-// Minimal ISO BMFF (MP4) writer for one H.264 video track from WebCodecs.
+// Minimal ISO BMFF (MP4) writer for one H.264 video track from WebCodecs,
+// with an optional AAC or Opus audio track (the showreel's soundtrack).
 // M22.1 chose this in-repo writer over a muxer dependency: the maintained
 // options were either deprecated (mp4-muxer, MIT) or large and MPL-licensed
 // (Mediabunny). Screening needs only a single silent AVC track, fast-start
@@ -9,6 +10,8 @@ export interface VideoChunk {
   copyTo(destination: Uint8Array): void;
 }
 export interface ChunkMetadata { decoderConfig?: { description?: AllowSharedBufferSource; colorSpace?: VideoColorSpaceInit } }
+export type AudioChunk = Omit<VideoChunk, 'type'>;
+export interface AudioTrack { codec: 'aac' | 'opus'; sampleRate: number; channels: number; bitrate: number }
 
 const text = new TextEncoder();
 function bytes(size: number, write: (view: DataView) => void) { const out = new Uint8Array(size); write(new DataView(out.buffer)); return out; }
@@ -27,6 +30,17 @@ function box(type: string, ...parts: Uint8Array[]) {
   return concat([u32(body.length + 8), text.encode(type), body]);
 }
 const fullBox = (type: string, version: number, flags: number, ...parts: Uint8Array[]) => box(type, u8(version), u8(flags >> 16), u16(flags & 0xffff), ...parts);
+/** MPEG-4 descriptor (ISO 14496-1) with a four-byte size, as in esds. */
+function descriptor(tag: number, ...parts: Uint8Array[]) {
+  const body = concat(parts), n = body.length;
+  return concat([u8(tag), new Uint8Array([0x80 | (n >> 21) & 0x7f, 0x80 | (n >> 14) & 0x7f, 0x80 | (n >> 7) & 0x7f, n & 0x7f]), body]);
+}
+/** AudioSpecificConfig for AAC-LC, when the encoder supplies none. */
+export function aacConfig(sampleRate: number, channels: number) {
+  const index = [96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000].indexOf(sampleRate);
+  if (index < 0) throw new Error(`Unsupported AAC sample rate ${sampleRate}.`);
+  return new Uint8Array([2 << 3 | index >> 1, (index & 1) << 7 | channels << 3]);
+}
 const MATRIX = concat([0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000].map(u32));
 
 const PRIMARIES: Record<string, number> = { bt709: 1, bt470bg: 5, smpte170m: 6, bt2020: 9, smpte432: 12 };
@@ -63,11 +77,23 @@ export class Mp4Writer {
   private lastDuration = 0;
   /** Decided on the first chunk: WebCodecs avcC output, or Annex B to convert. */
   private annexB: boolean | null = null;
+  private audio: { track: AudioTrack; description: Uint8Array | null; samples: { data: Uint8Array; duration: number }[] } | null = null;
   readonly timescale = 90000;
   constructor(readonly width: number, readonly height: number) {}
 
   get sampleCount() { return this.samples.length; }
   get byteLength() { return this.samples.reduce((n, s) => n + s.data.length, 0); }
+
+  /** Starts an audio track; encoded chunks follow through addAudio, in order. */
+  setAudio(track: AudioTrack) { this.audio = { track, description: null, samples: [] }; }
+  dropAudio() { this.audio = null; }
+  addAudio(chunk: AudioChunk, metadata?: ChunkMetadata) {
+    if (!this.audio) throw new Error('Set the audio track before adding audio.');
+    if (metadata?.decoderConfig?.description) this.audio.description = toBytes(metadata.decoderConfig.description);
+    const data = new Uint8Array(chunk.byteLength); chunk.copyTo(data);
+    const rate = this.audio.track.sampleRate;
+    this.audio.samples.push({ data, duration: Math.round((chunk.duration ?? (this.audio.track.codec === 'aac' ? 1024 : 960) * 1e6 / rate) * rate / 1e6) });
+  }
 
   add(chunk: VideoChunk, metadata?: ChunkMetadata) {
     if (metadata?.decoderConfig?.description) this.description = toBytes(metadata.decoderConfig.description);
@@ -117,21 +143,55 @@ export class Mp4Writer {
       fullBox('stsc', 0, 0, u32(1), u32(1), u32(n), u32(1)),
       fullBox('stsz', 0, 0, u32(0), u32(n), ...this.samples.map(s => u32(s.data.length))),
       fullBox('stco', 0, 0, u32(1), u32(chunkOffset)));
+    // An audio track, when present, follows all video samples in mdat as one chunk.
+    const audio = this.audio?.samples.length ? this.audio : null;
+    const audioMs = audio ? Math.round(audio.samples.reduce((n, s) => n + s.duration, 0) * 1000 / audio.track.sampleRate) : 0;
     const moov = (chunkOffset: number) => box('moov',
-      fullBox('mvhd', 0, 0, u32(0), u32(0), u32(1000), u32(movieDuration), u32(0x00010000), u16(0x0100), zeros(10), MATRIX, zeros(24), u32(2)),
+      fullBox('mvhd', 0, 0, u32(0), u32(0), u32(1000), u32(Math.max(movieDuration, audioMs)), u32(0x00010000), u16(0x0100), zeros(10), MATRIX, zeros(24), u32(audio ? 3 : 2)),
       box('trak',
         fullBox('tkhd', 0, 3, u32(0), u32(0), u32(1), u32(0), u32(movieDuration), zeros(8), u16(0), u16(0), u16(0), u16(0), MATRIX, u32(this.width * 65536), u32(this.height * 65536)),
         ...(shift ? [box('edts', fullBox('elst', 0, 0, u32(1), u32(movieDuration), u32(shift), i32(0x00010000)))] : []),
         box('mdia',
           fullBox('mdhd', 0, 0, u32(0), u32(0), u32(this.timescale), u32(mediaDuration), u16(0x55c4), u16(0)),
           fullBox('hdlr', 0, 0, u32(0), text.encode('vide'), zeros(12), text.encode('VideoHandler\0')),
-          box('minf', fullBox('vmhd', 0, 1, zeros(8)), box('dinf', fullBox('dref', 0, 0, u32(1), fullBox('url ', 0, 1))), stbl(chunkOffset)))));
+          box('minf', fullBox('vmhd', 0, 1, zeros(8)), box('dinf', fullBox('dref', 0, 0, u32(1), fullBox('url ', 0, 1))), stbl(chunkOffset)))),
+      ...(audio ? [this.audioTrak(audio, chunkOffset + this.byteLength)] : []));
     const ftyp = box('ftyp', text.encode('isom'), u32(512), text.encode('isomiso2avc1mp41'));
-    const payload = this.byteLength;
+    const payload = this.byteLength + (audio ? audio.samples.reduce((n, s) => n + s.data.length, 0) : 0);
     if (payload + 8 > 0xffffffff) throw new Error('The video is too large to save.');
     // Fast start: the index precedes the media, so playback can begin at once.
     const header = moov(0).length;
     const index = moov(ftyp.length + header + 8);
-    return new Blob([ftyp, index, u32(payload + 8), text.encode('mdat'), ...this.samples.map(s => s.data)] as BlobPart[], { type: 'video/mp4' });
+    return new Blob([ftyp, index, u32(payload + 8), text.encode('mdat'), ...this.samples.map(s => s.data), ...(audio ? audio.samples.map(s => s.data) : [])] as BlobPart[], { type: 'video/mp4' });
+  }
+
+  private audioTrak(audio: NonNullable<Mp4Writer['audio']>, chunkOffset: number) {
+    const { track, samples } = audio, rate = track.sampleRate, n = samples.length;
+    const mediaDuration = samples.reduce((sum, s) => sum + s.duration, 0);
+    const movieDuration = Math.round(mediaDuration * 1000 / rate);
+    const runs = samples.reduce<[number, number][]>((out, s) => { const last = out.at(-1); if (last && last[1] === s.duration) last[0]++; else out.push([1, s.duration]); return out; }, []);
+    const fields = [zeros(6), u16(1), zeros(8), u16(track.channels), u16(16), u16(0), u16(0), u32(rate * 65536)];
+    let entry: Uint8Array;
+    if (track.codec === 'aac') {
+      const config = audio.description ?? aacConfig(rate, track.channels);
+      entry = box('mp4a', ...fields, fullBox('esds', 0, 0, descriptor(3, u16(2), u8(0),
+        descriptor(4, u8(0x40), u8(0x15), zeros(3), u32(track.bitrate), u32(track.bitrate), descriptor(5, config)),
+        descriptor(6, u8(2)))));
+    } else {
+      // An OpusHead description carries the encoder's pre-skip (little-endian).
+      const head = audio.description, preSkip = head && head.length >= 12 && text.encode('OpusHead').every((c, i) => head[i] === c) ? head[10] | head[11] << 8 : 312;
+      entry = box('Opus', ...fields, box('dOps', u8(0), u8(track.channels), u16(preSkip), u32(rate), u16(0), u8(0)));
+    }
+    return box('trak',
+      fullBox('tkhd', 0, 3, u32(0), u32(0), u32(2), u32(0), u32(movieDuration), zeros(8), u16(0), u16(0), u16(0x0100), u16(0), MATRIX, u32(0), u32(0)),
+      box('mdia',
+        fullBox('mdhd', 0, 0, u32(0), u32(0), u32(rate), u32(mediaDuration), u16(0x55c4), u16(0)),
+        fullBox('hdlr', 0, 0, u32(0), text.encode('soun'), zeros(12), text.encode('SoundHandler\0')),
+        box('minf', fullBox('smhd', 0, 0, u16(0), u16(0)), box('dinf', fullBox('dref', 0, 0, u32(1), fullBox('url ', 0, 1))),
+          box('stbl', fullBox('stsd', 0, 0, u32(1), entry),
+            fullBox('stts', 0, 0, u32(runs.length), ...runs.flatMap(([count, delta]) => [u32(count), u32(delta)])),
+            fullBox('stsc', 0, 0, u32(1), u32(1), u32(n), u32(1)),
+            fullBox('stsz', 0, 0, u32(0), u32(n), ...samples.map(s => u32(s.data.length))),
+            fullBox('stco', 0, 0, u32(1), u32(chunkOffset))))));
   }
 }

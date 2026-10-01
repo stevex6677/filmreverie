@@ -67,6 +67,8 @@ export interface ScreeningSample {
   dissolve: { key: number; from: number; amount: number } | null;
   matte: { x: number; z: number; width: number; height: number; alpha: number } | null;
   reducedMotion: boolean;
+  /** Overrides the timeline's look for this moment (a showreel joins reels with different looks). */
+  look?: ScreeningLook;
 }
 
 /**

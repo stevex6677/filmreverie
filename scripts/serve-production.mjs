@@ -13,7 +13,7 @@ const server = http.createServer(async (request, response) => {
     if (!hosts.has(new URL(`http://${request.headers.host}`).hostname)) { response.writeHead(403); response.end('Host not allowed'); return; }
     const url = new URL(request.url, 'http://localhost');
     const pathname = decodeURIComponent(url.pathname);
-    const file = path.resolve(root, '.' + (pathname === '/' || pathname === '/guest' || pathname === '/guest/' ? '/index.html' : pathname));
+    const file = path.resolve(root, '.' + (['/', '/guest', '/guest/', '/showreel', '/showreel/'].includes(pathname) ? '/index.html' : pathname));
     if (!file.startsWith(root + path.sep)) { response.writeHead(403); response.end(); return; }
     const bytes = await readFile(file);
     response.writeHead(200, { 'Content-Type': types[path.extname(file)] ?? 'application/octet-stream', 'Cache-Control':'no-cache', 'X-Content-Type-Options':'nosniff' });

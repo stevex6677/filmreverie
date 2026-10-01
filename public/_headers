@@ -10,5 +10,11 @@
   Cache-Control: no-cache
 /guest/
   Cache-Control: no-cache
+/showreel
+  Cache-Control: no-cache
+  X-Robots-Tag: noindex
+/showreel/
+  Cache-Control: no-cache
+  X-Robots-Tag: noindex
 /offline-health.json
   Cache-Control: no-store
