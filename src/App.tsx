@@ -209,6 +209,7 @@ export function App() {
   useEffect(() => { setScreening(null); setScreeningExport(null); setScreeningPicker(false); }, [roll, state.roomMode]);
   useCameraNavigation(state, dispatch);
   const closeCamera = useCallback(() => dispatch({ type: 'CLOSE_CAMERA' }), []);
+  const openCamera = useCallback((id: string) => dispatch({ type: 'OPEN_CAMERA', id }), []);
   useEffect(()=>setSheet(null),[state.roomMode]);
   useEffect(()=>{if(mobile)dispatch({type:'INPUT_TOUCH',active:true});else setSheet(null);},[mobile]);
   useEffect(() => { document.title = isGuest ? (roll.imported ? `${roll.label} — Your darkroom` : 'Your darkroom — Film Reverie') : 'Film Reverie — Published photographs'; }, [isGuest, roll]);
@@ -605,7 +606,7 @@ export function App() {
             else { setScreeningExport(null); setScreening(null); setScreeningPicker(true); }
           }} />
       </Suspense>}
-      {state.cameraDisplay && <CameraDisplayView stockId={state.filmStockId} id={state.cameraDisplay} onBack={closeCamera} reducedMotion={isReducedMotion} />}
+      {state.cameraDisplay && <CameraDisplayView id={state.cameraDisplay} onBack={closeCamera} onNavigate={openCamera} reducedMotion={isReducedMotion} />}
       {libraryError && <div className="library-notice" role="alert">{libraryError}<button onClick={() => { setLibraryError(""); openShelf(); }}>Open shelf</button></div>}
       {editorOpen && <RollEditor publication={!isGuest} repository={repository} onDelete={deleteRoll} editId={editingRollId} onClose={() => { setEditorOpen(false); setEditingRollId(undefined); }} onOpen={openSaved} />}
       {isGuest && guestWelcome && <GuestWelcome onClose={() => { try { localStorage.setItem(guestWelcomeKey, 'done'); } catch { /* Browsing can continue when localStorage is blocked. */ } setGuestWelcome(false); }} />}

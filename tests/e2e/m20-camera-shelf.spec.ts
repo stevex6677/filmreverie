@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { CAMERAS, PRIMARY_CAMERA } from '../../src/data/cameras';
+import { CAMERA_STORIES } from '../../src/data/cameraStories';
 import { CAMERA_SHELF_ORIGIN, CAMERA_SHELF_MM, cameraShelfSlot, mm } from '../../src/data/physicalScale';
 import { ready, screenPoint } from './helpers/shelf';
 import { offlineServer } from './helpers/offlineServer';
@@ -87,13 +88,13 @@ test('physical shelf, all rendered sides, orbit, zoom, reset, history and preser
   const canvas = page.locator('.camera-stage canvas');
   await expect(canvas).toHaveAttribute('data-model-width', '0.756');
   const renders = new Set<string>();
-  for (const side of ['Front', 'Rear', 'Left', 'Right', 'Top', 'Bottom']) {
+  for (const [side, preset] of [['Front', 'front'], ['Side', 'left'], ['Rear', 'rear'], ['Top', 'top']]) {
     await page.getByRole('button', { name: side, exact: true }).click();
-    await expect(page.locator('.camera-display')).toHaveAttribute('data-preset', side.toLowerCase());
+    await expect(page.locator('.camera-display')).toHaveAttribute('data-preset', preset);
     await page.waitForTimeout(250);
-    renders.add((await canvas.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-${side.toLowerCase()}.png` })).toString('base64'));
+    renders.add((await canvas.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-${preset}.png` })).toString('base64'));
   }
-  expect(renders.size).toBe(6);
+  expect(renders.size).toBe(4);
   await page.getByRole('button', { name: 'Reset view', exact: true }).click();
   const home = await canvas.getAttribute('data-view-position');
   const rect = (await canvas.boundingBox())!;
@@ -103,7 +104,8 @@ test('physical shelf, all rendered sides, orbit, zoom, reset, history and preser
   await expect(app).toHaveAttribute('data-shelf-id', 'camera');
   const distance = async () => (await canvas.getAttribute('data-view-position'))!.split(',').map(Number).reduce((sum, n) => sum + n * n, 0);
   const before = await distance();
-  await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
+  // Zoom stays on the gesture and keyboard; the dock keeps only angles, reset and auto-rotate.
+  await page.locator('.camera-stage').focus(); await page.keyboard.press('+');
   await expect.poll(distance).toBeLessThan(before);
   await page.getByRole('button', { name: 'Reset view', exact: true }).click();
   await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-display.png` });
@@ -141,8 +143,18 @@ test('camera details open with auto rotate and link to the camera wiki', async (
   await expect(wiki).toHaveAttribute('href', 'https://camera-wiki.org/wiki/Mamiya_Universal');
   await expect(page.getByText('Manufactured', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Width', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Fun facts' })).toBeVisible();
+  await expect(page.locator('.camera-facts li')).toHaveCount(CAMERA_STORIES[PRIMARY_CAMERA.id].facts.length);
   await mkdir('artifacts/m20-candidates', { recursive: true });
   await page.screenshot({ path: `artifacts/m20-candidates/${info.project.name}-camera-details-auto-rotate.png` });
+  if (await page.locator('.camera-info-toggle').isVisible()) { await page.keyboard.press('Escape'); await expect(page.locator('.camera-information')).not.toBeVisible(); }
+  // The collection can be browsed without returning to the shelf, wrapping at either end.
+  await page.getByRole('button', { name: `Next camera: ${CAMERAS[1].name}` }).click();
+  await expect(page.locator('.camera-display')).toHaveAttribute('data-model-ready', 'true', { timeout: 90000 });
+  await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-id', CAMERAS[1].id);
+  await page.getByRole('button', { name: `Previous camera: ${PRIMARY_CAMERA.name}` }).click();
+  await page.getByRole('button', { name: `Previous camera: ${CAMERAS.at(-1)!.name}` }).click();
+  await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-id', CAMERAS.at(-1)!.id, { timeout: 90000 });
 });
 
 test('third physical camera opens from its shelf slot; shelf drag exits without opening', async ({ page }) => {
@@ -190,8 +202,8 @@ test('Canon model failure can retry and all prepared cameras reopen with the ser
     for (const entry of CAMERAS) {
       await display(page, entry.name);
       await expect(page.locator('.camera-stage canvas')).toHaveAttribute('data-model-id', entry.id);
-      await page.getByRole('button', { name: 'Bottom', exact: true }).click();
-      await expect(page.locator('.camera-display')).toHaveAttribute('data-preset', 'bottom');
+      await page.getByRole('button', { name: 'Top', exact: true }).click();
+      await expect(page.locator('.camera-display')).toHaveAttribute('data-preset', 'top');
       await page.getByRole('button', { name: 'Back to shelf' }).click();
     }
   } finally { await server.stop(); }
@@ -259,7 +271,7 @@ test('responsive inspection, touch gestures, graphics recovery and repeated entr
     await expect(page.locator('body')).toHaveJSProperty('scrollWidth', viewport.width);
     const modelRect = (await canvas.boundingBox())!;
     expect(modelRect.height).toBeGreaterThan(100);
-    for (const name of ['Back to shelf', 'Reset view', 'Top', 'Bottom']) {
+    for (const name of ['Back to shelf', 'Reset view', 'Front', 'Top']) {
       const button = await page.getByRole('button', { name, exact: name !== 'Back to shelf' }).boundingBox();
       expect(button!.x).toBeGreaterThanOrEqual(0); expect(button!.y).toBeGreaterThanOrEqual(0);
       expect(button!.x + button!.width).toBeLessThanOrEqual(viewport.width + 1);

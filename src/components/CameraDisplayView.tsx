@@ -1,9 +1,8 @@
-import type { FilmStockId } from '../data/filmStocks';
-import { FilmPanelFrames } from './FilmPanelFrames';
 import { usePanelDismiss } from '../utils/usePanelDismiss';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { cameraById } from '../data/cameras';
+import { CAMERAS, cameraById } from '../data/cameras';
+import { cameraStory } from '../data/cameraStories';
 import { mm } from '../data/physicalScale';
 import { fittedDistance, mountModel, orbitControls, studioEnvironment, viewDirections } from '../../standalone/model-viewer/model-core.js';
 import { loadCameraModel } from '../utils/loadCameraModel';
@@ -12,7 +11,7 @@ import { createRenderLoop } from '../../standalone/model-viewer/render-loop.js';
 type View = keyof typeof viewDirections;
 type StageActions = { view: (view: View) => void; zoom: (factor: number) => void; turn: (x: number, y: number) => void; auto: (enabled: boolean) => void };
 
-export function CameraDisplayView({ id, stockId, onBack, reducedMotion }: { id: string; stockId: FilmStockId; onBack: () => void; reducedMotion: boolean }) {
+export function CameraDisplayView({ id, onBack, onNavigate, reducedMotion }: { id: string; onBack: () => void; onNavigate?: (id: string) => void; reducedMotion: boolean }) {
   const entry = cameraById(id);
   const host = useRef<HTMLDivElement>(null), actions = useRef<StageActions | null>(null);
   const information=useRef<HTMLElement>(null);
@@ -22,6 +21,8 @@ export function CameraDisplayView({ id, stockId, onBack, reducedMotion }: { id: 
   const [preset, setPreset] = useState<View | null>('home');
   usePanelDismiss(information, info, ()=>setInfo(false));
   useEffect(() => { back.current?.focus(); }, []);
+  // Browsing to another camera starts its label from the top.
+  useEffect(() => { information.current?.scrollTo?.(0, 0); }, [id]);
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       if (event.key === 'Escape') { event.preventDefault(); if (info) setInfo(false); else onBack(); }
@@ -128,31 +129,80 @@ export function CameraDisplayView({ id, stockId, onBack, reducedMotion }: { id: 
   }, [entry, attempt, reducedMotion]);
   if (!entry) return <section className="camera-display"><button onClick={onBack}>Back to shelf</button><p>Camera not found.</p></section>;
   const view = (value: View) => actions.current?.view(value);
+  const story = cameraStory(entry.id);
+  const index = CAMERAS.findIndex(camera => camera.id === entry.id);
+  const neighbour = (step: number) => CAMERAS[(index + step + CAMERAS.length) % CAMERAS.length];
+  const number = (value: number) => String(value).padStart(2, '0');
+  const touch = typeof matchMedia === 'function' && matchMedia('(pointer:coarse)').matches;
   return <section className="camera-display" aria-label={`${entry.name} inspection`} data-model-ready={ready} data-preset={preset ?? 'free'}>
-    <header className="camera-display-header"><button ref={back} onClick={onBack}>← Back to shelf</button><span>THE CAMERA COLLECTION <span aria-hidden="true">/ 01</span></span></header>
+    <header className="camera-display-header">
+      <button ref={back} className="camera-back" onClick={onBack}><span aria-hidden="true">←</span> Back to shelf</button>
+      <span className="camera-collection-label">The Camera Collection</span>
+      {onNavigate && CAMERAS.length > 1 && <nav className="camera-switcher" aria-label="Browse the collection">
+        <button aria-label={`Previous camera: ${neighbour(-1).name}`} title={neighbour(-1).name} onClick={() => onNavigate(neighbour(-1).id)}><Chevron left /></button>
+        <span aria-live="polite"><span className="sr-only">Camera </span>{number(index + 1)}<span aria-hidden="true"> / </span><span className="sr-only"> of </span>{number(CAMERAS.length)}</span>
+        <button aria-label={`Next camera: ${neighbour(1).name}`} title={neighbour(1).name} onClick={() => onNavigate(neighbour(1).id)}><Chevron /></button>
+      </nav>}
+    </header>
     <div className="camera-stage" ref={host} tabIndex={0} aria-label={`${entry.name} 3D model. Drag to rotate; pinch or scroll to zoom. Arrow keys rotate; plus and minus zoom; zero resets.`}
       onKeyDown={event => {
         if (event.key.startsWith('Arrow')) { event.preventDefault(); actions.current?.turn(event.key === 'ArrowLeft' ? -.15 : event.key === 'ArrowRight' ? .15 : 0, event.key === 'ArrowUp' ? -.15 : event.key === 'ArrowDown' ? .15 : 0); }
         if (['+', '=', '-', '0'].includes(event.key)) { event.preventDefault(); if (event.key === '0') view('home'); else actions.current?.zoom(event.key === '-' ? 1.2 : .8); }
       }} />
     {!ready && <div className="camera-load-status" role={error ? 'alert' : 'status'}><p>{error || `Opening ${entry.name}…`}</p>{error && <button onClick={() => setAttempt(value => value + 1)}>Retry model</button>}</div>}
-    <div className="camera-stage-footer">
-      {!used && <p className="camera-hint">Drag to rotate · Pinch or scroll to zoom</p>}
-      <nav className="camera-view-presets" aria-label="Camera angles">{(['front', 'rear', 'left', 'right', 'top', 'bottom'] as View[]).map(value => <button key={value} disabled={!ready} aria-pressed={preset === value} onClick={() => view(value)}>{value[0].toUpperCase() + value.slice(1)}</button>)}</nav>
-      <div className="camera-orbit-tools" aria-label="Camera inspection controls">
-        <button disabled={!ready} onClick={() => view('home')}>Reset view</button>
-        <button disabled={!ready} aria-label="Zoom in" onClick={() => actions.current?.zoom(.8)}>＋</button><button disabled={!ready} aria-label="Zoom out" onClick={() => actions.current?.zoom(1.25)}>−</button>
-        <button disabled={!ready} aria-label="Rotate left" onClick={() => actions.current?.turn(-.2, 0)}>↶</button><button disabled={!ready} aria-label="Rotate right" onClick={() => actions.current?.turn(.2, 0)}>↷</button>
-        {!reducedMotion && <button disabled={!ready} aria-pressed={auto} onClick={() => actions.current?.auto(!auto)}>Auto rotate</button>}
+    <div className="camera-dock">
+      <p className={`camera-gesture-hint ${used ? 'is-hidden' : ''}`} aria-hidden={used}>{touch ? 'Drag to turn · Pinch to zoom' : 'Drag to turn · Scroll to zoom'}</p>
+      <div className="camera-toolbar">
+        <div className="camera-views" role="group" aria-label="Camera angles">
+          {VIEWS.map(([value, label]) => <button key={value} disabled={!ready} aria-pressed={preset === value} onClick={() => view(value)}>{label}</button>)}
+        </div>
+        <span className="camera-toolbar-divider" aria-hidden="true" />
+        <button className="camera-icon-button" disabled={!ready} aria-label="Reset view" title="Reset view" onClick={() => view('home')}><ResetIcon /></button>
+        {!reducedMotion && <button className="camera-icon-button" disabled={!ready} aria-pressed={auto} aria-label="Auto rotate" title={auto ? 'Stop turning' : 'Turn automatically'} onClick={() => actions.current?.auto(!auto)}><OrbitIcon /></button>}
       </div>
     </div>
-    <button data-panel-toggle className="camera-info-toggle" aria-expanded={info} aria-controls="camera-information" onClick={() => setInfo(!info)}><span>{entry.name}</span><small>Introduced {entry.introduced} · About this camera {info ? '−' : '+'}</small></button>
-    <aside ref={information} id="camera-information" className={`film-panel camera-information ${info ? 'is-open' : ''}`} aria-label="About this camera">
-      <FilmPanelFrames stockId={stockId}><div>
-      <span className="camera-kicker">{entry.manufacturer.toUpperCase()}</span><h1>{entry.title}<br /><em>{entry.titleAccent}</em></h1><p className="camera-intro">A camera built for possibilities.</p>
-      <p>{entry.description}</p>
-      </div><dl><div><dt>Introduced</dt><dd>{entry.introduced}</dd></div><div><dt>Type</dt><dd>{entry.category}</dd></div><div><dt>Lens shown</dt><dd>{entry.captionDetail}</dd></div></dl>
-      <div className="camera-panel-sources">{entry.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a>)}</div></FilmPanelFrames>
+    <button data-panel-toggle className="camera-info-toggle" aria-expanded={info} aria-controls="camera-information" onClick={() => setInfo(!info)}>
+      <span className="camera-info-toggle-text"><span>{entry.name}</span><small>{story?.tagline ?? `Introduced ${entry.introduced}`}</small></span>
+      <span className="camera-info-toggle-action">{info ? 'Close' : 'About'}<Chevron up={!info} /></span>
+    </button>
+    <aside ref={information} id="camera-information" className={`camera-information ${info ? 'is-open' : ''}`} aria-label="About this camera">
+      <span className="camera-sheet-handle" aria-hidden="true" />
+      <button className="camera-sheet-close" aria-label="Close camera details" onClick={() => setInfo(false)}>×</button>
+      <header className="camera-plaque">
+        <p className="camera-kicker"><span>No. {number(index + 1)}</span><span>{entry.manufacturer}</span><span>{entry.introduced}</span></p>
+        <h1>{entry.title} <em>{entry.titleAccent}</em></h1>
+        {story && <p className="camera-tagline">{story.tagline}</p>}
+      </header>
+      <p className="camera-description">{entry.description}</p>
+      <dl className="camera-specs">
+        <div><dt>Introduced</dt><dd>{entry.introduced}</dd></div>
+        <div><dt>Type</dt><dd>{entry.category}</dd></div>
+        <div><dt>Lens shown</dt><dd>{entry.captionDetail}</dd></div>
+        {story?.specs.map(spec => <div key={spec.label}><dt>{spec.label}</dt><dd>{spec.value}</dd></div>)}
+      </dl>
+      {story && <section className="camera-section" aria-labelledby="camera-special-heading">
+        <h2 id="camera-special-heading">What makes it special</h2>
+        <p>{story.special}</p>
+      </section>}
+      {story && <section className="camera-section" aria-labelledby="camera-facts-heading">
+        <h2 id="camera-facts-heading">Fun facts</h2>
+        <ol className="camera-facts">{story.facts.map((fact, item) => <li key={fact}><span aria-hidden="true">{number(item + 1)}</span><p>{fact}</p></li>)}</ol>
+      </section>}
+      <footer className="camera-sources"><span>Further reading</span>{entry.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a>)}</footer>
     </aside>
   </section>;
+}
+
+/** Fewer, clearer presets: the drag gesture covers every in-between angle. */
+const VIEWS: [View, string][] = [['front', 'Front'], ['left', 'Side'], ['rear', 'Rear'], ['top', 'Top']];
+
+const icon = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true } as const;
+function Chevron({ left = false, up = false }: { left?: boolean; up?: boolean }) {
+  return <svg {...icon} width={16} height={16} style={{ transform: `rotate(${up ? -90 : left ? 180 : 0}deg)` }}><path d="m9 5 7 7-7 7" /></svg>;
+}
+function ResetIcon() {
+  return <svg {...icon}><path d="M4 12a8 8 0 1 0 2.4-5.7" /><path d="M4 4v4.5h4.5" /><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" /></svg>;
+}
+function OrbitIcon() {
+  return <svg {...icon}><path d="M12 3v18" strokeDasharray="2 2.6" /><path d="M15 16.6c-1 .2-2 .4-3 .4-5 0-9-2.2-9-5s4-5 9-5 9 2.2 9 5c0 1-.5 1.9-1.4 2.7" /><path d="m17.4 14.2 2.2.5.4 2.3" /></svg>;
 }

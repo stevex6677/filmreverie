@@ -49,9 +49,6 @@
 .film-panel .table-fields label > output { top:0; }
 .film-panel .film-panel-content > .table-frame-grid, .film-panel .film-panel-content > .mobile-frame-grid { width:100%; }
 .film-panel .mobile-tool-content .table-field { display:grid; gap:12px; }
-.film-panel .camera-panel-sources { display:grid; gap:12px; }
-.film-panel.camera-information h1 { font-size:32px; overflow-wrap:anywhere; }
-.film-panel.camera-information dl { margin:0; }
 @media(max-width:700px) {
   .darkroom-app-container:has(.film-strip-header) { --film-panel-top:112px; }
   .film-panel.table-panel, .film-panel.mobile-sheet { right:8px; bottom:8px; max-width:calc(100% - 32px); }
@@ -79,15 +76,3 @@
 .film-panel input[type=range]::-moz-range-track { height:3px; border:1px solid #987343; border-radius:1px; background:#110d09; }
 .film-panel input[type=range]::-webkit-slider-thumb { appearance:none; -webkit-appearance:none; width:22px; height:22px; margin-top:-9px; border:2px solid #e1be83; border-radius:50%; background:repeating-linear-gradient(90deg,#bf955e 0 2px,#e6c894 2px 3px); box-shadow:0 2px 5px #0009,inset 0 0 0 3px #443021; }
 .film-panel input[type=range]::-moz-range-thumb { width:18px; height:18px; border:2px solid #e1be83; border-radius:50%; background:repeating-linear-gradient(90deg,#bf955e 0 2px,#e6c894 2px 3px); box-shadow:0 2px 5px #0009,inset 0 0 0 3px #443021; }
-.film-panel.camera-information { border-radius:0; }
-.film-panel.camera-information h1, .film-panel.camera-information dd { color: var(--panel-ink); }
-.film-panel.camera-information h1 em, .film-panel.camera-information .camera-intro { color: #ddc6a0; }
-.film-panel.camera-information p, .film-panel.camera-information dt { color: var(--panel-muted); }
-.film-panel.camera-information a { color: var(--panel-brass); }
-.film-panel.camera-information .camera-kicker { color: var(--panel-brass); font-family: monospace; }
-.film-panel.camera-information dl > div { border-color:#94704455; }
-@media(max-width:850px), (max-height:500px) and (orientation:landscape) {
-  /* The desktop second-column placement must not anchor the absolute sheet
-     to an implicit column outside the narrow viewport. */
-  .film-panel.camera-information { grid-area:auto; }
-}

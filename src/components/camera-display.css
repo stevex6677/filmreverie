@@ -1,0 +1,204 @@
+/* Camera exhibit: the model under a warm cabinet spotlight, with a museum
+   label in the same brass-and-umber palette as the darkroom's film panels. */
+.camera-display {
+  --cd-ink: #f2e5ce;
+  --cd-muted: #bcac94;
+  --cd-faint: #9a8970;
+  --cd-brass: #d5ad70;
+  --cd-line: #d5ad7029;
+  --cd-edge: #68523b;
+  --cd-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  --cd-serif: Georgia, 'Times New Roman', serif;
+  position: absolute; inset: 0; z-index: 45;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(330px, 29vw, 410px);
+  grid-template-rows: 68px minmax(0, 1fr);
+  color: var(--cd-ink); color-scheme: dark;
+  background: #120e0b;
+  overflow: hidden;
+}
+.camera-display .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.camera-display button { min-width: 0; min-height: 44px; margin: 0; padding: 0; border: 0; border-radius: 0; background: none; font: inherit; font-size: 13px; color: var(--cd-ink); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.camera-display button:disabled { opacity: .4; cursor: default; }
+.camera-display :is(button, a):focus-visible, .camera-display .camera-stage:focus-visible { outline: 2px solid #ffe0a1; outline-offset: 2px; }
+.camera-display .camera-stage:focus-visible { outline-offset: -4px; }
+
+/* Header */
+.camera-display-header {
+  grid-column: 1; grid-row: 1; z-index: 2;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--cd-line);
+  background: linear-gradient(#0e0b08, #0e0b08d0);
+}
+.camera-display .camera-back {
+  justify-self: start; display: inline-flex; align-items: center; gap: 8px;
+  padding: 0 16px;
+  border: 1px solid #816345; border-radius: 3px;
+  background: linear-gradient(#403225, #2b2119);
+  box-shadow: inset 0 1px #e9c58b17, 0 2px 3px #0003;
+}
+.camera-display .camera-back:hover, .camera-display .camera-switcher button:hover { border-color: var(--cd-brass); background: linear-gradient(#514030, #33261c); }
+.camera-display .camera-collection-label { font: 10px/1 var(--cd-mono); letter-spacing: .26em; text-transform: uppercase; color: var(--cd-faint); white-space: nowrap; }
+.camera-display .camera-switcher { grid-column: 3; justify-self: end; display: flex; align-items: center; gap: 6px; }
+.camera-display .camera-switcher button {
+  display: grid; place-items: center; width: 44px; padding: 0;
+  border: 1px solid #5d4935; border-radius: 50%; background: #1d1611;
+}
+.camera-display .camera-switcher > span { min-width: 64px; text-align: center; font: 12px/1 var(--cd-mono); letter-spacing: .12em; color: var(--cd-muted); font-variant-numeric: tabular-nums; }
+
+/* Stage */
+.camera-display .camera-stage {
+  grid-column: 1; grid-row: 2; position: relative; min-width: 0; min-height: 0;
+  touch-action: none; outline: none;
+  background:
+    radial-gradient(ellipse 58% 62% at 50% 40%, #44382c 0%, #2a221b 45%, #17120e 78%, #110d0a 100%);
+}
+/* A soft contact shadow, painted behind the transparent WebGL canvas. */
+.camera-display .camera-stage::before {
+  content: ''; position: absolute; left: 50%; bottom: 13%; width: min(62%, 620px); height: 12%;
+  transform: translateX(-50%); pointer-events: none;
+  background: radial-gradient(closest-side, #0000008c, #00000038 55%, transparent);
+}
+.camera-display .camera-stage canvas { position: relative; z-index: 1; display: block; width: 100%; height: 100%; touch-action: none; }
+.camera-display .camera-load-status { grid-column: 1; grid-row: 2; place-self: center; z-index: 2; max-width: min(330px, 80%); text-align: center; font-size: 14px; color: var(--cd-muted); }
+.camera-display .camera-load-status button { padding: 0 18px; border: 1px solid #816345; border-radius: 3px; background: linear-gradient(#403225, #2b2119); }
+
+/* View dock: four angles, reset and auto-rotate. Drag and pinch cover the rest. */
+.camera-display .camera-dock {
+  grid-column: 1; grid-row: 2; align-self: end; justify-self: center; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  max-width: calc(100% - 24px); padding-bottom: 24px; pointer-events: none;
+}
+.camera-display .camera-dock > * { pointer-events: auto; }
+.camera-display .camera-gesture-hint { margin: 0; font-size: 11px; letter-spacing: .08em; color: var(--cd-muted); transition: opacity .6s; }
+.camera-display .camera-gesture-hint.is-hidden { opacity: 0; pointer-events: none; }
+.camera-display .camera-toolbar {
+  display: flex; align-items: center; gap: 4px; padding: 5px;
+  border: 1px solid #6a533b; border-radius: 999px;
+  background: #19130fd9; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 12px 34px #0008, inset 0 1px #e9c58b14;
+}
+.camera-display .camera-views { display: flex; gap: 2px; }
+.camera-display .camera-views button, .camera-display .camera-icon-button {
+  border: 1px solid transparent; border-radius: 999px; background: transparent;
+  color: var(--cd-muted); transition: color .15s, background-color .15s, border-color .15s;
+}
+.camera-display .camera-views button { min-width: 66px; padding: 0 14px; font-size: 13px; letter-spacing: .02em; }
+.camera-display .camera-icon-button { display: grid; place-items: center; width: 44px; padding: 0; }
+.camera-display .camera-toolbar button:hover:not(:disabled) { color: var(--cd-ink); background: #ffffff0d; }
+.camera-display .camera-toolbar button[aria-pressed=true] { color: #ffe6b4; background: #624627; border-color: #dfb76a; box-shadow: inset 0 0 0 1px #d5ad7029; }
+.camera-display .camera-toolbar-divider { width: 1px; height: 22px; margin: 0 3px; background: #6a533b; }
+
+/* Exhibit label */
+.camera-display .camera-information {
+  grid-column: 2; grid-row: 1 / 3; z-index: 3; min-height: 0;
+  display: flex; flex-direction: column; gap: 28px;
+  padding: 44px 34px 30px;
+  overflow-y: auto; overscroll-behavior: contain;
+  background: linear-gradient(100deg, #35271c40, transparent 45%), #18120e;
+  border-left: 1px solid var(--cd-edge);
+  box-shadow: -24px 0 60px #0006;
+  scrollbar-color: #756047 transparent; scrollbar-width: thin;
+}
+.camera-display .camera-sheet-handle, .camera-display .camera-sheet-close, .camera-display .camera-info-toggle { display: none; }
+.camera-display .camera-plaque::after { content: ''; display: block; width: 36px; height: 2px; margin-top: 24px; background: var(--cd-brass); }
+.camera-display .camera-kicker { display: flex; flex-wrap: wrap; margin: 0 0 18px; font: 10px/1.5 var(--cd-mono); letter-spacing: .2em; text-transform: uppercase; color: var(--cd-brass); }
+.camera-display .camera-kicker span + span::before { content: '·'; margin: 0 .8em; color: #8f7354; }
+.camera-display .camera-information h1 { margin: 0; font: 400 44px/1.02 var(--cd-serif); letter-spacing: -.02em; color: var(--cd-ink); overflow-wrap: anywhere; }
+.camera-display .camera-information h1 em { display: block; color: #ddc6a0; }
+.camera-display .camera-tagline { margin: 16px 0 0; font: italic 18px/1.4 var(--cd-serif); color: #e6cf9f; text-wrap: balance; }
+.camera-display .camera-description { margin: 0; font-size: 14px; line-height: 1.7; color: var(--cd-muted); }
+.camera-display .camera-specs { margin: 0; }
+.camera-display .camera-specs > div { display: grid; grid-template-columns: 8.2em minmax(0, 1fr); gap: 14px; padding: 11px 0; border-top: 1px solid var(--cd-line); }
+.camera-display .camera-specs > div:last-child { border-bottom: 1px solid var(--cd-line); }
+.camera-display .camera-specs dt { font: 10px/2 var(--cd-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cd-faint); }
+.camera-display .camera-specs dd { margin: 0; font-size: 13px; line-height: 1.55; color: var(--cd-ink); }
+.camera-display .camera-section h2 { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; font: 400 10px/1.5 var(--cd-mono); letter-spacing: .2em; text-transform: uppercase; color: var(--cd-brass); }
+.camera-display .camera-section h2::after { content: ''; flex: 1; height: 1px; background: var(--cd-line); }
+.camera-display .camera-section > p { margin: 0; font-size: 14px; line-height: 1.7; color: #e3d4ba; }
+/* Fun facts sit in small frames, echoing the film panels used elsewhere. */
+.camera-display .camera-facts { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.camera-display .camera-facts li {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px;
+  padding: 14px 16px 14px 12px; border: 1px solid #3d30204a; border-radius: 3px;
+  background: linear-gradient(120deg, #21190e35, transparent), #100d09;
+}
+.camera-display .camera-facts li > span { font: 11px/1.75 var(--cd-mono); color: var(--cd-brass); }
+.camera-display .camera-facts li > p { margin: 0; font-size: 13px; line-height: 1.6; color: #d4c4a9; }
+.camera-display .camera-sources { display: grid; gap: 10px; margin-top: auto; padding-top: 18px; border-top: 1px solid var(--cd-line); }
+.camera-display .camera-sources > span { font: 10px/1.5 var(--cd-mono); letter-spacing: .2em; text-transform: uppercase; color: var(--cd-faint); }
+.camera-display .camera-sources a { width: fit-content; font-size: 13px; line-height: 1.5; color: var(--cd-brass); text-underline-offset: 3px; }
+
+@media (max-width: 1100px) {
+  .camera-display .camera-collection-label { display: none; }
+  .camera-display .camera-information { padding: 36px 26px 26px; }
+  .camera-display .camera-information h1 { font-size: 38px; }
+}
+
+/* Phones and portrait tablets: model first, label in a pull-up sheet. */
+@media (max-width: 850px) {
+  .camera-display { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto auto; }
+  .camera-display-header { grid-template-columns: auto 1fr; padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left)); }
+  .camera-display .camera-back { padding: 0 14px; }
+  .camera-display .camera-switcher { grid-column: 2; }
+  .camera-display .camera-stage::before { bottom: 10%; width: 78%; }
+  .camera-display .camera-dock { grid-row: 3; position: relative; justify-self: stretch; max-width: none; gap: 8px; padding: 10px 12px 12px; }
+  .camera-display .camera-gesture-hint { position: absolute; bottom: calc(100% + 4px); }
+  .camera-display .camera-toolbar { width: min(100%, 460px); justify-content: space-between; }
+  .camera-display .camera-views { flex: 1; }
+  .camera-display .camera-views button { flex: 1; min-width: 0; padding: 0 6px; }
+  .camera-display .camera-info-toggle {
+    grid-row: 4; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    width: 100%; padding: 14px max(18px, env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+    border: 0; border-top: 1px solid var(--cd-edge); border-radius: 0;
+    background: linear-gradient(100deg, #35271c40, transparent 45%), #18120e; text-align: left;
+  }
+  .camera-display .camera-info-toggle-text { display: grid; gap: 4px; min-width: 0; }
+  .camera-display .camera-info-toggle-text > span { font: 21px/1.15 var(--cd-serif); color: var(--cd-ink); }
+  .camera-display .camera-info-toggle-text > small { font: italic 13px/1.35 var(--cd-serif); color: #d9c39b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .camera-display .camera-info-toggle-action {
+    flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px 8px 14px;
+    border: 1px solid #816345; border-radius: 999px; font: 10px/1 var(--cd-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--cd-brass);
+  }
+  .camera-display .camera-information {
+    position: absolute; left: 0; right: 0; bottom: 0; grid-area: auto;
+    max-height: min(84%, 760px); gap: 24px;
+    padding: 10px max(22px, env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
+    border-left: 0; border-top: 1px solid #816345; border-radius: 18px 18px 0 0;
+    box-shadow: 0 -20px 60px #000a, 0 0 0 100vmax #0000;
+    transform: translateY(100%); visibility: hidden;
+    transition: transform .34s cubic-bezier(.2, .8, .2, 1), box-shadow .34s, visibility 0s .34s;
+  }
+  .camera-display .camera-information.is-open { transform: none; visibility: visible; box-shadow: 0 -20px 60px #000a, 0 0 0 100vmax #0009; transition: transform .34s cubic-bezier(.2, .8, .2, 1), box-shadow .34s, visibility 0s; }
+  .camera-display .camera-sheet-handle { display: block; flex: none; width: 40px; height: 4px; margin: 0 auto -8px; border-radius: 2px; background: #816345; }
+  .camera-display .camera-sheet-close {
+    position: sticky; top: 0; z-index: 1; display: grid; place-items: center; align-self: flex-end;
+    width: 44px; height: 44px; margin: 0 -10px -64px 0; padding: 0;
+    border: 1px solid #5d4935; border-radius: 50%; background: #1d1611; font-size: 20px; line-height: 1;
+  }
+  .camera-display .camera-information h1 { font-size: 38px; padding-right: 40px; }
+}
+@media (max-width: 420px) {
+  .camera-display .camera-views button { font-size: 12px; }
+  .camera-display .camera-switcher > span { min-width: 52px; }
+}
+
+/* Landscape phones: a slim bottom bar and a side sheet keep the model tall. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .camera-display { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr) auto; }
+  .camera-display-header { grid-column: 1 / -1; padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: 6px; }
+  .camera-display .camera-collection-label { display: none; }
+  .camera-display .camera-stage, .camera-display .camera-load-status { grid-column: 1 / -1; }
+  .camera-display .camera-dock { grid-column: 1; grid-row: 3; padding: 6px 12px max(6px, env(safe-area-inset-bottom)); }
+  .camera-display .camera-gesture-hint { display: none; }
+  .camera-display .camera-info-toggle { grid-column: 2; grid-row: 3; width: auto; padding: 6px max(14px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) 14px; border-top: 0; background: none; }
+  .camera-display .camera-info-toggle-text { display: none; }
+  .camera-display .camera-information { left: auto; top: 0; width: min(400px, 62%); max-height: none; border-top: 0; border-left: 1px solid #816345; border-radius: 0; transform: translateX(100%); }
+  .camera-display .camera-sheet-handle { display: none; }
+  .camera-display .camera-information h1 { font-size: 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .camera-display .camera-information, .camera-display .camera-information.is-open, .camera-display .camera-gesture-hint { transition: none; }
+}
