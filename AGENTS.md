@@ -87,7 +87,7 @@ Vitest versions. See the [README](README.md) for engine requirements.
 
 ```sh
 npm ci
-npm run dev
+npm run dev -- --host 0.0.0.0
 # Build and test locally as needed:
 npm run build
 npm run test:integration
@@ -112,20 +112,23 @@ acquisition, not a startup step.
 - Start the application process locally in the active checkout. Check working
   directory and port ownership; preserve existing services. If a port is occupied,
   use another available port and report the actual URL.
+- Always bind application development and preview servers to `0.0.0.0`, not
+  `localhost` or `127.0.0.1`. Pass `--host 0.0.0.0` to `npm run dev` and
+  `npm run preview` (for example, `npm run preview -- --host 0.0.0.0 --port 5188`),
+  or set `FILM_PHOTO_HOST=0.0.0.0`. This allows direct access over both the local
+  network and Tailscale without a Serve proxy.
 - After every application startup, provide clickable localhost and private
-  Tailscale URLs, and state that the app process runs locally. Use the actual
-  hostname and Serve mapping reported by Tailscale; do not guess a URL. Opening
-  or requesting the Tailscale URL is not required. If its response or device
-  access was not checked, label the link unverified. If Tailscale is unavailable,
-  say so explicitly rather than inventing a link.
-- Inspect `tailscale status --json` and `tailscale serve status` before changing
-  mappings. Use the current hostname/IP; do not assume the example `macbook`
-  hostname exists. If the app port has no mapping, use
-  `tailscale serve --bg --http=<port> http://127.0.0.1:<port>` to proxy directly
-  to the local app; no SSH tunnel is needed.
-- Preserve unrelated Serve mappings. Devices must use the same tailnet. Include
-  the current hostname in Vite's allowlist through `FILM_PHOTO_ALLOWED_HOSTS`
-  when necessary. Never use Funnel or expose the app publicly.
+  Tailscale URLs using the actual app port, and state that the app process runs
+  locally. This machine's established Tailscale hostname is `macbook`; use
+  `http://localhost:<port>` and `http://macbook:<port>` (the full hostname is
+  `macbook.tail2b1388.ts.net`). Devices must use the same tailnet with MagicDNS.
+- Routine startup does not require Tailscale CLI status checks, Serve setup,
+  or verification of the Tailscale URL. Do not claim device access was tested
+  unless it was. Only troubleshoot Tailscale when access fails or the user asks.
+- Keep `macbook` and `macbook.tail2b1388.ts.net` in Vite's allowed hosts; include
+  them in `FILM_PHOTO_ALLOWED_HOSTS` when overriding that setting. Preserve
+  existing Serve mappings. Do not create HTTP Serve proxies for routine previews,
+  use SSH tunnels, enable Funnel, or configure public exposure.
 - Offline installation and new photo import on non-loopback devices require
   HTTPS. Follow [docs/OFFLINE.md](docs/OFFLINE.md); preserve existing browser
   libraries and export backups before changing origins.
