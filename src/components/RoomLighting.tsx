@@ -7,6 +7,7 @@ export function RoomLighting({ brightness, immediate, fixturesVisible = true }: 
   const group = useRef<THREE.Group>(null);
   const output = useRef(brightness);
   const target = useMemo(() => { const object = new THREE.Object3D(); object.position.set(0, -1.7, 2.7); return object; }, []);
+  const wetTarget = useMemo(() => { const object = new THREE.Object3D(); object.position.set(1.1, -.9, 6.45); return object; }, []);
   useFrame((_, delta) => {
     output.current = immediate ? brightness : THREE.MathUtils.lerp(output.current, brightness, 1 - Math.exp(-delta * 9));
     group.current?.traverse(object => {
@@ -24,5 +25,12 @@ export function RoomLighting({ brightness, immediate, fixturesVisible = true }: 
       <mesh visible={fixturesVisible} position={[0, -.04, 0]} userData={{ luminous: true }}><boxGeometry args={[.38, .012, 1.3]} /><meshStandardMaterial color="#ece6d7" emissive="#fff2d9" emissiveIntensity={3 * brightness} /></mesh>
       <pointLight position={[0, -.18, 0]} color="#fff0d9" intensity={14 * brightness} distance={8} decay={2} userData={{ maximum: 14 }} />
     </group>)}
+    {/* Work light over the rear sink; its static shadows ground the wet side. */}
+    <primitive object={wetTarget} />
+    <group position={[1.3, ROOM_ENVELOPE.ceiling - .035, 5.85]}>
+      <mesh visible={fixturesVisible}><boxGeometry args={[1.45, .07, .48]} /><meshStandardMaterial color="#282b2c" roughness={.5} metalness={.5} /></mesh>
+      <mesh visible={fixturesVisible} position={[0, -.04, 0]} userData={{ luminous: true }}><boxGeometry args={[1.3, .012, .38]} /><meshStandardMaterial color="#ece6d7" emissive="#fff2d9" emissiveIntensity={3 * brightness} /></mesh>
+      <spotLight position={[0, -.2, 0]} target={wetTarget} angle={.62} penumbra={.65} color="#fff0d9" intensity={24 * brightness} distance={8} decay={2} castShadow shadow-autoUpdate={false} shadow-needsUpdate shadow-mapSize={[1024, 1024]} shadow-bias={-.0004} shadow-normalBias={.02} userData={{ maximum: 24 }} />
+    </group>
   </group>;
 }
