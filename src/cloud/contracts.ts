@@ -5,6 +5,7 @@ export interface GalleryImage { url: string; bytes: number; sha256: string }
 export interface GalleryFrame {
   id: string; width: number; height: number; rotation: number;
   cropPosition?: { x: number; y: number };
+  filmStrength?: number;
   viewing: GalleryImage; thumbnail: GalleryImage;
 }
 export interface GalleryRoll {
@@ -14,7 +15,7 @@ export interface GalleryRoll {
 }
 export interface GalleryCatalog { version: 1; rolls: GalleryRoll[] }
 // Cloud drafts contain only browser-produced derivatives; guest StoredFrame retains its original fields.
-export interface DraftFrame extends Pick<StoredFrame, 'id' | 'rollId' | 'filename' | 'width' | 'height' | 'rotation' | 'cropPosition' | 'viewingKey' | 'thumbnailKey'> {
+export interface DraftFrame extends Pick<StoredFrame, 'id' | 'rollId' | 'filename' | 'width' | 'height' | 'rotation' | 'cropPosition' | 'filmStrength' | 'viewingKey' | 'thumbnailKey'> {
   uploadId: string;
   viewingSha256: string;
 }

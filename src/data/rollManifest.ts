@@ -9,6 +9,8 @@ export interface RollFrame {
   thumbnailSrc?: string;
   rotation?: number;
   cropPosition?: import('../utils/photoFraming').CropPosition;
+  /** Overrides the roll's film effect strength for this frame. */
+  filmStrength?: number;
   original?: Blob;
   loadOriginal?: () => Promise<Blob>;
   sourceWidth?: number;

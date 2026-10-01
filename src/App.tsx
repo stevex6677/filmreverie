@@ -166,6 +166,14 @@ export function App() {
   useEffect(() => {
     try { localStorage.setItem('darkroom-loupe-preferences', JSON.stringify({ type: state.loupe.type, size: state.loupe.size, opticalEffects: state.loupe.opticalEffects, magnification: state.loupe.magnification })); } catch { /* Optional preference. */ }
   }, [state.loupe.type, state.loupe.size, state.loupe.opticalEffects, state.loupe.magnification]);
+  useEffect(() => {
+    // Film strength is edited per roll in the roll editor. Deterministic optical
+    // checks set the roll-level shader strength on rolls that cannot be edited.
+    if (!isDeterministic) return;
+    const target = window as typeof window & { __setFilmStrength?: (strength: number) => void };
+    target.__setFilmStrength = strength => dispatch({ type: 'SET_FILM_STRENGTH', strength });
+    return () => { delete target.__setFilmStrength; };
+  }, [isDeterministic]);
 
   useEffect(() => {
     if (!appReady || !cameraSettled || state.roomMode !== 'room') return;
@@ -252,10 +260,9 @@ export function App() {
     if (!isGuest || !current.roll.imported || current.cameraMoving || current.isTransitioning || current.assetsLoading) return Promise.resolve();
     const rollId = current.roll.rollId;
     const stockId = current.filmStockId;
-    const filmStrength = current.filmStrength;
     const roomMode = current.roomMode;
     const view: SavedView = { filmScale: current.roll.scale, frameId: current.roll.frames[current.activeFrameIndex].id, level: current.inspectionLevel, mode: current.filmMode, brightness: current.tableBrightness, magnification: current.loupe.magnification, zoom: current.inspectZoom, pan: current.inspectPan, overview: current.savedOverview };
-    const queued = saveQueue.current.catch(() => {}).then(() => repository.update(rollId, r => ({ ...r, stockId, filmStrength, view: roomMode === "inspect" ? view : r.view })));
+    const queued = saveQueue.current.catch(() => {}).then(() => repository.update(rollId, r => ({ ...r, stockId, view: roomMode === "inspect" ? view : r.view })));
     saveQueue.current = queued;
     return queued;
   };
@@ -303,7 +310,7 @@ export function App() {
     const flush = () => { void saveView().catch(error => setLibraryError(storageMessage(error))); };
     window.addEventListener("pagehide", flush);
     return () => { window.removeEventListener("pagehide", flush); };
-  }, [roll, state.activeFrameIndex, state.inspectionLevel, state.filmStockId, state.filmStrength, state.filmMode, state.tableBrightness, state.loupe.magnification, state.inspectZoom, state.inspectPan, state.isTransitioning, state.cameraMoving, state.assetsLoading]);
+  }, [roll, state.activeFrameIndex, state.inspectionLevel, state.filmStockId, state.filmMode, state.tableBrightness, state.loupe.magnification, state.inspectZoom, state.inspectPan, state.isTransitioning, state.cameraMoving, state.assetsLoading]);
 
   const handleRetry = () => {
     setInjectedError(false);

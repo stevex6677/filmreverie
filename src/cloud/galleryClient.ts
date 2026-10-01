@@ -40,6 +40,7 @@ export function validateGalleryRoll(value: unknown): asserts value is GalleryRol
   for (const frame of value.frames) {
     if (!object(frame) || typeof frame.id !== 'string' || !frame.id || ids.has(frame.id) || !positiveInteger(frame.width) || !positiveInteger(frame.height) || ![0, 90, 180, 270].includes(frame.rotation as number) || !publicImage(frame.viewing) || !publicImage(frame.thumbnail)) throw new Error('The gallery returned invalid image metadata.');
     if (frame.cropPosition !== undefined && (!object(frame.cropPosition) || [frame.cropPosition.x, frame.cropPosition.y].some(n => typeof n !== 'number' || !Number.isFinite(n) || Math.abs(n) > 1))) throw new Error('The gallery returned an invalid crop.');
+    if (frame.filmStrength !== undefined && (typeof frame.filmStrength !== 'number' || !Number.isFinite(frame.filmStrength) || frame.filmStrength < 0 || frame.filmStrength > 100)) throw new Error('The gallery returned an invalid film strength.');
     ids.add(frame.id);
   }
   const roll = value as unknown as GalleryRoll;
@@ -135,7 +136,7 @@ export function createGalleryRuntime(roll: GalleryRoll, images: readonly Gallery
       if (!viewing) throw new Error('This saved gallery revision is incomplete.');
       const thumbnail = images.find(image => image.frameId === frame.id && image.kind === 'thumbnail');
       const src = imageUrl(viewing), title = `${roll.name} · ${index + 1}`;
-      return { id: frame.id, order: index + 1, src, thumbnailSrc: thumbnail ? imageUrl(thumbnail) : src, title, alt: title, aspectRatio: frame.width / frame.height, rotation: frame.rotation, cropPosition: frame.cropPosition, sourceWidth: frame.width, sourceHeight: frame.height };
+      return { id: frame.id, order: index + 1, src, thumbnailSrc: thumbnail ? imageUrl(thumbnail) : src, title, alt: title, aspectRatio: frame.width / frame.height, rotation: frame.rotation, cropPosition: frame.cropPosition, filmStrength: frame.filmStrength, sourceWidth: frame.width, sourceHeight: frame.height };
     });
     const definition: RollDefinition = {
       rollId: `gallery:${roll.id}:${roll.revision}`, label: `${roll.name} · ${rollFormatLabel(roll.format, roll.sizing)}`, frames,

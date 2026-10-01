@@ -35,7 +35,7 @@ export class AdminRollRepository extends RollRepository {
     for (const frame of bundle.frames) {
       operationSignal.throwIfAborted();
       const prior = existing?.frames.find(candidate => candidate.id === frame.id);
-      frames.push(prior ? { ...prior, rotation: frame.rotation, cropPosition: frame.cropPosition } : await uploadOwnerPhoto({
+      frames.push(prior ? { ...prior, rotation: frame.rotation, cropPosition: frame.cropPosition, filmStrength: frame.filmStrength } : await uploadOwnerPhoto({
         id: frame.id, filename: frame.filename, frame, blobs: bundle.blobs,
         duplicate: false, keepDuplicate: true,
       }, operationSignal, () => {}));

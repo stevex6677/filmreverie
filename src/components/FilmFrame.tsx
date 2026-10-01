@@ -59,7 +59,7 @@ export const FilmFrame: React.FC<FilmFrameProps> = ({
   material.uniforms.uPhotoRotation.value = rotation * Math.PI / 180;
   material.uniforms.uRevealSpan.value.set(center.x - frameWidth / 2, frameWidth);
   updateTableIllumination(material, brightness);
-  updateFilmLook(material, stockId, filmStrength, frameWidth / FILM_UNIT, layout.frameHeight / FILM_UNIT, filmGrainSeed(photo?.id ?? String(index)));
+  updateFilmLook(material, stockId, photo?.filmStrength ?? filmStrength, frameWidth / FILM_UNIT, layout.frameHeight / FILM_UNIT, filmGrainSeed(photo?.id ?? String(index)));
 
   // Curved plane geometry with 16 Y-segments matching the substrate transverse curl
   const frameGeometry = useMemo(() => {

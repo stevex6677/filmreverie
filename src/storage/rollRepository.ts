@@ -8,6 +8,8 @@ export interface SavedView {
 }
 export interface StoredFrame {
   cropPosition?: import('../utils/photoFraming').CropPosition;
+  /** Per-frame film effect strength; when any frame has one, the roll is adjusted frame by frame. */
+  filmStrength?: number;
   id: string; rollId: string; filename: string; mime: string; width: number; height: number; rotation: number; hash: string;
   originalKey: string; viewingKey: string; thumbnailKey: string;
 }
@@ -46,7 +48,7 @@ const complete = (tx: IDBTransaction) => new Promise<void>((resolve, reject) => 
   tx.onabort=()=>reject(failure??tx.error??new DOMException('Save cancelled','AbortError'));
   tx.onerror=event=>{failure=(event.target as IDBRequest)?.error??tx.error;try{tx.abort();}catch{reject(failure??new Error('Storage transaction failed.'));}};
 });
-export function validateBundle(bundle: { roll: StoredRoll; frames: Pick<StoredFrame, 'id' | 'rollId' | 'rotation' | 'width' | 'height' | 'cropPosition'>[]; blobs?: BlobRecord[] }) {
+export function validateBundle(bundle: { roll: StoredRoll; frames: Pick<StoredFrame, 'id' | 'rollId' | 'rotation' | 'width' | 'height' | 'cropPosition' | 'filmStrength'>[]; blobs?: BlobRecord[] }) {
   const { roll, frames } = bundle;
   if (!roll.name.trim() || roll.name.length > 120 || !isFilmStockId(roll.stockId) || !isFilmFormat(roll.format)) throw new Error('Enter a name, stock and valid film format.');
   if (!frames.length || new Set(roll.frameIds).size !== frames.length || roll.frameIds.length !== frames.length || !roll.frameIds.includes(roll.coverId)) throw new Error('Invalid frame membership or cover.');
@@ -56,6 +58,7 @@ export function validateBundle(bundle: { roll: StoredRoll; frames: Pick<StoredFr
   const length = filmLengthUsage(roll.format, roll.sizing ?? 'fixed', frames);
   if (length.exceeded) throw new Error(`Roll exceeds its film length by ${Math.ceil(length.used - length.capacity)} mm. Remove photographs or change the frame size before saving.`);
   for (const frame of frames) if (frame.cropPosition && [frame.cropPosition.x, frame.cropPosition.y].some(n => !Number.isFinite(n) || Math.abs(n) > 1)) throw new Error('Invalid crop position.');
+  for (const strength of [roll.filmStrength, ...frames.map(frame => frame.filmStrength)]) if (strength !== undefined && (typeof strength !== 'number' || !Number.isFinite(strength) || strength < 0 || strength > 100)) throw new Error('Invalid film effect strength.');
 }
 export class RollRepository {
   private listeners = new Set<() => void>();

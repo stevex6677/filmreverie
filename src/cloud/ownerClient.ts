@@ -115,5 +115,6 @@ function draftFrame(frame: NonNullable<OwnerPhoto['frame']>, uploadId: string, v
   return { id: frame.id, rollId: frame.rollId, filename: frame.filename,
     width: Math.max(1, Math.round(frame.width * ratio)), height: Math.max(1, Math.round(frame.height * ratio)),
     rotation: frame.rotation, ...(frame.cropPosition ? { cropPosition: frame.cropPosition } : {}),
+    ...(frame.filmStrength !== undefined ? { filmStrength: frame.filmStrength } : {}),
     viewingKey: frame.viewingKey, thumbnailKey: frame.thumbnailKey, viewingSha256, uploadId };
 }

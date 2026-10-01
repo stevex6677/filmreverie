@@ -185,6 +185,7 @@ export async function saveDraft(env: Env, id: string, value: CloudDraft): Promis
     frames.push({ id: frame.id, rollId: id, uploadId: frame.uploadId, filename: frame.filename,
       width: frame.width, height: frame.height, rotation: frame.rotation, viewingSha256: images.viewing.sha256,
       ...(frame.cropPosition ? { cropPosition: { x: frame.cropPosition.x, y: frame.cropPosition.y } } : {}),
+      ...(frame.filmStrength !== undefined ? { filmStrength: frame.filmStrength } : {}),
       viewingKey: images.viewing.key, thumbnailKey: images.thumbnail.key });
   }
   const roll = value.roll;
@@ -272,6 +273,7 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
       const upload = await completedUpload(env, frame.uploadId);
       const publicFrame: GalleryRoll['frames'][number] = { id: frame.id, width: frame.width, height: frame.height, rotation: frame.rotation,
         ...(frame.cropPosition ? { cropPosition: { x: frame.cropPosition.x, y: frame.cropPosition.y } } : {}),
+        ...(frame.filmStrength !== undefined ? { filmStrength: frame.filmStrength } : {}),
         viewing: null!, thumbnail: null! };
       for (const kind of kinds) {
         const image = upload.images[kind], source = await env.PRIVATE_BUCKET.get(image.key);

@@ -62,8 +62,6 @@
 .film-panel .film-stock-info p, .film-panel .table-field p { color: var(--panel-muted); }
 .film-panel .film-stock-type, .film-panel output { color: var(--panel-brass); }
 .film-panel output { font-family: monospace; font-variant-numeric: tabular-nums; }
-.film-panel .film-strength-scale { color: var(--panel-muted); opacity: 1; font: 10px/1.4 monospace; }
-.film-panel .film-strength-control small { color: var(--panel-muted); opacity: 1; }
 .film-panel.film-panel button {
   min-height: 44px; color: var(--panel-ink); border: 1px solid #816345;
   border-radius: 3px; background: linear-gradient(#403225,#2b2119);

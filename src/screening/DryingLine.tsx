@@ -43,7 +43,7 @@ export function DryingLine({ roll, textures, stockId, filmStrength, session }: {
   useEffect(() => () => materials.forEach(material => material.dispose()), [materials]);
   layout.prints.forEach((print, i) => {
     materials[i].uniforms.uTexture.value = textures[print.index] ?? null;
-    updateFilmLook(materials[i], stockId, filmStrength, print.photo.width / FILM_UNIT, print.photo.height / FILM_UNIT, filmGrainSeed(roll.frames[print.index]?.id ?? String(i)));
+    updateFilmLook(materials[i], stockId, roll.frames[print.index]?.filmStrength ?? filmStrength, print.photo.width / FILM_UNIT, print.photo.height / FILM_UNIT, filmGrainSeed(roll.frames[print.index]?.id ?? String(i)));
   });
   const groups = useRef<(THREE.Group | null)[]>([]);
   // A gentle, deterministic sway about the line; none with reduced motion.
