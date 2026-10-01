@@ -50,9 +50,7 @@ async function library(page: Page, name = 'darkroom-guest-rolls') {
 const player = (page: Page) => page.getByTestId('screening-player');
 const time = async (page: Page) => Number(await player(page).getAttribute('data-time'));
 async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Projector' | 'Darkroom' | 'Orbit' | 'Drying Line' | 'Documentary', pace = 'Normal') {
-  // Phones hide the Focus header button; Settings offers Screen roll in every layout.
-  if (await page.getByTestId('screen-roll').isVisible()) await page.getByTestId('screen-roll').click();
-  else { await openViewingTools(page); await page.getByTestId('screen-roll-tools').click(); }
+  await page.getByTestId('screen-roll').click();
   const picker = page.getByRole('dialog', { name: 'Screen roll' });
   await expect(picker).toBeVisible();
   await picker.getByRole('radio', { name: new RegExp(`^${reel}`) }).check();

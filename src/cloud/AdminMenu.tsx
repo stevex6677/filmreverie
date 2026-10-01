@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ownerClient } from './ownerClient';
-import type { LayoutPreference } from '../utils/useMobileLayout';
 
 export function useAdminSession(enabled: boolean) {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -29,8 +28,8 @@ export function CreateYourOwnLink({ film = false }: { film?: boolean }) {
   </a>;
 }
 
-export function AdminMenu({ loggedIn, guest, layout, onLayoutChange, compact = false }: {
-  loggedIn: boolean; guest: boolean; layout: LayoutPreference; onLayoutChange: (next: LayoutPreference) => void; compact?: boolean;
+export function AdminMenu({ loggedIn, compact = false }: {
+  loggedIn: boolean; compact?: boolean;
 }) {
   const loginEndpoint = import.meta.env.VITE_FILM_PHOTO_ADMIN_LOGIN_URL || '/api/owner/session';
   const loginUrl = loginEndpoint === '/api/dev-auth/login'
@@ -60,7 +59,7 @@ export function AdminMenu({ loggedIn, guest, layout, onLayoutChange, compact = f
     return () => document.removeEventListener('pointerdown', dismiss);
   }, [open]);
   return <div className="owner-nav-actions">
-    {!guest && !compact && <CreateYourOwnLink />}
+    {!compact && <CreateYourOwnLink />}
     <div className="admin-menu" ref={container} onBlur={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) setOpen(false); }} onKeyDown={event => {
       if (event.key === 'Escape') { event.stopPropagation(); setOpen(false); trigger.current?.focus(); }
       if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
@@ -74,14 +73,8 @@ export function AdminMenu({ loggedIn, guest, layout, onLayoutChange, compact = f
     }}>
       <button ref={trigger} aria-label="More options" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>{compact ? '…' : '⋮'}</button>
       {open && <div ref={dropdown} className="admin-menu-dropdown" role="menu" aria-label="More options">
-        {!guest && (loggedIn ? <button role="menuitem" aria-disabled="true">Logged in</button>
-          : <a role="menuitem" href={loginUrl}>Admin Login</a>)}
-        <div className="layout-menu-options" role="group" aria-label="Layout">
-          <p aria-hidden="true">Layout</p>
-          {(['auto', 'desktop'] as const).map(value => <button key={value} role="menuitemradio" aria-checked={layout === value} onClick={() => { setOpen(false); onLayoutChange(value); trigger.current?.focus(); }}>
-            {value === 'auto' ? 'Auto' : 'Desktop'}<span aria-hidden="true">{layout === value ? '✓' : ''}</span>
-          </button>)}
-        </div>
+        {loggedIn ? <button role="menuitem" aria-disabled="true">Logged in</button>
+          : <a role="menuitem" href={loginUrl}>Admin Login</a>}
       </div>}
     </div>
   </div>;

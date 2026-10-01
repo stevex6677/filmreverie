@@ -19,6 +19,9 @@
 }
 .darkroom-app-container:has(.film-strip-header) { --film-panel-top: calc(max(14px, env(safe-area-inset-top)) + 110px); }
 .film-panel.table-panel, .film-panel.mobile-sheet {
+  /* Non-modal settings must sit above the scene in both room layouts. */
+  position: fixed;
+  z-index: 11;
   inset: var(--film-panel-top,12px) max(12px,env(safe-area-inset-right)) 12px auto;
   width: 360px; max-width: calc(100% - 40px); margin: 0;
   height: fit-content;
