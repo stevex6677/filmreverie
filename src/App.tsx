@@ -47,6 +47,9 @@ import { ScreeningSession, type ExportFormat, type ScreeningChoice, type Screeni
 import { ScreeningPicker, ScreeningPlayer } from './screening/ScreeningUI';
 import { createScreeningTimeline } from './screening/reels';
 import { screeningFileName } from './screening/overlay';
+import { IntroTour, shouldOfferIntroTour } from './tour/IntroTour';
+import { TourAnchors } from './tour/TourAnchors';
+import type { TourStage } from './tour/tourSteps';
 
 // Export code (encoder and MP4 writer) loads on demand, not at startup.
 const ScreeningExportView = lazy(() => import('./screening/ScreeningExportView'));
@@ -106,6 +109,10 @@ export function App() {
       isReducedMotion: reducedMotionParam || prefersReducedMotion,
     };
   }, []);
+
+  // First visitors to the public room get a guided tour once loading has finished.
+  const [tourWanted, setTourWanted] = useState(() => !isGuest && !isDeterministic && shouldOfferIntroTour(new URLSearchParams(window.location.search)));
+  const [touring, setTouring] = useState(false);
 
   const [injectedError, setInjectedError] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -176,6 +183,13 @@ export function App() {
   }, [isDeterministic]);
 
   useEffect(() => {
+    if (!tourWanted || touring || !appReady || !cameraSettled || state.error) return;
+    // Start once the loading overlay has finished dissolving.
+    const timer = window.setTimeout(() => setTouring(true), 900);
+    return () => window.clearTimeout(timer);
+  }, [tourWanted, touring, appReady, cameraSettled, state.error]);
+
+  useEffect(() => {
     if (!appReady || !cameraSettled || state.roomMode !== 'room') return;
     // Let the loading overlay finish its dissolve before background decoding.
     const timer = window.setTimeout(() => { void preloadCameraDetails(CAMERAS); }, 800);
@@ -231,7 +245,7 @@ export function App() {
     : isGuest ? 'No roll on the light table'
       : published.loading ? 'Loading published photographs…' : published.error || 'No published roll on the light table';
   const createAction = !isGuest ? <CreateYourOwnLink film /> : undefined;
-  const ownerActions = isGuest ? undefined : <AdminMenu compact={state.roomMode === 'room' || !state.focusMode} loggedIn={adminLoggedIn} />;
+  const ownerActions = isGuest ? undefined : <AdminMenu compact={state.roomMode === 'room' || !state.focusMode} loggedIn={adminLoggedIn} onTour={() => setTourWanted(true)} />;
   const openShelf = () => {
     void saveView().catch(error => setLibraryError(storageMessage(error)));
     shelf.close();
@@ -286,18 +300,67 @@ export function App() {
       try { if (isGuest) localStorage.setItem(guestActiveRollKey, id); } catch { /* IndexedDB remains authoritative. */ }
     } catch (error) { runtime.dispose(); throw error; }
   };
+  const applyCloudRoll = (runtime: GalleryRuntime) => {
+    const previous = ownedRuntime.current;
+    ownedRuntime.current = runtime;
+    dispatch({ type: 'LOAD_ROLL', roll: { ...runtime.definition, imported: false }, stockId: runtime.stockId, filmStrength: runtime.filmStrength, view: runtime.view });
+    previous?.dispose();
+    setCloudSource('gallery'); setLibraryError(''); shelf.close(); setSheet(null);
+  };
   const openCloudRoll = async (runtime: GalleryRuntime) => {
     const request = ++switchRequest.current;
     try {
       await saveView();
       if (request !== switchRequest.current) { runtime.dispose(); return; }
-      const previous = ownedRuntime.current;
-      ownedRuntime.current = runtime;
-      dispatch({ type: 'LOAD_ROLL', roll: { ...runtime.definition, imported: false }, stockId: runtime.stockId, filmStrength: runtime.filmStrength, view: runtime.view });
-      previous?.dispose();
-      setCloudSource('gallery'); setLibraryError(''); shelf.close(); setSheet(null);
+      applyCloudRoll(runtime);
     } catch (error) { runtime.dispose(); throw error; }
   };
+
+  // The tour lays the newest published roll on the table. Until one is ready
+  // (or when nothing is published), it shows the bundled sample roll instead.
+  const tourRoll = useRef<GalleryRuntime | null>(null);
+  useEffect(() => {
+    if (!touring || isGuest || cloudSource || published.loading) return;
+    const newest = published.shelf.rolls.reduce<StoredRoll | undefined>((best, item) => !best || item.createdAt > best.createdAt ? item : best, undefined);
+    if (!newest) return;
+    let cancelled = false;
+    void published.open(newest.id).then(runtime => {
+      if (cancelled) runtime.dispose();
+      else { tourRoll.current?.dispose(); tourRoll.current = runtime; }
+    }).catch(() => { /* The sample roll stands in. */ });
+    return () => { cancelled = true; };
+  }, [touring, published.loading]);
+  const tourShowcase = touring && !tableRollAvailable;
+  const tableShowsRoll = tableRollAvailable || tourShowcase;
+  const tourStage: TourStage = {
+    state: () => stateRef.current,
+    dispatch,
+    reducedMotion: isReducedMotion,
+    approachTable: () => {
+      const runtime = tourRoll.current;
+      tourRoll.current = null;
+      shelf.close();
+      if (runtime) { ++switchRequest.current; applyCloudRoll(runtime); }
+      else dispatch({ type: 'APPROACH_TABLE' });
+    },
+    screen: () => {
+      const current = stateRef.current;
+      if (current.roomMode !== 'inspect' || current.loupe.isActive) return;
+      const session = new ScreeningSession(current.roll, { reel: 'develop', pace: 'normal', tuning: {} }, { stockType: getFilmStock(current.filmStockId).type, reducedMotion: isReducedMotion }, screeningCredits, current.viewportAspect);
+      // Join the reel as the table light comes on, just before the first frame develops.
+      session.seek(Math.max(0, session.timeline.frameStart(0) - 1.6));
+      setScreeningExport(null); setScreening(session);
+    },
+    pauseScreening: paused => { if (screening) { if (paused) screening.pause(); else screening.play(); } },
+    endScreening: () => { if (screening) { setScreeningExport(null); setScreening(null); } },
+  };
+  const endTour = () => {
+    setTouring(false); setTourWanted(false);
+    tourRoll.current?.dispose(); tourRoll.current = null;
+  };
+  const mainRef = useRef<HTMLElement>(null);
+  // The room stays visible but inert while the tour drives it.
+  useEffect(() => { mainRef.current?.toggleAttribute('inert', touring); }, [touring]);
   useEffect(() => {
     if (!isGuest) return () => { ++switchRequest.current; ownedRuntime.current?.dispose(); };
     let id: string | null = null; try { id = localStorage.getItem(guestActiveRollKey); } catch { /* Library reports availability when opened. */ }
@@ -345,7 +408,7 @@ export function App() {
   // Keyboard shortcut support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (screening || screeningPicker) return;
+      if (touring || screening || screeningPicker) return;
       if (state.cameraDisplay || editorOpen || cloudDialogOpen || sheet==='frames') return;
       // Panel controls own their keys; the focused film can still move the loupe.
       if (sheet==='loupe' && !(e.key.startsWith('Arrow') && e.target instanceof HTMLElement && e.target.closest('.canvas-wrapper'))) return;
@@ -422,7 +485,7 @@ export function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [state.cameraDisplay, state.roomMode, state.adjustingView, state.shelfFocused, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, state.loupe, roll, editorOpen, cloudDialogOpen, sheet, screening, screeningPicker]);
+  }, [state.cameraDisplay, state.roomMode, state.adjustingView, state.shelfFocused, state.focusMode, state.activeFrameIndex, state.isTransitioning, state.tableBrightness, state.loupe, roll, editorOpen, cloudDialogOpen, sheet, screening, screeningPicker, touring]);
 
   const localError = new URLSearchParams(window.location.search).get("roll") === "local" ? validateRoll(LOCAL_ROLL) : null;
   if (localError) return <>
@@ -446,6 +509,7 @@ export function App() {
         onFullyLoaded={handleFullyLoaded}
       />
     <main
+      ref={mainRef}
       className={`darkroom-app-container ${roll !== BASELINE_ROLL ? "full-roll" : ""} ${mobile?'mobile-layout':''} ${state.roomMode==='inspect'?'table-layout':''}`}
       data-table-mode={state.focusMode?'focus':'overview'}
       data-roll-id={tableRollAvailable ? roll.rollId : ''}
@@ -483,6 +547,7 @@ export function App() {
       data-reduced-motion={isReducedMotion ? "true" : "false"}
       data-screening={screening ? screeningExport ? 'export' : 'preview' : ''}
       data-screening-reel={screening?.choice.reel ?? ''}
+      data-intro-tour={touring}
     >
       {injectedError || state.error ? (
         <div className="darkroom-error-fallback" data-testid="error-banner">
@@ -520,12 +585,12 @@ export function App() {
               }}
             >
               <ViewingTableScene
-                showRoll={tableRollAvailable}
+                showRoll={tableShowsRoll}
                 readOnlyShelf={!canManageRolls}
                 coverSource={canManageRolls ? managedCoverSource : published.cover}
                 shelf={shelf}
                 shelfPortal={shelfPortal}
-                inputBlocked={!!state.cameraDisplay || editorOpen || cloudDialogOpen || sheet==='frames' || (state.roomMode==='room' && !!sheet) || hidden || contextLost || !!screening || screeningPicker}
+                inputBlocked={touring || !!state.cameraDisplay || editorOpen || cloudDialogOpen || sheet==='frames' || (state.roomMode==='room' && !!sheet) || hidden || contextLost || !!screening || screeningPicker}
                 state={state}
                 dispatch={dispatch}
                 isDeterministic={isDeterministic}
@@ -535,6 +600,7 @@ export function App() {
                 onCameraSettled={handleCameraSettled}
                 screening={screening}
               />
+              {touring && <TourAnchors />}
             </Canvas>
           </div>
         </Suspense>
@@ -585,7 +651,7 @@ export function App() {
         ? mobile
           ? <MobileControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenRoom={openRoom} onOpenTable={openTable} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} emptyRollMessage={emptyRollMessage} ownerActions={ownerActions} createAction={createAction} />
           : <Controls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenRoom={openRoom} onOpenTable={openTable} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} emptyRollMessage={emptyRollMessage} ownerActions={ownerActions} createAction={createAction} />
-        : !tableRollAvailable
+        : !tableShowsRoll
           ? <div className="empty-film-table">
               <MobileControls roomOnly state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenRoom={openRoom} onOpenTable={openTable} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} ownerActions={ownerActions} createAction={createAction} />
               <p>{emptyRollMessage}</p>
@@ -611,6 +677,7 @@ export function App() {
       {editorOpen && <RollEditor publication={!isGuest} repository={repository} onDelete={deleteRoll} editId={editingRollId} onClose={() => { setEditorOpen(false); setEditingRollId(undefined); }} onOpen={openSaved} />}
       {isGuest && guestWelcome && <GuestWelcome onClose={() => { try { localStorage.setItem(guestWelcomeKey, 'done'); } catch { /* Browsing can continue when localStorage is blocked. */ } setGuestWelcome(false); }} />}
     </main>
+      {touring && <IntroTour stage={tourStage} onClose={endTour} createHref="/guest?welcome=1" />}
     </div>
   );
 }
