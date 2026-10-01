@@ -1,9 +1,56 @@
 import { test, expect } from '@playwright/test';
 import { CAMERAS } from '../../src/data/cameras';
-import { ready } from './helpers/shelf';
+import { ready, screenPoint } from './helpers/shelf';
 import { openCamera } from './helpers/camera';
+import { CAMERA_SHELF_ORIGIN, cameraShelfSlot, mm } from '../../src/data/physicalScale';
 
 test.use({ serviceWorkers: 'block', actionTimeout: 30000 });
+
+test('camera tap paints loading feedback before 3D setup and allows leaving a pending model', async ({ page }) => {
+  const camera = CAMERAS[0];
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => release = resolve);
+  await page.route(`**${camera.url}`, async route => { await gate; await route.continue(); });
+  try {
+    await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page);
+    await page.getByRole('button', { name: 'Cameras', exact: true }).click(); await ready(page);
+    await page.evaluate(() => {
+      // Observe a rendering opportunity with feedback before expensive WebGL
+      // setup. Merely finding DOM nodes after the click misses a blocked paint.
+      let feedbackFrames = 0;
+      const frame = () => {
+        if (document.querySelector('.camera-load-status')) feedbackFrames++;
+        requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+      const original = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: Parameters<typeof original>) {
+        const display = document.querySelector<HTMLElement>('.camera-display');
+        if (String(args[0]).includes('webgl') && display) display.dataset.feedbackFramesBeforeSetup = String(feedbackFrames);
+        return original.apply(this, args);
+      } as typeof original;
+    });
+    const slot = cameraShelfSlot(0);
+    const point = await screenPoint(page, [CAMERA_SHELF_ORIGIN[0] - slot.z, CAMERA_SHELF_ORIGIN[1] + slot.y + mm(110), CAMERA_SHELF_ORIGIN[2] + slot.x]);
+    if (await page.evaluate(() => navigator.maxTouchPoints > 0)) await page.touchscreen.tap(point.x, point.y);
+    else await page.mouse.click(point.x, point.y);
+    const display = page.locator('.camera-display');
+    await expect(display).toBeVisible();
+    await expect(display).toHaveAttribute('data-model-ready', 'false');
+    await expect(page.getByRole('status')).toHaveText(`Opening ${camera.name}…`);
+    await expect.poll(async () => Number(await display.getAttribute('data-feedback-frames-before-setup'))).toBeGreaterThan(0);
+    await expect(page.getByRole('button', { name: 'Front', exact: true })).toBeDisabled();
+    await page.getByRole('button', { name: 'Back to shelf' }).click();
+    await expect(display).toHaveCount(0); await ready(page);
+    // Reopening shares the pending request and still responds before it ends.
+    await openCamera(page, camera.name);
+    await expect(page.getByRole('status')).toHaveText(`Opening ${camera.name}…`);
+    release();
+    await expect(display).toHaveAttribute('data-model-ready', 'true', { timeout: 90000 });
+    await expect(page.getByRole('status')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Front', exact: true })).toBeEnabled();
+  } finally { release(); }
+});
 
 test('cabinet waits for all five models, then preloads details serially without blocking inspection', async ({ page }) => {
   const last = CAMERAS.at(-1)!;

@@ -35,88 +35,96 @@ export function CameraDisplayView({ id, stockId, onBack, reducedMotion }: { id: 
     let disposed = false, renderer: THREE.WebGLRenderer | undefined;
     let cleanup = () => {};
     setReady(false); setError(''); setAuto(false); setPreset('home'); setUsed(false);
-    try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-      renderer.setPixelRatio(Math.min(devicePixelRatio, matchMedia('(pointer:coarse)').matches ? 1.25 : 1.6));
-      renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = entry.exposure;
-      stage.append(renderer.domElement);
-      const gl = renderer;
-      const lost = (event: Event) => { event.preventDefault(); setReady(false); setError('The graphics view was interrupted. Restore the model to continue.'); };
-      gl.domElement.addEventListener('webglcontextlost', lost);
-      const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(34, 1, .003, 80);
-      const environment = studioEnvironment(gl); scene.environment = environment.texture;
-      scene.add(new THREE.HemisphereLight(0xffffff, 0x74746f, 1));
-      const key = new THREE.DirectionalLight(0xfffaf2, .7); key.position.set(-3, 6, 4); scene.add(key);
-      const fill = new THREE.DirectionalLight(0xeaf1ff, .6); fill.position.set(3, 1, -2); scene.add(fill);
-      const controls = orbitControls(camera, gl.domElement, .2, 8);
-      let size: THREE.Vector3 | undefined, fitted = 2;
-      function draw() {
-        if (disposed || document.hidden || gl.getContext().isContextLost()) return;
-        controls.target.clampLength(0, size ? size.length() * 1.2 : 2);
-        controls.update(); gl.render(scene, camera);
-        gl.domElement.dataset.viewPosition = camera.position.toArray().map(n => n.toFixed(5)).join(',');
-        gl.domElement.dataset.viewTarget = controls.target.toArray().map(n => n.toFixed(5)).join(',');
-        gl.domElement.dataset.geometries = String(gl.info.memory.geometries);
-      }
-      const loop = createRenderLoop(draw, () => controls.autoRotate && !document.hidden && !gl.getContext().isContextLost());
-      function render() { if (!document.hidden && !disposed) loop.invalidate(); }
-      const setView = (view: View) => {
-        controls.autoRotate = false; setAuto(false);
-        // Flush residual damping before applying a new precise preset.
-        controls.enableDamping = false; controls.update();
-        camera.position.fromArray(viewDirections[view]).normalize().multiplyScalar(fitted);
-        controls.target.set(0, 0, 0); controls.update(); controls.enableDamping = true;
-        setPreset(view); render();
-      };
-      const observer = new ResizeObserver(() => {
-        const { width, height } = stage.getBoundingClientRect();
-        if (!width || !height) return;
-        const oldFit = fitted;
-        camera.aspect = width / height; camera.updateProjectionMatrix(); gl.setSize(width, height);
-        if (size) {
-          fitted = fittedDistance(size, camera.aspect);
-          // Preserve inspected angle, pan and zoom ratio across orientation changes.
-          camera.position.sub(controls.target).multiplyScalar(fitted / oldFit).add(controls.target);
-          controls.maxDistance = fitted * 3;
+    const initialize = () => {
+      try {
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+        renderer.setPixelRatio(Math.min(devicePixelRatio, matchMedia('(pointer:coarse)').matches ? 1.25 : 1.6));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = entry.exposure;
+        stage.append(renderer.domElement);
+        const gl = renderer;
+        const lost = (event: Event) => { event.preventDefault(); setReady(false); setError('The graphics view was interrupted. Restore the model to continue.'); };
+        gl.domElement.addEventListener('webglcontextlost', lost);
+        const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(34, 1, .003, 80);
+        const environment = studioEnvironment(gl); scene.environment = environment.texture;
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x74746f, 1));
+        const key = new THREE.DirectionalLight(0xfffaf2, .7); key.position.set(-3, 6, 4); scene.add(key);
+        const fill = new THREE.DirectionalLight(0xeaf1ff, .6); fill.position.set(3, 1, -2); scene.add(fill);
+        const controls = orbitControls(camera, gl.domElement, .2, 8);
+        let size: THREE.Vector3 | undefined, fitted = 2;
+        function draw() {
+          if (disposed || document.hidden || gl.getContext().isContextLost()) return;
+          controls.target.clampLength(0, size ? size.length() * 1.2 : 2);
+          controls.update(); gl.render(scene, camera);
+          gl.domElement.dataset.viewPosition = camera.position.toArray().map(n => n.toFixed(5)).join(',');
+          gl.domElement.dataset.viewTarget = controls.target.toArray().map(n => n.toFixed(5)).join(',');
+          gl.domElement.dataset.geometries = String(gl.info.memory.geometries);
         }
-        render();
-      });
-      observer.observe(stage);
-      controls.addEventListener('change', render);
-      const started = () => { setUsed(true); setPreset(null); controls.autoRotate = false; setAuto(false); };
-      controls.addEventListener('start', started);
-      const visibility = () => { if (document.hidden) loop.pause(); else render(); };
-      document.addEventListener('visibilitychange', visibility);
-      actions.current = {
-        view: setView,
-        zoom: factor => { camera.position.sub(controls.target).clampLength(controls.minDistance / factor, controls.maxDistance / factor).multiplyScalar(factor).add(controls.target); setUsed(true); render(); },
-        turn: (x, y) => {
-          const spherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
-          spherical.theta += x; spherical.phi = THREE.MathUtils.clamp(spherical.phi + y, .00001, Math.PI - .00001);
-          camera.position.setFromSpherical(spherical).add(controls.target); setUsed(true); setPreset(null); render();
-        },
-        auto: enabled => { controls.autoRotate = enabled && !reducedMotion; setAuto(controls.autoRotate); render(); },
-      };
-      cleanup = () => {
-        loop.dispose(); observer.disconnect(); controls.dispose();
-        document.removeEventListener('visibilitychange', visibility);
-        gl.domElement.removeEventListener('webglcontextlost', lost);
-        environment.dispose(); gl.dispose(); gl.forceContextLoss(); gl.domElement.remove(); actions.current = null;
-      };
-      loadCameraModel(entry).then(source => {
-        if (disposed) return;
-        const mounted = mountModel(source, entry.rotation, mm(entry.widthMm));
-        scene.add(mounted.object); size = mounted.size;
-        fitted = fittedDistance(size, camera.aspect);
-        controls.minDistance = size.length() * .24; controls.maxDistance = fitted * 3;
-        gl.domElement.dataset.modelWidth = String(size.x);
-        gl.domElement.dataset.modelId = entry.id;
-        setView('home');
-        controls.autoRotate = !reducedMotion; setAuto(controls.autoRotate);
-        setReady(true); render();
-      }).catch(() => { if (!disposed) setError(navigator.onLine ? 'The camera model could not be loaded. Check the connection and try again.' : "Camera model isn't available offline. Download it when connected."); });
-    } catch { setError('The 3D view is unavailable. You can still read about this camera or return to the shelf.'); }
-    return () => { disposed = true; cleanup(); if (renderer && renderer.domElement.parentNode) { renderer.dispose(); renderer.domElement.remove(); } };
+        const loop = createRenderLoop(draw, () => controls.autoRotate && !document.hidden && !gl.getContext().isContextLost());
+        function render() { if (!document.hidden && !disposed) loop.invalidate(); }
+        const setView = (view: View) => {
+          controls.autoRotate = false; setAuto(false);
+          // Flush residual damping before applying a new precise preset.
+          controls.enableDamping = false; controls.update();
+          camera.position.fromArray(viewDirections[view]).normalize().multiplyScalar(fitted);
+          controls.target.set(0, 0, 0); controls.update(); controls.enableDamping = true;
+          setPreset(view); render();
+        };
+        const observer = new ResizeObserver(() => {
+          const { width, height } = stage.getBoundingClientRect();
+          if (!width || !height) return;
+          const oldFit = fitted;
+          camera.aspect = width / height; camera.updateProjectionMatrix(); gl.setSize(width, height);
+          if (size) {
+            fitted = fittedDistance(size, camera.aspect);
+            // Preserve inspected angle, pan and zoom ratio across orientation changes.
+            camera.position.sub(controls.target).multiplyScalar(fitted / oldFit).add(controls.target);
+            controls.maxDistance = fitted * 3;
+          }
+          render();
+        });
+        observer.observe(stage);
+        controls.addEventListener('change', render);
+        const started = () => { setUsed(true); setPreset(null); controls.autoRotate = false; setAuto(false); };
+        controls.addEventListener('start', started);
+        const visibility = () => { if (document.hidden) loop.pause(); else render(); };
+        document.addEventListener('visibilitychange', visibility);
+        actions.current = {
+          view: setView,
+          zoom: factor => { camera.position.sub(controls.target).clampLength(controls.minDistance / factor, controls.maxDistance / factor).multiplyScalar(factor).add(controls.target); setUsed(true); render(); },
+          turn: (x, y) => {
+            const spherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
+            spherical.theta += x; spherical.phi = THREE.MathUtils.clamp(spherical.phi + y, .00001, Math.PI - .00001);
+            camera.position.setFromSpherical(spherical).add(controls.target); setUsed(true); setPreset(null); render();
+          },
+          auto: enabled => { controls.autoRotate = enabled && !reducedMotion; setAuto(controls.autoRotate); render(); },
+        };
+        cleanup = () => {
+          loop.dispose(); observer.disconnect(); controls.dispose();
+          document.removeEventListener('visibilitychange', visibility);
+          gl.domElement.removeEventListener('webglcontextlost', lost);
+          environment.dispose(); gl.dispose(); gl.forceContextLoss(); gl.domElement.remove(); actions.current = null;
+        };
+        loadCameraModel(entry).then(source => {
+          if (disposed) return;
+          const mounted = mountModel(source, entry.rotation, mm(entry.widthMm));
+          scene.add(mounted.object); size = mounted.size;
+          fitted = fittedDistance(size, camera.aspect);
+          controls.minDistance = size.length() * .24; controls.maxDistance = fitted * 3;
+          gl.domElement.dataset.modelWidth = String(size.x);
+          gl.domElement.dataset.modelId = entry.id;
+          setView('home');
+          controls.autoRotate = !reducedMotion; setAuto(controls.autoRotate);
+          setReady(true); render();
+        }).catch(() => { if (!disposed) setError(navigator.onLine ? 'The camera model could not be loaded. Check the connection and try again.' : "Camera model isn't available offline. Download it when connected."); });
+      } catch { setError('The 3D view is unavailable. You can still read about this camera or return to the shelf.'); }
+    };
+    // React can run click-triggered effects before the browser paints. Give
+    // the opening status and Back button a frame before costly WebGL setup,
+    // environment generation and mounting an already-cached model.
+    let setupFrame = requestAnimationFrame(() => {
+      setupFrame = requestAnimationFrame(initialize);
+    });
+    return () => { disposed = true; cancelAnimationFrame(setupFrame); cleanup(); if (renderer && renderer.domElement.parentNode) { renderer.dispose(); renderer.domElement.remove(); } };
   }, [entry, attempt, reducedMotion]);
   if (!entry) return <section className="camera-display"><button onClick={onBack}>Back to shelf</button><p>Camera not found.</p></section>;
   const view = (value: View) => actions.current?.view(value);
