@@ -79,7 +79,7 @@
 .film-strip-header button:focus-visible { outline: 2px solid #ffe0a1; outline-offset: 3px; }
 .film-strip-header .owner-nav-actions { gap: 0; }
 .film-strip-header .admin-menu-dropdown { pointer-events: auto; background: #241c17; border-color: #6b5036; max-height: calc(var(--visible-height,100dvh) - 120px); overflow-y: auto; }
-.film-strip-header .admin-menu-dropdown > *, .film-strip-header .layout-menu-options button { background: #241c17; color: #f4e4c8; }
+.film-strip-header .admin-menu-dropdown > * { background: #241c17; color: #f4e4c8; }
 .film-strip-header .admin-menu-dropdown a { white-space: normal; }
 .table-controls:has(> .film-strip-header) > .table-header { top: 106px; padding-top: 6px; background: none; justify-content: center; }
 .table-controls > .film-strip-header { padding-top: max(14px,env(safe-area-inset-top)); }

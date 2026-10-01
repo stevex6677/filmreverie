@@ -74,7 +74,7 @@ export function App() {
     if (new URLSearchParams(window.location.search).get('welcome') === '1') return true;
     try { return localStorage.getItem(guestWelcomeKey) !== 'done'; } catch { return true; }
   });
-  const { mobile, layout, changeLayout } = useMobileLayout();
+  const { mobile } = useMobileLayout();
   const [sheet,setSheet]=useState<MobileSheet>(null);
   const [hidden,setHidden]=useState(document.hidden);
   const [contextLost,setContextLost]=useState(false);
@@ -222,10 +222,7 @@ export function App() {
     : isGuest ? 'No roll on the light table'
       : published.loading ? 'Loading published photographs…' : published.error || 'No published roll on the light table';
   const createAction = !isGuest ? <CreateYourOwnLink film /> : undefined;
-  const ownerActions = <AdminMenu compact={state.roomMode === 'room' || !state.focusMode} loggedIn={adminLoggedIn} guest={isGuest} layout={layout} onLayoutChange={next => {
-    setSheet(null); changeLayout(next);
-    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('button[aria-label="More options"]')?.focus());
-  }} />;
+  const ownerActions = isGuest ? undefined : <AdminMenu compact={state.roomMode === 'room' || !state.focusMode} loggedIn={adminLoggedIn} />;
   const openShelf = () => {
     void saveView().catch(error => setLibraryError(storageMessage(error)));
     shelf.close();

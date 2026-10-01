@@ -63,7 +63,6 @@ export function MobileControls({state,dispatch,onOpenLibrary,onOpenRoom,onOpenTa
           <button onClick={()=>{setSheet(null);dispatch({type:'FACE_TABLE'});}}>Face table</button>
           <button data-testid="approach-table-btn" onClick={()=>{setSheet(null);dispatch({type:'APPROACH_TABLE'});}}>Approach table</button>
         </div>}
-        <button onClick={()=>{setSheet(null);onOpenLibrary();}}>Film Shelf</button>
         {!room&&<button data-testid="return-room-btn" onClick={()=>{setSheet(null);dispatch({type:'RETURN_TO_ROOM'});}}>Return to Room</button>}
       </FilmPanelFrames>}
     </dialog>}

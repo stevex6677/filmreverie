@@ -60,7 +60,7 @@ test('the cartridge menu stays usable at phone, tablet and desktop widths', asyn
   for (const width of [320, 390, 820, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     const header = page.locator('.film-strip-header');
-    for (const name of ['Room', 'Film Shelf', 'Light Table', 'Cameras', 'Loupe', 'Settings', 'More options']) {
+    for (const name of ['Room', 'Film Shelf', 'Light Table', 'Cameras', 'Loupe', 'Settings']) {
       const button = header.getByRole('button', { name, exact: true });
       await button.scrollIntoViewIfNeeded();
       const bounds = (await button.boundingBox())!;
@@ -81,13 +81,7 @@ test('the cartridge menu stays usable at phone, tablet and desktop widths', asyn
     const label = (await header.locator('.film-frame-label').first().boundingBox())!;
     expect(label.y).toBeGreaterThan(strip.y + 16);
     expect(label.y + label.height).toBeLessThanOrEqual(strip.y + 70);
-    await header.getByRole('button', { name: 'More options', exact: true }).click();
-    const menu = page.getByRole('menu', { name: 'More options', exact: true });
-    const menuBounds = (await menu.boundingBox())!;
-    expect(menuBounds.x).toBeGreaterThanOrEqual(0);
-    expect(menuBounds.x + menuBounds.width).toBeLessThanOrEqual(width);
-    await page.keyboard.press('Escape');
-    await expect(header.getByRole('button', { name: 'More options', exact: true })).toBeFocused();
+    await expect(header.getByRole('button', { name: 'More options', exact: true })).toHaveCount(0);
     await page.screenshot({ path: info.outputPath(`film-menu-${width}.png`) });
   }
 });
@@ -100,6 +94,10 @@ test('settings stay below the film strip and can be closed after scrolling', asy
   for (const [width, height] of [[390, 844], [844, 390], [1024, 768], [1280, 900]]) {
     await page.setViewportSize({ width, height });
     await settings.click(); await expect(panel).toBeVisible();
+    await expect(panel.getByText('Screening', { exact: true })).toHaveCount(0);
+    await expect(panel.getByText('Inspection', { exact: true })).toHaveCount(0);
+    await expect(panel.getByTestId('screen-roll-tools')).toHaveCount(0);
+    await expect(panel.locator('.loupe-options')).toHaveCount(0);
     const stripBounds = (await header.boundingBox())!;
     expect((await panel.boundingBox())!.y).toBeGreaterThanOrEqual(stripBounds.y + stripBounds.height);
     await expect(panel.locator('header')).toHaveCount(0);
@@ -137,6 +135,38 @@ test('settings stay below the film strip and can be closed after scrolling', asy
   await expect(panel).toHaveCount(0); await expect(settings).toBeFocused();
 });
 
+test('room and film shelf settings expose usable room lighting above the canvas', async ({ page }, info) => {
+  await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page);
+  const main = page.locator('main');
+  const header = page.locator('.film-strip-header');
+  const settings = header.getByRole('button', { name: 'Settings', exact: true });
+  const panel = page.getByRole('dialog', { name: 'Viewing tools', exact: true });
+  for (const width of [390, 820, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const destination of ['Room', 'Film Shelf']) {
+      await header.getByRole('button', { name: destination, exact: true }).click(); await ready(page);
+      await settings.click();
+      await expect(settings).toHaveAttribute('aria-expanded', 'true');
+      const brightness = panel.getByRole('slider', { name: 'Room brightness', exact: true });
+      // Real pointer interaction catches a visible dialog covered by the canvas.
+      await brightness.click();
+      await brightness.fill('0.6');
+      await expect(main).toHaveAttribute('data-room-brightness', '0.6');
+      const lights = panel.getByRole('switch', { name: 'Room lights', exact: true });
+      await lights.click();
+      await expect(main).toHaveAttribute('data-room-brightness', '0');
+      await expect(lights).toHaveAttribute('aria-checked', 'false');
+      await lights.click();
+      await expect(main).toHaveAttribute('data-room-brightness', '0.6');
+      await expect(lights).toHaveAttribute('aria-checked', 'true');
+      await page.screenshot({ path: info.outputPath(`lighting-${destination.replace(' ', '-')}-${width}.png`) });
+      await settings.click(); await expect(panel).toHaveCount(0);
+      await settings.click(); await dismissOutside(page);
+      await expect(panel).toHaveCount(0); await expect(settings).toBeFocused();
+    }
+  }
+});
+
 test('Room and Light Table honor the latest selection during camera travel', async ({ page }) => {
   await page.goto('/guest?mode=room'); await ready(page);
   const nav = page.getByRole('navigation', { name: 'Explore the darkroom' });
@@ -163,12 +193,12 @@ test('frame chooser and loupe settings remain dismissible', async ({ page }, inf
   await expect(page.locator('main')).toHaveAttribute('data-selected-frame', '2');
   await expect(frames).toHaveCount(0);
   await page.getByTestId('loupe-activate').click();
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  const panel = page.getByRole('dialog', { name: 'Viewing tools', exact: true });
+  await page.getByTestId('loupe-customize').click();
+  const panel = page.getByRole('region', { name: 'Loupe settings', exact: true });
   await panel.getByTestId('mag-btn-8x').click();
-  await expect(panel.getByTestId('loupe-badge')).toHaveText('ACTIVE (8×)');
+  await expect(panel.getByTestId('mag-btn-8x')).toHaveAttribute('aria-pressed', 'true');
   await panel.evaluate(node => { node.scrollTop = node.scrollHeight; });
-  await dismissOutside(page);
+  await page.keyboard.press('Escape');
   await expect(panel).toHaveCount(0);
   await page.getByTestId('put-away-loupe').click();
   await expect(page.locator('main')).toHaveAttribute('data-loupe-active', 'false');

@@ -11,9 +11,9 @@ export const formatDuration = (seconds: number) => {
 
 /** The table's entry point, shown in Overview or Focus once the loupe is put away. */
 export function ScreenRollButton({ onClick, launch = false, disabled = false }: { onClick: () => void; launch?: boolean; disabled?: boolean }) {
-  return <button type="button" className={`screen-roll-button${launch ? ' is-launch' : ''}`} data-testid="screen-roll" aria-haspopup="dialog" disabled={disabled} onClick={onClick}>
+  return <button type="button" className={`screen-roll-button${launch ? ' is-launch' : ''}`} data-testid="screen-roll" aria-label="Screen roll" title="Screen roll" aria-haspopup="dialog" disabled={disabled} onClick={onClick}>
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="6.8" r="2"/><circle cx="12" cy="17.2" r="2"/><circle cx="6.8" cy="12" r="2"/><circle cx="17.2" cy="12" r="2"/></svg>
-    Screen roll
+    <span>Screen roll</span>
   </button>;
 }
 

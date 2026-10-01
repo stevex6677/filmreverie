@@ -1,4 +1,3 @@
-import { LoupeOptions } from './LoupeOptions';
 import { LoupeControls } from './LoupeControls';
 import { FilmPanelFrames } from './FilmPanelFrames';
 import { usePanelDismiss } from '../utils/usePanelDismiss';
@@ -88,15 +87,9 @@ export function TableControls({state,dispatch,onOpenLibrary,onOpenRoom,onOpenTab
         </button>;
       })}</div></FilmPanelFrames>:<FilmPanelFrames stockId={state.filmStockId} className="table-fields">
         <FilmStockInfo stockId={state.filmStockId}/>
-        {screen&&<div className="table-field"><span>Screening</span><button data-testid="screen-roll-tools" aria-haspopup="dialog" disabled={screenBlocked} onClick={screen}>Screen roll…</button></div>}
         <FilmStrengthControl state={state} dispatch={dispatch}/>
         <div className="table-field"><span>Rendering <output data-testid="mode-badge">{stock.type==='reversal'?'POSITIVE · E-6':state.filmMode.toUpperCase()}</output></span>{stock.type==='negative'&&<button id="mode-toggle" data-testid="mode-toggle" onClick={()=>dispatch({type:'TOGGLE_FILM_MODE'})}>Switch to {state.filmMode==='positive'?'Negative':'Positive'}</button>}</div>
         <label data-testid="dimmer-controls">Table light <output data-testid="brightness-badge"><span data-testid="brightness-value">{Math.round(state.tableBrightness*100)}%</span></output><input id="brightness-slider" data-testid="brightness-slider" aria-label="Light Table Brightness" type="range" min=".3" max="1" step=".01" value={state.tableBrightness} onChange={event=>dispatch({type:'SET_TABLE_BRIGHTNESS',brightness:Number(event.target.value)})}/></label>
-        <div className="table-field"><span>Inspection <output data-testid="loupe-badge">{state.loupe.isActive?`ACTIVE (${state.loupe.magnification}×)`:'RESTING'}</output></span><button id="loupe-toggle" data-testid="loupe-toggle" aria-pressed={state.loupe.isActive} onClick={()=>dispatch({type:'TOGGLE_LOUPE'})}>{state.loupe.isActive?'Rest Loupe':'Activate Loupe'}</button>
-          <LoupeOptions loupe={state.loupe} dispatch={dispatch}/>
-
-          {state.loupe.isActive&&<><button onClick={()=>{setSheet(null);dispatch({type:'INSPECT_LOUPE'});}}>Inspect</button><p>Drag the loupe, then tap its lens to inspect. Two fingers move the table.</p></>}
-        </div>
         {!focus && !inspecting && <div className="table-field">
           <button aria-pressed={state.adjustingView} onClick={()=>{setSheet(null);dispatch({type:'SET_ADJUSTING_VIEW',active:!state.adjustingView});}}>Drag to tilt and turn</button>
           <label>Tilt <output>{Math.round(state.tableAngle.tilt*180/Math.PI)}°</output><input aria-label="Table tilt" title="Double-click to reset to 0°" onDoubleClick={()=>dispatch({type:'SET_TABLE_ANGLE',angle:{...state.tableAngle,tilt:0}})} type="range" min="0" max="50" step="1" value={state.tableAngle.tilt*180/Math.PI} onChange={event=>dispatch({type:'SET_TABLE_ANGLE',angle:{...state.tableAngle,tilt:Number(event.target.value)*Math.PI/180}})}/></label>
