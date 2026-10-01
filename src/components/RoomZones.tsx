@@ -19,31 +19,7 @@ export function RoomZones() {
     <Box at={[-3.76, .45, 1.4]} size={[.04, .75, 1.2]} color="#70675a" />
     {[0, 1, 2].map(i => <Box key={i} at={[-3.73, .47, 1 + i * .36]} size={[.008, .45, .26]} color="#c1baaa" />)}
     </group>
-    {/* Complete developing station beneath the chemicals beside the door.
-        Turn the long bench along the rear wall; keep its left end clear of the doorway. */}
-    <group name="door-developing-bench" position={[1.9, 0, ROOM_ENVELOPE.back - .65]} rotation={[0, Math.PI / 2, 0]}>
-    <group position={[-3.22, 0, -1.3]}>
-    <Bench x={3.22} />
-    {/* Wet bench: deep stainless sink with raised sides, faucet, three trays. */}
-    <Box at={[3.22, -.74, .35]} size={[.68, .03, .65]} color="#414b50" metal={.8} />
-    {[-1, 1].map(i => <group key={i}><Box at={[3.22 + i * .32, -.65, .35]} size={[.04, .2, .68]} metal={.8} /><Box at={[3.22, -.65, .35 + i * .32]} size={[.68, .2, .04]} metal={.8} /></group>)}
-    <Box at={[3.5, -.43, .35]} size={[.035, .42, .035]} metal={.85} /><Box at={[3.39, -.24, .35]} size={[.25, .035, .035]} metal={.85} />
-    {[1.12, 1.8, 2.48].map((z, i) => <group key={z}>
-      <Box at={[3.22, -.725, z]} size={[.65, .035, .55]} color={["#dad5c7", "#7c9095", "#b2b7b2"][i]} />
-      {[-1, 1].map(n => <group key={n}><Box at={[3.22 + n * .31, -.69, z]} size={[.025, .08, .55]} color="#bac1bf" /><Box at={[3.22, -.69, z + n * .26]} size={[.65, .08, .025]} color="#bac1bf" /></group>)}
-    </group>)}
-    {/* The drying equipment now lives with the chemistry near the door. */}
-    </group>
-    </group>
-    <group position={[0, 0, ROOM_ENVELOPE.back - 5.1]}>
-    {/* Closed rear entrance with frame, handle, hinges and threshold. */}
-    <Box at={[-.8, floor + 1.15, 5.04]} size={[1.35, 2.3, .1]} color="#252a2c" />
-    <Box at={[-.8, floor + 1.13, 4.97]} size={[1.17, 2.15, .045]} color="#605c52" />
-    <Box at={[-.33, floor + 1.05, 4.92]} size={[.04, .24, .04]} metal={.8} />
-    <Box at={[-.8, floor + .018, 4.9]} size={[1.35, .035, .25]} metal={.7} />
-    {[-1.36, -.24].map(x => <Box key={x} at={[x, floor + 1.12, 4.935]} size={[.025, 2.1, .025]} color="#8a8170" />)}
-    {/* Box storage removed: clear floor access to the entrance equipment. */}
-    </group>
+    {/* The wet side and entrance along the rear wall live in WetSide. */}
     {/* Floor seams and a flat anti-fatigue mat provide scale under the eye. */}
     <Box at={[0, floor + .009, 2]} size={[3.8, .018, 1.5]} color="#272c2e" />
     {[-3,-1.5,0,1.5,3].map(x => <Box key={x} at={[x, floor + .002, 2]} size={[.008, .003, 6.2]} color="#292d2e" />)}

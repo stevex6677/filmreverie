@@ -1,5 +1,6 @@
 import { RoomLighting } from "./RoomLighting";
 import { RoomZones } from "./RoomZones";
+import { WetSide } from "./WetSide";
 import { ROOM_ENVELOPE } from "../utils/cameraBounds";
 import { getTableIllumination } from "../shaders/tableIllumination";
 
@@ -69,127 +70,6 @@ export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ cabinetOnly = false,
         <meshStandardMaterial color="#16181e" roughness={0.7} metalness={0.2} />
       </mesh>
 
-      {/* Chemicals, timer and drying clips beside the rear entrance, in place
-          of the removed box-storage unit. Faces into the room. */}
-      <group name="door-processing-equipment" position={[1.9, 0, ROOM_ENVELOPE.back - 1.15]} rotation={[0, Math.PI, 0]}>
-      {/* Wall-Mounted Equipment Shelf */}
-      <mesh castShadow receiveShadow position={[0, 1.35, -0.98]}>
-        <boxGeometry args={[2.7, 0.04, 0.24]} />
-        <meshStandardMaterial color="#191b22" roughness={0.7} metalness={0.3} />
-      </mesh>
-
-      {/* --- EQUIPMENT ON WALL SHELF --- */}
-      {/* 1. Classic Darkroom Interval Timer (GraLab 300 style) */}
-      <group position={[-0.85, 1.51, -0.96]}>
-        {/* Timer main rectangular housing */}
-        <mesh castShadow receiveShadow position={[0, 0, 0]}>
-          <boxGeometry args={[0.22, 0.24, 0.12]} />
-          <meshStandardMaterial color="#2d3748" roughness={0.5} metalness={0.3} />
-        </mesh>
-        {/* Circular luminous dial face */}
-        <mesh castShadow receiveShadow position={[0, 0.02, 0.061]}>
-          <circleGeometry args={[0.08, 24]} />
-          <meshStandardMaterial
-            color="#e2e8f0"
-            emissive="#a7f3d0"
-            emissiveIntensity={0.25}
-            roughness={0.3}
-          />
-        </mesh>
-        {/* Dual rocker power/focus switches */}
-        <mesh castShadow receiveShadow position={[-0.05, -0.07, 0.065]}>
-          <boxGeometry args={[0.025, 0.035, 0.015]} />
-          <meshStandardMaterial color="#dc2626" roughness={0.4} />
-        </mesh>
-        <mesh castShadow receiveShadow position={[0.05, -0.07, 0.065]}>
-          <boxGeometry args={[0.025, 0.035, 0.015]} />
-          <meshStandardMaterial color="#ffffff" roughness={0.4} />
-        </mesh>
-      </group>
-
-      {/* 2. Chemical Reagent Amber Jugs (Developer, Stop Bath, Fixer) */}
-      <group position={[0.75, 1.49, -0.96]}>
-        {/* Developer Jug */}
-        <group position={[-0.28, 0, 0]}>
-          <mesh castShadow receiveShadow position={[0, 0, 0]}>
-            <cylinderGeometry args={[0.055, 0.055, 0.22, 16]} />
-            <meshStandardMaterial color="#78350f" roughness={0.25} metalness={0.1} />
-          </mesh>
-          <mesh castShadow receiveShadow position={[0, 0.13, 0]}>
-            <cylinderGeometry args={[0.022, 0.03, 0.04, 12]} />
-            <meshStandardMaterial color="#1f2937" roughness={0.5} />
-          </mesh>
-          {/* Label */}
-          <mesh castShadow receiveShadow position={[0, 0, 0.056]}>
-            <planeGeometry args={[0.07, 0.10]} />
-            <meshStandardMaterial color="#fef3c7" roughness={0.8} />
-          </mesh>
-        </group>
-        {/* Stop Bath Jug */}
-        <group position={[0, 0, 0]}>
-          <mesh castShadow receiveShadow position={[0, 0, 0]}>
-            <cylinderGeometry args={[0.055, 0.055, 0.22, 16]} />
-            <meshStandardMaterial color="#78350f" roughness={0.25} metalness={0.1} />
-          </mesh>
-          <mesh castShadow receiveShadow position={[0, 0.13, 0]}>
-            <cylinderGeometry args={[0.022, 0.03, 0.04, 12]} />
-            <meshStandardMaterial color="#f59e0b" roughness={0.5} />
-          </mesh>
-          {/* Label */}
-          <mesh castShadow receiveShadow position={[0, 0, 0.056]}>
-            <planeGeometry args={[0.07, 0.10]} />
-            <meshStandardMaterial color="#fef3c7" roughness={0.8} />
-          </mesh>
-        </group>
-        {/* Fixer Jug */}
-        <group position={[0.28, 0, 0]}>
-          <mesh castShadow receiveShadow position={[0, 0, 0]}>
-            <cylinderGeometry args={[0.055, 0.055, 0.22, 16]} />
-            <meshStandardMaterial color="#78350f" roughness={0.25} metalness={0.1} />
-          </mesh>
-          <mesh castShadow receiveShadow position={[0, 0.13, 0]}>
-            <cylinderGeometry args={[0.022, 0.03, 0.04, 12]} />
-            <meshStandardMaterial color="#2563eb" roughness={0.5} />
-          </mesh>
-          {/* Label */}
-          <mesh castShadow receiveShadow position={[0, 0, 0.056]}>
-            <planeGeometry args={[0.07, 0.10]} />
-            <meshStandardMaterial color="#fef3c7" roughness={0.8} />
-          </mesh>
-        </group>
-      </group>
-
-      {/* 3. Film Drying Wire with Hanging Clips (Upper Left Wall) */}
-      <group position={[-.15, 2.05, -0.92]}>
-        <mesh castShadow receiveShadow position={[0, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.002, 0.002, 1.8, 8]} />
-          <meshStandardMaterial color="#94a3b8" metalness={0.35} roughness={0.3} />
-        </mesh>
-        {/* Film clips & hanging test negative strips */}
-        {[-0.6, -0.2, 0.2, 0.6].map((clipX, i) => (
-          <group key={i} position={[clipX, 0, 0]}>
-            {/* Wooden/metal clip */}
-            <mesh castShadow receiveShadow position={[0, -0.03, 0]}>
-              <boxGeometry args={[0.02, 0.06, 0.015]} />
-              <meshStandardMaterial color="#d97706" roughness={0.6} />
-            </mesh>
-            {/* Hanging film strip */}
-            <mesh castShadow receiveShadow position={[0, -0.22, 0]}>
-              <planeGeometry args={[0.06, 0.32]} />
-              <meshStandardMaterial
-                color="#0f172a"
-                roughness={0.2}
-                metalness={0.1}
-                transparent={true}
-                opacity={0.7}
-              />
-            </mesh>
-          </group>
-        ))}
-      </group>
-
-      </group>
-
       {/* Left Wall */}
       <mesh
         position={[-roomW / 2, (floorY + ceilingY) / 2, roomZ]}
@@ -208,9 +88,7 @@ export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ cabinetOnly = false,
         <meshStandardMaterial color="#414647" roughness={0.9} />
       </mesh>
 
-      <mesh castShadow receiveShadow position={[0, (floorY + ceilingY) / 2, ROOM_ENVELOPE.back]} rotation={[0, Math.PI, 0]}>
-        <planeGeometry args={[roomW, wallH]} /><meshStandardMaterial color="#454744" roughness={.95} />
-      </mesh>
+      <WetSide roomBrightness={roomBrightness} />
       {/* Ceiling */}
       <mesh castShadow receiveShadow position={[0, ceilingY, roomZ]} rotation={[Math.PI / 2, 0, 0]}>
         <planeGeometry args={[roomW, roomD]} />
