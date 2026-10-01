@@ -33,6 +33,8 @@ export class PlaybackGovernor {
   private patience = 3;
   /** Windows since the last step up; a quick failure means that level is too costly. */
   private sinceRaise = Infinity;
+  /** `raise: false` only ever steps down, for films that cut between shots of very different cost. */
+  constructor(private readonly raise = true) {}
 
   get quality() { return QUALITY_LEVELS[this.level]; }
 
@@ -53,7 +55,7 @@ export class PlaybackGovernor {
       return this.change(Math.min(QUALITY_LEVELS.length - 1, this.level + (mean > 2 / 60 ? 2 : 1)));
     }
     this.calm = share === 0 ? this.calm + 1 : 0;
-    if (this.calm >= this.patience && this.level > 0) { this.sinceRaise = 0; return this.change(this.level - 1); }
+    if (this.raise && this.calm >= this.patience && this.level > 0) { this.sinceRaise = 0; return this.change(this.level - 1); }
     return false;
   }
 

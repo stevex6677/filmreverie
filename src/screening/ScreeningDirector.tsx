@@ -39,9 +39,11 @@ function applySample(table: THREE.Object3D, scene: THREE.Scene, roll: RollDefini
   for (const strip of table.children) {
     const index = strip.userData.stripIndex;
     if (typeof index !== 'number') continue;
-    const edge = reveal ? revealEdge(roll, index, reveal.position) : 0;
+    // A strip may name its own roll when several share the table (showreel).
+    const owner = (strip.userData.roll as RollDefinition | undefined) ?? roll;
+    const edge = reveal ? revealEdge(owner, index, reveal.position) : 0;
     const width = strip.userData.frameWidth as number;
-    const glow = reveal && reveal.position < roll.frames.length ? sample!.kind === 'develop' ? .9 : .3 : 0;
+    const glow = reveal && reveal.position < owner.frames.length ? sample!.kind === 'develop' ? .9 : .3 : 0;
     strip.traverse(object => {
       const uniforms = uniformsOf(object);
       if (!uniforms?.uReveal) return;
@@ -68,10 +70,11 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
   // (and twice a second for arriving photographs). Export sets its own size.
   const lens = useMemo(() => new DepthOfField(), []);
   useEffect(() => () => lens.dispose(), [lens]);
-  const governor = useMemo(() => new PlaybackGovernor(), [session]);
+  const governor = useMemo(() => new PlaybackGovernor(!session.steadyQuality), [session]);
   const still = useRef({ key: '', at: 0 });
   const playbackSamples = () => session.playing ? governor.quality.samples : 512;
-  const draw = (focus: number, samples: number, scale = 1) => lens.render(gl, scene, camera as THREE.PerspectiveCamera, focus, session.timeline.look.aperture, samples, scale);
+  const look = () => session.sample.look ?? session.timeline.look;
+  const draw = (focus: number, samples: number, scale = 1) => lens.render(gl, scene, camera as THREE.PerspectiveCamera, focus, look().aperture, samples, scale);
 
   // Compile every shader the reel will need (room, prints, depth of field)
   // before the timeline starts, so no compile interrupts playback. The reel
@@ -83,7 +86,7 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
     applyScreeningPose(perspective, session.sample.camera);
     const warm = async () => {
       try {
-        lens.warm(gl, scene, perspective, session.sample.camera.zoom, session.timeline.look.aperture);
+        lens.warm(gl, scene, perspective, session.sample.camera.zoom, look().aperture);
         await Promise.race([gl.compileAsync(scene, perspective), wait(4000)]);
       } catch { /* Compiling on first use still works. */ }
       if (!cancelled) { session.holding = false; session.emit(); }
@@ -106,7 +109,7 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
   // A clear overlay is left alone rather than cleared and recomposited every frame.
   const overlayClear = useRef(false);
   useFrame(() => {
-    if (table.current) applySample(table.current, scene, roll, session.sample, latest.current.brightness, session.timeline.look.band);
+    if (table.current) applySample(table.current, scene, roll, session.sample, latest.current.brightness, look().band);
     const overlay = session.overlay;
     if (!overlay || session.exporting) return;
     const dissolve = session.sample.dissolve;
@@ -126,12 +129,13 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
     if (overlay.width !== width || overlay.height !== height) { overlay.width = width; overlay.height = height; overlayClear.current = true; }
     const ctx = overlay.getContext('2d');
     if (!ctx) return;
-    const empty = !(dissolve && preview.current) && overlayIsEmpty(session.sample);
+    const empty = !session.decorate && !(dissolve && preview.current) && overlayIsEmpty(session.sample);
     if (empty && overlayClear.current) { overlay.dataset.drawn = 'true'; return; }
     overlayClear.current = empty;
     ctx.clearRect(0, 0, width, height);
     if (dissolve && preview.current) { ctx.globalAlpha = 1 - dissolve.amount; ctx.drawImage(preview.current.canvas, 0, 0, width, height); ctx.globalAlpha = 1; }
     drawScreeningOverlay(ctx, width, height, session.sample, session.credits);
+    session.decorate?.(ctx, width, height, session.sample);
     overlay.dataset.drawn = 'true';
   }, -1.5);
 
@@ -203,6 +207,7 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
         ctx.globalAlpha = 1;
         session.time = time; session.sample = base;
         drawScreeningOverlay(ctx, width, height, base, session.credits);
+        session.decorate?.(ctx, width, height, base);
         return composite!;
       },
       end() {

@@ -1,0 +1,28 @@
+{
+  "note": "Soundtracks for the /showreel film. `drop` is where the beat comes in (seconds into the track); the showreel lines it up with its first cut. Run `npm run fetch:showreel-music -- --publish` after changing sources.",
+  "rights": "HoliznaCC0 dedicates this music to the public domain (CC0 1.0). Attribution is not required; the artist is credited as a courtesy.",
+  "default": "families",
+  "tracks": [
+    {
+      "id": "families", "title": "Families", "artist": "HoliznaCC0", "mood": "Warm, chill", "drop": 12.0,
+      "src": "/assets/music/showreel/families.mp3",
+      "source": { "file": "music/showreel/families.mp3", "page": "https://opengameart.org/content/chill-beats-collection", "archive": "https://opengameart.org/sites/default/files/chill_beats.zip",
+        "archiveSha256": "53ce04d6c124843235ccfbea94be3f8c6afb3cfd3c6924badc124a4ec0d49f37", "entry": "Chill Beats/03 HoliznaCC0 - Families.mp3",
+        "sha256": "b0a7645ed11cd36567c9681b1eaa7f059896f6ed95fadcbb660edacec78c4486", "license": "CC0" }
+    },
+    {
+      "id": "blue-skies", "title": "Blue Skies", "artist": "HoliznaCC0", "mood": "Bright, upbeat", "drop": 11.5,
+      "src": "/assets/music/showreel/blue-skies.mp3",
+      "source": { "file": "music/showreel/blue-skies.mp3", "page": "https://opengameart.org/content/happy-lo-fi-lofi-collection", "archive": "https://opengameart.org/sites/default/files/happy_lo-fi_lofi_collection.zip",
+        "archiveSha256": "7d36a9172a030d5b2e9ec7df622095e468877cdd35d92904004bb8c13266f80b", "entry": "Happy Lo-Fi (Lofi Collection)/03 HoliznaCC0 - Blue Skies.mp3.mp3",
+        "sha256": "1b5916797fe6341663a7172d8f653e95691d9462be51537c56ebfaabd81b8696", "license": "CC0" }
+    },
+    {
+      "id": "city-in-the-rearview", "title": "City In The Rearview", "artist": "HoliznaCC0", "mood": "Nostalgic", "drop": 17.0,
+      "src": "/assets/music/showreel/city-in-the-rearview.mp3",
+      "source": { "file": "music/showreel/city-in-the-rearview.mp3", "page": "https://opengameart.org/content/chill-beats-collection", "archive": "https://opengameart.org/sites/default/files/chill_beats.zip",
+        "archiveSha256": "53ce04d6c124843235ccfbea94be3f8c6afb3cfd3c6924badc124a4ec0d49f37", "entry": "Chill Beats/01 HoliznaCC0 - City In The Rearview.mp3",
+        "sha256": "7bed6ce57a2430b22cc54f005bc0d111aa0bbbf4243b9081db12d0168369b91b", "license": "CC0" }
+    }
+  ]
+}

@@ -31,6 +31,8 @@
     "validate:m16": "npm run build && npm run test:integration && npm run test:e2e",
     "validate:m13": "npm run build && npm run test:integration && npm run test:e2e",
     "fetch:packaging": "node scripts/fetch-packaging.js",
+    "fetch:showreel": "node scripts/fetch-showreel-photos.js",
+    "fetch:showreel-music": "node scripts/fetch-showreel-music.js",
     "validate:m19": "npm run build && npm run test:integration && npm run test:e2e",
     "validate:m20": "npm run build && npm run test:integration && npm run test:e2e && npm --prefix standalone/model-viewer test && npm --prefix standalone/model-viewer run test:reuse && npm --prefix standalone/model-viewer run test:browser",
     "validate:m21": "npm run build && npm run check:cloud && npm run test:integration && npm run test:e2e && npm --prefix standalone/model-viewer test && npm --prefix standalone/model-viewer run test:reuse && npm --prefix standalone/model-viewer run test:browser",

@@ -64,6 +64,11 @@ history at commit `55366c3`.
   authoring-only dependencies, not app-startup requirements.
   Review regenerated images before committing them. Existing tracked PNG masters
   remain in Git at their existing paths.
+- `npm run fetch:showreel` likewise acquires the `/showreel` sample photographs
+  (pinned by SHA-1) into `ignored_assets/photos/showreel/`; add `-- --publish`
+  to regenerate their tracked derivatives with macOS `sips`.
+  `npm run fetch:showreel-music` does the same for the showreel's CC0 music
+  (pinned archives by SHA-256); `-- --publish` writes the excerpts with `ffmpeg`.
 - `npm run fetch:packaging` optionally acquires pinned originals without changing
   startup requirements. `npm run fetch:packaging -- --publish` deliberately
   publishes their runtime copies. See the

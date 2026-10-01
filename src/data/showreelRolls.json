@@ -1,0 +1,346 @@
+{
+  "note": "Sample rolls for the /showreel promotional video. Replace these frames (and stock/format) with your own photographs; run `npm run fetch:showreel -- --publish` after changing sources.",
+  "rights": "CC0 1.0 photographs from Unsplash, retrieved through Wikimedia Commons on 2026-10-01. Attribution is not required; authors are recorded as a courtesy.",
+  "rolls": [
+    {
+      "id": "showreel-coast",
+      "name": "Golden Coast",
+      "stockId": "portra-400",
+      "format": "135",
+      "frames": [
+        {
+          "id": "coast-01-sunrise",
+          "title": "Sunrise",
+          "alt": "Sunrise over sea rocks and tide pools at Little Corona Beach",
+          "src": "/assets/photos/showreel/coast-01-sunrise.jpg",
+          "aspectRatio": 1.4991,
+          "source": {
+            "file": "photos/showreel/coast/coast-01-sunrise.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Little_Corona_Beach_sunrise_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/0/03/Little_Corona_Beach_sunrise_%28Unsplash%29.jpg",
+            "author": "Austin Neill",
+            "license": "CC0",
+            "width": 4094,
+            "height": 2731,
+            "bytes": 2017282,
+            "sha1": "a3d042bef0659d10fb6fb9402883d3a8c8807d2c"
+          }
+        },
+        {
+          "id": "coast-02-huts",
+          "title": "Beach huts",
+          "alt": "A row of brightly painted beach huts on white sand",
+          "src": "/assets/photos/showreel/coast-02-huts.jpg",
+          "aspectRatio": 1.6912,
+          "source": {
+            "file": "photos/showreel/coast/coast-02-huts.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Colorful_beach_huts_on_beach_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Colorful_beach_huts_on_beach_%28Unsplash%29.jpg",
+            "author": "Arno Smit",
+            "license": "CC0",
+            "width": 4896,
+            "height": 2895,
+            "bytes": 3416985,
+            "sha1": "ca960643625d29efd24a17efd836e513c3499f20"
+          }
+        },
+        {
+          "id": "coast-03-lifeguard",
+          "title": "Lifeguard tower",
+          "alt": "Someone resting on a pale blue lifeguard tower in hazy morning light",
+          "src": "/assets/photos/showreel/coast-03-lifeguard.jpg",
+          "aspectRatio": 1.5,
+          "source": {
+            "file": "photos/showreel/coast/coast-03-lifeguard.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Beach_chilling_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9b/Beach_chilling_%28Unsplash%29.jpg",
+            "author": "garrett parker",
+            "license": "CC0",
+            "width": 5472,
+            "height": 3648,
+            "bytes": 9574568,
+            "sha1": "ab1f8602eb0a2fa7f45370cca66a46fe3abb7b1e"
+          }
+        },
+        {
+          "id": "coast-04-kiss",
+          "title": "Kiss",
+          "alt": "A couple kissing at the water’s edge on a bright beach",
+          "src": "/assets/photos/showreel/coast-04-kiss.jpg",
+          "aspectRatio": 1.4979,
+          "source": {
+            "file": "photos/showreel/coast/coast-04-kiss.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Kiss_on_the_beach_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/a/ac/Kiss_on_the_beach_%28Unsplash%29.jpg",
+            "author": "India Tupy",
+            "license": "CC0",
+            "width": 5475,
+            "height": 3655,
+            "bytes": 5990222,
+            "sha1": "1594099cf997a3084fcca082eead1ff41e13c753"
+          }
+        },
+        {
+          "id": "coast-05-dog",
+          "title": "Happy dog",
+          "alt": "A smiling sandy-coloured dog in warm backlight",
+          "src": "/assets/photos/showreel/coast-05-dog.jpg",
+          "aspectRatio": 1.5,
+          "source": {
+            "file": "photos/showreel/coast/coast-05-dog.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Happy_dog_at_Anjuna_Beach_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/0/05/Happy_dog_at_Anjuna_Beach_%28Unsplash%29.jpg",
+            "author": "Samantha Scholl",
+            "license": "CC0",
+            "width": 5760,
+            "height": 3840,
+            "bytes": 11297303,
+            "sha1": "549f85f822865c328d16882db92b25010c6ec674"
+          }
+        },
+        {
+          "id": "coast-06-newport",
+          "title": "Newport Beach",
+          "alt": "A busy beach with umbrellas and palm trees under a pastel sky",
+          "src": "/assets/photos/showreel/coast-06-newport.jpg",
+          "aspectRatio": 1.5,
+          "source": {
+            "file": "photos/showreel/coast/coast-06-newport.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:People_enjoying_Newport_Beach_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/1/12/People_enjoying_Newport_Beach_%28Unsplash%29.jpg",
+            "author": "Herson Rodriguez",
+            "license": "CC0",
+            "width": 6000,
+            "height": 4000,
+            "bytes": 2987498,
+            "sha1": "ae0068bd28d1d4d83c30e2e0d62e696e8b3f1e4f"
+          }
+        },
+        {
+          "id": "coast-07-pier",
+          "title": "The pier",
+          "alt": "A long pier stretching over the surf beside a sunny beach",
+          "src": "/assets/photos/showreel/coast-07-pier.jpg",
+          "aspectRatio": 1.7213,
+          "source": {
+            "file": "photos/showreel/coast/coast-07-pier.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Beach_by_the_pier_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/1/17/Beach_by_the_pier_%28Unsplash%29.jpg",
+            "author": "Dakota Corbin",
+            "license": "CC0",
+            "width": 5472,
+            "height": 3179,
+            "bytes": 11727311,
+            "sha1": "88e7354e0520f141068e8db05799632be29138c3"
+          }
+        },
+        {
+          "id": "coast-08-ocean",
+          "title": "Ocean breeze",
+          "alt": "A woman with braided hair looking out over blue ocean waves",
+          "src": "/assets/photos/showreel/coast-08-ocean.jpg",
+          "aspectRatio": 1.7797,
+          "source": {
+            "file": "photos/showreel/coast/coast-08-ocean.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Manhattan_Beach_woman_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8b/Manhattan_Beach_woman_%28Unsplash%29.jpg",
+            "author": "Marion Michele",
+            "license": "CC0",
+            "width": 4912,
+            "height": 2760,
+            "bytes": 783439,
+            "sha1": "372b78f35c2080d1004ed59b1755299feb0ebbcc"
+          }
+        },
+        {
+          "id": "coast-09-surfers",
+          "title": "Surfers",
+          "alt": "Two surfers carrying boards across misty wet sand",
+          "src": "/assets/photos/showreel/coast-09-surfers.jpg",
+          "aspectRatio": 1.5098,
+          "source": {
+            "file": "photos/showreel/coast/coast-09-surfers.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Surfer_silhouettes_on_Cannon_Beach_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Surfer_silhouettes_on_Cannon_Beach_%28Unsplash%29.jpg",
+            "author": "Jamison McAndie",
+            "license": "CC0",
+            "width": 4928,
+            "height": 3264,
+            "bytes": 1291852,
+            "sha1": "808c0f932ea72e299ac836754c608b295c1c2e69"
+          }
+        },
+        {
+          "id": "coast-10-dusk",
+          "title": "Pfeiffer dusk",
+          "alt": "Sea stacks framing the evening sky at Pfeiffer Beach",
+          "src": "/assets/photos/showreel/coast-10-dusk.jpg",
+          "aspectRatio": 1.4998,
+          "source": {
+            "file": "photos/showreel/coast/coast-10-dusk.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Pfeiffer_Beach_at_Dusk_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/9/93/Pfeiffer_Beach_at_Dusk_%28Unsplash%29.jpg",
+            "author": "Kace Rodriguez",
+            "license": "CC0",
+            "width": 4276,
+            "height": 2851,
+            "bytes": 5886301,
+            "sha1": "0020eb7b619a18b559a3c96df7623f18a64a8cc2"
+          }
+        },
+        {
+          "id": "coast-11-sunset",
+          "title": "Sunset",
+          "alt": "The sun setting over breaking waves and dark rocks",
+          "src": "/assets/photos/showreel/coast-11-sunset.jpg",
+          "aspectRatio": 1.504,
+          "source": {
+            "file": "photos/showreel/coast/coast-11-sunset.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Sunset_over_beach_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/b/bd/Sunset_over_beach_%28Unsplash%29.jpg",
+            "author": "Charlie Hang",
+            "license": "CC0",
+            "width": 6016,
+            "height": 4000,
+            "bytes": 2216989,
+            "sha1": "f9b811463744c7e7c07a0cb92dd991b7d5e6160c"
+          }
+        },
+        {
+          "id": "coast-12-cove",
+          "title": "Last light",
+          "alt": "Twilight over a curving coastline at Crystal Cove",
+          "src": "/assets/photos/showreel/coast-12-cove.jpg",
+          "aspectRatio": 1.4979,
+          "source": {
+            "file": "photos/showreel/coast/coast-12-cove.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Sunset_at_beach_in_Crystal_Cove_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Sunset_at_beach_in_Crystal_Cove_%28Unsplash%29.jpg",
+            "author": "Ian Schneider",
+            "license": "CC0",
+            "width": 5707,
+            "height": 3810,
+            "bytes": 9032199,
+            "sha1": "73dec9543ddfbc7f9c78e2edc8ff42a0159f1f23"
+          }
+        }
+      ]
+    },
+    {
+      "id": "showreel-peaks",
+      "name": "High Country",
+      "stockId": "ektar-100",
+      "format": "66",
+      "frames": [
+        {
+          "id": "peaks-01-matterhorn",
+          "title": "Matterhorn",
+          "alt": "The Matterhorn under pink and violet sunset clouds",
+          "src": "/assets/photos/showreel/peaks-01-matterhorn.jpg",
+          "aspectRatio": 1.5,
+          "source": {
+            "file": "photos/showreel/peaks/peaks-01-matterhorn.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Matterhorn_sunset_2016_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/2/21/Matterhorn_sunset_2016_%28Unsplash%29.jpg",
+            "author": "Sam Ferrara",
+            "license": "CC0",
+            "width": 3840,
+            "height": 2560,
+            "bytes": 1914830,
+            "sha1": "f04a030bf842f557b621899ab142d60f5f9b1466"
+          }
+        },
+        {
+          "id": "peaks-02-red-ridge",
+          "title": "Red ridge",
+          "alt": "Rust-red mountains above a sagebrush valley",
+          "src": "/assets/photos/showreel/peaks-02-red-ridge.jpg",
+          "aspectRatio": 1.5023,
+          "source": {
+            "file": "photos/showreel/peaks/peaks-02-red-ridge.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Mountains_in_the_Valley_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/b/be/Mountains_in_the_Valley_%28Unsplash%29.jpg",
+            "author": "Jayson McNasher",
+            "license": "CC0",
+            "width": 5611,
+            "height": 3735,
+            "bytes": 21167054,
+            "sha1": "6a2a72aa0f01fdad24c60aed319491f8bc8fbf7d"
+          }
+        },
+        {
+          "id": "peaks-03-road",
+          "title": "Mountain road",
+          "alt": "Two cyclists on a winding road through green mountains",
+          "src": "/assets/photos/showreel/peaks-03-road.jpg",
+          "aspectRatio": 1.5,
+          "source": {
+            "file": "photos/showreel/peaks/peaks-03-road.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Hike_in_the_green_mountains_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/0/02/Hike_in_the_green_mountains_%28Unsplash%29.jpg",
+            "author": "Chris Leggat",
+            "license": "CC0",
+            "width": 5184,
+            "height": 3456,
+            "bytes": 2007997,
+            "sha1": "8e32e7213296f721a58266de6da3f0b047d95492"
+          }
+        },
+        {
+          "id": "peaks-04-autumn",
+          "title": "Autumn trail",
+          "alt": "A hiker among autumn trees in low evening sun",
+          "src": "/assets/photos/showreel/peaks-04-autumn.jpg",
+          "aspectRatio": 1.3333,
+          "source": {
+            "file": "photos/showreel/peaks/peaks-04-autumn.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Exploring_the_mountains_in_autumn_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/f/fc/Exploring_the_mountains_in_autumn_%28Unsplash%29.jpg",
+            "author": "Jonathan Pendleton",
+            "license": "CC0",
+            "width": 4608,
+            "height": 3456,
+            "bytes": 7681398,
+            "sha1": "a49b4ba625fc8d937f92216a5c6b720ce18a4ad4"
+          }
+        },
+        {
+          "id": "peaks-05-valley",
+          "title": "Snow valley",
+          "alt": "Snow-capped peaks above a green valley and winding river",
+          "src": "/assets/photos/showreel/peaks-05-valley.jpg",
+          "aspectRatio": 1.778,
+          "source": {
+            "file": "photos/showreel/peaks/peaks-05-valley.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Green_valley_in_the_white_mountains_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a6/Green_valley_in_the_white_mountains_%28Unsplash%29.jpg",
+            "author": "Scott Webb",
+            "license": "CC0",
+            "width": 3419,
+            "height": 1923,
+            "bytes": 4438248,
+            "sha1": "5b500b83fd6b6c2c9a1c4f9833606ebd3d430f37"
+          }
+        },
+        {
+          "id": "peaks-06-lake",
+          "title": "Glacier lake",
+          "alt": "A turquoise lake glittering below distant snowy mountains",
+          "src": "/assets/photos/showreel/peaks-06-lake.jpg",
+          "aspectRatio": 1.3338,
+          "source": {
+            "file": "photos/showreel/peaks/peaks-06-lake.jpg",
+            "page": "https://commons.wikimedia.org/wiki/File:Mountains_by_the_lake_(Unsplash).jpg",
+            "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/b/bc/Mountains_by_the_lake_%28Unsplash%29.jpg",
+            "author": "Georgia Dixon",
+            "license": "CC0",
+            "width": 3025,
+            "height": 2268,
+            "bytes": 520163,
+            "sha1": "b7ad4be5e308c574b131e94a5a351b167e55eba1"
+          }
+        }
+      ]
+    }
+  ]
+}
