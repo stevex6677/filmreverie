@@ -137,8 +137,8 @@ function CellLabel({ position, roll, slot, active, portal, shelf, focused, onApp
         onPointerMove={event => { if (pointer.current.ids.size && Math.hypot(event.clientX - pointer.current.x, event.clientY - pointer.current.y) > 7) pointer.current.moved = true; }}
         onPointerUp={event => pointer.current.ids.delete(event.pointerId)} onPointerCancel={() => { pointer.current.ids.clear(); pointer.current.moved = true; }}
         onClick={event => { event.stopPropagation(); if (event.detail > 0 && pointer.current.moved) return; if (onApproach) { onApproach(event.detail ? { x: event.clientX, y: event.clientY } : undefined); return; } if (!roll) return; shelf.show(roll, event.currentTarget, true); }}>
-        {!onApproach && <><span className="shelf-slot-number">{String(slot + 1).padStart(2, '0')}</span><span className="shelf-roll-caption">{roll?.name}</span>{active && <span className="shelf-active-dot" aria-label="On the light table" />}</>}
-      </button> : <span className="shelf-slot-number" aria-hidden="true">{String(slot + 1).padStart(2, '0')}</span>}
+        {!onApproach && <><span className="shelf-roll-caption">{roll?.name}</span>{active && <span className="shelf-active-dot" aria-label="On the light table" />}</>}
+      </button> : null}
     </div>
   </Html>;
 }

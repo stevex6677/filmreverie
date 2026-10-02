@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialViewerState, viewerReducer } from "../../src/state/viewerState";
-import { ROOM_EYE, ROOM_ENVELOPE, MAX_INSPECT_DISTANCE, TABLE_SURFACE_Y, DEFAULT_ROOM_POSE, clampRoomPose, roomLookTarget } from "../../src/utils/cameraBounds";
+import * as THREE from "three";
+import { ROOM_EYE, ROOM_ENVELOPE, MAX_INSPECT_DISTANCE, MIN_ROOM_ZOOM, TABLE_SURFACE_Y, DEFAULT_ROOM_POSE, clampRoomPose, roomFov, roomLookTarget, zoomRoomAt } from "../../src/utils/cameraBounds";
 import { BASELINE_ROLL } from "../../src/utils/rollLayout";
 
 describe("M13 fixed standing room and independent illumination", () => {
@@ -23,6 +24,20 @@ describe("M13 fixed standing room and independent illumination", () => {
       }
     }
     expect(clampRoomPose({yaw:NaN,pitch:Infinity,distance:NaN})).toEqual(DEFAULT_ROOM_POSE);
+  });
+  it("zooms the fixed eye's lens about the pointer without moving the eye", () => {
+    const aspect = 1.6, ndc = new THREE.Vector2(.5, .3);
+    const ray = (pose: typeof DEFAULT_ROOM_POSE) => {
+      const camera = new THREE.PerspectiveCamera(roomFov(aspect, pose.zoom), aspect);
+      camera.position.set(...ROOM_EYE); camera.lookAt(...roomLookTarget(pose)); camera.updateMatrixWorld();
+      const r = new THREE.Raycaster(); r.setFromCamera(ndc, camera); return r.ray.direction;
+    };
+    const start = { ...DEFAULT_ROOM_POSE, yaw: .4, pitch: .1 };
+    const zoomed = zoomRoomAt(start, 2.5, ndc, aspect);
+    expect(zoomed.zoom).toBe(2.5);
+    expect(roomFov(aspect, 2.5)).toBeLessThan(roomFov(aspect, 1));
+    expect(ray(zoomed).angleTo(ray(start))).toBeLessThan(.01);
+    expect(zoomRoomAt(start, .1, { x: 0, y: 0 }, aspect)).toEqual({ ...start, zoom: MIN_ROOM_ZOOM });
   });
   it("crosses the yaw seam continuously and repeats full turns without reversing", () => {
     const a = roomLookTarget({...DEFAULT_ROOM_POSE, yaw: Math.PI - .001});

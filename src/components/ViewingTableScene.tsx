@@ -184,6 +184,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
         loupeInspection={state.loupe.inspecting || state.transitionKind === 'loupe'}
         isLoupeActive={state.loupe.isActive}
         onUpdateRoomPose={(pose) => dispatch({ type: "UPDATE_ROOM_POSE", pose })}
+        onZoomRoom={(factor, ndc, aspect) => dispatch({ type: "ZOOM_ROOM", factor, ndc, aspect })}
         onCameraMotion={moving => dispatch({ type: "CAMERA_MOTION", moving })}
         onZoomAt={(delta, x, z) => dispatch({ type: "ZOOM_AT", delta, x, z })}
         onAdjustInspectZoom={(delta) => dispatch({ type: "ADJUST_TABLE_ZOOM", delta })}

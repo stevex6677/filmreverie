@@ -3,6 +3,7 @@ import { TouchGestures, GestureIntent } from '../../src/utils/touchGestures';
 import { createInitialViewerState, viewerReducer } from '../../src/state/viewerState';
 import { FULL_ROLL_FIXTURE, fitRollView, anchoredZoom, clampFocusPan } from '../../src/utils/rollLayout';
 import { touchLoupePlacement } from '../../src/utils/touchLoupe';
+import { MAX_ROOM_ZOOM } from '../../src/utils/cameraBounds';
 const p=(id:number,x:number,y=100)=>({id,x,y});
 afterEach(()=>vi.useRealTimers());
 describe('M15 touch gestures and shared viewer',()=>{
@@ -32,8 +33,11 @@ describe('M15 touch gestures and shared viewer',()=>{
   it('loupe owns one finger while two fingers can only transform the underlying view',()=>{
     const intents:GestureIntent[]=[];const g=new TouchGestures(i=>intents.push(i));g.down(p(1,100),'loupe');g.move(p(1,130));g.down(p(2,200),'loupe');g.move(p(2,240));g.up(p(2,240));g.move(p(1,140));g.up(p(1,140));expect(intents.map(i=>i.type)).toEqual(['loupe','loupe','pinch','pan']);
   });
-  it('two fingers in room mode do not translate or zoom the standing eye',()=>{
-    const intents:GestureIntent[]=[];const g=new TouchGestures(i=>intents.push(i));g.down(p(1,100),'room');g.down(p(2,200),'room');g.move(p(2,300));g.up(p(2,300));g.up(p(1,100));expect(intents).toEqual([]);
+  it('two fingers in room mode only pinch the standing eye\'s lens',()=>{
+    const intents:GestureIntent[]=[];const g=new TouchGestures(i=>intents.push(i));g.down(p(1,100),'room');g.down(p(2,200),'room');g.move(p(2,300));g.up(p(2,300));g.up(p(1,100));expect(intents.map(i=>i.type)).toEqual(['pinch']);
+    let s=viewerReducer(createInitialViewerState('room'),{type:'ZOOM_ROOM',factor:2});expect(s.savedRoomPose.zoom).toBe(2);expect(s.savedRoomPose.yaw).toBe(0);
+    s=viewerReducer(s,{type:'ZOOM_ROOM',factor:100});expect(s.savedRoomPose.zoom).toBe(MAX_ROOM_ZOOM);
+    s=viewerReducer(s,{type:'FACE_TABLE'});expect(s.savedRoomPose.zoom).toBe(1);
   });
   it('direct touch interrupts inspection travel but retains guarded room journeys',()=>{
     let s=viewerReducer(createInitialViewerState('inspect',FULL_ROLL_FIXTURE),{type:'INPUT_TOUCH',active:true});

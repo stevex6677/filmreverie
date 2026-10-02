@@ -444,6 +444,7 @@ export function App() {
         if (e.target instanceof HTMLElement && e.target.closest('button, input, select, textarea, [role="dialog"], [contenteditable="true"]')) return;
         const look: Record<string, [number, number]> = { ArrowLeft: [.12, 0], ArrowRight: [-.12, 0], ArrowUp: [0, -.1], ArrowDown: [0, .1] };
         if (look[e.key]) { e.preventDefault(); dispatch({ type: "LOOK_ROOM", yaw: look[e.key][0], pitch: look[e.key][1] }); return; }
+        if (!e.metaKey && !e.ctrlKey && ["+", "=", "-", "_"].includes(e.key)) { e.preventDefault(); dispatch({ type: "ZOOM_ROOM", factor: e.key === "-" || e.key === "_" ? 1 / 1.25 : 1.25 }); return; }
         if (e.key === "0") { dispatch({ type: "FACE_TABLE" }); return; }
         if ((e.key === "Enter" || e.key === " ") && (!state.isTransitioning || state.transitionKind === 'shelf')) {
           dispatch({ type: "APPROACH_TABLE" });
@@ -531,6 +532,7 @@ export function App() {
       data-camera-display={state.cameraDisplay ?? ''}
       data-room-mode={state.roomMode}
       data-room-pose={`${state.savedRoomPose.yaw},${state.savedRoomPose.pitch}`}
+      data-room-zoom={state.savedRoomPose.zoom ?? 1}
       data-room-brightness={state.roomBrightness}
       data-focus-mode={state.focusMode ? "true" : "false"}
       data-settled-frame={state.settledFrameIndex+1}
