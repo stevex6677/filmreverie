@@ -869,7 +869,7 @@ button:disabled { opacity: .4; cursor: default; }
 .library-dialog button { background:#343732; border:1px solid #686c5c; border-radius:5px; color:#f3eddf; padding:8px 12px; cursor:pointer; font:inherit; } .library-dialog button:hover { background:#4b5043; } .library-dialog button:disabled { opacity:.4; cursor:default; } .library-dialog button[aria-pressed=true] { border-color:#e7c582; background:#56503c; }
 .library-dialog input,.library-dialog select { background:#171a18; color:#eee8dd; padding:9px; border:1px solid #646859; border-radius:4px; font:inherit; } .library-details { align-items:end; padding-top:16px; } .library-details label { display:grid; gap:5px; flex:1; } .library-dialog :focus-visible { outline:2px solid #f2ce8a; outline-offset:3px; }
 .library-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:20px; margin-top:24px; } .library-cards article { background:#1b1e1b; border:1px solid #474b40; border-radius:8px; padding:14px; } .library-cards img { width:100%; height:145px; object-fit:contain; background:#111; } .library-cards h2 { font-size:19px; } .library-cards button { margin:4px 4px 0 0; }
-.photo-drop { margin:24px 0; border:1px dashed #999480; padding:28px; border-radius:8px; text-align:center; } .photo-drop label { display:grid; gap:14px; } .library-empty { padding:50px 0; color:#b5b9ad; } .draft-photos { padding:0; list-style:none; } .draft-photos li { display:grid; grid-template-columns:150px 1fr; gap:22px; border-top:1px solid #474b40; padding:18px 0; } .draft-preview { position:relative; max-height:190px; background:#0d100e; display:flex; justify-content:center; align-items:center; overflow:hidden; } .draft-preview img { position:absolute; max-width:none; max-height:none; object-fit:fill; } .draft-photos p { margin:4px 0; overflow-wrap:anywhere; } .draft-actions { margin-top:12px; } .library-dialog footer { position:sticky; bottom:-28px; background:#242522; padding:16px 0; justify-content:space-between; } .library-error,.library-notice { background:#532d25; padding:12px; } .library-notice { position:fixed; left:20px; top:70px; z-index:13; max-width:500px; }
+.library-empty { padding:50px 0; color:#b5b9ad; } .draft-photos { padding:0; list-style:none; } .draft-photos li { display:grid; grid-template-columns:150px 1fr; gap:22px; border-top:1px solid #474b40; padding:18px 0; } .draft-preview { position:relative; max-height:190px; background:#0d100e; display:flex; justify-content:center; align-items:center; overflow:hidden; } .draft-preview img { position:absolute; max-width:none; max-height:none; object-fit:fill; } .draft-photos p { margin:4px 0; overflow-wrap:anywhere; } .draft-actions { margin-top:12px; } .library-dialog footer { position:sticky; bottom:-28px; background:#242522; padding:16px 0; justify-content:space-between; } .library-error,.library-notice { background:#532d25; padding:12px; } .library-notice { position:fixed; left:20px; top:70px; z-index:13; max-width:500px; }
 
 .room-light-control { display: flex; align-items: center; gap: 8px; }
 .room-light-control input { width: 100px; accent-color: #f3d69c; }
@@ -906,23 +906,10 @@ button:disabled { opacity: .4; cursor: default; }
 .roll-menu button { text-align:left; border:0; }
 .library-dialog .storage-footer { position:static; margin-top:32px; border-top:1px solid #c8c1b4; background:transparent; font-size:13px; color:#5c6155; }
 .library-empty { text-align:center; color:#5c6155; padding:60px 30px; }
-.import-steps { display:flex; gap:12px; margin-top:28px; padding-bottom:20px; border-bottom:1px solid #cbc5b9; }
-.import-steps button { border:0; display:flex; gap:8px; align-items:center; }
-.import-steps button span { border:1px solid #aaa18e; border-radius:50%; width:25px; height:25px; line-height:25px; }
-.import-steps button[aria-current=step] { color:#344831; font-weight:700; background:#dedecf; }
-.photo-drop { background:#f6f3ec; padding:40px 20px; }
-.photo-drop h3 { font:24px Georgia,serif; }
-.photo-drop .choose-photos { display:inline-grid; text-align:left; }
-.import-filmline { display:grid; grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); gap:12px; margin:24px 0; }
-.import-filmline img { width:100%; height:75px; object-fit:contain; }
-.import-filmline span { display:block; font-size:12px; overflow-wrap:anywhere; }
 .library-details { display:grid; grid-template-columns:1fr 1fr; align-items:start; gap:24px; padding:0; }
 .library-details label:first-child { grid-column:1/-1; }
 .library-details fieldset { display:flex; gap:24px; border:0; padding:0; margin:0; }
 .library-details fieldset label { display:flex; align-items:center; }
-.live-roll-label { margin:28px 0; padding:25px; border-left:4px solid #9b8553; background:#ded8c9; }
-.live-roll-label span { text-transform:uppercase; letter-spacing:.1em; font-size:12px; }
-.live-roll-label h3 { font:28px Georgia,serif; margin:14px 0; overflow-wrap:anywhere; }
 .review-layout { display:grid; grid-template-columns:minmax(240px, .85fr) minmax(340px,1.25fr); gap:28px; align-items:start; }
 .draft-photos { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:0; }
 .draft-photos li { display:block; padding:0; border:0; min-width:0; }
@@ -971,7 +958,6 @@ button:disabled { opacity: .4; cursor: default; }
 .focus-mode .controls-header .branding { display:flex; }
 .focus-mode .branding > :not(.focus-toggle) { display:none; }
 .library-dialog h1 { line-height:1.15; }
-.import-steps { margin-top:16px; padding-bottom:12px; }
 .library-dialog h2[data-step-title] { margin:16px 0 12px; }
 .review-summary { margin:8px 0 12px; }
 .detail-status { top:116px; bottom:auto; background:#172019ed; padding:8px; border-radius:4px; }
@@ -988,10 +974,6 @@ button:disabled { opacity: .4; cursor: default; }
   .mobile-layout .library-eyebrow { display:none; }
   .mobile-layout .library-dialog .import-footer { bottom:-16px; padding:12px 0 max(12px,env(safe-area-inset-bottom)); }
   .mobile-layout .import-footer button { padding:8px; font-size:.8rem; }
-  .mobile-layout .photo-drop { padding:18px 12px; margin:18px 0; }
-  .mobile-layout .photo-drop input { max-width:100%; width:100%; }
-  .mobile-layout .import-steps { gap:4px; justify-content:space-between; }
-  .mobile-layout .import-steps button { padding:6px; font-size:.75rem; flex:1; }
   .mobile-layout .library-cards { grid-template-columns:1fr; }
   .mobile-layout .library-details { grid-template-columns:1fr; display:grid; }
   .mobile-layout .review-layout { display:flex; flex-direction:column; gap:16px; }

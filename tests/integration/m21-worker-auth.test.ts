@@ -142,6 +142,25 @@ describe('M21 owner authorization boundary', () => {
     }
     expect((await worker.fetch(new Request(`${env.APP_ORIGIN}/api/gallery`), { ...env, OWNER_EMAIL: '' })).status).toBe(503);
   });
+  it('keeps the owner darkroom film strength privately and validates every change', async () => {
+    const { env, privateBucket } = environment(); trustedIssuer();
+    const url = `${env.APP_ORIGIN}/api/owner/preferences`;
+    const put = async (value: unknown, origin: string = env.APP_ORIGIN) => worker.fetch(new Request(url, { method: 'PUT',
+      headers: { 'Cf-Access-Jwt-Assertion': await token(env), 'Content-Type': 'application/json', Origin: origin }, body: JSON.stringify(value) }), env);
+    const get = async () => worker.fetch(new Request(url, { headers: { 'Cf-Access-Jwt-Assertion': await token(env) } }), env);
+    expect((await worker.fetch(new Request(url), env)).status).toBe(401);
+    expect(await (await get()).json()).toEqual({});
+    const saved = await put({ filmStrength: 30 });
+    expect(saved.status).toBe(200);
+    expect(saved.headers.get('Cache-Control')).toBe('private, no-store');
+    expect(await saved.json()).toEqual({ filmStrength: 30 });
+    expect(await (await get()).json()).toEqual({ filmStrength: 30 });
+    for (const invalid of [{ filmStrength: 101 }, { filmStrength: -1 }, { filmStrength: '30' }, { filmStrength: 30, theme: 'dark' }, [30], null])
+      expect((await put(invalid)).status).toBe(400);
+    expect((await put({ filmStrength: 80 }, 'https://attacker.invalid')).status).toBe(403);
+    expect(await (await get()).json()).toEqual({ filmStrength: 30 });
+    expect([...privateBucket.objects.keys()]).toContain('preferences/darkroom.json');
+  });
 });
 
 describe('M21 direct upload grant scope', () => {

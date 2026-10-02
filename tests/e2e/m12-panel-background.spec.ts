@@ -13,7 +13,7 @@ for(const format of ['135','69']) test(`M12 ${format} exposed panel has no phant
     const png=new PNG({width:180,height:120});for(let i=0;i<png.data.length;i+=4){png.data[i]=18+n*3;png.data[i+1]=150;png.data[i+2]=230;png.data[i+3]=255;}
     return {name:`frame${n+1}.png`,mimeType:'image/png',buffer:PNG.sync.write(png)};
   }));
-  await page.getByRole('button',{name:'Continue to roll details',exact:true}).click();await page.getByLabel('Roll name',{exact:true}).fill('Uniform panel regression');await page.getByRole('radio',{name:format==='135'?'35mm':'120',exact:true}).check();await page.getByLabel('Film format',{exact:true}).selectOption(format);await page.getByRole('button',{name:'Review photographs',exact:true}).click();
+  await page.getByLabel('Roll name',{exact:true}).fill('Uniform panel regression');await page.getByRole('radio',{name:format==='135'?'35mm':'120',exact:true}).check();await page.getByLabel('Film format',{exact:true}).selectOption(format);
   await expect(page.getByRole('button',{name:'Save and open',exact:true})).toBeEnabled({timeout:60000});await page.getByRole('button',{name:'Save and open',exact:true}).click();
   await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true');await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');
   await page.waitForTimeout(600);

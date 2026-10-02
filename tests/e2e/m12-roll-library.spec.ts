@@ -11,13 +11,13 @@ function photo(name:string,width=600,height=400,seed=0) {
   return {name,mimeType:'image/png',buffer:PNG.sync.write(png)};
 }
 async function library(page:Page){await closeViewingTools(page);if(await page.locator('main').getAttribute('data-focus-mode')==='true'){await page.getByRole('button',{name:'← Overview',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');}await focusShelf(page);}
-async function details(page:Page){if(!await page.getByLabel('Roll name',{exact:true}).isVisible())await page.getByRole('button',{name:'Roll details',exact:true}).click();}
+async function details(page:Page){await expect(page.getByLabel('Roll name',{exact:true})).toBeVisible();}
 async function formatOf(page:Page,format:string){await details(page);await page.getByRole('radio',{name:format==='135'?'35mm':'120',exact:true}).check();await page.getByLabel('Film format',{exact:true}).selectOption(format);}
-async function review(page:Page){const save=page.getByRole('button',{name:'Save and open',exact:true}),next=page.getByRole('button',{name:'Review photographs',exact:true});await expect(save.or(next)).toBeVisible();if(await next.isVisible())await next.click();}
+async function review(page:Page){await expect(page.getByRole('button',{name:'Save and open',exact:true})).toBeVisible();}
 async function editRoll(page:Page,name:string){await showRoll(page,name);await page.getByRole('button',{name:`Edit ${name}`,exact:true}).click();await expect(page.getByLabel('Roll name',{exact:true})).toBeEnabled();}
 async function rotate(page:Page,n:number){await review(page);await page.getByRole('button',{name:`Select frame ${n}`,exact:true}).click();await page.getByLabel(`Rotate frame ${n}`,{exact:true}).click();}
 async function start(page:Page,name:string,format='135',files=[photo('scan2.png'),photo('scan10.png',600,400,1)]) {
-  await library(page);await shelfAction(page, 'New roll');await page.getByLabel('Choose photographs').setInputFiles(files);await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText(`${files.length} / ${files.length}`,{timeout:120000});await page.getByRole('button',{name:'Continue to roll details'}).click();await page.getByLabel('Roll name',{exact:true}).fill(name);await formatOf(page,format);await review(page);
+  await library(page);await shelfAction(page, 'New roll');await page.getByLabel('Choose photographs').setInputFiles(files);await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText(`${files.length} / ${files.length}`,{timeout:120000});await page.getByLabel('Roll name',{exact:true}).fill(name);await formatOf(page,format);await review(page);
 }
 async function save(page:Page){await review(page);await page.getByRole('button',{name:'Save and open',exact:true}).click();await expect(page.getByRole('dialog')).not.toBeVisible();await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:30000});}
 async function dbRolls(page:Page){return page.evaluate(async()=>new Promise<any[]>((resolve,reject)=>{const req=indexedDB.open('darkroom-guest-rolls');req.onsuccess=()=>{const db=req.result;const r=db.transaction('rolls').objectStore('rolls').getAll();r.onsuccess=()=>{db.close();resolve(r.result.filter((roll:any)=>roll.id!=='roll-01'));};r.onerror=()=>reject(r.error);};}));}
@@ -118,7 +118,7 @@ test('M12 repeated switching restores roll settings and releases owned object UR
 test('M12 cancellation during processing leaves no committed roll and modal owns keyboard focus',async({page})=>{
   await library(page);await shelfAction(page, 'New roll');
   await page.getByLabel('Choose photographs').setInputFiles(Array.from({length:72},(_,i)=>photo(`cancel${i}.png`,600,400,i)));
-  await page.getByRole('button',{name:'Cancel processing',exact:true}).first().click();await expect(page.getByRole('button',{name:'Cancel draft',exact:true})).toBeEnabled();expect(await dbRolls(page)).toEqual([]);await expect(page.getByRole('button',{name:'Continue to roll details',exact:true})).toBeDisabled();
+  await page.getByRole('button',{name:'Cancel processing',exact:true}).first().click();await expect(page.getByRole('button',{name:'Cancel draft',exact:true})).toBeEnabled();expect(await dbRolls(page)).toEqual([]);await expect(page.getByRole('button',{name:'Save and open',exact:true})).toBeDisabled();
   await page.getByLabel('Choose photographs',{exact:true}).focus();await page.keyboard.press('l');await page.keyboard.press('ArrowRight');await expect(page.locator('main')).toHaveAttribute('data-loupe-active','false');await expect(page.locator('main')).toHaveAttribute('data-selected-frame','1');await page.getByRole('button',{name:'Close',exact:true}).click();await expect(page.getByRole('button',{name:'More options',exact:true})).toBeFocused();
 });
 

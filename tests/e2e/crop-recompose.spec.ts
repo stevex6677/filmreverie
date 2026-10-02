@@ -11,11 +11,9 @@ test('crop drag follows the image and persists through save, reload, cancellatio
   const png=new PNG({width:900,height:300});
   for(let y=0;y<300;y++)for(let x=0;x<900;x++)png.data.set(x<300?[220,35,35,255]:x<600?[35,220,35,255]:[35,35,220,255],(y*900+x)*4);
   await page.getByLabel('Choose photographs').setInputFiles([{name:'composition.png',mimeType:'image/png',buffer:PNG.sync.write(png)}]);
-  await page.getByRole('button',{name:'Continue to roll details',exact:true}).click();
   await page.getByLabel('Roll name',{exact:true}).fill('Recompose');
   await page.getByRole('radio',{name:'120',exact:true}).check();
   await page.getByLabel('Film format',{exact:true}).selectOption('66');
-  await page.getByRole('button',{name:'Review photographs',exact:true}).click();
   const surface=page.getByLabel('Drag photograph to recompose');
   const bounds=(await surface.boundingBox())!;
   await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);

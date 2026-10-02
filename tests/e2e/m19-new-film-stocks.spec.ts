@@ -17,7 +17,6 @@ test('new stocks enforce formats, render filters and retain all four packages af
     await shelfAction(page, 'New roll');
     const editor = page.getByRole('dialog', { name: 'Review roll', exact: true });
     await editor.getByLabel('Choose photographs').setInputFiles({ name: `${stock}.jpg`, mimeType: 'image/jpeg', buffer: image });
-    await editor.getByRole('button', { name: 'Continue to roll details' }).click();
     const name = `${stock} ${format}`;
     await editor.getByLabel('Roll name', { exact: true }).fill(name);
     await editor.getByLabel('Film stock', { exact: true }).selectOption(stock);
@@ -29,7 +28,6 @@ test('new stocks enforce formats, render filters and retain all four packages af
       await editor.getByLabel('Film format', { exact: true }).selectOption(format);
       for (const id of ['fuji-200', 'pro-image-100']) await expect(editor.locator(`option[value="${id}"]`)).toHaveJSProperty('disabled', true);
     }
-    await editor.getByRole('button', { name: 'Review photographs', exact: true }).click();
     await page.screenshot({ path: info.outputPath(`${name}-filter-preview.png`) });
     await editor.getByRole('button', { name: 'Save and open', exact: true }).click();
     await expect(editor).not.toBeVisible({ timeout: 60000 }); await ready(page);

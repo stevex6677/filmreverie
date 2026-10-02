@@ -1,6 +1,7 @@
 import type { CloudDraft, DraftFrame, GalleryRoll, PublishResult, UploadGrant, UploadKind, UploadRequest, WithdrawResult } from './contracts';
 import { IMPORT_LIMITS, type DraftPhoto } from '../storage/importPhotos';
 import { sha256Hex } from '../storage/crypto';
+import { validatePreferences, type DarkroomPreferences } from '../storage/rollRepository';
 
 export class OwnerSessionRequired extends Error {
   constructor(message = 'Owner authentication is required. Open Owner login, then check your session here. Your unsaved draft is retained.') { super(message); }
@@ -45,6 +46,12 @@ export const ownerClient = {
   async save(draft: CloudDraft, signal?: AbortSignal) {
     return restoreView(await json<CloudDraft>(`drafts/${idPath(draft.roll.id)}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft), signal,
+    }));
+  },
+  async preferences(signal?: AbortSignal) { return validatePreferences(await json<DarkroomPreferences>('preferences', { signal })); },
+  async savePreferences(preferences: DarkroomPreferences, signal?: AbortSignal) {
+    return validatePreferences(await json<DarkroomPreferences>('preferences', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(preferences), signal,
     }));
   },
   async publish(id: string, updatedAt: number, signal?: AbortSignal, progress?: () => void): Promise<GalleryRoll> {
