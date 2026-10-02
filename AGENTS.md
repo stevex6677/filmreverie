@@ -64,13 +64,18 @@ instructions.
   from that checkout, in this order:
 
   ```sh
-  npx wrangler deploy --config cloudflare/wrangler.jsonc
-  npx wrangler pages deploy dist --project-name filmreverie --branch main
+  npm run deploy:worker
+  npm run deploy:pages
   ```
 
-  `main` is the existing Pages production branch, even when the GitHub release
-  branch is `master`. The deployments update `filmreverie.app` and its existing
-  API Worker. Use local Wrangler authentication; GitHub Actions is not required.
+  The private `pagesBranch` setting identifies the existing Pages production
+  branch independently of the GitHub release branch. The commands read ignored
+  `cloudflare/deployment.local.json` (or `CLOUDFLARE_DEPLOYMENT_CONFIG` in CI)
+  and preserve the existing production Worker, Pages project, routes and buckets.
+  Run `npm run check:cloud:production` before deployment as well. Do not deploy
+  with the generic checked-in Wrangler files. Preserve and privately back up the
+  local settings before removing a checkout. Use local Wrangler authentication;
+  GitHub Actions is not required.
 - Do not deploy if the Git push fails. If the Worker deployment fails, do not
   proceed to Pages. If Pages fails after the Worker succeeds, report the partial
   deployment explicitly; do not claim the entire push/deploy operation succeeded.

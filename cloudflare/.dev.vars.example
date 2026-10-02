@@ -1,0 +1,5 @@
+# Local-only test values. Never use production credentials in a committed file.
+ACCESS_AUDIENCE=replace-with-your-access-audience
+OWNER_EMAIL=owner@example.com
+R2_ACCESS_KEY_ID=replace-with-your-r2-access-key
+R2_SECRET_ACCESS_KEY=replace-with-your-r2-secret-key

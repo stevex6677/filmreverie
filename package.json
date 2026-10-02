@@ -37,8 +37,13 @@
     "validate:m20": "npm run build && npm run test:integration && npm run test:e2e && npm --prefix standalone/model-viewer test && npm --prefix standalone/model-viewer run test:reuse && npm --prefix standalone/model-viewer run test:browser",
     "validate:m21": "npm run build && npm run check:cloud && npm run test:integration && npm run test:e2e && npm --prefix standalone/model-viewer test && npm --prefix standalone/model-viewer run test:reuse && npm --prefix standalone/model-viewer run test:browser",
     "validate:m22": "npm run build && npm run test:integration && npm run test:e2e && npm --prefix standalone/model-viewer test && npm --prefix standalone/model-viewer run test:reuse && npm --prefix standalone/model-viewer run test:browser",
-    "check:cloud": "tsc --noEmit -p cloudflare/tsconfig.json && wrangler deploy --dry-run --config cloudflare/wrangler.jsonc --outdir \"$PWD/.cache/cloud-worker\"",
-    "dev:cloud": "wrangler dev --config cloudflare/wrangler.jsonc --local --port 8787"
+    "check:cloud": "tsc --noEmit -p cloudflare/tsconfig.json && WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=\"$PWD/.cache/wrangler-logs\" wrangler deploy --dry-run --config cloudflare/wrangler.jsonc --outdir \"$PWD/.cache/cloud-worker\"",
+    "dev:cloud": "wrangler dev --config cloudflare/wrangler.jsonc --local --port 8787",
+    "cloud:configure": "node scripts/cloudflare-deploy.ts configure",
+    "check:cloud:production": "tsc --noEmit -p cloudflare/tsconfig.json && node scripts/cloudflare-deploy.ts check",
+    "deploy:worker": "node scripts/cloudflare-deploy.ts worker",
+    "deploy:pages": "node scripts/cloudflare-deploy.ts pages",
+    "verify:cloud": "node scripts/cloudflare-deploy.ts verify"
   },
   "keywords": [],
   "author": "",

@@ -1,0 +1,16 @@
+{
+  "accountId": "",
+  "workerName": "gallery-api",
+  "zoneName": "example.com",
+  "pagesProject": "gallery",
+  "pagesBranch": "main",
+  "appOrigin": "https://example.com",
+  "photoOrigin": "https://photos.example.com",
+  "accessIssuer": "https://your-team.cloudflareaccess.com",
+  "privateBucket": "gallery-private",
+  "publicBucket": "gallery-public",
+  "devLoginOrigins": [
+    "http://localhost:5180",
+    "http://127.0.0.1:5180"
+  ]
+}

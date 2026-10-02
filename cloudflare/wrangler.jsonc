@@ -1,26 +1,32 @@
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
-  "name": "filmreverie-cloud",
-  "account_id": "073b00cf250298d0cec5135a0a3a2b25",
+  "name": "gallery-api-local",
   "main": "worker.ts",
   "compatibility_date": "2026-09-01",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "workers_dev": false,
   "preview_urls": false,
-  "routes": [{ "pattern": "filmreverie.app/api/*", "zone_name": "filmreverie.app" }],
   "r2_buckets": [
-    { "binding": "PRIVATE_BUCKET", "bucket_name": "filmreverie-private" },
-    { "binding": "PUBLIC_BUCKET", "bucket_name": "filmreverie-public" }
+    {
+      "binding": "PRIVATE_BUCKET",
+      "bucket_name": "gallery-private"
+    },
+    {
+      "binding": "PUBLIC_BUCKET",
+      "bucket_name": "gallery-public"
+    }
   ],
-  // Access issuer identifies the owner-only Access application.
-  // ACCESS_AUDIENCE, OWNER_EMAIL and R2 credentials are Worker secrets.
   "vars": {
-    "APP_ORIGIN": "https://filmreverie.app",
-    "DEV_LOGIN_ORIGINS": "http://localhost:5180,http://127.0.0.1:5180,https://macbook.tail2b1388.ts.net:5181",
-    "PHOTO_ORIGIN": "https://photos.filmreverie.app",
-    "ACCESS_ISSUER": "https://yellow-cell-2db9.cloudflareaccess.com",
-    "R2_ACCOUNT_ID": "073b00cf250298d0cec5135a0a3a2b25",
-    "PRIVATE_BUCKET_NAME": "filmreverie-private"
+    "APP_ORIGIN": "https://example.com",
+    "DEV_LOGIN_ORIGINS": "http://localhost:5180,http://127.0.0.1:5180",
+    "PHOTO_ORIGIN": "https://photos.example.com",
+    "ACCESS_ISSUER": "https://your-team.cloudflareaccess.com",
+    "R2_ACCOUNT_ID": "00000000000000000000000000000000",
+    "PRIVATE_BUCKET_NAME": "gallery-private"
   },
-  "observability": { "enabled": false }
+  "observability": {
+    "enabled": false
+  }
 }

@@ -1,14 +1,17 @@
 # Owner cloud gallery and visitor-local darkroom (M21)
 
-## Delivery boundary
+## Deployment configuration
 
-The application and Cloudflare Worker implementation are maintained locally. **With explicit approval, this assistant deployed the existing API Worker on 2026-09-26 to fix cross-site top-level admin login navigation.** The operator reports activating R2, creating the buckets/CORS, switching nameservers, creating the owner-only Access application, storing a private-bucket-scoped R2 signing credential, deploying the Worker and setting its four secrets, and redeploying Pages to `https://5be64739.filmreverie.pages.dev/`. These remote changes were not made or configuration-retested here. The operator's dashboard showed the zone active, the public photo custom domain initializing and both `r2.dev` URLs disabled; the operator reports deploying the photo-host cache bypass. `ACCESS_AUDIENCE`, `OWNER_EMAIL` and R2 credentials remain absent from tracked configuration and are stored as Worker secrets. A read-only hosted smoke reached the public gallery through Cloudflare's authoritative edge. The Pages preview rendered the static darkroom; its first deployment redirected `/guest` to `/`, but the redeployed `/guest?welcome=1` preserved the route and displayed the browser-local guest disclosure. The `pages.dev` hostname is outside the gallery Worker route, so apex/www binding and hosted owner/photo acceptance remain open. See [M21 review](M21_REVIEW.md).
+Cloudflare is optional for local guest use. The public Wrangler and CORS files
+contain generic examples. Production settings are read from ignored
+`cloudflare/deployment.local.json`, or `CLOUDFLARE_DEPLOYMENT_CONFIG` in CI.
+See [deployment setup and commands](AUTO_DEPLOY.md). Account-specific deployment
+records are kept privately; the [M21 review](M21_REVIEW.md) retains historical
+behavior and validation results with deployment identifiers omitted.
 
-**Account status (2026-09-26 initial checks; subsequent operator reports):** Wrangler authenticated to the account ID in `cloudflare/wrangler.jsonc`. Initially, R2 returned error **10042**, Pages listing was empty and public NS records pointed to Porkbun. The operator subsequently reported R2 activation, both buckets/CORS, migration to Cloudflare's nameservers, an owner-only Access application for `filmreverie.app/api/owner/*` with an exact-email Allow policy, privately stored bucket-scoped R2 signing keys, a connected `photos.filmreverie.app` public-bucket domain (last shown initializing), a deployed photo-host cache bypass, an initial Worker deployment with all four secret bindings and a Pages deployment. The Access audience was removed from tracked configuration at the operator's request. Read-only direct requests through Cloudflare's authoritative edge returned **200** with an empty gallery catalog and **302** for an anonymous owner session; the local resolver still returned the old parking addresses and failed TLS, so ordinary-origin reachability was not established. Do not paste identity, audience, tokens or signing keys into source, chat, screenshots or public build variables.
-
-**Apex setup (2026-09-26):** The operator activated the Pages apex-domain wizard after reviewing its replacement of only the two imported parking A records with a CNAME for `filmreverie.pages.dev`; the Pages dashboard subsequently showed `filmreverie.app` as **Initializing**. A read-only request forced to Cloudflare's authoritative IPv6 edge verified HTTPS and returned the deployed Film Reverie HTML and `{"version":1,"rolls":[]}` from `/api/gallery`. The local recursive resolver still returned old parking addresses, and an ordinary browser navigation failed TLS, so this is not proof of general-device or ordinary-DNS readiness. Wait for Pages status/certificate and ordinary DNS to settle before production use.
-
-**Current approved Worker deployment (2026-09-26):** `filmreverie-cloud` version `6142fc6a-39ba-45f3-a7ca-2bc4a9af07b9` is deployed to the existing `filmreverie.app/api/*` route. The development bridge uses the Access-protected `/api/owner/dev-login` and server-only `/api/dev-auth/exchange` to return to exact allowlisted dev origins and manage the published gallery. The earlier hosted-only navigation fix (`b5669078-9a61-40a9-af68-5c5528e9b3a6`) remains supported by `/api/owner/session`; ordinary cross-site private API reads, embedded requests and mutations remain blocked. Validation: build, all 296 integration tests, Worker type check and deployment dry run passed. A phone-width Chrome E2E used the actual bridge and in-memory Worker/R2 fixtures to exercise login return, publish, edit, expiration with draft retention, delete, Undo, Trash restore, public browsing and guest isolation. The actual private HTTPS preview returns 200 for the app/gallery, 401 for anonymous owner session, and a login redirect containing its own dev callback. Production exchange rejects an invalid proof. Completed real owner sign-in and physical iPad behavior remain unverified. Current menu/shared-editor frontend changes are local and have not been published to Pages.
+Examples below use `example.com`, `gallery-private` and `gallery-public`; use
+your own private settings when provisioning. Configuration generation and build
+checks do not create cloud resources or change existing secrets.
 
 ## Data boundaries and use
 
@@ -24,17 +27,17 @@ The application and Cloudflare Worker implementation are maintained locally. **W
 
 ## Cloudflare provisioning checklist — requires authorization
 
-1. Onboard `filmreverie.app` as a Cloudflare zone. Compare every imported DNS record with the current Porkbun zone, including mail and verification records, before changing nameservers. Check the existing DNSSEC state and follow the migration procedure below.
+1. Onboard `example.com` as a Cloudflare zone. Compare every imported DNS record with the current Porkbun zone, including mail and verification records, before changing nameservers. Check the existing DNSSEC state and follow the migration procedure below.
 2. Record the authorized owner email, Cloudflare account ID, Access team issuer and application audience. Select an owner-only Access allow policy, preferably with MFA at the identity provider. Do not use an Everyone allow rule, a bypass policy, visitor accounts or service-token-only authentication.
-3. Create separate Standard R2 buckets named `filmreverie-private` and `filmreverie-public`, matching `cloudflare/wrangler.jsonc`. Disable `r2.dev` and custom domains on the private bucket. Keep `r2.dev` disabled on the public bucket too; serve it only through `photos.filmreverie.app`. Never bind both names to one bucket.
+3. Create separate Standard R2 buckets named `gallery-private` and `gallery-public`, matching the private deployment settings. Disable `r2.dev` and custom domains on the private bucket. Keep `r2.dev` disabled on the public bucket too; serve it only through `photos.example.com`. Never bind both names to one bucket.
 4. Create an R2 S3 API credential restricted to object read/write in the **private** bucket only. Store its two values in Worker secrets `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`. Store `OWNER_EMAIL` and the Access application's audience tag as `ACCESS_AUDIENCE` Worker secrets too. The Worker verifies the Access JWT email and audience and returns 503 for API requests when required configuration is missing. Never put these four values in tracked Wrangler `vars`, `VITE_*` variables, source, GitHub Actions plaintext variables or committed `.env` files. Keep deploy credentials separate from upload signing credentials.
-5. Configure these non-secret Worker variables: `APP_ORIGIN`, `PHOTO_ORIGIN`, `ACCESS_ISSUER`, `R2_ACCOUNT_ID` and `PRIVATE_BUCKET_NAME`. The Access issuer is recorded in `cloudflare/wrangler.jsonc`; verify it against the actual Access team domain before deploying. The R2 bindings are `PRIVATE_BUCKET` and `PUBLIC_BUCKET`. Supply `ACCESS_AUDIENCE` and `OWNER_EMAIL` only through Cloudflare Worker secret bindings or an ignored local `cloudflare/.dev.vars` file; never publish their values in config.
-6. Configure private-bucket CORS from `cloudflare/private-cors.json`: only the app origin, PUT, the signed headers. Configure public-bucket CORS from `cloudflare/public-cors.json`: app-origin GET/HEAD. CORS is not authorization. Worker owner APIs remain same-origin and independently verify Access JWT signatures, issuer, audience, lifetime and owner email on every request.
-7. Create an Access self-hosted application covering `filmreverie.app/api/owner/*`. Leave `/api/gallery`, the static app and photo domain publicly readable. Admin shelf data is loaded only after successful API authentication. Disable Worker preview URLs and `workers.dev` as configured. Apply an API cache bypass for `/api/*` and Access endpoints; never cache authenticated responses.
+5. Configure these non-secret Worker variables: `APP_ORIGIN`, `PHOTO_ORIGIN`, `ACCESS_ISSUER`, `R2_ACCOUNT_ID` and `PRIVATE_BUCKET_NAME`. The Access issuer is `accessIssuer` in the private deployment settings; verify it against the actual Access team domain before deploying. The R2 bindings are `PRIVATE_BUCKET` and `PUBLIC_BUCKET`. Supply `ACCESS_AUDIENCE` and `OWNER_EMAIL` only through Cloudflare Worker secret bindings or an ignored local `cloudflare/.dev.vars` file; never publish their values in config.
+6. Run `npm run cloud:configure`, then configure private-bucket CORS from `.cache/cloudflare-deploy/private-cors.json`: only the app origin, PUT, the signed headers. Configure public-bucket CORS from `.cache/cloudflare-deploy/public-cors.json`: app-origin GET/HEAD. CORS is not authorization. Worker owner APIs remain same-origin and independently verify Access JWT signatures, issuer, audience, lifetime and owner email on every request.
+7. Create an Access self-hosted application covering `example.com/api/owner/*`. Leave `/api/gallery`, the static app and photo domain publicly readable. Admin shelf data is loaded only after successful API authentication. Disable Worker preview URLs and `workers.dev` as configured. Apply an API cache bypass for `/api/*` and Access endpoints; never cache authenticated responses.
 8. Configure an explicit **cache bypass on the photo hostname**, preserving direct R2 custom-domain delivery and CORS. Objects also request `max-age=0, must-revalidate`. If an operator later enables edge caching, withdrawal requires purging every affected versioned URL (or disabling/purging the photo-host cache); retest old image URLs anonymously before claiming withdrawal complete. Do not rewrite image bodies.
-9. Use the **Workers Free** CPU configuration checked into `cloudflare/wrangler.jsonc`; no paid CPU allowance or server-side image transformation is configured. Cloudflare Free limits include 10 ms CPU and 50 external subrequests per invocation. The local tests bound R2 calls per publication/withdrawal batch, but do not establish hosted CPU, real R2 latency or production signed-PUT/CORS behavior. Before releasing production publication, measure each route with a representative roll on the authorized account as detailed below. Do not enable a paid plan without separate authorization.
-10. Create the Pages project using `wrangler.pages.jsonc` with production branch `main`. Build with `npm ci --include=dev && npm run build`, Node 24 LTS recommended; publish `dist` to `main`. This preserves tracked models, packaging, sample photos, content-hashed app bytes and the existing service worker. `_headers` configures static hosting and is intentionally excluded from the offline asset inventory.
-11. Route `filmreverie.app/api/*` to the Worker as configured. Bind Pages to the apex and `www`; bind the public R2 bucket to the photo hostname. With no top-level `404.html` or `/guest` rewrite, [Pages' SPA fallback](https://developers.cloudflare.com/pages/configuration/serving-pages/#single-page-application-spa-rendering) serves the app shell for `/guest` and `/guest/` while preserving the path for client routing. Do not rewrite `/guest` to `/index.html`: Pages canonicalizes that target to `/` and loses the guest route. Configure the `www`→apex redirect with a zone Redirect Rule rather than a Pages `_redirects` domain-level rule, which [Pages does not support](https://developers.cloudflare.com/pages/configuration/redirects/#advanced-redirects). Verify both guest deep links, the `www` redirect and that `/api/gallery` stays on the Worker. Enable HTTPS redirects and verify certificates before importing at the production origin. Do not enable HTML/JS/image rewriting or another application-shell worker over the generated offline worker.
+9. Use the Worker CPU configuration checked into `cloudflare/wrangler.jsonc`; no paid CPU allowance or server-side image transformation is configured. Cloudflare Free limits include 10 ms CPU and 50 external subrequests per invocation. The local tests bound R2 calls per publication/withdrawal batch, but do not establish hosted CPU, real R2 latency or production signed-PUT/CORS behavior. Before releasing production publication, measure each route with a representative roll on the authorized account as detailed below. Do not enable a paid plan without separate authorization.
+10. Create the Pages project with the name and production branch specified by `pagesProject` and `pagesBranch` in your private settings. Build with `npm ci --include=dev && npm run build`, Node 24 LTS recommended; publish `dist` to that configured production branch. This preserves tracked models, packaging, sample photos, content-hashed app bytes and the existing service worker. `_headers` configures static hosting and is intentionally excluded from the offline asset inventory.
+11. Route `example.com/api/*` to the Worker as configured. Bind Pages to the apex and `www`; bind the public R2 bucket to the photo hostname. With no top-level `404.html` or `/guest` rewrite, [Pages' SPA fallback](https://developers.cloudflare.com/pages/configuration/serving-pages/#single-page-application-spa-rendering) serves the app shell for `/guest` and `/guest/` while preserving the path for client routing. Do not rewrite `/guest` to `/index.html`: Pages canonicalizes that target to `/` and loses the guest route. Configure the `www`→apex redirect with a zone Redirect Rule rather than a Pages `_redirects` domain-level rule, which [Pages does not support](https://developers.cloudflare.com/pages/configuration/redirects/#advanced-redirects). Verify both guest deep links, the `www` redirect and that `/api/gallery` stays on the Worker. Enable HTTPS redirects and verify certificates before importing at the production origin. Do not enable HTML/JS/image rewriting or another application-shell worker over the generated offline worker.
 12. Optionally expire only private `staging/` and `uploads/pending/` after at least one day. Never expire `sealed/`, `uploads/completed/`, `drafts/` or `catalog/` as disposable uploads. Unreferenced sealed uploads and old draft snapshots are retained intentionally; review references and take a backup before operator-led retention cleanup.
 
 The operator reports completing bucket, CORS, zone, Access, initial Worker and four-secret deployment steps below; do not rerun provisioning commands for resources already created. [Cloudflare documents](https://developers.cloudflare.com/workers/configuration/secrets/#adding-secrets-to-your-project) that each `wrangler secret put` immediately deploys a new Worker version. Enter secret values only at Wrangler's interactive prompt, not in shell arguments or source. All four secrets are reported set, but hosted authentication, uploads and Free-plan limits still require verification.
@@ -43,23 +46,27 @@ Wrangler's local interactive [OAuth login](https://developers.cloudflare.com/wor
 
 ```sh
 # Create these only if they are absent, after confirming the account and R2 terms.
-npx wrangler r2 bucket create filmreverie-private --storage-class Standard
-npx wrangler r2 bucket create filmreverie-public --storage-class Standard
-npx wrangler r2 bucket cors set filmreverie-private --file cloudflare/private-cors.json
-npx wrangler r2 bucket cors set filmreverie-public --file cloudflare/public-cors.json
+# Replace example bucket names with your private deployment settings.
+npm run cloud:configure
+npx wrangler r2 bucket create gallery-private --storage-class Standard
+npx wrangler r2 bucket create gallery-public --storage-class Standard
+npx wrangler r2 bucket cors set gallery-private --file .cache/cloudflare-deploy/private-cors.json
+npx wrangler r2 bucket cors set gallery-public --file .cache/cloudflare-deploy/public-cors.json
 # Create the private-bucket-only R2 S3 credential in the dashboard.
-# Verify ACCESS_ISSUER in cloudflare/wrangler.jsonc matches the Access team.
+# Verify accessIssuer in cloudflare/deployment.local.json matches the Access team.
 # Retain the Access application's audience tag outside Git for secret entry.
 npm run build
+npm run test:integration
 npm run check:cloud  # Type-check and bundle only; does not deploy.
-npx wrangler deploy --config cloudflare/wrangler.jsonc
+npm run check:cloud:production
+npm run deploy:worker
 # The initial Worker fails closed until all four secrets exist.
 # Each command below immediately deploys another Worker version.
-npx wrangler secret put ACCESS_AUDIENCE --config cloudflare/wrangler.jsonc
-npx wrangler secret put OWNER_EMAIL --config cloudflare/wrangler.jsonc
-npx wrangler secret put R2_ACCESS_KEY_ID --config cloudflare/wrangler.jsonc
-npx wrangler secret put R2_SECRET_ACCESS_KEY --config cloudflare/wrangler.jsonc
-npx wrangler pages deploy dist --project-name filmreverie --branch main
+npx wrangler secret put ACCESS_AUDIENCE --config .cache/cloudflare-deploy/worker.json
+npx wrangler secret put OWNER_EMAIL --config .cache/cloudflare-deploy/worker.json
+npx wrangler secret put R2_ACCESS_KEY_ID --config .cache/cloudflare-deploy/worker.json
+npx wrangler secret put R2_SECRET_ACCESS_KEY --config .cache/cloudflare-deploy/worker.json
+npm run deploy:pages
 ```
 
 Bucket creation, custom-domain setup, Access policy and DNS changes are deliberate dashboard/operator steps, not implicit effects of local build scripts. `.dev.vars*` and `.wrangler/` are ignored; never commit secret files. `npm run dev:cloud` runs local workerd/R2 without production authentication bypass. To proxy same-origin API requests during local development, set `FILM_PHOTO_CLOUD_API=http://127.0.0.1:8787` when starting Vite. Missing configuration returns 503; actual owner login still requires a configured Access origin, not an insecure local bypass.
@@ -68,11 +75,10 @@ For development that edits the **published Cloudflare gallery**, enable the loca
 
 ```sh
 FILM_PHOTO_DEV_ADMIN_BRIDGE=1 \
-FILM_PHOTO_DEV_ADMIN_ORIGINS='http://localhost:5180,http://127.0.0.1:5180,https://macbook.tail2b1388.ts.net:5181' \
-npm run dev -- --host 127.0.0.1 --port 5180
+npm run dev -- --host 0.0.0.0 --port 5180
 ```
 
-Use the actual private Tailscale hostname and Serve mapping. The Worker `DEV_LOGIN_ORIGINS` must list the exact permitted origins; callbacks must use `/api/dev-auth/callback`. **Admin Login** visits real Cloudflare Access in the same tab, then returns to the initiating dev origin, path, query and fragment. A one-minute, single-use PKCE code transfers the verified application session to the local server. Private R2 stores only code-encrypted token material, and redeemed/expired grants are deleted; abandoned ciphertext has no valid exchange after one minute. The server retains the Access token in memory and gives the browser an opaque HttpOnly, SameSite=Lax cookie (Secure on HTTPS). Restarting the server requires logging in again. No token is placed in browser storage or a callback URL.
+The bridge reads application/photo origins and allowed dev origins from the private deployment settings. Set `devLoginOrigins` to your actual origins; `FILM_PHOTO_DEV_ADMIN_ORIGINS` can override the local bridge list, but must still match the deployed Worker allowlist. Preserve existing private HTTPS access configuration. The Worker `DEV_LOGIN_ORIGINS` must list the exact permitted origins; callbacks must use `/api/dev-auth/callback`. **Admin Login** visits real Cloudflare Access in the same tab, then returns to the initiating dev origin, path, query and fragment. A one-minute, single-use PKCE code transfers the verified application session to the local server. Private R2 stores only code-encrypted token material, and redeemed/expired grants are deleted; abandoned ciphertext has no valid exchange after one minute. The server retains the Access token in memory and gives the browser an opaque HttpOnly, SameSite=Lax cookie (Secure on HTTPS). Restarting the server requires logging in again. No token is placed in browser storage or a callback URL.
 
 The bridge forwards authenticated owner requests to the production API, rejects foreign mutation origins, proxies session-bound signed uploads, and serves published photos through the dev origin. **New roll**, **Save and open**, delete, Trash and Undo therefore change the published gallery. Guest rolls remain local. The bridge runs only in explicitly enabled Vite development; builds and static previews do not include its backend. The dropdown contains only **Admin Login** or **Logged in**. Do not set the previous hosted-only `VITE_FILM_PHOTO_ADMIN_LOGIN_URL` override for this flow. A hosted production build continues to use its same-origin Access session endpoint.
 
@@ -81,15 +87,15 @@ The bridge forwards authenticated owner requests to the production API, rejects 
 For subsequent application releases, use the
 [GitHub push deployment workflow](AUTO_DEPLOY.md) to validate and deploy both
 the API Worker and existing Pages project. GitHub `master` deploys to the Pages
-project's existing production branch `main`. A dedicated GitHub repository
-deployment token is required; the workflow does not change DNS, Access or R2
-provisioning.
+production branch specified by the private `pagesBranch` setting. Dedicated GitHub
+repository deployment token and configuration secrets are required; the workflow
+does not change DNS, Access or R2 provisioning.
 
 Registration and renewal stay at Porkbun. Before changing nameservers, export the current zone and record all A/AAAA/CNAME, MX, TXT, SPF, DKIM, DMARC, CAA and verification records, TTLs and current DNSSEC state. Import and compare the complete zone in Cloudflare; do not overwrite mail records with app records. Check CAA allows certificate issuance required by the chosen services.
 
 If DNSSEC is currently enabled, remove the old DS at Porkbun and allow its TTL to expire **before** changing delegation; stale DS records can make the entire domain fail validation. Use the actual nameservers assigned to this zone, not example names. Change only the authoritative nameservers at Porkbun, verify delegation/resolution and preserved email records, then enable Cloudflare DNSSEC and publish its new DS at Porkbun. Verify validating resolvers before calling migration complete. Keep the old zone export and a rollback plan; do not toggle nameservers and DS records together blindly.
 
-Verify `https://filmreverie.app`, HTTP→HTTPS, `https://www.filmreverie.app`→apex, photo-domain HTTPS/CORS and Access login from independent browsers. HTTPS origin changes never transfer browser storage automatically.
+Verify `https://example.com`, HTTP→HTTPS, `https://www.example.com`→apex, photo-domain HTTPS/CORS and Access login from independent browsers. HTTPS origin changes never transfer browser storage automatically.
 
 ## Backups, restore and withdrawal recovery
 

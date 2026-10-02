@@ -21,7 +21,6 @@ jobs:
     env:
       CI: 'true'
       WRANGLER_SEND_METRICS: 'false'
-      CLOUDFLARE_ACCOUNT_ID: '073b00cf250298d0cec5135a0a3a2b25'
     steps:
       - name: Check out the pushed commit
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -46,27 +45,27 @@ jobs:
             echo '::error::Add the CLOUDFLARE_API_TOKEN repository secret before deploying.'
             exit 1
           fi
+      - name: Validate private production configuration
+        env:
+          CLOUDFLARE_DEPLOYMENT_CONFIG: ${{ secrets.CLOUDFLARE_DEPLOYMENT_CONFIG }}
+        run: npm run check:cloud:production
       - name: Deploy the API Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: npx wrangler deploy --config cloudflare/wrangler.jsonc
+          CLOUDFLARE_DEPLOYMENT_CONFIG: ${{ secrets.CLOUDFLARE_DEPLOYMENT_CONFIG }}
+        run: npm run deploy:worker
       - name: Deploy the production website
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        # Pages was created with production branch main; GitHub uses master.
-        run: npx wrangler pages deploy dist --project-name filmreverie --branch main --commit-hash "$GITHUB_SHA"
-      - name: Check the public gallery endpoint
-        run: |
-          node --input-type=module <<'JS'
-          const response = await fetch('https://filmreverie.app/api/gallery', { signal: AbortSignal.timeout(30000) });
-          if (!response.ok) throw new Error(`Public gallery check failed (${response.status}).`);
-          const catalog = await response.json();
-          if (catalog.version !== 1 || !Array.isArray(catalog.rolls)) throw new Error('Unexpected public gallery response.');
-          console.log('Public gallery API is available.');
-          JS
+          CLOUDFLARE_DEPLOYMENT_CONFIG: ${{ secrets.CLOUDFLARE_DEPLOYMENT_CONFIG }}
+        run: npm run deploy:pages
+      - name: Check the website and public gallery endpoint
+        env:
+          CLOUDFLARE_DEPLOYMENT_CONFIG: ${{ secrets.CLOUDFLARE_DEPLOYMENT_CONFIG }}
+        run: npm run verify:cloud
       - name: Record the production deployment
         run: |
           {
-            echo 'Deployed the API Worker and Pages website to https://filmreverie.app.'
+            echo 'Deployed the API Worker and Pages website using the private production configuration.'
             echo "Commit: $GITHUB_SHA"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -2,7 +2,7 @@
   "rules": [
     {
       "allowed": {
-        "origins": ["https://filmreverie.app"],
+        "origins": ["https://example.com"],
         "methods": ["PUT"],
         "headers": ["Content-Type", "Content-Length", "x-amz-content-sha256"]
       },

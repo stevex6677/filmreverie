@@ -49,3 +49,6 @@ blender/**/previews_refined/
 blender/**/*.png
 blender/**/*.jpg
 blender/**/*.jpeg
+
+# Account-specific Cloudflare settings (back up privately; never commit).
+/cloudflare/deployment.local.json

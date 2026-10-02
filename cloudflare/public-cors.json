@@ -2,7 +2,7 @@
   "rules": [
     {
       "allowed": {
-        "origins": ["https://filmreverie.app"],
+        "origins": ["https://example.com"],
         "methods": ["GET", "HEAD"]
       },
       "exposeHeaders": ["ETag", "Content-Length"],
