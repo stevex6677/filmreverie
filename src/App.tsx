@@ -199,7 +199,7 @@ export function App() {
   const roll = state.roll;
   // Screening overrides rendering only. It never dispatches viewer actions,
   // so the table, loupe, film mode, brightness and saved views are unchanged.
-  const [screeningChoice, setScreeningChoice] = useState<ScreeningChoice>({ reel: 'tracking', pace: 'normal', tuning: {} });
+  const [screeningChoice, setScreeningChoice] = useState<ScreeningChoice>({ reel: 'tracking', pace: 'normal', tuning: {}, music: 'none', volume: .8 });
   const [screeningFormat, setScreeningFormat] = useState<ExportFormat>('16:9');
   const [screeningPicker, setScreeningPicker] = useState(false);
   const [screening, setScreening] = useState<ScreeningSession | null>(null);
@@ -213,9 +213,10 @@ export function App() {
   const startScreening = (mode: 'preview' | 'export') => {
     if (state.roomMode !== 'inspect' || state.loupe.isActive || state.isTransitioning) return;
     const session = new ScreeningSession(roll, screeningChoice, screeningOptions(), screeningCredits, state.viewportAspect);
-    if (mode === 'export') session.pause();
+    if (mode === 'export') session.pause(); else session.play();
     setScreeningPicker(false); setSheet(null); setScreening(session); setScreeningExport(mode === 'export' ? 'picker' : null);
   };
+  useEffect(() => () => screening?.dispose(), [screening]);
   const exitScreening = () => {
     setScreeningExport(null); setScreening(null);
     requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-testid="screen-roll"]')?.focus({ preventScroll: true }));

@@ -24,6 +24,7 @@ const format = (seconds: number) => `${Math.floor(seconds / 60)}:${(seconds % 60
 export default function Showreel() {
   const params = useMemo(() => new URLSearchParams(location.search), []);
   const clean = params.get('clean') === '1';
+  const [panel, setPanel] = useState(!clean && params.get('paused') !== '1');
   const fixed = params.get('size')?.match(/^(\d+)x(\d+)$/);
   const session = useMemo(() => {
     const look = params.get('look')?.split(',').map(Number).filter(Number.isFinite);
@@ -42,19 +43,34 @@ export default function Showreel() {
   const player = useMemo(() => new SoundtrackPlayer(), []);
   useEffect(() => { (window as typeof window & { __showreelAudio?: SoundtrackPlayer }).__showreelAudio = player; return () => player.dispose(); }, [player]);
   const track = settings.music === 'none' ? undefined : trackById(settings.music);
+  const [audioError, setAudioError] = useState('');
+  const reportAudioError = useCallback((error: unknown) => {
+    setAudioError(error instanceof Error ? error.message : 'The soundtrack could not be played.');
+    session.pause();
+  }, [session]);
+  // Start/resume audio in the button or touch event, before React effects run.
+  const play = useCallback(() => {
+    setAudioError('');
+    if (session.time >= session.timeline.duration) session.seek(0);
+    if (track) void player.play(track, session.time, session.timeline.cue, session.timeline.duration, settings.volume).catch(reportAudioError);
+    session.play();
+  }, [session, player, track, settings.volume, reportAudioError]);
+  const toggle = useCallback(() => { if (session.playing) session.pause(); else play(); }, [session, play]);
   useEffect(() => { if (track) void player.load(track).catch(() => {}); }, [player, track]);
   useEffect(() => { session.clock = track ? () => player.now() : null; }, [session, player, track]);
   // Keep the music with the picture: start and stop with playback, restart after a seek.
   useEffect(() => {
+    // Track selection auditions own the player while settings are open.
+    if (panel) return;
     const sync = () => {
       if (!track || !session.playing || session.exporting) { if (player.active) player.stop(); return; }
       const now = player.now();
-      if (!player.active || (now !== null && Math.abs(now - session.time) > .3))
-        void player.play(track, session.time, session.timeline.cue, session.timeline.duration, settings.volume).catch(() => {});
+      if (!player.active || (now !== null && Math.abs(Math.max(0, now) - session.time) > .3))
+        void player.play(track, session.time, session.timeline.cue, session.timeline.duration, settings.volume).catch(reportAudioError);
     };
     sync();
     return session.subscribe(sync);
-  }, [session, player, track, settings.volume]);
+  }, [session, player, track, settings.volume, panel, reportAudioError]);
   const overlay = useRef<HTMLCanvasElement>(null);
   useEffect(() => { session.overlay = overlay.current; return () => { session.overlay = null; }; }, [session]);
 
@@ -75,7 +91,6 @@ export default function Showreel() {
   const [preroll, setPreroll] = useState(0);
   const [ready, setReady] = useState(false);
   // Settings come first, unless the URL asks for a recording or a held moment.
-  const [panel, setPanel] = useState(!clean && params.get('paused') !== '1');
   const [exporting, setExporting] = useState(false);
   const start = Number(params.get('t')) || 0;
   // The settings show their effect on a light-table frame, clear of the sheet.
@@ -94,7 +109,7 @@ export default function Showreel() {
     return () => abort.abort();
   // The pre-roll runs once, when everything has loaded.
   }, [loaded, session, params]);
-  const preview = () => { setPanel(false); session.seek(start); session.play(); };
+  const preview = () => { session.seek(start); play(); setPanel(false); };
   const openSettings = () => { session.pause(); session.seek(settingsFrame); setPanel(true); };
   const openExport = () => { session.pause(); setExporting(true); };
 
@@ -111,7 +126,7 @@ export default function Showreel() {
     const key = (event: KeyboardEvent) => {
       if (document.querySelector('.showreel-panel, .showreel-dialog')) return;
       if (event.target instanceof HTMLInputElement && event.key !== ' ') return;
-      if (event.key === ' ' || event.key === 'k') { event.preventDefault(); session.toggle(); }
+      if (event.key === ' ' || event.key === 'k') { event.preventDefault(); toggle(); }
       else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); session.seek(session.time + (event.key === 'ArrowLeft' ? -1 : 1) * (event.shiftKey ? 5 : 1)); }
       else if (event.key === 'Home' || event.key === '0') { event.preventDefault(); session.seek(0); }
       else if (event.key === 'h') setHidden(value => !value);
@@ -119,12 +134,12 @@ export default function Showreel() {
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [session]);
+  }, [session, toggle]);
 
   const shots = session.timeline.shots;
   const stageStyle = fixed ? { width: `${fixed[1]}px`, height: `${fixed[2]}px` } : undefined;
   return <div className={`showreel ${idle && snapshot.playing ? 'is-idle' : ''}`} data-showreel-ready={ready} data-showreel-time={snapshot.time} data-showreel-playing={snapshot.playing}>
-    <div ref={stage} className={`showreel-stage ${fixed ? 'is-fixed' : ''}`} style={stageStyle} onClick={() => { if (ready && !panel && !exporting) session.toggle(); }}>
+    <div ref={stage} className={`showreel-stage ${fixed ? 'is-fixed' : ''}`} style={stageStyle} onClick={() => { if (ready && !panel && !exporting) toggle(); }}>
       <Canvas shadows dpr={[1, Math.min(window.devicePixelRatio || 1, 1.5)]} camera={{ position: [0, 1, 4], fov: 45, near: .04, far: 50 }}
         gl={{ preserveDrawingBuffer: true, antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: DISPLAY_EXPOSURE, outputColorSpace: THREE.SRGBColorSpace }}>
         <ShowreelScene session={session} rolls={SHOWREEL_ROLLS} ready={loaded} onProgress={onProgress} />
@@ -141,9 +156,10 @@ export default function Showreel() {
       {exporting && <ShowreelExportDialog session={session} settings={settings} onResolution={resolution => changeSettings({ resolution })}
         onClose={() => { setExporting(false); if (panel) session.seek(settingsFrame); }} />}
     </div>
+    {audioError && <p className="showreel-audio-error" role="alert">{audioError} Tap Play to retry.</p>}
     {!hidden && !panel && !exporting && <div className="showreel-controls" onClick={event => event.stopPropagation()}>
-      <button type="button" onClick={() => session.toggle()} disabled={!ready} aria-label={snapshot.playing ? 'Pause' : 'Play'}>{snapshot.playing ? '❚❚' : '▶'}</button>
-      <button type="button" onClick={() => { session.seek(0); session.play(); }} disabled={!ready} aria-label="Restart">↺</button>
+      <button type="button" onClick={toggle} disabled={!ready} aria-label={snapshot.playing ? 'Pause' : 'Play'}>{snapshot.playing ? '❚❚' : '▶'}</button>
+      <button type="button" onClick={() => { session.pause(); session.seek(0); play(); }} disabled={!ready} aria-label="Restart">↺</button>
       <div className="showreel-scrubber">
         <input type="range" min={0} max={snapshot.duration} step={.1} value={snapshot.time} aria-label="Showreel position"
           onChange={event => session.seek(Number(event.currentTarget.value))} />

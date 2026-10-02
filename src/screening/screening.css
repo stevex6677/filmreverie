@@ -80,3 +80,6 @@ div.screening-export button { min-width:44px; min-height:44px; padding:10px 18px
 .screening-formats .screening-choice-card { align-items:center; gap:6px; padding:14px 6px 10px; }
 .screening-format-shape { display:block; height:44px; max-width:78px; border:1.5px solid currentColor; border-radius:4px; opacity:.7; }
 .screening-export-summary { color:#cfc7b2; }
+
+.screening-music { display:grid; gap:8px; }
+.screening-music-error { position:absolute; top:70px; left:16px; right:16px; padding:12px; background:#16181bf0; font-size:.85rem; }

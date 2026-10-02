@@ -121,8 +121,14 @@ focused on the camera's subject. Preview supports
 play/pause, previous/next frame, tap to pause and exit; exiting restores the table
 exactly, and screening never writes rolls or saved views.
 
+The settings include the same five CC0 music tracks as `/showreel`, with tap-to-preview selection,
+volume and No music controls. Music plays with the preview and is included in
+exports, looping for long rolls and fading at the start and end. The five tracks
+are included in offline preparation. No music remains the default. If the browser
+cannot encode audio, export reports that the resulting video is silent.
+
 **Export video** first asks for the video format, then renders the same timeline
-frame by frame into a silent 30 fps H.264 MP4 at 1280 × 720, 720 × 1280 or
+frame by frame into a 30 fps H.264 MP4 at 1280 × 720, 720 × 1280 or
 720 × 720, entirely in the browser with
 WebCodecs and an in-repo MP4 writer; nothing is uploaded. It works for published,
 guest and offline rolls, and saves through the share sheet (iPad: Save Video) or a
@@ -143,19 +149,19 @@ and the GitHub link. Titles, captions, light leaks, grain and camera labels are
 drawn over the scene. The page is public to anyone with the URL, is marked
 `noindex`, and is not part of the offline download.
 
-It opens on its **settings**: music (three tracks, each with a short Listen, or
+It opens on its **settings**: music (five tracks that preview when selected, or
 none) and volume, film grain, vignette, light leaks, and titles and captions.
 Changes show on the frame behind the sheet and are remembered in the browser.
 **Preview** plays the film with its music; the soundtrack's clock drives the
-picture so the two stay together, and each track's beat drop is placed on the
-first cut. **Export video** renders the film frame by frame to a 30 fps H.264
+picture so the two stay together. A track's musical cue aligns with the first
+cut when possible; tracks with earlier cues play from the beginning immediately. **Export video** renders the film frame by frame to a 30 fps H.264
 MP4 at **720p or 1080p**, with the soundtrack as AAC (Opus where AAC encoding
 is unavailable; silent if neither is). Nothing is uploaded. On the 2-core
 development Mac a 720p export takes about 6 minutes and 1080p about 18.
 
 The music is by HoliznaCC0, dedicated to the public domain (CC0), so it can be
-used anywhere without credit: *Families* (default), *Blue Skies* and *City In
-The Rearview*, listed in [`src/data/showreelMusic.json`](src/data/showreelMusic.json).
+used anywhere without credit: *Families* (default), *Blue Skies*, *City In
+The Rearview*, *Dream Pop* and *Autumn*, listed in [`src/data/showreelMusic.json`](src/data/showreelMusic.json).
 `npm run fetch:showreel-music -- --publish` extracts the pinned originals into
 shared `ignored_assets/music/showreel/` and publishes 70 second excerpts to
 `public/assets/music/showreel/`.

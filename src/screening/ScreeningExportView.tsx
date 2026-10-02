@@ -3,6 +3,7 @@ import { exportScreening, ExportUnsupportedError, type ExportProgress } from './
 import { EXPORT_FORMATS, type ExportFormat, type ScreeningSession } from './session';
 import { formatDuration } from './ScreeningUI';
 import { PACE_LABEL, REEL_LABEL } from './reels';
+import { renderSoundtrack } from '../showreel/music';
 
 type Phase = 'setup' | 'rendering' | 'done' | 'unsupported' | 'error';
 
@@ -16,6 +17,9 @@ export default function ScreeningExportView({ session, initialFormat, onFormat, 
   const [format, setFormat] = useState(initialFormat);
   const [progress, setProgress] = useState<Omit<ExportProgress, 'preview'>>({ frame: 0, total: 0, elapsed: 0, remaining: null, paused: false });
   const [message, setMessage] = useState('');
+  const [silentFallback, setSilentFallback] = useState(false);
+  const track = session.musicTrack;
+  const soundtrackLabel = track ? `Music: ${track.title}` : 'No music';
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState('');
   const preview = useRef<HTMLCanvasElement>(null), root = useRef<HTMLDivElement>(null);
@@ -35,13 +39,19 @@ export default function ScreeningExportView({ session, initialFormat, onFormat, 
     void wake();
     session.setExporting(true);
     root.current?.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
-    exportScreening(session, format, { signal: abort.signal, maxSeconds, onProgress: next => {
-      const { preview: frame, ...rest } = next;
-      setProgress(rest);
-      const now = performance.now();
-      // Show the actual encoded frame, a few times a second.
-      if (frame && preview.current && now - painted > 200) { painted = now; preview.current.getContext('2d')?.drawImage(frame, 0, 0, preview.current.width, preview.current.height); }
-    } }).then(blob => {
+    const render = async () => {
+      const duration = Math.min(session.timeline.duration, maxSeconds ?? Infinity);
+      const audio = track ? await renderSoundtrack(track, track.drop, duration, session.choice.volume ?? .8, true) : undefined;
+      if (abort.signal.aborted) throw new DOMException('Export cancelled.', 'AbortError');
+      return exportScreening(session, format, { signal: abort.signal, maxSeconds, audio, onSilent: () => setSilentFallback(true), onProgress: next => {
+        const { preview: frame, ...rest } = next;
+        setProgress(rest);
+        const now = performance.now();
+        // Show the actual encoded frame, a few times a second.
+        if (frame && preview.current && now - painted > 200) { painted = now; preview.current.getContext('2d')?.drawImage(frame, 0, 0, preview.current.width, preview.current.height); }
+      } });
+    };
+    void render().then(blob => {
       if (abort.signal.aborted) return;
       const result = new File([blob], fileName, { type: 'video/mp4' });
       setFile(result); setUrl(URL.createObjectURL(result)); setPhase('done');
@@ -89,7 +99,7 @@ export default function ScreeningExportView({ session, initialFormat, onFormat, 
           </span>
         </label>)}
       </fieldset>
-      <p className="screening-note">{width} × {height} · 30 fps · H.264 · silent. Made on this device; nothing is uploaded.</p>
+      <p className="screening-note">{width} × {height} · 30 fps · H.264 · {soundtrackLabel}. Made on this device; nothing is uploaded.</p>
       <div className="screening-export-actions">
         <button type="button" className="is-primary" data-testid="screening-export-start" onClick={start}>Export</button>
         <button type="button" data-testid="screening-export-back" onClick={() => onClose(false)}>Cancel</button>
@@ -99,11 +109,12 @@ export default function ScreeningExportView({ session, initialFormat, onFormat, 
       <canvas ref={preview} className="screening-export-preview" width={Math.round(width / 2)} height={Math.round(height / 2)} style={{ aspectRatio: `${width} / ${height}` }} aria-label="Current frame" />
       <progress data-testid="screening-export-progress" max={progress.total || 1} value={progress.frame} aria-label="Export progress" />
       <p role="status" data-testid="screening-export-status">{progress.paused ? 'Paused while the app is in the background.' : progress.total ? `${percent}% · Frame ${progress.frame} of ${progress.total}${progress.remaining !== null && progress.frame > 15 ? ` · about ${formatDuration(progress.remaining / 1000)} left` : ''}` : 'Preparing photographs…'}</p>
-      <p className="screening-note">{width} × {height} · 30 fps · H.264 · silent. Keep this screen open; nothing is uploaded.</p>
+      <p className="screening-note">{width} × {height} · 30 fps · H.264 · {soundtrackLabel}. Keep this screen open; nothing is uploaded.</p>
       <button type="button" data-testid="screening-export-cancel" onClick={cancel}>Cancel</button>
     </>}
     {phase === 'done' && <>
-      <video className="screening-export-preview" data-testid="screening-export-video" src={url} controls playsInline muted style={{ aspectRatio: `${width} / ${height}` }} />
+      {silentFallback && <p role="status">This browser could not encode the music. The exported video is silent.</p>}
+      <video className="screening-export-preview" data-testid="screening-export-video" src={url} controls playsInline style={{ aspectRatio: `${width} / ${height}` }} />
       <p className="screening-note">{fileName} · {(file!.size / 1e6).toFixed(1)} MB</p>
       <div className="screening-export-actions">
         {canShare && <button type="button" className="is-primary" data-testid="screening-share" onClick={() => void share()}>Save or share video</button>}

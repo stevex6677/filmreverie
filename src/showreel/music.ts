@@ -2,13 +2,14 @@ import type { ShowreelTrack } from './settings';
 
 // The soundtrack is placed so the track's beat drop lands on the showreel's
 // cue (its first cut), with a short fade in and a fade out to the last frame.
+// If the track's cue is earlier than the opening, start from its beginning.
 // Preview and export share the placement and the volume envelope.
 
 const FADE_IN = .35, FADE_OUT = 3.2;
 export const SOUNDTRACK_RATE = 48000;
 
-/** Seconds into the track at timeline time 0 (negative: the track starts later). */
-export const trackOffset = (track: ShowreelTrack, cue: number) => track.drop - cue;
+/** Seconds into the track at timeline time 0; never insert opening silence. */
+export const trackOffset = (track: ShowreelTrack, cue: number) => Math.max(0, track.drop - cue);
 
 /** The volume envelope at timeline time `time`. */
 export function soundtrackGain(time: number, duration: number, volume: number) {
@@ -27,14 +28,15 @@ async function decode(context: BaseAudioContext, track: ShowreelTrack) {
 }
 
 /** The soundtrack for export, rendered to the film's exact length. */
-export async function renderSoundtrack(track: ShowreelTrack, cue: number, duration: number, volume: number) {
+export async function renderSoundtrack(track: ShowreelTrack, cue: number, duration: number, volume: number, loop = false) {
   const context = new OfflineAudioContext(2, Math.ceil(duration * SOUNDTRACK_RATE), SOUNDTRACK_RATE);
   const source = context.createBufferSource(), gain = context.createGain();
   source.buffer = await decode(context, track);
+  source.loop = loop;
   gain.gain.setValueCurveAtTime(envelope(0, duration, volume), 0, duration);
   source.connect(gain).connect(context.destination);
   const offset = trackOffset(track, cue);
-  source.start(Math.max(0, -offset), Math.max(0, offset));
+  source.start(Math.max(0, -offset), loop ? Math.max(0, offset) % source.buffer.duration : Math.max(0, offset));
   return context.startRendering();
 }
 
@@ -54,6 +56,8 @@ export class SoundtrackPlayer {
   get active() { return this.starting || !!this.source; }
 
   private audio() { return this.context ??= new AudioContext({ latencyHint: 'playback', sampleRate: SOUNDTRACK_RATE }); }
+  /** Unlock audio during a user gesture, before the scene finishes preparing. */
+  unlock() { return this.audio().resume(); }
   /** Decode ahead of playback. */
   load(track: ShowreelTrack) {
     if (!this.buffers.has(track.id)) {
@@ -64,7 +68,7 @@ export class SoundtrackPlayer {
     return this.buffers.get(track.id)!;
   }
   /** Start at timeline `time`. Call from a user gesture the first time (autoplay rules). */
-  async play(track: ShowreelTrack, time: number, cue: number, duration: number, volume: number) {
+  async play(track: ShowreelTrack, time: number, cue: number, duration: number, volume: number, loop = false) {
     this.stop();
     const generation = this.generation, context = this.audio();
     this.starting = true;
@@ -73,7 +77,7 @@ export class SoundtrackPlayer {
       const buffer = await this.load(track);
       await resumed;
       if (generation !== this.generation || time >= duration) return;
-      this.begin(buffer, time, trackOffset(track, cue), duration - time, envelope(time, duration, volume));
+      this.begin(buffer, time, trackOffset(track, cue), duration - time, envelope(time, duration, volume), loop);
     } finally { if (generation === this.generation) this.starting = false; }
   }
 
@@ -92,15 +96,16 @@ export class SoundtrackPlayer {
     } finally { if (generation === this.generation) this.starting = false; }
   }
 
-  private begin(buffer: AudioBuffer, time: number, offset: number, length: number, curve: Float32Array) {
+  private begin(buffer: AudioBuffer, time: number, offset: number, length: number, curve: Float32Array, loop = false) {
     const context = this.context!;
     const source = context.createBufferSource(), gain = context.createGain(), start = context.currentTime + .03;
     source.buffer = buffer;
+    source.loop = loop;
     gain.gain.setValueCurveAtTime(curve, start, length);
     source.connect(gain).connect(context.destination);
     const at = offset + time;
     // Before the track begins, wait for it; otherwise start partway through.
-    source.start(start + Math.max(0, -at), Math.max(0, at));
+    source.start(start + Math.max(0, -at), loop ? Math.max(0, at) % buffer.duration : Math.max(0, at));
     source.stop(start + length);
     source.onended = () => { if (this.source === source) { this.source = null; this.onEnded?.(); } };
     this.source = source;
