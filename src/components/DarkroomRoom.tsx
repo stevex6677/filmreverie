@@ -1,6 +1,9 @@
 import { RoomLighting } from "./RoomLighting";
-import { RoomZones } from "./RoomZones";
+import { RoomShell } from "./RoomShell";
+import { ViewingBench } from "./ViewingBench";
 import { WetSide } from "./WetSide";
+import { PrintingStation } from "./PrintingStation";
+import { useDarkroomEnvironment } from "./DarkroomParts";
 import { ROOM_ENVELOPE } from "../utils/cameraBounds";
 import { getTableIllumination } from "../shaders/tableIllumination";
 
@@ -13,257 +16,49 @@ interface DarkroomRoomProps {
 }
 
 export const DarkroomRoom: React.FC<DarkroomRoomProps> = ({ cabinetOnly = false, brightness = 1.0, roomBrightness, immediate, benchWidth = 4.4 }) => {
-  const floorY = ROOM_ENVELOPE.floor;
-  const ceilingY = ROOM_ENVELOPE.ceiling;
-  const roomW = ROOM_ENVELOPE.width;
-  const roomD = ROOM_ENVELOPE.back - ROOM_ENVELOPE.front;
-  const roomZ = (ROOM_ENVELOPE.back + ROOM_ENVELOPE.front) / 2;
-  const wallH = ceilingY - floorY;
+  const environment = useDarkroomEnvironment();
 
   return (
     <group position={[0, 0, 0]}>
       <RoomLighting brightness={roomBrightness} immediate={immediate} fixturesVisible={!cabinetOnly} />
       <group visible={!cabinetOnly}>
-      <RoomZones />
       {/* Short-range distributed bounce from the diffuser onto nearby objects. */}
       {[-1.45, 0, 1.45].map(x => (
         <pointLight key={x} name="table-spill" position={[x, -0.27, -0.10]} color="#edf2f7"
           intensity={getTableIllumination(brightness).spillIntensity} distance={1.2} decay={2} />
       ))}
 
-      {/* --- RED SAFELIGHT FIXTURE (Back Wall) --- */}
-      <group position={[-3.6, 2.7, -1.30]}>
-        {/* Wall bracket & fixture housing */}
-        <mesh castShadow receiveShadow position={[0, 0, 0]}>
-          <boxGeometry args={[0.34, 0.24, 0.14]} />
-          <meshStandardMaterial color="#1a1c20" roughness={0.6} metalness={0.4} />
+      {/* Red safelight on the front wall: bakelite housing with a ruby filter. */}
+      <group position={[-3.6, 2.7, ROOM_ENVELOPE.front]}>
+        <mesh castShadow receiveShadow position={[0, 0, .006]}>
+          <boxGeometry args={[.1, .14, .012]} />
+          <meshStandardMaterial color="#211b17" roughness={.35} metalness={.1} />
         </mesh>
-        {/* Luminous ruby-red filter lens */}
-        <mesh castShadow receiveShadow position={[0, 0, 0.071]}>
-          <planeGeometry args={[0.28, 0.18]} />
-          <meshStandardMaterial
-            color="#ff1e00"
-            emissive="#ff2800"
-            emissiveIntensity={2.0}
-            roughness={0.2}
-          />
+        <mesh castShadow position={[0, 0, .05]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[.012, .012, .08, 12]} />
+          <meshStandardMaterial color="#6d7275" roughness={.4} metalness={.8} />
+        </mesh>
+        <mesh castShadow receiveShadow position={[0, 0, .066]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[.085, .04, .04, 32]} />
+          <meshStandardMaterial color="#211b17" roughness={.35} metalness={.1} />
+        </mesh>
+        <mesh castShadow receiveShadow position={[0, 0, .126]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[.1, .085, .09, 32]} />
+          <meshStandardMaterial color="#211b17" roughness={.35} metalness={.1} />
+        </mesh>
+        {/* Self-lit filter, so its own lamp does not wash it out. */}
+        <mesh position={[0, 0, .1715]}>
+          <circleGeometry args={[.088, 32]} />
+          <meshBasicMaterial color="#e0240c" />
         </mesh>
         {/* Ruby red safelight illumination casting across darkroom */}
-        <pointLight
-          color="#ff2600"
-          intensity={1.8}
-          distance={6.0}
-          decay={2}
-        />
+        <pointLight position={[0, 0, .1]} color="#ff2600" intensity={1.8} distance={6.0} decay={2} />
       </group>
 
-      {/* --- ENCLOSED DARKROOM WALLS & BOUNDARIES --- */}
-      {/* Back Wall */}
-      <mesh castShadow receiveShadow position={[0, (floorY + ceilingY) / 2, ROOM_ENVELOPE.front]}>
-        <planeGeometry args={[roomW, wallH]} />
-        <meshStandardMaterial color="#494b48" roughness={0.88} />
-      </mesh>
-
-      {/* Back Wall Baseboard Trim */}
-      <mesh castShadow receiveShadow position={[0, floorY + 0.06, ROOM_ENVELOPE.front + .02]}>
-        <boxGeometry args={[roomW, 0.12, 0.04]} />
-        <meshStandardMaterial color="#16181e" roughness={0.7} metalness={0.2} />
-      </mesh>
-
-      {/* Left Wall */}
-      <mesh
-        position={[-roomW / 2, (floorY + ceilingY) / 2, roomZ]}
-        rotation={[0, Math.PI / 2, 0]}
-      >
-        <planeGeometry args={[roomD, wallH]} />
-        <meshStandardMaterial color="#414647" roughness={0.9} />
-      </mesh>
-
-      {/* Right Wall */}
-      <mesh
-        position={[roomW / 2, (floorY + ceilingY) / 2, roomZ]}
-        rotation={[0, -Math.PI / 2, 0]}
-      >
-        <planeGeometry args={[roomD, wallH]} />
-        <meshStandardMaterial color="#414647" roughness={0.9} />
-      </mesh>
-
-      <WetSide roomBrightness={roomBrightness} />
-      {/* Ceiling */}
-      <mesh castShadow receiveShadow position={[0, ceilingY, roomZ]} rotation={[Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[roomW, roomD]} />
-        <meshStandardMaterial color="#555750" roughness={0.95} />
-      </mesh>
-
-      {/* Darkroom Floor */}
-      <mesh castShadow receiveShadow position={[0, floorY, roomZ]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[roomW, roomD]} />
-        <meshStandardMaterial color="#454846" roughness={0.85} metalness={0.25} />
-      </mesh>
-
-      {/* Subtle floor seams/runner for depth */}
-      <mesh castShadow receiveShadow position={[0, floorY + 0.001, roomZ]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[roomW * 0.9, roomD * 0.9]} />
-        <meshStandardMaterial
-          color="#20232c"
-          roughness={0.8}
-          wireframe={true}
-          transparent={true}
-          opacity={0.06}
-        />
-      </mesh>
-
-      {/* --- PHYSICAL WORKBENCH SUPPORTING THE FLAT VIEWING TABLE --- */}
-      <group position={[0, 0, 0]}>
-        {/* Solid Workbench Top (extends beneath and around the flat light table) */}
-        <mesh castShadow receiveShadow position={[0, -0.83, -0.10]}>
-          <boxGeometry args={[benchWidth, 0.06, 2.0]} />
-          <meshStandardMaterial
-            color="#272b35"
-            roughness={0.55}
-            metalness={0.25}
-          />
-        </mesh>
-
-        {/* Workbench Edge Trim / Apron */}
-        <mesh castShadow receiveShadow position={[0, -0.87, 0.89]}>
-          <boxGeometry args={[benchWidth + .02, 0.04, 0.04]} />
-          <meshStandardMaterial color="#222630" roughness={0.45} metalness={0.55} />
-        </mesh>
-
-        {/* 4 Heavy Steel Legs from benchtop down to floor */}
-        {/* Front-Left Leg */}
-        <mesh castShadow receiveShadow position={[-1.88, (floorY - 0.86) / 2, 0.75]}>
-          <boxGeometry args={[0.09, -0.86 - floorY, 0.09]} />
-          <meshStandardMaterial color="#4a5568" roughness={0.25} metalness={0.35} />
-        </mesh>
-        {/* Front-Left Foot Pad */}
-        <mesh castShadow receiveShadow position={[-1.88, floorY + 0.015, 0.75]}>
-          <cylinderGeometry args={[0.07, 0.07, 0.03, 16]} />
-          <meshStandardMaterial color="#2d3748" roughness={0.3} metalness={0.35} />
-        </mesh>
-
-        {/* Front-Right Leg */}
-        <mesh castShadow receiveShadow position={[1.88, (floorY - 0.86) / 2, 0.75]}>
-          <boxGeometry args={[0.09, -0.86 - floorY, 0.09]} />
-          <meshStandardMaterial color="#4a5568" roughness={0.25} metalness={0.35} />
-        </mesh>
-        {/* Front-Right Foot Pad */}
-        <mesh castShadow receiveShadow position={[1.88, floorY + 0.015, 0.75]}>
-          <cylinderGeometry args={[0.07, 0.07, 0.03, 16]} />
-          <meshStandardMaterial color="#2d3748" roughness={0.3} metalness={0.35} />
-        </mesh>
-
-        {/* Back-Left Leg */}
-        <mesh castShadow receiveShadow position={[-1.88, (floorY - 0.86) / 2, -0.95]}>
-          <boxGeometry args={[0.09, -0.86 - floorY, 0.09]} />
-          <meshStandardMaterial color="#4a5568" roughness={0.25} metalness={0.35} />
-        </mesh>
-        {/* Back-Left Foot Pad */}
-        <mesh castShadow receiveShadow position={[-1.88, floorY + 0.015, -0.95]}>
-          <cylinderGeometry args={[0.07, 0.07, 0.03, 16]} />
-          <meshStandardMaterial color="#2d3748" roughness={0.3} metalness={0.35} />
-        </mesh>
-
-        {/* Back-Right Leg */}
-        <mesh castShadow receiveShadow position={[1.88, (floorY - 0.86) / 2, -0.95]}>
-          <boxGeometry args={[0.09, -0.86 - floorY, 0.09]} />
-          <meshStandardMaterial color="#4a5568" roughness={0.25} metalness={0.35} />
-        </mesh>
-        {/* Back-Right Foot Pad */}
-        <mesh castShadow receiveShadow position={[1.88, floorY + 0.015, -0.95]}>
-          <cylinderGeometry args={[0.07, 0.07, 0.03, 16]} />
-          <meshStandardMaterial color="#2d3748" roughness={0.3} metalness={0.35} />
-        </mesh>
-
-        {/* Horizontal Stretcher Rails connecting legs */}
-        <mesh castShadow receiveShadow position={[0, -1.28, -0.95]}>
-          <boxGeometry args={[3.76, 0.04, 0.04]} />
-          <meshStandardMaterial color="#2c313d" roughness={0.4} metalness={0.7} />
-        </mesh>
-        <mesh castShadow receiveShadow position={[-1.88, -1.28, -0.10]}>
-          <boxGeometry args={[0.04, 0.04, 1.7]} />
-          <meshStandardMaterial color="#2c313d" roughness={0.4} metalness={0.7} />
-        </mesh>
-        <mesh castShadow receiveShadow position={[1.88, -1.28, -0.10]}>
-          <boxGeometry args={[0.04, 0.04, 1.7]} />
-          <meshStandardMaterial color="#2c313d" roughness={0.4} metalness={0.7} />
-        </mesh>
-
-        {/* Lower Storage Shelf (grounded relationship to floor) */}
-        <mesh castShadow receiveShadow position={[0, floorY + 0.18, -0.10]}>
-          <boxGeometry args={[3.76, 0.03, 1.7]} />
-          <meshStandardMaterial color="#252831" roughness={0.7} metalness={0.3} />
-        </mesh>
-
-        {/* Shelf Props: Darkroom Developer Trays on Lower Shelf */}
-        <mesh castShadow receiveShadow position={[-0.85, floorY + 0.22, -0.10]}>
-          <boxGeometry args={[0.48, 0.05, 0.58]} />
-          <meshStandardMaterial color="#dbeafe" roughness={0.4} metalness={0.1} />
-        </mesh>
-        <mesh castShadow receiveShadow position={[-0.30, floorY + 0.22, -0.10]}>
-          <boxGeometry args={[0.48, 0.05, 0.58]} />
-          <meshStandardMaterial color="#94a3b8" roughness={0.4} metalness={0.1} />
-        </mesh>
-        {/* Shelf Props: Photo Paper Boxes Stack */}
-        <mesh castShadow receiveShadow position={[0.75, floorY + 0.23, -0.10]}>
-          <boxGeometry args={[0.38, 0.07, 0.48]} />
-          <meshStandardMaterial color="#1e293b" roughness={0.6} metalness={0.15} />
-        </mesh>
-
-        {/* Workbench Power Cable Grommet & Cable Drop */}
-        <mesh castShadow receiveShadow position={[1.85, -0.795, -0.65]}>
-          <cylinderGeometry args={[0.04, 0.04, 0.015, 16]} />
-          <meshStandardMaterial color="#111215" roughness={0.8} />
-        </mesh>
-        <mesh castShadow receiveShadow position={[1.85, -0.85, -0.65]}>
-          <cylinderGeometry args={[0.012, 0.012, 0.12, 12]} />
-          <meshStandardMaterial color="#18191c" roughness={0.7} />
-        </mesh>
-
-        {/* Enlarger Station (Classic Beseler-style Vertical Enlarger on Right Workbench Wing) */}
-        <group position={[-3.22, -0.75, 1.85]} scale={1.6}>
-          {/* Wooden baseboard */}
-          <mesh castShadow receiveShadow position={[0, 0, 0]}>
-            <boxGeometry args={[0.32, 0.02, 0.42]} />
-            <meshStandardMaterial color="#cbd5e1" roughness={0.65} metalness={0.15} />
-          </mesh>
-          {/* Vertical steel support column */}
-          <mesh castShadow receiveShadow position={[0.08, 0.46, -0.14]}>
-            <cylinderGeometry args={[0.016, 0.016, 0.92, 16]} />
-            <meshStandardMaterial color="#94a3b8" roughness={0.25} metalness={0.35} />
-          </mesh>
-          {/* Column carriage and arm */}
-          <mesh castShadow receiveShadow position={[0.04, 0.52, -0.06]}>
-            <boxGeometry args={[0.10, 0.08, 0.16]} />
-            <meshStandardMaterial color="#1e293b" roughness={0.4} metalness={0.7} />
-          </mesh>
-          {/* Enlarger lamphouse head */}
-          <mesh castShadow receiveShadow position={[-0.02, 0.62, 0]}>
-            <cylinderGeometry args={[0.07, 0.09, 0.18, 16]} />
-            <meshStandardMaterial color="#0f172a" roughness={0.35} metalness={0.6} />
-          </mesh>
-          {/* Lamphouse top cap */}
-          <mesh castShadow receiveShadow position={[-0.02, 0.73, 0]}>
-            <cylinderGeometry args={[0.04, 0.07, 0.04, 16]} />
-            <meshStandardMaterial color="#1e293b" roughness={0.4} metalness={0.5} />
-          </mesh>
-          {/* Bellows stage */}
-          <mesh castShadow receiveShadow position={[-0.02, 0.47, 0]}>
-            <boxGeometry args={[0.09, 0.08, 0.09]} />
-            <meshStandardMaterial color="#18181b" roughness={0.9} />
-          </mesh>
-          {/* Lens stage & red swing safety filter */}
-          <mesh castShadow receiveShadow position={[-0.02, 0.41, 0]}>
-            <cylinderGeometry args={[0.025, 0.025, 0.03, 16]} />
-            <meshStandardMaterial color="#e2e8f0" metalness={0.9} roughness={0.2} />
-          </mesh>
-          <mesh castShadow receiveShadow position={[-0.02, 0.38, 0.03]}>
-            <cylinderGeometry args={[0.02, 0.02, 0.005, 12]} />
-            <meshStandardMaterial color="#ef4444" roughness={0.1} transparent={true} opacity={0.75} />
-          </mesh>
-        </group>
-      </group>
+      <RoomShell environment={environment} roomBrightness={roomBrightness} />
+      <WetSide environment={environment} roomBrightness={roomBrightness} />
+      <PrintingStation environment={environment} roomBrightness={roomBrightness} />
+      <ViewingBench environment={environment} roomBrightness={roomBrightness} width={benchWidth} />
       </group>
     </group>
   );
