@@ -28,8 +28,8 @@ const printFragment = `
   }
 `;
 
-/** Lines of prints on the darkroom's left wall; mounted only for the Drying Line reel. */
-export function DryingLine({ roll, textures, stockId, filmStrength, session }: {
+/** Lines of prints on the darkroom's left wall; mounted only for the Darkroom Prints reel. */
+export function DarkroomPrints({ roll, textures, stockId, filmStrength, session }: {
   roll: RollDefinition; textures: THREE.Texture[]; stockId: FilmStockId; filmStrength: number; session: ScreeningSession;
 }) {
   const layout = useMemo(() => printLayout(roll), [roll]);
@@ -65,7 +65,7 @@ export function DryingLine({ roll, textures, stockId, filmStrength, session }: {
   // A spotlight's target must be in the scene graph for its direction to update.
   const target = useMemo(() => new THREE.Object3D(), []);
   target.position.set(PRINT_WALL_X, .5, lampZ);
-  return <group name="screening-drying-line">
+  return <group name="screening-darkroom-prints">
     {/* A viewing lamp above the line lights the prints and the wall. */}
     <primitive object={target} />
     <spotLight position={[PRINT_WALL_X + 1.6, 2.6, lampZ]} target={target} angle={1.05} penumbra={.8} intensity={9} distance={7} decay={1.4} color="#fff2df" />

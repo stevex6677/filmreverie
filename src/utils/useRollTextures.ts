@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { BASELINE_ROLL, RollDefinition } from "./rollLayout";
+import { filterPhotograph, MIPMAP_MEMORY } from "./progressiveTextures";
 export const TEXTURE_BUDGET = 192 * 1024 * 1024; // RGBA GPU estimate; decoded backing may double this.
 export const uniqueRollSources = (roll: RollDefinition) => [...new Set(roll.frames.map(frame => frame.src))];
 export function prioritizedSources(roll: RollDefinition, selected: number) {
@@ -68,8 +69,10 @@ export function useRollTextures(roll:RollDefinition,priority:number,retry:number
           if(cancelled){texture.dispose();close?.();break;}
           // A stale detail decode must never replace the new destination.
           if(isDetail&&inputs.current.priority!==selected){texture.dispose();close?.();continue;}
-          texture.colorSpace=THREE.SRGBColorSpace;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;texture.generateMipmaps=false;
-          const image=texture.image;residents.set(key,{texture,bytes:image.width*image.height*4,used:++clock,close});
+          texture.colorSpace=THREE.SRGBColorSpace;
+          // Progressive uploads arrive mipmapped; other textures generate their mips on first upload.
+          if(!(texture as THREE.DataTexture).isDataTexture)filterPhotograph(texture);
+          const image=texture.image;residents.set(key,{texture,bytes:Math.round(image.width*image.height*4*MIPMAP_MEMORY),used:++clock,close});
           evict();publish(false);
         }catch{if(!cancelled){errors.add(key);publish(false);}}
       }}finally{running=false;if(cancelled)releaseResources?.();}

@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
 test('showreel loads, plays and renders through the screening engine', async ({ page, request }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/showreel?paused=1&t=24.6');
+  await page.goto('/showreel?paused=1&t=29.6');
   const root = page.locator('.showreel');
   await expect(root).toHaveAttribute('data-showreel-ready', 'true', { timeout: 200000 });
   await expect(page).toHaveTitle('Film Reverie — Showreel');
@@ -16,7 +16,7 @@ test('showreel loads, plays and renders through the screening engine', async ({ 
   // A held moment renders the loupe shot, then playback advances the timeline.
   await expect.poll(() => page.evaluate(() => (window as any).__showreel.sample.shot)).toBe('loupe');
   await page.getByRole('button', { name: 'Play' }).click();
-  await expect.poll(async () => Number(await root.getAttribute('data-showreel-time')), { timeout: 30000 }).toBeGreaterThan(25.2);
+  await expect.poll(async () => Number(await root.getAttribute('data-showreel-time')), { timeout: 30000 }).toBeGreaterThan(30.2);
 
   // Exact frames through the export engine include the overlay.
   const frame = await page.evaluate(async () => {
@@ -33,6 +33,23 @@ test('showreel loads, plays and renders through the screening engine', async ({ 
   });
   expect(frame).toMatchObject({ width: 640, height: 360 });
   expect(frame.lit).toBeGreaterThan(.05);
+
+  // The New roll editor is drawn into exported frames: its light dialog fills the right of the frame.
+  const editor = await page.evaluate(async () => {
+    const session = (window as any).__showreel;
+    const shot = session.timeline.shots.find((item: any) => item.name === 'new-roll');
+    session.setExporting(true);
+    await session.engine.begin(640, 360);
+    const time = shot.start + 3.6;
+    await session.engine.prepare(time, new AbortController().signal);
+    const canvas: HTMLCanvasElement = session.engine.render(time);
+    const pixels = canvas.getContext('2d')!.getImageData(400, 60, 160, 40).data;
+    session.engine.end(); session.setExporting(false);
+    let paper = 0;
+    for (let i = 0; i < pixels.length; i += 4) if (pixels[i] > 200 && pixels[i + 1] > 195 && pixels[i + 2] > 185) paper++;
+    return paper / (pixels.length / 4);
+  });
+  expect(editor).toBeGreaterThan(.6);
   expect(errors).toEqual([]);
 
   // Offline preparation leaves the showreel photographs to the network.

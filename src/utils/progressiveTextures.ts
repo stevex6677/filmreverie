@@ -38,6 +38,20 @@ function decode(url: string) {
   return new Promise<Decoded>((resolve, reject) => { pending.set(id, { resolve, reject }); active.postMessage({ id, url: new URL(url, location.href).href }); });
 }
 
+/**
+ * Photographs are mipmapped and anisotropically filtered: a 2048 px photograph
+ * seen small or at a grazing angle would otherwise skip texels and shimmer as
+ * the camera moves. The mip chain adds a third to the texture's memory.
+ */
+export const MIPMAP_MEMORY = 4 / 3;
+export function filterPhotograph(texture: THREE.Texture) {
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = true;
+  // Clamped to the device's maximum by the renderer.
+  texture.anisotropy = 8;
+}
+
 /** Photographs decoded ahead of their upload; bounded, as each holds full-size pixels. */
 const AHEAD = 2;
 
@@ -56,9 +70,9 @@ export class ProgressiveTextureUploader {
     const { width, height, pixels } = await (early ?? decode(url));
     const texture = new THREE.DataTexture(null, width, height, THREE.RGBAFormat, THREE.UnsignedByteType);
     texture.colorSpace = THREE.SRGBColorSpace;
-    texture.minFilter = texture.magFilter = THREE.LinearFilter;
-    texture.generateMipmaps = false;
-    // Allocate storage without uploading; rows follow in strips.
+    filterPhotograph(texture);
+    // Allocate storage (with its mip chain) without uploading; rows follow in strips.
+    // The mips are generated once the last strip is in.
     texture.source.dataReady = false;
     texture.needsUpdate = true;
     this.gl.initTexture(texture);
@@ -104,6 +118,7 @@ export class ProgressiveTextureUploader {
         job.row += count;
       } while (job.row < height && performance.now() - started < budget);
       if (job.row < height) return;
+      context.generateMipmap(context.TEXTURE_2D);
       this.jobs.shift();
       job.pixels = new Uint8ClampedArray(0);
       job.resolve(texture);

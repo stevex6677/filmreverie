@@ -81,6 +81,9 @@ export function createFilmShaderMaterial(texture: THREE.Texture, isPositive: boo
   });
 }
 
+/** How far the rebate continues under each frame's edge, in millimetres of film. */
+export const GATE_OVERLAP_MM = .4;
+
 export function createRebateMaterial(texture: THREE.Texture, brightness = 1, isPositive = false, negativeStock = true, base = new THREE.Color("rgb(217,119,36)"), baseOpacity = .88, layout?: FilmStripLayout) {
   const size = layout ? getStripDimensions(layout) : undefined;
   const gates = Array.from({ length: layout?.frameCount || 1 }, (_, i) => {
@@ -88,11 +91,15 @@ export function createRebateMaterial(texture: THREE.Texture, brightness = 1, isP
     const bounds = getFrameBounds(i, layout);
     return new THREE.Vector2(bounds.minX / size.width + .5, bounds.maxX / size.width + .5);
   });
+  // The rebate runs 0.4 mm under each (opaque) frame. The frame sits slightly
+  // above it, so a thinner overlap opened a sub-pixel gap at steep camera
+  // angles, where the lit table showed through as a dotted line along the edge.
+  const overlap = .55 / 36 * GATE_OVERLAP_MM;
   return new THREE.ShaderMaterial({
     vertexShader: FilmVertexShader,
     uniforms: { uGates: { value: gates }, uTexture: { value: texture }, uModeTransition: { value: isPositive && negativeStock ? 1 : 0 }, uRebateBase: { value: base.clone() }, uBaseOpacity: { value: baseOpacity },
       uRailFraction: { value: layout && size ? layout.marginY / size.height : 0 },
-      uGateInset: { value: size ? new THREE.Vector2((.55 / 36 * .05) / size.width, (.55 / 36 * .05) / size.height) : new THREE.Vector2() },
+      uGateInset: { value: size ? new THREE.Vector2(overlap / size.width, overlap / size.height) : new THREE.Vector2() },
       ...revealUniforms(size ? -size.width / 2 : 0, size?.width ?? 1),
       ...illuminationUniforms(brightness) },
     fragmentShader: `

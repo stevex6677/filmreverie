@@ -6,7 +6,7 @@ import { TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../utils/cameraBounds';
 // timeline drives live preview and frame-stepped export, and is tested without
 // WebGL. Segments keep explicit timing so a later soundtrack can align to beats.
 
-export const REEL_IDS = ['tracking', 'develop', 'projector', 'darkroom', 'orbit', 'drying-line', 'documentary'] as const;
+export const REEL_IDS = ['tracking', 'develop', 'projector', 'darkroom', 'orbit', 'darkroom-prints', 'documentary'] as const;
 export type ReelId = typeof REEL_IDS[number];
 export const PACES = ['relaxed', 'normal', 'brisk'] as const;
 export type Pace = typeof PACES[number];

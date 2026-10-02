@@ -1,4 +1,4 @@
-import { createScreeningTimeline } from '../screening/reels';
+import { createScreeningTimeline, framing } from '../screening/reels';
 import { DEFAULT_LOOK, finishTimeline, lookAtPose, tablePan, TimelineBuilder, type CameraPose, type ReelId, type ScreeningLook, type ScreeningSample, type ScreeningTimeline } from '../screening/timeline';
 import { fitRollView, locateFrame } from '../utils/rollLayout';
 import { CAMERA_SHELF_MM, CAMERA_SHELF_ORIGIN, cameraShelfSlot, mm, SHELF_CELL_MM, SHELF_ORIGIN } from '../data/physicalScale';
@@ -29,6 +29,8 @@ export interface Exhibit { start: number; end: number; name: string; year: strin
 export type Moment =
   | { kind: 'hook'; start: number; end: number; lines: readonly string[] }
   | { kind: 'title'; start: number; end: number }
+  /** The New roll editor, drawn over the dimmed room: photographs dropped in, named, saved. */
+  | { kind: 'new-roll'; start: number; end: number }
   | { kind: 'end'; start: number; end: number };
 
 export interface ShowreelTimeline extends ScreeningTimeline {
@@ -47,6 +49,8 @@ export interface ShowreelTimeline extends ScreeningTimeline {
 
 export const SHOWREEL_SITE = 'filmreverie.app';
 export const SHOWREEL_GITHUB = 'github.com/stevex6677/filmreverie';
+/** Length of the New roll shot; the overlay's editor animation is timed within it. */
+export const NEW_ROLL_SECONDS = 6.8;
 
 const degrees = (value: number) => value * Math.PI / 180;
 
@@ -108,11 +112,20 @@ export function createShowreelTimeline(rolls: readonly ShowreelRoll[], requested
 
   // 2. The darkroom: a slow lateral move past the wet side and drying line.
   const darkroom = custom(lookAtPose([-2.0, .45, 3.6], [-.6, -.15, 6.6], 56), b => {
-    b.step('tour', 'glide', 0, 4.6, { camera: lookAtPose([1.5, .4, 3.85], [.8, -.2, 6.6], 56), ease: 'inOut' });
+    b.step('tour', 'glide', 0, 4.0, { camera: lookAtPose([1.3, .4, 3.83], [.75, -.2, 6.6], 56), ease: 'inOut' });
   }, { aperture: .03 });
   const room = add('darkroom', 0, darkroom);
 
-  // 3. The film shelf: across the cabinet, then in on the sample rolls.
+  // 3. A new roll: the editor over the dimmed room while the camera drifts
+  // toward the film shelf, so the shelf shot continues the same move.
+  const shelfTarget: [number, number, number] = [-.2, SHELF_ORIGIN[1], SHELF_ORIGIN[2]];
+  const shelfOpen = lookAtPose([-1.5, .75, 2.1], shelfTarget, 50);
+  const newRoll = custom(lookAtPose([-2.3, .9, 2.95], shelfTarget, 52), b => {
+    b.step('tour', 'glide', 0, NEW_ROLL_SECONDS, { camera: shelfOpen, ease: 'out' });
+  }, { aperture: .03 });
+  const newRollShot = add('new-roll', 0, newRoll);
+
+  // 4. The film shelf: across the cabinet, then in on the sample rolls.
   const cell = (slot: number): [number, number, number] => [
     SHELF_ORIGIN[0] + (slot % 4 - 1.5) * mm(SHELF_CELL_MM.width),
     SHELF_ORIGIN[1] + (1.5 - Math.floor(slot / 4)) * mm(SHELF_CELL_MM.height),
@@ -120,13 +133,14 @@ export function createShowreelTimeline(rolls: readonly ShowreelRoll[], requested
   ];
   const [a, c] = [cell(coast.stored.shelfSlot!), cell(peaks.stored.shelfSlot!)];
   const between: [number, number, number] = [(a[0] + c[0]) / 2, a[1] - .02, a[2]];
-  const shelf = custom(lookAtPose([-1.5, .75, 2.1], [-.2, SHELF_ORIGIN[1], SHELF_ORIGIN[2]], 50), b => {
-    b.step('tour', 'glide', 0, 2.1, { camera: lookAtPose([-.55, .62, 1.0], [between[0] - .05, between[1] + .05, between[2]], 42), ease: 'inOut' });
-    b.step('tour', 'frame', 0, 2.5, { camera: lookAtPose([a[0] + .35, a[1] + .05, a[2] + .95], [a[0] + .2, a[1] - .02, a[2]], 38), ease: 'inOut' });
+  const shelf = custom(shelfOpen, b => {
+    b.step('tour', 'glide', 0, 1.9, { camera: lookAtPose([-.55, .62, 1.0], [between[0] - .05, between[1] + .05, between[2]], 42), ease: 'inOut' });
+    b.step('tour', 'frame', 0, 2.3, { camera: lookAtPose([a[0] + .35, a[1] + .05, a[2] + .95], [a[0] + .2, a[1] - .02, a[2]], 38), ease: 'inOut' });
   }, { aperture: .03 });
   const shelfShot = add('shelf', 0, shelf);
 
-  // 4. The light table: excerpts of three reels on the two rolls.
+  // 5. The light table: the 35mm roll in a reel excerpt and under the loupe,
+  // then the whole medium-format roll before the camera sweeps down onto it.
   const tracking = reel(0, 'tracking', 'brisk', [.45, .35]);
   const trackFrom = tracking.frameStart(2);
   const trackShot = add('tracking', 0, tracking, trackFrom, trackFrom + 4.3);
@@ -143,27 +157,32 @@ export function createShowreelTimeline(rolls: readonly ShowreelRoll[], requested
     x: lerp(left.x - .02, right.x - .02, ease(local / 3.4)),
     y: left.y + .057 - .07 * ease((local - 1.6) / 1.2),
   }));
-  const orbit = reel(1, 'orbit', 'normal', [.6, .55]);
-  const orbitShot = add('orbit', 1, orbit, orbit.frameStart(1) + .15, orbit.frameStart(1) + 4.15);
+  // Medium format: the whole 6×6 roll from above, then a descending arc onto
+  // one photograph that keeps orbiting it, low over the glowing diffuser.
+  const medium = framing(peaks.definition, aspect);
+  const hero6 = locateFrame(peaks.definition, 1);
+  const close6 = medium.frame(1).zoom;
+  const around6 = (zoom: number, tilt: number, yaw: number): CameraPose => ({ zoom: close6 * zoom, pan: tablePan(hero6.x, hero6.y), tilt: degrees(tilt), yaw: degrees(yaw) });
+  const mediumSource = custom({ ...medium.overview, zoom: medium.overview.zoom * 1.24, tilt: degrees(10), yaw: degrees(-3) }, b => {
+    b.step('establish', 'overview', 1, 2.1, { camera: { ...medium.overview, zoom: medium.overview.zoom * 1.14, tilt: degrees(16), yaw: degrees(2) }, ease: 'linear' });
+    b.step('tour', 'push-in', 1, 2.3, { camera: around6(1.35, 58, -38), ease: 'inOut' });
+    b.step('tour', 'orbit', 1, 2.6, { camera: around6(1.1, 46, 34), ease: 'inOut' });
+  }, { aperture: .035 });
+  const mediumShot = add('medium', 1, mediumSource);
 
-  // 5. Screenings: more of the photographs, through three more reels.
-  // Documentary: the golden-hour end of the coast roll, full screen. It joins
-  // a photograph already on screen, so its first dissolve is inside the shot.
-  const documentary = reel(0, 'documentary', 'normal', [.55, .5]);
-  const dusk = documentary.segments.find(segment => segment.kind === 'frame' && segment.frameIndex === 9)!;
-  const documentaryShot = add('documentary', 0, documentary, dusk.start + 1.9, dusk.start + 8.9);
-  // Drying Line: the mountain roll's prints on the darkroom wall, then in on the first.
-  const drying = reel(1, 'drying-line', 'normal', [.5, .45]);
+  // 6. Screenings: more of the photographs, through two more reels.
+  // Darkroom Prints: the mountain roll's prints on the darkroom wall, then in on the first.
+  const prints = reel(1, 'darkroom-prints', 'normal', [.5, .45]);
   // From the wide view of the wall (the hold before the first push-in).
-  const wall = drying.segments.find(segment => segment.kind === 'push-in')!.start - 1.2;
-  const dryingShot = add('drying', 1, drying, wall, wall + 6.0);
+  const wall = prints.segments.find(segment => segment.kind === 'push-in')!.start - 1.0;
+  const printsShot = add('prints', 1, prints, wall, wall + 5.2);
   const projector = reel(1, 'projector', 'normal', [.5, .5]);
   const leader = projector.cards.find(card => card.kind === 'countdown')!;
   const projectorFrom = leader.start + 2.1;
   const projectorShot = add('projector', 1, projector, projectorFrom, projector.frameStart(3) + .65);
   const countdownEnd = projectorShot.start + leader.end - projectorFrom;
 
-  // 6. The camera cabinet: across the five cameras, then in on the last.
+  // 7. The camera cabinet: across the five cameras, then in on the last.
   const tier = CAMERA_SHELF_ORIGIN[1] + cameraShelfSlot(0).y + mm(21);
   const lip = CAMERA_SHELF_ORIGIN[0] - mm(CAMERA_SHELF_MM.depth);
   const cameraAt = (index: number): [number, number, number] => {
@@ -173,9 +192,9 @@ export function createShowreelTimeline(rolls: readonly ShowreelRoll[], requested
   const along = (z: number, distance: number, fov = 40): CameraPose => lookAtPose([cameraAt(0)[0] - distance, tier + .3, z - .25], [cameraAt(0)[0], tier + .2, z], fov);
   const hero = cameraAt(CAMERAS.length - 1);
   const cabinet = custom(along(cameraAt(0)[2] + .1, 1.55), b => {
-    b.step('tour', 'glide', 0, 4.6, { camera: along(hero[2] - .25, 1.45), ease: 'inOut' });
-    b.step('tour', 'push-in', 0, 2.2, { camera: lookAtPose([hero[0] - .78, hero[1] + .14, hero[2] - .34], [hero[0], hero[1] + .03, hero[2] + .02], 34), ease: 'inOut' });
-    b.step('return', 'pull-back', 0, 3.4, { camera: lookAtPose([hero[0] - 2.2, hero[1] + .4, hero[2] - 1.3], [hero[0] - .1, hero[1] - .05, hero[2] - .7], 46), ease: 'inOut' });
+    b.step('tour', 'glide', 0, 4.0, { camera: along(hero[2] - .25, 1.45), ease: 'inOut' });
+    b.step('tour', 'push-in', 0, 2.0, { camera: lookAtPose([hero[0] - .78, hero[1] + .14, hero[2] - .34], [hero[0], hero[1] + .03, hero[2] + .02], 34), ease: 'inOut' });
+    b.step('return', 'pull-back', 0, 3.0, { camera: lookAtPose([hero[0] - 2.2, hero[1] + .4, hero[2] - 1.3], [hero[0] - .1, hero[1] - .05, hero[2] - .7], 46), ease: 'inOut' });
   }, { aperture: .03 });
   const cabinetShot = add('cabinet', 1, cabinet);
   const duration = time;
@@ -185,18 +204,18 @@ export function createShowreelTimeline(rolls: readonly ShowreelRoll[], requested
   const moments: Moment[] = [
     { kind: 'hook', start: .45, end: titleStart - .1, lines: ['Your photographs.', 'On real film.'] },
     { kind: 'title', start: titleStart + .25, end: room.start - .15 },
+    { kind: 'new-roll', start: newRollShot.start, end: newRollShot.start + newRollShot.duration },
     { kind: 'end', start: end, end: duration },
   ];
   const captions: Caption[] = [
     { start: room.start + .35, end: room.start + room.duration - .3, chapter: '01  ·  The darkroom', title: 'Step inside.', line: 'A fully modeled 3D darkroom to explore.' },
-    { start: shelfShot.start + .3, end: shelfShot.start + shelfShot.duration - .25, chapter: '02  ·  The film shelf', title: 'Every roll, boxed and shelved.', line: 'Real Kodak and Fujifilm stocks, each with a cover photo.' },
-    { start: trackShot.start + .3, end: trackShot.start + trackShot.duration - .2, chapter: '03  ·  The light table', title: 'Real film, frame by frame.', line: 'Sprocket holes, edge codes and the orange mask.' },
-    { start: loupeShot.start + .25, end: loupeShot.start + loupeShot.duration - .2, chapter: '03  ·  The light table', title: 'A loupe for every grain.', line: 'Glide it over the film and magnify up to 10×.' },
-    { start: orbitShot.start + .25, end: orbitShot.start + orbitShot.duration - .2, chapter: '03  ·  The light table', title: 'Medium format, too.', line: '35mm and 120: 6×4.5, 6×6, 6×7 and 6×9.' },
-    { start: documentaryShot.start + .35, end: documentaryShot.start + documentaryShot.duration - .25, chapter: '04  ·  Screenings', title: 'Every photograph, full screen.', line: 'The Documentary reel drifts and dissolves through a roll.' },
-    { start: dryingShot.start + .3, end: dryingShot.start + dryingShot.duration - .25, chapter: '04  ·  Screenings', title: 'Hang the roll to dry.', line: 'Drying Line turns each strip into a row of prints.' },
-    { start: countdownEnd + .25, end: projectorShot.start + projectorShot.duration - .2, chapter: '04  ·  Screenings', title: 'Screen any roll.', line: 'Seven cinematic reels, exported as video.' },
-    { start: cabinetShot.start + .4, end: end - .3, chapter: '05  ·  The camera cabinet', title: 'Five classic cameras.', line: 'Modeled in 3D, to turn over in your hands.', top: true },
+    { start: shelfShot.start + .3, end: shelfShot.start + shelfShot.duration - .25, chapter: '03  ·  The film shelf', title: 'Every roll, boxed and shelved.', line: 'Real Kodak and Fujifilm stocks, each with a cover photo.' },
+    { start: trackShot.start + .3, end: trackShot.start + trackShot.duration - .2, chapter: '04  ·  The light table', title: 'Lifelike film borders.', line: 'Sprocket holes and edge codes, simulated for a more realistic view.' },
+    { start: loupeShot.start + .25, end: loupeShot.start + loupeShot.duration - .2, chapter: '04  ·  The light table', title: 'A loupe for every grain.', line: 'Glide it over the film and magnify up to 10×.' },
+    { start: mediumShot.start + .3, end: mediumShot.start + 3.6, chapter: '04  ·  The light table', title: 'Medium format, too.', line: '35mm and 120: 6×4.5, 6×6, 6×7 and 6×9.' },
+    { start: printsShot.start + .3, end: printsShot.start + printsShot.duration - .25, chapter: '05  ·  Screenings', title: 'Print every frame.', line: 'Each photograph enlarged onto paper and hung up to dry.' },
+    { start: countdownEnd + .25, end: projectorShot.start + projectorShot.duration - .2, chapter: '05  ·  Screenings', title: 'Screen any roll.', line: 'Seven cinematic reels, exported as video.' },
+    { start: cabinetShot.start + .4, end: end - .3, chapter: '06  ·  The camera cabinet', title: 'Five classic cameras.', line: 'Modeled in 3D, to turn over in your hands.', top: true },
   ];
   // The roll in view is named in the corner, from the light table to the last screening.
   const slates: Slate[] = [];
@@ -208,9 +227,10 @@ export function createShowreelTimeline(rolls: readonly ShowreelRoll[], requested
   const glide = cabinetShot.start;
   // Labels sit on the shelf's front edge, below each camera, while it is in view.
   const exhibits: Exhibit[] = CAMERAS.map((camera, index) => ({ name: camera.name, year: String(camera.introduced), position: [lip + .02, tier - .015, cameraAt(index)[2]],
-    start: glide + .3 + index * .3, end: index === CAMERAS.length - 1 ? end - .25 : glide + 4.4 }));
-  // Light leaks cover the cuts; the projector cuts into darkness instead.
-  const flashes = [room.start, shelfShot.start, trackShot.start, loupeShot.start, orbitShot.start, documentaryShot.start, dryingShot.start, cabinetShot.start];
+    start: glide + .3 + index * .3, end: index === CAMERAS.length - 1 ? end - .25 : glide + 3.8 }));
+  // Light leaks cover the cuts; the projector cuts into darkness instead, and
+  // the shelf continues the new roll's move.
+  const flashes = [room.start, newRollShot.start, trackShot.start, loupeShot.start, mediumShot.start, printsShot.start, cabinetShot.start];
 
   const sample = (requested: number): ShowreelSample => {
     const t = Math.max(0, Math.min(duration, Number.isFinite(requested) ? requested : 0));

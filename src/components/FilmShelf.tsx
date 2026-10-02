@@ -303,8 +303,11 @@ export function FilmShelf({ shelf, activeId, interactive, portal, focused, onApp
     })}
     {interactive && cells.map(({ index, slot, position, roll }) => (!shelf.selection?.pinned || shelf.selection.id === roll?.id) && <CellLabel key={index} focused={focused} position={position} roll={roll} slot={slot} active={roll?.id === activeId} portal={portal} shelf={shelf} readOnly={readOnly} />)}
     {interactive && !focused && <CellLabel focused={false} position={[0, 0, DEPTH / 2]} slot={-1} active={false} portal={portal} shelf={shelf} onApproach={onApproach} readOnly={readOnly} />}
-    {/* A narrow light strip brightens only the cabinet; no spill on the table. */}
-    <mesh position={[0, HEIGHT * 2 - mm(12), DEPTH / 2 - mm(4)]}><boxGeometry args={[SHELF_WIDTH - mm(40), mm(2), mm(4)]} /><meshBasicMaterial color="#d1c7aa" /></mesh>
-    <mesh position={[0, HEIGHT * 2 - mm(11.5), DEPTH / 2 - mm(4)]} material={wood.channel}><boxGeometry args={[SHELF_WIDTH - mm(36), mm(3), mm(8)]} /></mesh>
+    {/* A narrow light strip brightens only the cabinet; no spill on the table.
+        Its diffuser hangs 0.6 mm below the channel: with their undersides in one
+        plane the two surfaces fought for each pixel and flickered as the camera moved.
+        The channel stops 1 mm behind the dividers' front faces for the same reason. */}
+    <mesh position={[0, HEIGHT * 2 - mm(12.8), DEPTH / 2 - mm(6)]}><boxGeometry args={[SHELF_WIDTH - mm(40), mm(1.6), mm(6)]} /><meshBasicMaterial color="#d1c7aa" /></mesh>
+    <mesh position={[0, HEIGHT * 2 - mm(11.5), DEPTH / 2 - mm(6)]} material={wood.channel}><boxGeometry args={[SHELF_WIDTH - mm(36), mm(3), mm(10)]} /></mesh>
   </group>;
 }

@@ -1,5 +1,5 @@
 import { ScreeningSession } from '../screening/session';
-import { drawShowreelOverlay } from './overlay';
+import { drawShowreelOverlay, loadShowreelPhotos } from './overlay';
 import { createLookTimeline, createShowreelTimeline, type ShowreelSample, type ShowreelTimeline } from './timeline';
 import type { ShowreelRoll } from './rolls';
 import { loadSettings, type ShowreelSettings } from './settings';
@@ -43,6 +43,8 @@ const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
  * first sight of the wet side, the loupe or the cameras stalls for seconds.
  */
 export async function prerollShowreel(session: ShowreelSession, width: number, height: number, onProgress: (done: number) => void, signal: AbortSignal) {
+  // The New roll editor draws photographs into the overlay; they load first.
+  await loadShowreelPhotos(session.timeline);
   while ((!session.engine || session.holding) && !signal.aborted) await pause(50);
   const engine = session.engine;
   if (!engine || signal.aborted) return;

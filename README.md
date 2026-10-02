@@ -109,14 +109,14 @@ of light turns each negative positive, or brings up the backlight behind reversa
 film) or **Projector** (the room goes dark, a countdown is projected in the lamp-lit
 gate, and frames slide in from the right on a regular beat), **Darkroom** (from the
 room to the light table and back), **Orbit** (slow arcs around each photograph),
-**Drying Line** (each strip becomes a line of prints hung in the darkroom) or
+**Darkroom Prints** (every photograph enlarged onto paper and hung up to dry) or
 **Documentary** (each photograph fills the screen, drifting and dissolving). Each reel has
 an establishing shot, a frame-by-frame tour with overview breaks at strip
 boundaries, and a closing shot, at Relaxed, Normal or Brisk pace; reduced motion
 uses slow cuts instead of fast moves, blur and flicker. Each reel also has two
 settings of its own (for example Distance and Depth of field for Tracking Shot,
 Gate weave and Lamp flicker for Projector, Drift and Dissolve for Documentary).
-Tracking Shot, Darkroom, Orbit and Drying Line render with depth of field,
+Tracking Shot, Darkroom, Orbit and Darkroom Prints render with depth of field,
 focused on the camera's subject. Preview supports
 play/pause, previous/next frame, tap to pause and exit; exiting restores the table
 exactly, and screening never writes rolls or saved views.
@@ -141,9 +141,11 @@ production build, cumulative integration/E2E suites and standalone viewer gates.
 ### 9. Showreel (`/showreel`)
 An unlinked page plays a one-minute, 16:9 promotional film of the app, rendered
 live from code: the light table switching on as a band of light develops the
-negatives, the title over the room, the darkroom's wet side, the film shelf,
-excerpts of the Tracking Shot and Orbit reels, the loupe on the edge printing,
-the photographs through the Documentary, Drying Line and Projector reels, and
+negatives, the title over the room, the darkroom's wet side, the New roll
+editor taking in a roll of photographs (noting that they stay on the device),
+the film shelf, an excerpt of the Tracking Shot reel, the loupe on the edge
+printing, the whole medium-format roll before the camera sweeps down and orbits
+one photograph, the Darkroom Prints and Projector reels, and
 the camera cabinet, ending on a card with filmreverie.app
 and the GitHub link. Titles, captions, light leaks, grain and camera labels are
 drawn over the scene. The page is public to anyone with the URL, is marked

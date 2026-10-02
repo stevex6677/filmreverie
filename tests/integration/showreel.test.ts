@@ -21,16 +21,35 @@ describe('Showreel', () => {
     expect(timeline.sample(timeline.duration + 5)).toEqual(timeline.sample(timeline.duration));
   });
 
-  it('visits the darkroom, film shelf, light table reels and camera cabinet with both sample rolls', () => {
-    expect(timeline.shots.map(shot => shot.name)).toEqual(['hook', 'darkroom', 'shelf', 'tracking', 'loupe', 'orbit', 'documentary', 'drying', 'projector', 'cabinet']);
+  it('visits the darkroom, new roll editor, film shelf, light table reels and camera cabinet with both sample rolls', () => {
+    expect(timeline.shots.map(shot => shot.name)).toEqual(['hook', 'darkroom', 'new-roll', 'shelf', 'tracking', 'loupe', 'medium', 'prints', 'projector', 'cabinet']);
     let end = 0;
     for (const shot of timeline.shots) { expect(shot.start).toBeCloseTo(end, 6); expect(shot.duration).toBeGreaterThan(2); end = shot.start + shot.duration; }
     expect(end).toBeCloseTo(timeline.duration, 6);
     expect(new Set(timeline.shots.map(shot => shot.roll))).toEqual(new Set([0, 1]));
-    // Five existing reels appear as excerpts.
-    expect(timeline.shots.filter(shot => shot.source.reel !== 'darkroom').map(shot => shot.source.reel)).toEqual(['tracking', 'orbit', 'documentary', 'drying-line', 'projector']);
-    // The corner slate names the roll in view on every reel shot.
-    for (const shot of timeline.shots.slice(3, 9)) expect(timeline.slates.find(slate => slate.start <= shot.start + .5 && slate.end >= shot.start + .5)?.roll).toBe(shot.roll);
+    // Three existing reels appear as excerpts.
+    expect(timeline.shots.filter(shot => shot.source.reel !== 'darkroom').map(shot => shot.source.reel)).toEqual(['tracking', 'darkroom-prints', 'projector']);
+    // The corner slate names the roll in view on every light table and screening shot.
+    for (const shot of timeline.shots.slice(4, 9)) expect(timeline.slates.find(slate => slate.start <= shot.start + .5 && slate.end >= shot.start + .5)?.roll).toBe(shot.roll);
+  });
+
+  it('shows the New roll editor over a move that the film shelf shot continues', () => {
+    const shot = (name: string) => timeline.shots.find(item => item.name === name)!;
+    const editor = timeline.moments.find(moment => moment.kind === 'new-roll')!;
+    expect(editor).toMatchObject({ start: shot('new-roll').start, end: shot('shelf').start });
+    const joint = shot('shelf').start;
+    expect(timeline.sample(joint - 1e-6).camera).toMatchObject({ zoom: expect.closeTo(timeline.sample(joint).camera.zoom, 4) });
+    expect(poseEye(timeline.sample(joint - 1e-6).camera).map(v => v.toFixed(3))).toEqual(poseEye(timeline.sample(joint).camera).map(v => v.toFixed(3)));
+    // No light leak at that join.
+    expect(timeline.flashes).not.toContain(joint);
+  });
+
+  it('opens the medium-format shot on the whole roll before closing in on one photograph', () => {
+    const shot = timeline.shots.find(item => item.name === 'medium')!;
+    expect(shot.roll).toBe(1);
+    const opening = timeline.sample(shot.start + .1).camera, close = timeline.sample(shot.start + shot.duration - .05).camera;
+    expect(opening.zoom).toBeGreaterThan(close.zoom * 2);
+    expect(close.tilt).toBeGreaterThan(opening.tilt + .4);
   });
 
   it('keeps the camera inside the room and the loupe only in its shot', () => {
