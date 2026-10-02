@@ -138,7 +138,7 @@ export default function Showreel() {
 
   const shots = session.timeline.shots;
   const stageStyle = fixed ? { width: `${fixed[1]}px`, height: `${fixed[2]}px` } : undefined;
-  return <div className={`showreel ${idle && snapshot.playing ? 'is-idle' : ''}`} data-showreel-ready={ready} data-showreel-time={snapshot.time} data-showreel-playing={snapshot.playing}>
+  return <div className={`showreel ${idle && snapshot.playing ? 'is-idle' : ''} ${panel || exporting ? 'has-sheet' : ''}`} data-showreel-ready={ready} data-showreel-time={snapshot.time} data-showreel-playing={snapshot.playing}>
     <div ref={stage} className={`showreel-stage ${fixed ? 'is-fixed' : ''}`} style={stageStyle} onClick={() => { if (ready && !panel && !exporting) toggle(); }}>
       <Canvas shadows dpr={[1, Math.min(window.devicePixelRatio || 1, 1.5)]} camera={{ position: [0, 1, 4], fov: 45, near: .04, far: 50 }}
         gl={{ preserveDrawingBuffer: true, antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: DISPLAY_EXPOSURE, outputColorSpace: THREE.SRGBColorSpace }}>
@@ -151,7 +151,7 @@ export default function Showreel() {
         {loaded && <span>Preparing scenes {Math.round(preroll * 100)}%</span>}
       </div>}
       {panel && !exporting && <ShowreelSettingsPanel settings={settings} onChange={changeSettings} player={player} ready={ready} duration={snapshot.duration}
-        preparing={loaded ? `Preparing scenes ${Math.round(preroll * 100)}%` : 'Loading the darkroom…'}
+        preparing={loaded ? `Preparing ${Math.round(preroll * 100)}%` : 'Loading…'}
         onPreview={preview} onExport={openExport} />}
       {exporting && <ShowreelExportDialog session={session} settings={settings} onResolution={resolution => changeSettings({ resolution })}
         onClose={() => { setExporting(false); if (panel) session.seek(settingsFrame); }} />}

@@ -49,11 +49,12 @@ async function library(page: Page, name = 'darkroom-guest-rolls') {
 }
 const player = (page: Page) => page.getByTestId('screening-player');
 const time = async (page: Page) => Number(await player(page).getAttribute('data-time'));
-async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Projector' | 'Darkroom' | 'Orbit' | 'Drying Line' | 'Documentary', pace = 'Normal') {
+async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Projector' | 'Darkroom' | 'Orbit' | 'Darkroom Prints' | 'Documentary', pace = 'Normal') {
   await page.getByTestId('screen-roll').click();
   const picker = page.getByRole('dialog', { name: 'Screen roll' });
   await expect(picker).toBeVisible();
-  await picker.getByRole('radio', { name: new RegExp(`^${reel}`) }).check();
+  // The reel's exact title: "Darkroom" must not also pick "Darkroom Prints".
+  await picker.locator('label.screening-choice').filter({ has: page.locator('strong', { hasText: new RegExp(`^${reel}$`) }) }).getByRole('radio').check();
   await picker.getByRole('radio', { name: pace, exact: true }).check();
   return picker;
 }
@@ -224,7 +225,7 @@ test('Screen roll waits for the loupe to be put away, hides it while screening a
   await expect(page.locator('main')).toHaveAttribute('data-loupe-state', 'activated');
 });
 
-test('Darkroom, Orbit, Drying Line and Documentary preview in the actual scene, seek by frame and restore the table', async ({ page }, info) => {
+test('Darkroom, Orbit, Darkroom Prints and Documentary preview in the actual scene, seek by frame and restore the table', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/guest?mode=inspect&deterministic=true'); await ready(page);
   const before = await table(page), stored = await library(page);
@@ -233,7 +234,7 @@ test('Darkroom, Orbit, Drying Line and Documentary preview in the actual scene, 
   // Reels and paces; the video format is chosen when exporting.
   await expect(page.getByRole('dialog', { name: 'Screen roll' }).getByRole('radio')).toHaveCount(7 + 3);
   await page.getByRole('button', { name: 'Close', exact: true }).click();
-  for (const [reel, id] of [['Darkroom', 'darkroom'], ['Orbit', 'orbit'], ['Drying Line', 'drying-line'], ['Documentary', 'documentary']] as const) {
+  for (const [reel, id] of [['Darkroom', 'darkroom'], ['Orbit', 'orbit'], ['Darkroom Prints', 'darkroom-prints'], ['Documentary', 'documentary']] as const) {
     await (await pickReel(page, reel, 'Brisk')).getByTestId('screening-preview').click();
     await expect(page.locator('main')).toHaveAttribute('data-screening-reel', id);
     await expect.poll(() => time(page), { timeout: 30000 }).toBeGreaterThan(2);
@@ -367,7 +368,7 @@ test('exports a decodable 720p H.264 MP4 of the whole reel without writes or upl
   expect(errors).toEqual([]);
 });
 
-test('Documentary exports real cross-dissolves and Drying Line exports its prints', async ({ page }, info) => {
+test('Documentary exports real cross-dissolves and Darkroom Prints exports its prints', async ({ page }, info) => {
   test.skip(info.project.name === 'mobile-chrome', 'Export is covered on desktop Chrome and WebKit.');
   await page.goto('/guest?mode=inspect&deterministic=true&screening_seconds=11'); await ready(page);
   const before = await table(page);
@@ -388,14 +389,15 @@ test('Documentary exports real cross-dissolves and Drying Line exports its print
   await page.getByTestId('screening-export-done').click();
   await expectRestored(page, before);
 
-  const prints = createScreeningTimeline(BASELINE_ROLL, { reel: 'drying-line', pace: 'brisk', aspect: 16 / 9, stockType: 'negative' });
+  const prints = createScreeningTimeline(BASELINE_ROLL, { reel: 'darkroom-prints', pace: 'brisk', aspect: 16 / 9, stockType: 'negative' });
   const print = prints.segments.find(s => s.kind === 'frame')!;
-  await (await pickReel(page, 'Drying Line', 'Brisk')).getByTestId('screening-export').click();
+  await (await pickReel(page, 'Darkroom Prints', 'Brisk')).getByTestId('screening-export').click();
   await startExport(page);
   await expect(page.getByTestId('screening-export-view')).toHaveAttribute('data-phase', 'done', { timeout: 120000 });
   const hung = await inspectVideo(page, { leader: print.start + .3 });
   // A lamp-lit print on the dark wall: bright paper and photograph, detailed.
   expect(hung.leader.deviation).toBeGreaterThan(25); expect(hung.leader.mean).toBeGreaterThan(35);
+  expect((await download(page, info.outputPath('prints.mp4'))).name).toBe('roll-01-darkroom-prints.mp4');
   await page.getByTestId('screening-export-done').click();
   await expectRestored(page, before);
 });

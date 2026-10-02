@@ -1,18 +1,20 @@
 // Keeps screening playback smooth on slower devices. Frames that miss 60 fps
 // read as stutter, so when too many are late in a window of frames, playback
-// steps down: fewer depth-of-field samples first, then render resolution. After
+// steps down: fewer depth-of-field samples, then no depth of field, and only
+// then a little render resolution. A lower resolution scaled up shows as jagged,
+// blocky edges on the film while the camera moves, so it is the last resort. After
 // sustained smooth playback it steps back up; a level that failed soon after
 // being restored waits longer before the next attempt, so it does not
 // oscillate. Paused frames and export always use full quality.
 
+/** `samples: 0` renders without depth of field. */
 export interface QualityLevel { scale: number; samples: number }
 export const QUALITY_LEVELS: readonly QualityLevel[] = [
   { scale: 1, samples: 128 },
   { scale: 1, samples: 80 },
-  { scale: .85, samples: 64 },
-  { scale: .72, samples: 56 },
-  { scale: .6, samples: 48 },
-  { scale: .5, samples: 40 },
+  { scale: 1, samples: 0 },
+  { scale: .85, samples: 0 },
+  { scale: .75, samples: 0 },
 ];
 
 /** A frame is late when it misses the 60 fps budget by half a frame. */

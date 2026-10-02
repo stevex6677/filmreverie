@@ -74,7 +74,8 @@ export function ScreeningDirector({ session, table, roll, brightness }: {
   const still = useRef({ key: '', at: 0 });
   const playbackSamples = () => session.playing ? governor.quality.samples : 512;
   const look = () => session.sample.look ?? session.timeline.look;
-  const draw = (focus: number, samples: number, scale = 1) => lens.render(gl, scene, camera as THREE.PerspectiveCamera, focus, look().aperture, samples, scale);
+  // No samples: the governor has turned depth of field off to keep full resolution.
+  const draw = (focus: number, samples: number, scale = 1) => lens.render(gl, scene, camera as THREE.PerspectiveCamera, focus, samples > 0 ? look().aperture : 0, samples, scale);
 
   // Compile every shader the reel will need (room, prints, depth of field)
   // before the timeline starts, so no compile interrupts playback. The reel

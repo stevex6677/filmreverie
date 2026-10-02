@@ -102,7 +102,7 @@ describe('M22 screening timelines', () => {
         const { zoom, pan, tilt } = sample.camera, eye = poseEye(sample.camera);
         expect([zoom, pan.x, pan.z, tilt, sample.light, sample.fade, ...eye].every(Number.isFinite), name).toBe(true);
         expect(eye[1] - TABLE_SURFACE_Y, `${name} ${reel} ${sample.kind}`).toBeGreaterThan(.03);
-        const room = (reel === 'darkroom' && (sample.act === 'establish' || sample.act === 'return')) || reel === 'drying-line';
+        const room = (reel === 'darkroom' && (sample.act === 'establish' || sample.act === 'return')) || reel === 'darkroom-prints';
         if (room) {
           // Room shots stay inside the room, looking at most slightly up (as the room view does).
           expect(Math.abs(eye[0])).toBeLessThan(ROOM_ENVELOPE.width / 2); expect(eye[2]).toBeGreaterThan(ROOM_ENVELOPE.front); expect(eye[2]).toBeLessThan(ROOM_ENVELOPE.back);
@@ -116,7 +116,7 @@ describe('M22 screening timelines', () => {
         expect(Math.abs(sample.camera.roll ?? 0)).toBeLessThanOrEqual(15 * Math.PI / 180);
       }
       // A focused frame is centered and mostly visible in the requested aspect.
-      for (const segment of timeline.segments.filter(s => s.kind === 'frame' && !['tracking', 'darkroom', 'drying-line', 'documentary'].includes(reel))) {
+      for (const segment of timeline.segments.filter(s => s.kind === 'frame' && !['tracking', 'darkroom', 'darkroom-prints', 'documentary'].includes(reel))) {
         const frame = locateFrame(roll, segment.frameIndex), pose = segment.camera[1];
         expect(pose.pan.x).toBeCloseTo(frame.x, 9); expect(TABLE_CENTER_Z - pose.pan.z).toBeCloseTo(frame.y, 9);
         const width = (frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) * roll.scale;
@@ -293,7 +293,7 @@ describe('M22 Develop opening (2026-09-27 review)', () => {
   });
 });
 
-describe('M22 Drying Line and Documentary', () => {
+describe('M22 Darkroom Prints and Documentary', () => {
   it('hangs one print per frame, one line per strip, along the left wall and clear of the bench', async () => {
     const { printLayout, PRINT_WALL_X } = await import('../../src/screening/prints');
     for (const [name, roll] of Object.entries(ROLLS)) {
@@ -311,13 +311,40 @@ describe('M22 Drying Line and Documentary', () => {
       for (let i = 1; i < prints.length; i++) if (prints[i].line === prints[i - 1].line) {
         expect(prints[i - 1].center[2] - prints[i].center[2], name).toBeGreaterThan((prints[i - 1].paper.width + prints[i].paper.width) / 2);
       }
-      const timeline = createScreeningTimeline(roll, options('drying-line'));
+      const timeline = createScreeningTimeline(roll, options('darkroom-prints'));
       for (const segment of timeline.segments.filter(s => s.kind === 'frame')) {
         const print = prints[segment.frameIndex], pose = segment.camera[0];
         expect(pose.pan.x).toBeCloseTo(print.center[0], 9); expect(pose.pan.z).toBeCloseTo(print.center[2], 9);
         expect(TABLE_SURFACE_Y + (pose.height ?? 0)).toBeCloseTo(print.center[1], 9);
         expect(poseEye(pose)[0]).toBeGreaterThan(PRINT_WALL_X + .3);
       }
+    }
+  });
+
+  it('keeps every line of prints clear of the row above, up to a 36-exposure roll', async () => {
+    const { printLayout } = await import('../../src/screening/prints');
+    const rotated = (roll: RollDefinition, every: number): RollDefinition => ({ ...roll, frames: roll.frames.map((frame, i) => i % every ? frame : { ...frame, rotation: 90 }) });
+    const thirtySix: RollDefinition = { ...BASELINE_ROLL, rollId: '36', frames: frames(36) };
+    const sixFourFive: RollDefinition = { ...medium, rollId: '645', frames: frames(16), framesPerStrip: 4, layout: formatLayout('645'), format: '645' };
+    const cases = { ...ROLLS, thirtySix, portraits: rotated(thirtySix, 1), mixed: rotated(thirtySix, 3), medium: rotated(medium, 2), sixFourFive, mediumPortraits: rotated(sixFourFive, 1) };
+    for (const [name, roll] of Object.entries(cases)) {
+      const { prints, lines } = printLayout(roll);
+      expect(prints.map(p => p.index), name).toEqual(roll.frames.map((_, i) => i));
+      for (const print of prints) {
+        expect(print.center[1] - print.paper.height / 2, name).toBeGreaterThan(-.72);
+        expect(print.hang[1], name).toBeLessThan(ROOM_ENVELOPE.ceiling - .6);
+        // Prints stay a readable size.
+        expect(Math.max(print.paper.width, print.paper.height), name).toBeGreaterThan(.3);
+      }
+      // No print reaches the next line down, or any print on it, along the same stretch of wall.
+      for (const upper of prints) for (const lower of prints) {
+        const [a, b] = [lines[upper.line], lines[lower.line]];
+        if (lower.line === upper.line || b.y >= a.y || b.zFrom !== a.zFrom) continue;
+        expect(upper.center[1] - upper.paper.height / 2, `${name} ${upper.index}/${lower.index}`).toBeGreaterThan(b.y + .03);
+      }
+      // Along a line, prints run toward the table (−z), without overlapping.
+      for (let i = 1; i < prints.length; i++) if (prints[i].line === prints[i - 1].line)
+        expect(prints[i - 1].center[2] - prints[i].center[2], name).toBeGreaterThan((prints[i - 1].paper.width + prints[i].paper.width) / 2);
     }
   });
 
@@ -403,7 +430,7 @@ describe('M22 reel settings and depth of field (2026-09-28 feedback)', () => {
         expect([...eye, sample.light, sample.camera.zoom].every(Number.isFinite)).toBe(true);
         expect(eye[1] - TABLE_SURFACE_Y, `${reel} ${tuning}`).toBeGreaterThan(.03);
         expect(sample.camera.tilt).toBeGreaterThanOrEqual(0);
-        const room = (reel === 'darkroom' && (sample.act === 'establish' || sample.act === 'return')) || reel === 'drying-line';
+        const room = (reel === 'darkroom' && (sample.act === 'establish' || sample.act === 'return')) || reel === 'darkroom-prints';
         if (room) { expect(Math.abs(eye[0])).toBeLessThan(ROOM_ENVELOPE.width / 2); expect(eye[2]).toBeGreaterThan(ROOM_ENVELOPE.front); expect(eye[2]).toBeLessThan(ROOM_ENVELOPE.back); }
         else expect(sample.camera.tilt, `${reel} ${tuning}`).toBeLessThanOrEqual(80 * Math.PI / 180 + 1e-9);
       }
@@ -419,7 +446,7 @@ describe('M22 reel settings and depth of field (2026-09-28 feedback)', () => {
     // Depth of field: none at Deep, stronger toward Shallow; only reels that look across the scene have it.
     expect(at('tracking', [.5, 0]).look.aperture).toBe(0);
     expect(at('tracking', [.5, 1]).look.aperture).toBeGreaterThan(at('tracking', [.5, .5]).look.aperture * 2);
-    for (const reel of ['tracking', 'darkroom', 'orbit', 'drying-line'] as const) expect(at(reel, []).look.aperture, reel).toBeGreaterThan(0);
+    for (const reel of ['tracking', 'darkroom', 'orbit', 'darkroom-prints'] as const) expect(at(reel, []).look.aperture, reel).toBeGreaterThan(0);
     for (const reel of ['develop', 'projector', 'documentary'] as const) expect(at(reel, []).look.aperture, reel).toBe(0);
     // Develop: no push-in at None; the band softens toward Soft.
     const still = frame(at('develop', [0, .5]));
@@ -436,8 +463,8 @@ describe('M22 reel settings and depth of field (2026-09-28 feedback)', () => {
     // Orbit: a wider arc swings farther around the photograph.
     const arc = (tuning: number[]) => Math.abs(at('orbit', tuning).segments.find(s => s.kind === 'orbit' && s.frameIndex === 3)!.camera[0].yaw);
     expect(arc([1, .5])).toBeGreaterThan(arc([0, .5]) * 3);
-    // Drying Line: face on at the low end; along the line, the camera stands back toward +z.
-    const print = (tuning: number[]) => { const pose = frame(at('drying-line', tuning)).camera[0]; return poseEye(pose)[2] - pose.pan.z; };
+    // Darkroom Prints: face on at the low end; along the line, the camera stands back toward +z.
+    const print = (tuning: number[]) => { const pose = frame(at('darkroom-prints', tuning)).camera[0]; return poseEye(pose)[2] - pose.pan.z; };
     expect(print([.5, 0])).toBeCloseTo(0, 6); expect(print([.5, 1])).toBeGreaterThan(.3);
     // Documentary: Still holds each photograph; the dissolve length sets the running time.
     for (const segment of at('documentary', [0, .5]).segments.filter(s => s.kind === 'frame')) {
@@ -468,12 +495,14 @@ describe('M22 playback smoothness (2026-09-29 feedback)', () => {
     // Occasional late frames (under 10%) are tolerated.
     for (let i = 0; i < 600; i++) governor.frame(i % 20 === 0 ? 1 / 30 : 1 / 60);
     expect(governor.level).toBe(0);
-    // Steady 30 fps steps all the way down: samples first, then resolution.
+    // Steady 30 fps steps all the way down: samples, then depth of field, then resolution.
     run(governor, 1 / 30, 2000);
     expect(governor.level).toBe(QUALITY_LEVELS.length - 1);
     const scales = QUALITY_LEVELS.map(q => q.scale), samples = QUALITY_LEVELS.map(q => q.samples);
     expect(scales).toEqual([...scales].sort((a, b) => b - a)); expect(samples).toEqual([...samples].sort((a, b) => b - a));
-    expect(QUALITY_LEVELS[1].scale).toBe(1); expect(Math.min(...scales)).toBeGreaterThanOrEqual(.5);
+    expect(QUALITY_LEVELS[1].scale).toBe(1); expect(Math.min(...scales)).toBeGreaterThanOrEqual(.75);
+    // Depth of field goes before any resolution: a scaled-up frame shows jagged edges in motion.
+    expect(QUALITY_LEVELS.find(q => q.scale < 1)?.samples).toBe(0);
     // Pauses and hidden pages are ignored.
     const idle = new PlaybackGovernor(); run(idle, 2, 500); run(idle, 0, 500); expect(idle.level).toBe(0);
     // A slow device (15 fps) reaches the lowest level within a few seconds, two levels at a time.

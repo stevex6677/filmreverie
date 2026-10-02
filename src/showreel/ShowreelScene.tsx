@@ -18,7 +18,7 @@ import { ProgressiveTextureUploader } from '../utils/progressiveTextures';
 import type { CameraCollectionProgress } from '../utils/loadCameraModel';
 import type { FilmShelfState } from '../utils/useFilmShelf';
 import { ScreeningDirector } from '../screening/ScreeningDirector';
-import { DryingLine } from '../screening/DryingLine';
+import { DarkroomPrints } from '../screening/DarkroomPrints';
 import { applyScreeningPose } from '../screening/camera';
 import type { ScreeningSession } from '../screening/session';
 import { showreelCoverSource, type ShowreelRoll } from './rolls';
@@ -53,12 +53,12 @@ function ShowreelLoupe({ session, scale, texture }: { session: ScreeningSession;
   </group>;
 }
 
-/** The Drying Line reel's prints, shown frame by frame only during its shot (export stays exact). */
+/** The Darkroom Prints reel's prints, shown frame by frame only during its shot (export stays exact). */
 function ShowreelPrints({ session, roll, textures }: { session: ScreeningSession; roll: ShowreelRoll; textures: THREE.Texture[] }) {
   const group = useRef<THREE.Group>(null);
-  useFrame(() => { if (group.current) group.current.visible = (session.sample as ShowreelSample).shot === 'drying'; }, -2);
+  useFrame(() => { if (group.current) group.current.visible = (session.sample as ShowreelSample).shot === 'prints'; }, -2);
   return <group ref={group} visible={false}>
-    <DryingLine roll={roll.definition} textures={textures} stockId={roll.stockId} filmStrength={DEFAULT_FILM_STRENGTH} session={session} />
+    <DarkroomPrints roll={roll.definition} textures={textures} stockId={roll.stockId} filmStrength={DEFAULT_FILM_STRENGTH} session={session} />
   </group>;
 }
 
@@ -123,7 +123,7 @@ export const ShowreelScene = memo(function ShowreelScene({ session, rolls, ready
       </group>))}
       <ShowreelLoupe session={session} scale={rolls[0].definition.scale} texture={first.textures[0]} />
     </group>
-    {/* The prints use the second roll, as in the showreel's Drying Line shot. */}
+    {/* The prints use the second roll, as in the showreel's Darkroom Prints shot. */}
     <ShowreelPrints session={session} roll={rolls[1]} textures={second.textures} />
     {/* Mounted once everything has loaded, so it compiles the finished scene before playing. */}
     {ready && <ScreeningDirector session={session} table={table} roll={rolls[0].definition} brightness={1} />}

@@ -16,14 +16,14 @@ export interface ReelOptions {
 /** A setting special to one reel, shown as a slider between two described ends. */
 export interface ReelSetting { label: string; low: string; high: string; initial: number }
 // Two at most per reel. The initial values reproduce the reviewed reels, except
-// Drying Line, which now looks slightly along the line so its depth of field shows.
+// Darkroom Prints, which now looks slightly along the line so its depth of field shows.
 export const REEL_SETTINGS: Record<ReelId, readonly ReelSetting[]> = {
   tracking: [{ label: 'Distance', low: 'Close', high: 'Far', initial: .5 }, { label: 'Depth of field', low: 'Deep', high: 'Shallow', initial: .5 }],
   develop: [{ label: 'Push-in', low: 'None', high: 'Close', initial: .5 }, { label: 'Light band', low: 'Sharp', high: 'Soft', initial: .5 }],
   projector: [{ label: 'Gate weave', low: 'Steady', high: 'Loose', initial: .5 }, { label: 'Lamp flicker', low: 'None', high: 'Strong', initial: .5 }],
   darkroom: [{ label: 'Distance', low: 'Close', high: 'Far', initial: .5 }, { label: 'Camera height', low: 'Low', high: 'High', initial: .5 }],
   orbit: [{ label: 'Arc', low: 'Narrow', high: 'Wide', initial: .5 }, { label: 'Depth of field', low: 'Deep', high: 'Shallow', initial: .5 }],
-  'drying-line': [{ label: 'Distance', low: 'Close', high: 'Far', initial: .5 }, { label: 'Angle', low: 'Face on', high: 'Along the line', initial: .4 }],
+  'darkroom-prints': [{ label: 'Distance', low: 'Close', high: 'Far', initial: .5 }, { label: 'Angle', low: 'Face on', high: 'Along the line', initial: .4 }],
   documentary: [{ label: 'Drift', low: 'Still', high: 'Strong', initial: .5 }, { label: 'Dissolve', low: 'Quick', high: 'Long', initial: .5 }],
 };
 /** The reel's settings with defaults filled in and values clamped to 0–1. */
@@ -35,16 +35,16 @@ const around = (u: number, range: number) => range ** (2 * u - 1);
 /** 0 at the low end, 1 at the midpoint, 2.5 at the high end. */
 const amount = (u: number) => u <= .5 ? 2 * u : 1 + 3 * (u - .5);
 // Depth of field for reels that look across the table or into the room.
-const APERTURE = { tracking: .075, darkroom: .035, orbit: .03, 'drying-line': .035 };
+const APERTURE = { tracking: .075, darkroom: .035, orbit: .03, 'darkroom-prints': .035 };
 
-export const REEL_LABEL: Record<ReelId, string> = { tracking: 'Tracking Shot', develop: 'Develop', projector: 'Projector', darkroom: 'Darkroom', orbit: 'Orbit', 'drying-line': 'Drying Line', documentary: 'Documentary' };
+export const REEL_LABEL: Record<ReelId, string> = { tracking: 'Tracking Shot', develop: 'Develop', projector: 'Projector', darkroom: 'Darkroom', orbit: 'Orbit', 'darkroom-prints': 'Darkroom Prints', documentary: 'Documentary' };
 export const REEL_DESCRIPTION: Record<ReelId, string> = {
   tracking: 'A low camera tracks along each strip and moves in on details.',
   develop: 'A band of light turns each negative into a photograph.',
   projector: 'After a countdown, each frame slides into a lit projector gate.',
   darkroom: 'From the darkroom to the light table, and back into the room.',
   orbit: 'Slow arcs around each photograph on the glowing table.',
-  'drying-line': 'Each strip becomes a line of prints hung in the darkroom.',
+  'darkroom-prints': 'Every photograph enlarged onto paper and hung up to dry.',
   documentary: 'Each photograph fills the screen, drifting and dissolving.',
 };
 export const PACE_LABEL: Record<Pace, string> = { relaxed: 'Relaxed', normal: 'Normal', brisk: 'Brisk' };
@@ -53,7 +53,7 @@ const TAN = Math.tan(Math.PI / 8);
 const degrees = (value: number) => value * Math.PI / 180;
 
 /** Output-aspect framing; the whole roll with a video-safe margin rather than room for controls. */
-function framing(roll: RollDefinition, aspect: number) {
+export function framing(roll: RollDefinition, aspect: number) {
   const strips = createRollLayout(roll);
   const halfWidth = Math.max(...strips.map(strip => getStripDimensions(strip.layout).width * strip.scale / 2));
   const stripHeight = getStripDimensions(strips[0].layout).height * roll.scale;
@@ -236,7 +236,7 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     return finishTimeline(b, { ...info, revealMode: null, look: { aperture: APERTURE.orbit * amount(second) } });
   }
 
-  if (options.reel === 'drying-line') {
+  if (options.reel === 'darkroom-prints') {
     // From the lit table to the print wall: a wide shot of every line, then a
     // track along each line toward the table (−z), so prints pass right to left.
     const layout = printLayout(roll);
@@ -253,10 +253,11 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
       const frame = frameAt(index);
       return lookAtPose([-1.7, .15, 1.5], [0, TABLE_SURFACE_Y, TABLE_CENTER_Z - frame.strip.y], 34);
     };
-    // Frame every line of prints: centred on them, far enough to show them all.
-    const zs = layout.prints.map(print => print.center[2]), ys = layout.lines.map(line => line.y);
-    const middle: [number, number, number] = [layout.prints[0].center[0], (Math.max(...ys) + Math.min(...ys)) / 2 - .15, (Math.max(...zs) + Math.min(...zs)) / 2];
-    const across = Math.max(...zs) - Math.min(...zs) + .8, high = Math.max(...ys) - Math.min(...ys) + .7;
+    // Frame every line of prints: centred on them, from the top line to the lowest paper edge.
+    const zs = layout.prints.map(print => print.center[2]);
+    const top = Math.max(...layout.lines.map(line => line.y)) + .04, bottom = Math.min(...layout.prints.map(print => print.center[1] - print.paper.height / 2));
+    const middle: [number, number, number] = [layout.prints[0].center[0], (top + bottom) / 2, (Math.max(...zs) + Math.min(...zs)) / 2];
+    const across = Math.max(...zs) - Math.min(...zs) + .8, high = top - bottom + .3;
     const reach = Math.min(2.9, Math.max(high, across / aspect) / (2 * Math.tan(31 * Math.PI / 180)));
     const wall = lookAtPose([middle[0] + reach, middle[1] + .05, middle[2]], middle, 62);
     // Rise from the table first, so the turn toward the wall passes through open air.
@@ -285,7 +286,7 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     b.step('return', 'close', n - 1, 3.4, { camera: { ...closing, zoom: closing.zoom * 1.04 }, drift: true });
     b.card('end', end + b.seconds(.4), b.time);
     b.fade(b.time - b.seconds(.9), 0); b.fade(b.time, 1);
-    return finishTimeline(b, { ...info, revealMode: null, look: { aperture: APERTURE['drying-line'] } });
+    return finishTimeline(b, { ...info, revealMode: null, look: { aperture: APERTURE['darkroom-prints'] } });
   }
 
   if (options.reel === 'documentary') {
