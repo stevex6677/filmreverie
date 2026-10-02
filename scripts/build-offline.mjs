@@ -1,15 +1,14 @@
 import { createHash } from 'node:crypto';
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
-import { createCanvas } from '@napi-rs/canvas';
+import { createCanvas, loadImage } from '@napi-rs/canvas';
 const root = path.resolve('dist');
 // Raster installation icons are generated build output, not tracked binaries.
+// They are rendered from the light-table favicon, which keeps its subject inside the maskable safe zone.
+const icon = await loadImage(await readFile(path.join(root, 'favicon.svg')));
 for (const size of [180, 192, 512]) {
-  const canvas = createCanvas(size, size), c = canvas.getContext('2d');
-  c.fillStyle = '#171813'; c.fillRect(0, 0, size, size);
-  c.fillStyle = '#c1b894'; c.fillRect(size * .22, size * .26, size * .56, size * .48);
-  c.fillStyle = '#292b21'; c.fillRect(size * .29, size * .35, size * .42, size * .3);
-  for (let i = 0; i < 6; i++) for (const y of [.28, .68]) c.clearRect(size * (.25 + i * .088), size * y, size * .055, size * .04);
+  const canvas = createCanvas(size, size);
+  canvas.getContext('2d').drawImage(icon, 0, 0, size, size);
   await writeFile(path.join(root, `icon-${size}.png`), canvas.toBuffer('image/png'));
 }
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
