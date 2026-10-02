@@ -13,8 +13,8 @@ for (const size of [180, 192, 512]) {
   await writeFile(path.join(root, `icon-${size}.png`), canvas.toBuffer('image/png'));
 }
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
-// The /showreel photographs and music are online-only; offline preparation never downloads them.
-const online = new Set([path.join(root, 'assets', 'photos', 'showreel'), path.join(root, 'assets', 'music', 'showreel')]);
+// Showreel photos stay online-only. Shared screening music is available offline.
+const online = new Set([path.join(root, 'assets', 'photos', 'showreel')]);
 async function inventory(dir) {
   const files = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {

@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from 'react';
+import { SoundtrackPlayer } from '../showreel/music';
+import { trackById } from '../showreel/settings';
 import type { RollDefinition } from '../utils/rollLayout';
 import { createScreeningTimeline, type ReelOptions } from './reels';
 import type { Pace, ReelId, ScreeningSample, ScreeningTimeline } from './timeline';
@@ -12,7 +14,7 @@ export type ExportFormat = keyof typeof EXPORT_FORMATS;
 export const isExportFormat = (value: unknown): value is ExportFormat => typeof value === 'string' && Object.hasOwn(EXPORT_FORMATS, value);
 
 /** Reel and pace, and each reel's own settings (kept when switching reels). */
-export interface ScreeningChoice { reel: ReelId; pace: Pace; tuning: Partial<Record<ReelId, readonly number[]>> }
+export interface ScreeningChoice { reel: ReelId; pace: Pace; tuning: Partial<Record<ReelId, readonly number[]>>; music?: string; volume?: number }
 /** Text drawn into the rendered frames. Never filenames, IDs or storage references. */
 export interface ScreeningCredits { title: string; stock: string; format: string; frames: number }
 
@@ -24,7 +26,7 @@ export interface ScreeningEngine {
   end(): void;
 }
 
-export interface ScreeningSnapshot { time: number; playing: boolean; frameIndex: number; focusFrame: number; exporting: boolean; duration: number }
+export interface ScreeningSnapshot { time: number; playing: boolean; frameIndex: number; focusFrame: number; exporting: boolean; duration: number; musicError: string }
 
 /**
  * One screening of the current roll. It never changes viewer state: the scene
@@ -32,6 +34,18 @@ export interface ScreeningSnapshot { time: number; playing: boolean; frameIndex:
  */
 export class ScreeningSession {
   timeline: ScreeningTimeline;
+  readonly musicPlayer = new SoundtrackPlayer();
+  musicError = '';
+  get musicTrack() { return trackById(this.choice.music ?? 'none'); }
+  /** Resume in the initiating gesture, even while shaders are warming. */
+  private unlockMusic() {
+    if (this.musicTrack) void this.musicPlayer.unlock().catch(error => this.failMusic(error));
+  }
+  private failMusic(error: unknown) {
+    this.musicError = error instanceof Error ? error.message : 'Music could not be played.';
+    this.musicPlayer.stop(); this.emit();
+  }
+  dispose() { this.musicPlayer.dispose(); }
   time = 0;
   playing = true;
   exporting = false;
@@ -67,25 +81,34 @@ export class ScreeningSession {
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   getSnapshot = () => this.snapshot;
   private read(): ScreeningSnapshot {
-    return { time: Math.round(this.time * 10) / 10, playing: this.playing, frameIndex: this.sample.frameIndex, focusFrame: this.focusFrame, exporting: this.exporting, duration: this.timeline.duration };
+    return { time: Math.round(this.time * 10) / 10, playing: this.playing, frameIndex: this.sample.frameIndex, focusFrame: this.focusFrame, exporting: this.exporting, duration: this.timeline.duration, musicError: this.musicError };
   }
   emit() {
     const next = this.read(), prev = this.snapshot;
     if (Object.keys(next).some(key => next[key as keyof ScreeningSnapshot] !== prev[key as keyof ScreeningSnapshot])) { this.snapshot = next; this.listeners.forEach(listener => listener()); }
   }
   seek(time: number) {
+    this.musicPlayer.stop();
+    this.move(time);
+  }
+  private move(time: number) {
     this.time = Math.max(0, Math.min(this.timeline.duration, time));
     this.sample = this.timeline.sample(this.time);
     this.focusFrame = this.timeline.sample(this.time + 1.2).frameIndex;
     this.emit();
   }
   tick(delta: number) {
-    if (!this.playing || this.exporting || this.holding) return;
-    this.seek(this.time + Math.min(.1, Math.max(0, delta)));
-    if (this.time >= this.timeline.duration) { this.playing = false; this.emit(); }
+    if (!this.playing || this.exporting || this.holding) { this.musicPlayer.stop(); return; }
+    const track = this.musicTrack;
+    if (track && !this.musicError && !this.musicPlayer.active) {
+      // Start each roll at the beginning of its track; loop for longer rolls.
+      void this.musicPlayer.play(track, this.time, track.drop, this.timeline.duration, this.choice.volume ?? .8, true).catch(error => this.failMusic(error));
+    }
+    this.move(this.musicPlayer.now() ?? this.time + Math.min(.1, Math.max(0, delta)));
+    if (this.time >= this.timeline.duration) { this.playing = false; this.musicPlayer.stop(); this.emit(); }
   }
-  play() { if (this.time >= this.timeline.duration) this.seek(0); this.playing = true; this.emit(); }
-  pause() { this.playing = false; this.emit(); }
+  play() { if (this.time >= this.timeline.duration) this.seek(0); this.playing = true; this.unlockMusic(); this.emit(); }
+  pause() { this.playing = false; this.musicPlayer.stop(); this.emit(); }
   toggle() { if (this.playing) this.pause(); else this.play(); }
   step(direction: -1 | 1) {
     // From the establishing shot, Next goes to the first frame.
@@ -96,7 +119,7 @@ export class ScreeningSession {
     if (target >= this.timeline.frameCount) this.seek(this.timeline.segments.find(s => s.act === 'return')?.start ?? this.timeline.duration);
     else this.seek(target < 0 ? 0 : this.timeline.frameStart(target));
   }
-  setExporting(exporting: boolean) { this.exporting = exporting; if (exporting) this.playing = false; this.emit(); }
+  setExporting(exporting: boolean) { this.exporting = exporting; if (exporting) { this.playing = false; this.musicPlayer.stop(); } this.emit(); }
 }
 
 export function useScreeningSnapshot(session: ScreeningSession) {

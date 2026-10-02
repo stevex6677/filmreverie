@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { PACE_LABEL, REEL_DESCRIPTION, REEL_LABEL, REEL_SETTINGS, reelTuning } from './reels';
 import { PACES, REEL_IDS } from './timeline';
 import { useScreeningSnapshot, type ScreeningChoice, type ScreeningSession } from './session';
+import { SoundtrackPlayer } from '../showreel/music';
+import { SHOWREEL_TRACKS, trackById } from '../showreel/settings';
 import './screening.css';
 
 export const formatDuration = (seconds: number) => {
@@ -22,6 +24,19 @@ export function ScreeningPicker({ choice, onChange, onPreview, onExport, onClose
   durationFor: (choice: ScreeningChoice) => number; frames: number; reducedMotion: boolean;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const [musicPlayer] = useState(() => new SoundtrackPlayer());
+  const [listening, setListening] = useState<string | null>(null);
+  const [musicError, setMusicError] = useState('');
+  useEffect(() => { musicPlayer.onEnded = () => setListening(null); return () => musicPlayer.dispose(); }, [musicPlayer]);
+  useEffect(() => { musicPlayer.stop(); setListening(null); }, [musicPlayer, choice.volume]);
+  const listen = (id: string) => {
+    musicPlayer.stop(); setMusicError('');
+    if (id === 'none') { setListening(null); return; }
+    setListening(id);
+    void musicPlayer.audition(trackById(id)!, choice.volume ?? .8).catch(error => {
+      setListening(null); setMusicError(error instanceof Error ? error.message : 'Music could not be played.');
+    });
+  };
   useEffect(() => {
     const node = dialog.current, previous = document.activeElement as HTMLElement | null;
     node?.showModal();
@@ -29,7 +44,9 @@ export function ScreeningPicker({ choice, onChange, onPreview, onExport, onClose
     return () => { node?.close(); if (previous?.isConnected) previous.focus({ preventScroll: true }); };
   }, []);
   const radio = <K extends keyof ScreeningChoice>(key: K, value: ScreeningChoice[K], label: string, detail?: string) => <label key={String(value)} className="screening-choice">
-    <input type="radio" name={`screening-${key}`} value={String(value)} checked={choice[key] === value} onChange={() => onChange({ ...choice, [key]: value })} />
+    <input type="radio" name={`screening-${key}`} value={String(value)} checked={choice[key] === value}
+      onClick={() => { if (key === 'music' && choice[key] === value) listen(String(value)); }}
+      onChange={() => { onChange({ ...choice, [key]: value }); if (key === 'music') listen(String(value)); }} />
     <span className="screening-choice-card"><strong>{label}</strong>{detail && <small>{detail}</small>}</span>
   </label>;
   const settings = REEL_SETTINGS[choice.reel], tuning = reelTuning(choice.reel, choice.tuning[choice.reel]);
@@ -52,8 +69,19 @@ export function ScreeningPicker({ choice, onChange, onPreview, onExport, onClose
         </label>)}
         <button type="button" className="screening-reset" data-testid="screening-reset" disabled={!adjusted} onClick={() => tune(undefined)}>Reset</button>
       </fieldset>
+      <fieldset className="screening-music">
+        <legend>Music</legend>
+        {SHOWREEL_TRACKS.map(track => radio('music', track.id, track.title, `${track.mood} · ${track.artist}${listening === track.id ? ' · Playing preview' : ''}`))}
+        {radio('music', 'none', 'No music')}
+        {choice.music && choice.music !== 'none' && <label className="screening-slider">
+          <span>Music volume · {Math.round((choice.volume ?? .8) * 100)}%</span>
+          <input aria-label="Music volume" type="range" min={0} max={100} value={Math.round((choice.volume ?? .8) * 100)} onChange={event => onChange({ ...choice, volume: Number(event.currentTarget.value) / 100 })} />
+        </label>}
+        <p className="screening-note">CC0 music by HoliznaCC0. Free to use, including in exported videos.</p>
+        {musicError && <p role="alert" className="screening-note">{musicError}</p>}
+      </fieldset>
       <p className="screening-estimate" data-testid="screening-estimate">{formatDuration(durationFor(choice))} · {frames} {frames === 1 ? 'frame' : 'frames'}{reducedMotion ? ' · Reduced motion' : ''}</p>
-      <p className="screening-note">Silent 720p video, made on this device. Nothing is uploaded.</p>
+      <p className="screening-note">720p video{choice.music && choice.music !== 'none' ? ' with music' : ' without music'}, made on this device. Nothing is uploaded.</p>
       <footer>
         <button type="button" className="is-primary" data-testid="screening-preview" onClick={onPreview}>Preview</button>
         <button type="button" data-testid="screening-export" onClick={onExport}>Export video</button>
@@ -95,6 +123,7 @@ export function ScreeningPlayer({ session, onExit, onExport }: { session: Screen
   return <div ref={root} className="screening-player" data-testid="screening-player" data-playing={snapshot.playing} data-frame={frame} data-time={snapshot.time} data-controls={revealed ? 'visible' : 'hidden'}
     onPointerMove={event => { if (event.pointerType === 'mouse') setRevealed(true); }}>
     <canvas ref={overlay} className="screening-overlay" aria-hidden="true" />
+    {snapshot.musicError && <p className="screening-music-error" role="alert">{snapshot.musicError} Preview is continuing without music.</p>}
     {/* A tap on the scene pauses; another resumes. */}
     <button type="button" className="screening-stage" aria-label={snapshot.playing ? 'Pause screening' : 'Resume screening'} tabIndex={-1} onClick={() => { session.toggle(); setRevealed(true); }} />
     <header className="screening-top">

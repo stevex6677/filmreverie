@@ -28,7 +28,7 @@ export function ShowreelSettingsPanel({ settings, onChange, player, ready, prepa
   useEffect(() => { player.onEnded = () => setListening(null); return () => { player.onEnded = null; if (auditioning.current) player.stop(); }; }, [player]);
   const listen = (id: string) => {
     const track = trackById(id);
-    if (!track || listening === id) { player.stop(); setListening(null); return; }
+    if (!track) { player.stop(); setListening(null); return; }
     setListening(id);
     void player.audition(track, settings.volume).catch(() => setListening(null));
   };
@@ -42,10 +42,11 @@ export function ShowreelSettingsPanel({ settings, onChange, player, ready, prepa
       <legend>Music</legend>
       {SHOWREEL_TRACKS.map(track => <div key={track.id} className="showreel-track">
         <label>
-          <input type="radio" name="showreel-music" checked={settings.music === track.id} onChange={() => onChange({ music: track.id })} />
-          <span><strong>{track.title}</strong><small>{track.mood} · {track.artist}</small></span>
+          <input type="radio" name="showreel-music" checked={settings.music === track.id}
+            onClick={() => { if (settings.music === track.id) listen(track.id); }}
+            onChange={() => { onChange({ music: track.id }); listen(track.id); }} />
+          <span><strong>{track.title}</strong><small>{track.mood} · {track.artist}{listening === track.id ? ' · Playing preview' : ''}</small></span>
         </label>
-        <button type="button" onClick={() => listen(track.id)} aria-pressed={listening === track.id}>{listening === track.id ? 'Stop' : 'Listen'}</button>
       </div>)}
       <div className="showreel-track">
         <label><input type="radio" name="showreel-music" checked={settings.music === 'none'} onChange={() => { player.stop(); setListening(null); onChange({ music: 'none' }); }} /><span><strong>No music</strong></span></label>

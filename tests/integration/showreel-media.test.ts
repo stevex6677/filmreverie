@@ -65,9 +65,16 @@ describe('MP4 writer with a soundtrack', () => {
 
 describe('Showreel soundtrack', () => {
   const timeline = createShowreelTimeline(SHOWREEL_ROLLS);
-  it('lands each track’s beat drop on the first cut', () => {
+  it('aligns later musical cues without delaying tracks with early cues', () => {
     expect(timeline.cue).toBe(timeline.shots.find(shot => shot.name === 'darkroom')!.start);
-    for (const track of SHOWREEL_TRACKS) expect(trackOffset(track, timeline.cue) + timeline.cue).toBeCloseTo(track.drop, 9);
+    for (const track of SHOWREEL_TRACKS) {
+      if (track.drop >= timeline.cue) expect(trackOffset(track, timeline.cue) + timeline.cue).toBeCloseTo(track.drop, 9);
+      else expect(trackOffset(track, timeline.cue)).toBe(0);
+    }
+    for (const id of ['dream-pop', 'autumn']) {
+      const track = SHOWREEL_TRACKS.find(track => track.id === id)!;
+      expect(trackOffset(track, timeline.cue), `${id} must play during the opening`).toBe(0);
+    }
   });
 
   it('fades in, holds the chosen volume and fades out to the last frame', () => {
