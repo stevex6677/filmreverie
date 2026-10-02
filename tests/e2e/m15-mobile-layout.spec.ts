@@ -2,7 +2,13 @@ import { openFrame, captureCanvas } from "./helpers/viewing";
 import {test,expect,Page} from '@playwright/test';
 import {PNG} from 'pngjs';
 import {getRegionStats,getRegionMeanDifference} from './helpers/pixelAnalysis';
-const ready=async(page:Page)=>{await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:45000});await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});};
+const ready=async(page:Page)=>{
+  await expect(page.locator('main')).toHaveAttribute('data-app-ready','true',{timeout:90000});
+  await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});
+  await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:45000});
+  // Raw pointer input does not auto-wait for the loading overlay like clicks do.
+  await expect(page.locator('#darkroom-loader')).toBeHidden();
+};
 test('M15 phone and tablet layouts keep usable film, controls, modal ownership and framing through rotation',async({page},info)=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto('/guest?fixture=36&mode=inspect&deterministic=true');await ready(page);
@@ -17,7 +23,7 @@ test('M15 phone and tablet layouts keep usable film, controls, modal ownership a
     expect(canvas!.x).toBeGreaterThanOrEqual(0);expect(canvas!.x+canvas!.width).toBeLessThanOrEqual(width+1);
     expect(canvas!.y).toBeGreaterThanOrEqual(0);
     expect(canvas!.y+canvas!.height).toBeLessThanOrEqual(height+1);
-    for(const name of ['Previous','Next','Choose frame','Reset framing','Adjust','← Overview']) {
+    for(const name of ['Previous','Next','Choose frame','Reset framing','Settings','← Overview']) {
       const b=await page.getByRole('button',{name,exact:true}).boundingBox();expect(b).not.toBeNull();expect(b!.width).toBeGreaterThanOrEqual(44);expect(b!.height).toBeGreaterThanOrEqual(44);expect(b!.x).toBeGreaterThanOrEqual(0);expect(b!.y+b!.height).toBeLessThanOrEqual(height+1);
     }
     const image=PNG.sync.read(await captureCanvas(page));expect(getRegionStats(image,image.width/2|0,image.height/2|0,70).stdDev).toBeGreaterThan(4);
@@ -28,7 +34,8 @@ test('M15 phone and tablet layouts keep usable film, controls, modal ownership a
     await page.keyboard.press('Escape');expect(await page.locator('main').getAttribute('data-inspect-zoom')).toBe(zoom);
     await page.getByRole('button',{name:'← Overview',exact:true}).tap();await ready(page);await openFrame(page,7);expect(Number(await page.locator('main').getAttribute('data-inspect-zoom'))).toBeCloseTo(Number(zoom));
   }
-  await page.getByRole('button',{name:'Settings',exact:true}).tap();await page.getByRole('button',{name:'Switch to Positive',exact:true}).tap();await page.keyboard.press('Escape');await page.waitForTimeout(700);
+  // The viewer starts in Positive; capture it before switching to Negative.
+  await expect(page.locator('main')).toHaveAttribute('data-film-mode','positive');
   const positive=PNG.sync.read(await captureCanvas(page));await page.getByRole('button',{name:'Settings',exact:true}).tap();await page.getByRole('button',{name:'Switch to Negative',exact:true}).tap();await page.keyboard.press('Escape');await page.waitForTimeout(700);
   const negative=PNG.sync.read(await captureCanvas(page));expect(getRegionMeanDifference(positive,negative,positive.width/2|0,positive.height/2|0,70)).toBeGreaterThan(15);
   expect(errors).toEqual([]);

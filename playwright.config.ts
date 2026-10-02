@@ -59,7 +59,7 @@ export default defineConfig({
   webServer: {
     command: process.env.PLAYWRIGHT_STATIC_PREVIEW === "1"
       ? `PORT=${port} node scripts/serve-production.mjs`
-      : `npm run preview -- --host 127.0.0.1 --port ${port}`,
+      : `npm run preview -- --host 0.0.0.0 --port ${port}`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 30000,

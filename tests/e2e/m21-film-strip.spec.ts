@@ -214,11 +214,13 @@ test('a slider drag ending outside keeps tools open, an outside tap closes witho
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const panel = page.getByRole('dialog', { name: 'Viewing tools', exact: true });
   await expect(panel).toHaveJSProperty('scrollTop', 0);
-  const slider = panel.getByRole('slider', { name: 'Film strength', exact: true });
+  const slider = panel.getByRole('slider', { name: 'Light Table Brightness', exact: true });
   await slider.scrollIntoViewIfNeeded();
+  const initialBrightness = await slider.inputValue();
   const box = (await slider.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down(); await page.mouse.move(8, box.y + box.height / 2, { steps: 5 }); await page.mouse.up();
+  await expect(slider).not.toHaveValue(initialBrightness);
   await expect(panel).toBeVisible();
   const mode = await main.getAttribute('data-room-mode');
   const focus = await main.getAttribute('data-focus-mode');

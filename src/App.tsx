@@ -238,8 +238,9 @@ export function App() {
   const published = usePublishedShelf(!isGuest);
   const shelf = canManageRolls ? managedShelf : published.shelf;
   useEffect(() => { if (!state.shelfFocused && shelf.trash) shelf.changeTrash(false); }, [state.shelfFocused, shelf.trash]);
+  // The development fixture is built in and has no saved-library entry.
   const tableRollAvailable = canManageRolls
-    ? (!managedShelf.loaded || managedShelf.allRolls.some(saved => saved.id === roll.rollId && saved.trashedAt === null))
+    ? ((isGuest && roll.fixture) || !managedShelf.loaded || managedShelf.allRolls.some(saved => saved.id === roll.rollId && saved.trashedAt === null))
     : cloudSource !== null;
   const emptyRollMessage = tableRollAvailable ? undefined
     : isGuest ? 'No roll on the light table'

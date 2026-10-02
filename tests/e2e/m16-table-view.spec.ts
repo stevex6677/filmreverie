@@ -3,7 +3,13 @@ import { PNG } from 'pngjs';
 import { getRegionStats,getRegionMeanDifference } from './helpers/pixelAnalysis';
 import { FULL_ROLL_FIXTURE,locateFrame } from '../../src/utils/rollLayout';
 import { captureCanvas } from "./helpers/viewing";
-const ready=async(page:Page)=>{await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:45000});await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});};
+const ready=async(page:Page)=>{
+  await expect(page.locator('main')).toHaveAttribute('data-app-ready','true',{timeout:90000});
+  await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true',{timeout:60000});
+  await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false',{timeout:45000});
+  // Raw pointer input does not auto-wait for the loading overlay like clicks do.
+  await expect(page.locator('#darkroom-loader')).toBeHidden();
+};
 const open=async(page:Page,n:number)=>{if(await page.locator('main').getAttribute('data-focus-mode')!=='true'){await page.locator('.canvas-wrapper').focus();await page.keyboard.press('Enter');await ready(page);}await page.getByRole('button',{name:'Choose frame',exact:true}).click();await page.getByRole('button',{name:`Open frame ${n}`,exact:true}).click();await ready(page);};
 test('M16 zooms the same table with neighboring images visible and restores Overview',async({page},info)=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
@@ -58,8 +64,15 @@ test('M16 Focus keeps live settings and keyboard ownership without changing phot
   const before=PNG.sync.read(await captureCanvas(page));
   await page.getByTestId('mode-toggle').click();await page.waitForTimeout(350);
   const after=PNG.sync.read(await captureCanvas(page));expect(getRegionMeanDifference(before,after,after.width/2|0,after.height/2|0,40)).toBeGreaterThan(15);
-  const visible=PNG.sync.read(await page.screenshot({path:info.outputPath('focus-adjust.png')}));
+  await page.screenshot({path:info.outputPath('focus-adjust.png')});
+  // The responsive settings panel can cover the photograph. Check the actual
+  // page pixels after dismissal against the live canvas captured with tools open.
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog',{name:'Viewing tools'})).not.toBeVisible();
+  expect(await canvas.getAttribute('data-camera-position')).toBe(pose);
+  const visible=PNG.sync.read(await page.screenshot({path:info.outputPath('focus-after-settings.png')}));
   expect(getRegionMeanDifference(after,visible,after.width/2|0,after.height/2|0,40)).toBeLessThan(2);
+  await page.getByRole('button',{name:'Settings',exact:true}).click();
   await page.getByLabel('Light Table Brightness').fill('0.3');await page.keyboard.press('ArrowRight');await expect(page.locator('main')).toHaveAttribute('data-selected-frame','3');
   await page.keyboard.press('Escape');expect(await canvas.getAttribute('data-camera-position')).toBe(pose);
   await page.getByRole('button',{name:'Settings',exact:true}).click();await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).not.toBeVisible();await expect(page.locator('main')).toHaveAttribute('data-focus-mode','true');
