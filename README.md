@@ -23,9 +23,12 @@ table. Opening a roll from the shelf enters the light table.
 - **Whole-Strip Inversion:** Toggle between negative and positive modes across the entire physical strip, including borders, sprockets, and manufacturer markings.
 
 ### 2. Authentic Film Stocks & Rebate Markings
-Faithfully modeled film characteristics, color gamuts, and edgeprints for five classic emulsions:
+Eleven film stocks with distinct adjustable color/grain effects and procedural edge markings:
 - **Kodak Portra 160, 400, and 800:** Fine grain, true orange mask normalization, and dual-track edge cadence.
 - **Kodak Ektar 100:** Ultra-vivid color negative emulsion with high-contrast edge branding.
+- **Fujifilm 200 and Kodak Pro Image 100:** 35mm only; vivid greens and balanced portrait color respectively.
+- **Kodak Gold 200:** 35mm and 120, with warm color and classic grain.
+- **Fujifilm Provia 100F and Velvia 50/100:** Color reversal stocks in 35mm and 120.
 - **Kodak Ektachrome E100:** Reversal slide film with neutral clear base and positive-only viewing.
 
 For complete physical standards (KS-1870 / ISO 1007), coordinate spaces, modification instructions, and how to add new stocks, see [docs/FILM_SPECS.md](docs/FILM_SPECS.md).
@@ -295,7 +298,11 @@ return to the full shelf. Choose **Edit roll** from the record to edit. The edit
 the left, frames at the upper right, and crop/rotation/cover/order controls below.
 On phones these sections stack. The roll record offers **Open on light table**,
 **Edit roll**, and **Delete roll**; keyboard users can open it with Enter or Arrow Down.
-**New roll** opens the photograph importer. **Trash** shows
+**New roll** opens the same editor with an empty frame workbench: drop or choose
+JPEG/PNG scans there, then name the roll, crop and save on one screen. **+ Add
+photographs** appends another batch. The editor remembers the last whole-roll film
+effect strength as the starting strength for new rolls: guest darkrooms keep it in
+this browser, and the owner darkroom stores it on the server. **Trash** shows
 deleted rolls on the shelf with Restore; deletion also offers Undo. Additional
 pages accommodate more than 16 saved rolls. **Back to room** restores the room view.
 Dragging over the cabinet in room mode moves the view, just like dragging the room.

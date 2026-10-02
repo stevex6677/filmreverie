@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { IDBFactory } from 'fake-indexeddb';
 import { FILM_STOCKS } from '../../src/data/filmStocks';
 import { FILM_LOOKS } from '../../src/data/filmLooks';
@@ -52,5 +52,22 @@ describe('Roll editor film strength', () => {
     const runtime = createRuntimeRoll(saved);
     expect(runtime.definition.frames.map(frame => frame.filmStrength)).toEqual([20, undefined, 90]);
     runtime.dispose();
+  });
+
+  it('keeps the starting strength per browser library separately and ignores invalid stored values', async () => {
+    const values = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); } });
+    try {
+      const guest = new RollRepository(new IDBFactory(), 'darkroom-guest-rolls'), local = new RollRepository(new IDBFactory());
+      expect(await guest.preferences()).toEqual({});
+      await guest.savePreferences({ filmStrength: 30 });
+      expect(await guest.preferences()).toEqual({ filmStrength: 30 });
+      expect(values.get('darkroom-guest-rolls-preferences')).toBe('{"filmStrength":30}');
+      expect(await local.preferences()).toEqual({});
+      await expect(guest.savePreferences({ filmStrength: 101 })).rejects.toThrow(/film effect strength/);
+      expect(await guest.preferences()).toEqual({ filmStrength: 30 });
+      values.set('darkroom-guest-rolls-preferences', '{"filmStrength":"strong"}');
+      expect(await guest.preferences()).toEqual({});
+    } finally { vi.unstubAllGlobals(); }
   });
 });

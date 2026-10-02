@@ -26,14 +26,12 @@ test('New roll creation and photo import succeed on unsecured connections withou
 
   // Add photos
   await page.getByLabel('Choose photographs').setInputFiles('photos/roll-01/frame-01-harbor.png');
-  await expect(page.getByText('1 photographs selected')).toBeVisible();
+  await expect(dialog.locator('.draft-photos li')).toHaveCount(1);
 
-  // Continue to details
-  await page.getByRole('button', { name: 'Continue to roll details' }).click();
+  // Name the roll
   await page.getByLabel('Roll name', { exact: true }).fill('Unsecured Roll');
 
-  // Review and save
-  await page.getByRole('button', { name: 'Review photographs', exact: true }).click();
+  // Save
   await page.getByRole('button', { name: 'Save and open', exact: true }).click();
 
   // Verify saved and opened

@@ -14,7 +14,6 @@ async function begin(page:Page,count:number,aspects:number[]=[1.5]){
   await shelfAction(page, 'New roll');
   await page.getByLabel('Choose photographs').setInputFiles(Array.from({length:count},(_,i)=>photo(i,aspects[i%aspects.length])));
   await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText(`${count} / ${count}`);
-  await page.getByRole('button',{name:'Continue to roll details'}).click();
   await page.getByLabel('Roll name',{exact:true}).fill('Mixed sizes');
 }
 async function save(page:Page){
@@ -34,7 +33,6 @@ for(const film of ['35mm','120']) test(`${film} free frames preserve proportions
     await page.getByLabel('Film format',{exact:true}).selectOption('free');
   }else await expect(page.getByLabel('Film format',{exact:true})).toHaveValue('free');
   await page.getByRole('dialog').getByLabel('Film stock',{exact:true}).selectOption('ektachrome-e100');
-  await page.getByRole('button',{name:'Review photographs',exact:true}).click();
   await expect(page.getByText('Full composition · no cropping',{exact:true})).toBeVisible();
   await expect(page.getByRole('slider',{name:/crop position/})).toHaveCount(0);
   const previews=await page.locator('.draft-preview').evaluateAll(nodes=>nodes.slice(0,2).map(n=>{const r=n.getBoundingClientRect();return r.width/r.height;}));
@@ -86,7 +84,6 @@ test('length limit blocks saving and recovers after removing a photograph',async
   await begin(page,46);
   await expect(page.getByLabel('Film format',{exact:true})).toHaveValue('135');
   await expect(page.getByLabel('Film length',{exact:true})).toContainText('39 mm over capacity');
-  await page.getByRole('button',{name:'Review photographs',exact:true}).click();
   await expect(page.getByRole('button',{name:'Save and open',exact:true})).toBeDisabled();
   await page.getByRole('button',{name:'Remove scan1.png',exact:true}).click();
   await expect(page.getByLabel('Film length',{exact:true})).toContainText('1755 / 1755 mm');
@@ -97,7 +94,6 @@ test('120 capacity recalculates when free panoramas are cropped to a preset',asy
   await expect(page.getByLabel('Film length',{exact:true})).toContainText('10 mm over capacity');
   await page.getByLabel('Film format',{exact:true}).selectOption('66');
   await expect(page.getByLabel('Film length',{exact:true})).toContainText('472 / 910 mm');
-  await page.getByRole('button',{name:'Review photographs',exact:true}).click();
   await expect(page.getByText('Aspect mismatch: edges will be cropped.',{exact:true})).toBeVisible();
   await expect(page.getByRole('slider',{name:'Horizontal crop position',exact:true})).toBeVisible();await save(page);
 });
@@ -109,7 +105,6 @@ for(const [film,count,used,capacity] of [['35mm',40,1560,1755],['120',15,885,910
   const meter=page.getByLabel('Film length',{exact:true});
   await expect(meter).toContainText(`${used} / ${capacity} mm`);
   await expect(meter).toContainText('Using extra allowance');
-  await page.getByRole('button',{name:'Review photographs',exact:true}).click();
   await expect(page.getByRole('button',{name:'Save and open',exact:true})).toBeEnabled();
   await save(page);await openFrame(page,count);
   await expect(page.locator('main')).toHaveAttribute('data-selected-frame',String(count));

@@ -1,0 +1,41 @@
+{
+  "id": "pro-image-100",
+  "displayName": "Kodak Pro Image 100",
+  "type": "negative",
+  "process": "C-41",
+  "allowedViews": [
+    "negative",
+    "positive"
+  ],
+  "base": {
+    "substrateBase": "rgba(227, 125, 51, 0.88)",
+    "rebateText": "#2a1208",
+    "rebateSecondary": "#2a1208",
+    "frameShadow": "rgba(35, 15, 8, 0.4)",
+    "negativeMask": [
+      0.89,
+      0.49,
+      0.2
+    ]
+  },
+  "rebate": {
+    "label": "KODAK PRO 100",
+    "font": "Arial, Helvetica, sans-serif",
+    "fontWeight": "bold",
+    "orientation": "same-direction",
+    "halfFrameNumbers": true,
+    "codePattern": null
+  },
+  "reference": {
+    "edition": "Kodak Professional Pro Image 100, 135 still film",
+    "title": "Kodak Pro Image 100 technical data E-4L",
+    "url": "https://www.bhphotovideo.com/lit_files/519169.pdf",
+    "imageUrl": "https://www.bhphotovideo.com/lit_files/519169.pdf",
+    "accessed": "2026-10-01",
+    "license": "Manufacturer reference linked for study only. Procedural film lettering is original project artwork (ISC).",
+    "limitations": "Color, grain, base and edge lettering are artistic approximations, not calibrated sensitometry or a factory edge-print reconstruction. Exact optical codes, batch IDs and production tolerances are unverified and omitted."
+  },
+  "formats": [
+    "135"
+  ]
+}

@@ -42,8 +42,8 @@ async function createRoll(page:Page,name='Offline roll',source=photo()) {
   await shelf(page);await shelfAction(page, 'New roll');
   await page.getByLabel('Choose photographs',{exact:true}).setInputFiles(source);
   await expect(page.getByText('Processed 1 / 1',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Continue to roll details'}).click();await page.getByLabel('Roll name',{exact:true}).fill(name);
-  await page.getByRole('button',{name:'Review photographs'}).click();await page.getByRole('button',{name:'Save and open'}).click();await expect(page.getByRole('dialog',{name:'Review roll'})).toHaveCount(0);await expect(page.locator('main')).not.toHaveAttribute('data-roll-id','roll-01');await ready(page);
+  await page.getByLabel('Roll name',{exact:true}).fill(name);
+  await page.getByRole('button',{name:'Save and open'}).click();await expect(page.getByRole('dialog',{name:'Review roll'})).toHaveCount(0);await expect(page.locator('main')).not.toHaveAttribute('data-roll-id','roll-01');await ready(page);
 }
 async function dbRolls(page:Page) { return page.evaluate(()=>new Promise<any[]>((resolve,reject)=>{const q=indexedDB.open('darkroom-guest-rolls');q.onerror=()=>reject(q.error);q.onsuccess=()=>{const db=q.result;if(!db.objectStoreNames.contains('rolls')){db.close();resolve([]);return;}const r=db.transaction('rolls').objectStore('rolls').getAll();r.onsuccess=()=>{db.close();resolve(r.result.filter((roll:any)=>roll.id!=='roll-01'));};};})); }
 async function reloadApp(page:Page) {

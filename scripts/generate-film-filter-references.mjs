@@ -12,6 +12,9 @@ import { FILM_LOOKS, filmGrainSeed } from '../src/data/filmLooks.ts';
 import { applyFilmLookToBuffer } from '../src/shaders/filmLook.ts';
 
 const STOCK_NAMES = {
+  'fuji-200': 'Fujifilm 200',
+  'pro-image-100': 'Kodak Pro Image 100',
+  'gold-200': 'Kodak Gold 200',
   'portra-160': 'Kodak Portra 160',
   'portra-400': 'Kodak Portra 400',
   'portra-800': 'Kodak Portra 800',
@@ -131,7 +134,7 @@ async function run() {
   const rowH = thumbH + 8;
   const colW = thumbW + 8;
 
-  const cols = 1 + FILM_STOCKS.length; // Original + 8 stocks = 9 columns
+  const cols = 1 + FILM_STOCKS.length; // Original plus every supported stock
   const rows = SCENES.length; // 5 scenes
 
   const matrixW = pad * 2 + 150 + cols * colW;

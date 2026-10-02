@@ -36,7 +36,9 @@ describe('Physical dimensions across the light table and shelf', () => {
   });
   it('fits full-size cartons and frames without overlap in every saved and placeholder arrangement', () => {
     for (const entry of FILM_PACKAGING) for (const owned of [false, true]) {
-      const layout = shelfArrangement(entry.sizeMm[0], entry.format === '135', owned, entry.sizeMm[2]);
+      const stacked = entry.cartridgePlacement === 'on-box';
+      const layout = shelfArrangement(entry.sizeMm[0], entry.format === '135' && !stacked, owned, entry.sizeMm[2]);
+      if (stacked) expect(entry.sizeMm[1] + CARTRIDGE_MM.height).toBeLessThan(SHELF_CELL_MM.height - 12);
       expect(layout.span).toBeLessThan(mm(SHELF_CELL_MM.width - 16));
       expect(mm(Math.max(entry.sizeMm[1], owned ? COVER_FRAME_MM.height : 0))).toBeLessThan(mm(SHELF_CELL_MM.height - 12));
       expect(mm(entry.sizeMm[2])).toBeLessThan(mm(SHELF_CELL_MM.depth));
@@ -52,7 +54,7 @@ describe('Physical dimensions across the light table and shelf', () => {
         expect(Math.abs(p.x)).toBeLessThan(mm(SHELF_CELL_MM.width / 2 - 4));
         expect(Math.abs(p.z)).toBeLessThan(mm(SHELF_CELL_MM.depth / 2 - 3));
       }
-      if (entry.format === '135') expect(Math.min(...box.map(p => p.x)) - Math.max(...film.map(p => p.x))).toBeGreaterThanOrEqual(mm(11.9));
+      if (entry.format === '135' && !stacked) expect(Math.min(...box.map(p => p.x)) - Math.max(...film.map(p => p.x))).toBeGreaterThanOrEqual(mm(11.9));
       if (frame.length) expect(Math.min(...frame.map(p => p.x)) - Math.max(...box.map(p => p.x))).toBeGreaterThanOrEqual(mm(11.9));
     }
     expect(SHELF_ORIGIN[2] + mm(SHELF_CELL_MM.depth / 2)).toBeLessThan(-.9);

@@ -39,5 +39,7 @@ export interface WithdrawResult { withdrawn: boolean }
 // PUT /api/owner/drafts/:id CloudDraft -> CloudDraft
 // GET /api/owner/drafts/:id -> CloudDraft
 // GET /api/owner/uploads/:id/:kind -> private viewing/thumbnail bytes
+// GET /api/owner/preferences -> DarkroomPreferences
+// PUT /api/owner/preferences DarkroomPreferences -> DarkroomPreferences
 // POST /api/owner/drafts/:id/publish { updatedAt: number; continuation?: string } -> PublishResult
 // DELETE /api/owner/publications/:id -> { withdrawn: boolean } (repeat while false)

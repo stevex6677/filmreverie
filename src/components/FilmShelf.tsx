@@ -49,6 +49,7 @@ export function FilmPackage({ entry, owned, textures, standalone = false }: { en
   }), [entry, textures, owned]);
   useEffect(() => () => Object.values(materials).forEach(material => material.dispose()), [materials]);
   const small = entry.format === '135';
+  const stacked = entry.cartridgePlacement === 'on-box';
   const cartridgeGeometry = useMemo(() => {
     if (!small) return null;
     const geometry = new THREE.CylinderGeometry(12.6, 12.6, 37, 40, 1, true, -1.45, 2.9);
@@ -68,7 +69,7 @@ export function FilmPackage({ entry, owned, textures, standalone = false }: { en
     return geometry;
   }, [small, entry.cartridgeProjection, entry.cartridgeCurvature]);
   useEffect(() => () => cartridgeGeometry?.dispose(), [cartridgeGeometry]);
-  const arrangement = shelfArrangement(w, small, owned && !standalone, d);
+  const arrangement = shelfArrangement(w, small && !stacked, owned && !standalone, d);
   const boxX = arrangement.boxX;
   return <group position={[0, standalone ? 0 : SHELF_FLOOR, 0]}>
     <group name="film-box" position={[boxX, 0, 0]} rotation={[0, SHELF_FILM_YAW, 0]} scale={WORLD_UNITS_PER_MM}>
@@ -79,7 +80,7 @@ export function FilmPackage({ entry, owned, textures, standalone = false }: { en
         <mesh position={[w / 2 + .08, 0, 0]} rotation={[0, Math.PI / 2, 0]} material={materials.side}><planeGeometry args={[entry.bodyColor ? d : d * .90, entry.bodyColor ? h : h * .94]} /></mesh>
       </group>
     </group>
-    {small && <group name="film-cartridge" position={[arrangement.filmX, 0, 0]} rotation={[0, SHELF_FILM_YAW, 0]} scale={WORLD_UNITS_PER_MM}>
+    {small && <group name="film-cartridge" position={[arrangement.filmX, stacked ? mm(h) : 0, 0]} rotation={[0, SHELF_FILM_YAW, 0]} scale={WORLD_UNITS_PER_MM}>
       <group position={[0, 21.25, 0]} rotation={[0, -.06, 0]}>
         <mesh castShadow><cylinderGeometry args={[CARTRIDGE_MM.diameter / 2, CARTRIDGE_MM.diameter / 2, CARTRIDGE_MM.bodyHeight, 32]} /><meshStandardMaterial color="#111313" roughness={.35} metalness={.45} /></mesh>
         <mesh material={materials.cartridge} geometry={cartridgeGeometry!} />
@@ -88,7 +89,7 @@ export function FilmPackage({ entry, owned, textures, standalone = false }: { en
         <mesh position={[0, 25.76, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[2.5, 5.4, 24]} /><meshStandardMaterial color="#333638" roughness={.3} metalness={.65} /></mesh>
       </group>
     </group>}
-    <group position={[arrangement.filmX, .0003, 0]} rotation={[0, SHELF_FILM_YAW, 0]}><mesh rotation={[-Math.PI / 2, 0, 0]} scale={[mm(small ? 35 : w + 10), mm(small ? 35 : d + 10), 1]}><circleGeometry args={[.5, 32]} /><meshBasicMaterial color="#080807" transparent opacity={.34} depthWrite={false} /></mesh></group>
+    <group position={[arrangement.filmX, (stacked ? mm(h) : 0) + .0003, 0]} rotation={[0, SHELF_FILM_YAW, 0]}><mesh rotation={[-Math.PI / 2, 0, 0]} scale={[mm(small ? 35 : w + 10), mm(small ? 35 : d + 10), 1]}><circleGeometry args={[.5, 32]} /><meshBasicMaterial color="#080807" transparent opacity={.34} depthWrite={false} /></mesh></group>
   </group>;
 }
 

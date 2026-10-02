@@ -1,6 +1,6 @@
 # M9 stock reference notes
 
-The five JSON files are local runtime profiles and reference records. `src/data/filmStocks.ts` imports them into the app; `filmRebateCanvas.ts` draws original, scalable lettering and rail numbers. All profiles describe developed **135 still film**, not cartridges, motion-picture stock, or 120 backing paper. No external image is requested at runtime and no reference photograph is redistributed.
+The eleven JSON files are local runtime profiles and reference records. `src/data/filmStocks.ts` imports them into the app; `filmRebateCanvas.ts` draws original, scalable lettering and rail numbers. Base/rebate references primarily describe developed **135 still film**, not cartridges, motion-picture stock, or 120 backing paper. Each profile explicitly lists its supported film types in `formats`. No external image is requested at runtime and no reference photograph is redistributed.
 
 | Stock / edition | Developed-film reference | Features used |
 | --- | --- | --- |
@@ -44,3 +44,23 @@ The strength scale is 0–100: 0 bypasses the added treatment exactly, 50 uses t
 These parameters are artistic approximations, not fitted spectral/density measurements, exposure simulations or scanner profiles. Grain is procedural monochrome texture, not a measured dye-cloud model. Its scale is expressed per film millimeter, seeded by frame identity and filtered according to the rendered pixel footprint, so it stays still and does not become screen-space noise. Film format changes affect its apparent size; texture-resolution upgrades do not alter its seed or scale.
 
 Original/imported pixels and stored thumbnails remain untouched. A saved roll stores `filmStrength` alongside `stockId`; absent or invalid values use 50, finite values clamp to 0–100, and explicit zero survives reopening and library edits. The shipped scene photographs already have pronounced color treatment. Candidate review on those scenes establishes the application behavior, but does not establish calibrated stock accuracy or performance on a broad range of skin tones. See the M19 review record for the actual evidence and remaining review limitations.
+
+### New color negatives (2026-10-01)
+
+| Stock | Formats | Look reference and interpretation |
+| --- | --- | --- |
+| Fujifilm 200 | 135 only | [Fujifilm AF3-0261E](https://asset.fujifilm.com/master/americas/files/2022-02/112b0a02e409bdf6b5429648695770a4/fujifilm-200-speed-film_data-sheet.pdf): vivid color and fine grain. The authored look adds restrained green/cool color separation, moderate contrast and fine texture. |
+| Kodak Pro Image 100 | 135 only | [Kodak E-4L](https://www.bhphotovideo.com/lit_files/519169.pdf): portrait-oriented color accuracy and saturation. The authored look uses balanced color, a small warm bias, gentle highlights and fine grain. |
+| Kodak Gold 200 | 135 and 120 | [Kodak product information](https://www.kodak.com/en/still-film/product/consumer/gold-200-film/) and [120 launch](https://www.kodakprofessional.com/sites/default/files/wysiwyg/pro/resources/Gold%20120%20Press%20Release.pdf): warm saturated color and fine detail. The authored look uses the strongest warm bias of these three, fuller saturation and more apparent grain. |
+
+These are perceptual RGB interpretations, not measured film emulations or claims
+about shared emulsions. Manufacturer descriptions inform the direction, not the
+numeric parameters. Strength 0 preserves the input; 50 is the default and 100
+intensifies the look. The same profiles drive editor previews, table/loupe shaders,
+screening/export and `scripts/apply-filter.mjs` (`fuji200`, `proimage100`, `gold200`).
+Grain retains the existing physical-millimeter scaling for Gold's 120 formats.
+
+The new procedural rail labels identify each stock; exact factory edge typography,
+batch markings and optical DX codes are unverified. They intentionally omit the
+unverified code tracks instead of reusing Portra's pattern. Packaging references
+and their separate image provenance live in `../film-packaging/README.md`.

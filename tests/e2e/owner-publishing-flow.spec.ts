@@ -125,9 +125,7 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
     expect(original.toString('latin1')).toContain('GPS PRIVATE LOCATION');
     await editor.getByLabel('Choose photographs', { exact: true }).setInputFiles({ name: 'private-location.jpg', mimeType: 'image/jpeg', buffer: original });
     await expect(editor.getByText('Processed 1 / 1', { exact: true })).toBeVisible();
-    await editor.getByRole('button', { name: 'Continue to roll details' }).click();
     await editor.getByLabel('Roll name', { exact: true }).fill('Browser-published photograph');
-    await editor.getByRole('button', { name: 'Review photographs' }).click();
     await editor.getByRole('button', { name: 'Save and open' }).click();
     await expect(editor).toHaveCount(0);
     expect(uploads).toHaveLength(2);

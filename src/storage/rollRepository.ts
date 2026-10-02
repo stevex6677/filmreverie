@@ -1,4 +1,4 @@
-import { FilmStockId, isFilmStockId } from '../data/filmStocks';
+import { FilmStockId, isFilmStockId, supportsFilmFormat } from '../data/filmStocks';
 import { FilmFormat, FrameSizing, filmLengthUsage, isFilmFormat } from '../data/filmFormats';
 import { reconcileShelfSlots } from '../utils/shelfLayout';
 export interface SavedView {
@@ -52,6 +52,7 @@ const complete = (tx: IDBTransaction) => new Promise<void>((resolve, reject) => 
 export function validateBundle(bundle: { roll: StoredRoll; frames: Pick<StoredFrame, 'id' | 'rollId' | 'rotation' | 'width' | 'height' | 'cropPosition' | 'filmStrength'>[]; blobs?: BlobRecord[] }) {
   const { roll, frames } = bundle;
   if (!roll.name.trim() || roll.name.length > 120 || !isFilmStockId(roll.stockId) || !isFilmFormat(roll.format)) throw new Error('Enter a name, stock and valid film format.');
+  if (!supportsFilmFormat(roll.stockId, roll.format)) throw new Error('This film stock is only available in 35mm. Choose a compatible stock or film type.');
   if (roll.camera !== undefined && (typeof roll.camera !== 'string' || roll.camera.length > 120)) throw new Error('Camera must be text of at most 120 characters.');
   if (!frames.length || new Set(roll.frameIds).size !== frames.length || roll.frameIds.length !== frames.length || !roll.frameIds.includes(roll.coverId)) throw new Error('Invalid frame membership or cover.');
   for (const frame of frames) if (frame.rollId !== roll.id || !roll.frameIds.includes(frame.id) || ![0,90,180,270].includes(frame.rotation)) throw new Error('Invalid frame metadata.');
@@ -62,11 +63,27 @@ export function validateBundle(bundle: { roll: StoredRoll; frames: Pick<StoredFr
   for (const frame of frames) if (frame.cropPosition && [frame.cropPosition.x, frame.cropPosition.y].some(n => !Number.isFinite(n) || Math.abs(n) > 1)) throw new Error('Invalid crop position.');
   for (const strength of [roll.filmStrength, ...frames.map(frame => frame.filmStrength)]) if (strength !== undefined && (typeof strength !== 'number' || !Number.isFinite(strength) || strength < 0 || strength > 100)) throw new Error('Invalid film effect strength.');
 }
+/** Darkroom-wide editor settings, kept with the library that owns the rolls. */
+export interface DarkroomPreferences { filmStrength?: number }
+export function validatePreferences(value: unknown): DarkroomPreferences {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid darkroom preferences.');
+  const { filmStrength, ...rest } = value as Record<string, unknown>;
+  if (Object.keys(rest).length) throw new Error('Unknown darkroom preference.');
+  if (filmStrength !== undefined && (typeof filmStrength !== 'number' || !Number.isFinite(filmStrength) || filmStrength < 0 || filmStrength > 100)) throw new Error('Invalid film effect strength.');
+  return filmStrength === undefined ? {} : { filmStrength };
+}
 export class RollRepository {
   private listeners = new Set<() => void>();
   subscribe(listener: () => void) { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; }
   private changed() { this.listeners.forEach(listener => listener()); }
   constructor(private factory?: IDBFactory, private name = DB_NAME) {}
+  // Browser libraries keep their settings in this browser, beside their own database.
+  async preferences(): Promise<DarkroomPreferences> {
+    try { return validatePreferences(JSON.parse(localStorage.getItem(`${this.name}-preferences`) ?? '{}')); } catch { return {}; }
+  }
+  async savePreferences(preferences: DarkroomPreferences) {
+    localStorage.setItem(`${this.name}-preferences`, JSON.stringify(validatePreferences(preferences)));
+  }
   async shelf(): Promise<StoredRoll[]> {
     const db = await openRollDatabase(this.factory, this.name);
     try {

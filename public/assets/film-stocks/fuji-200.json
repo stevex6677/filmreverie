@@ -1,0 +1,41 @@
+{
+  "id": "fuji-200",
+  "displayName": "Fujifilm 200",
+  "type": "negative",
+  "process": "C-41",
+  "allowedViews": [
+    "negative",
+    "positive"
+  ],
+  "base": {
+    "substrateBase": "rgba(219, 120, 56, 0.88)",
+    "rebateText": "#2a1208",
+    "rebateSecondary": "#2a1208",
+    "frameShadow": "rgba(35, 15, 8, 0.4)",
+    "negativeMask": [
+      0.86,
+      0.47,
+      0.22
+    ]
+  },
+  "rebate": {
+    "label": "FUJI 200",
+    "font": "Arial, Helvetica, sans-serif",
+    "fontWeight": "bold",
+    "orientation": "same-direction",
+    "halfFrameNumbers": true,
+    "codePattern": null
+  },
+  "reference": {
+    "edition": "Fujifilm 200, 135 color negative film (not Superia or C200)",
+    "title": "Fujifilm 200 technical data AF3-0261E",
+    "url": "https://asset.fujifilm.com/master/americas/files/2022-02/112b0a02e409bdf6b5429648695770a4/fujifilm-200-speed-film_data-sheet.pdf",
+    "imageUrl": "https://asset.fujifilm.com/master/americas/files/2022-02/112b0a02e409bdf6b5429648695770a4/fujifilm-200-speed-film_data-sheet.pdf",
+    "accessed": "2026-10-01",
+    "license": "Manufacturer reference linked for study only. Procedural film lettering is original project artwork (ISC).",
+    "limitations": "Color, grain, base and edge lettering are artistic approximations, not calibrated sensitometry or a factory edge-print reconstruction. Exact optical codes, batch IDs and production tolerances are unverified and omitted."
+  },
+  "formats": [
+    "135"
+  ]
+}

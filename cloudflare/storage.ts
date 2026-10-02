@@ -1,6 +1,6 @@
 import type { R2Bucket, R2ObjectBody } from '@cloudflare/workers-types';
 import type { CloudDraft, GalleryCatalog, GalleryRoll, PublishResult, UploadRequest } from '../src/cloud/contracts';
-import { validateBundle } from '../src/storage/rollRepository';
+import { validateBundle, validatePreferences, type DarkroomPreferences } from '../src/storage/rollRepository';
 import { CatalogState, CompletedUpload, DraftHead, DraftSnapshot, Env, HttpError, ImageRecord, Kind, PendingPublication, PendingUpload, kinds, requireValue, validId } from './types';
 import { signUpload, stagingKey, UPLOAD_LIFETIME_MS } from './signing';
 
@@ -36,6 +36,17 @@ async function commitCatalog(env: Env, next: CatalogState, etag?: string) {
 }
 export async function publicCatalog(env: Env) {
   return catalogValue(env, (await catalog(env)).value.catalogKey);
+}
+const preferencesKey = 'preferences/darkroom.json';
+export async function readPreferences(env: Env): Promise<DarkroomPreferences> {
+  return (await record<DarkroomPreferences>(env.PRIVATE_BUCKET, preferencesKey))?.value ?? {};
+}
+export async function savePreferences(env: Env, value: unknown): Promise<DarkroomPreferences> {
+  let preferences: DarkroomPreferences;
+  try { preferences = validatePreferences(value); }
+  catch (error) { throw new HttpError(400, error instanceof Error ? error.message : 'Invalid darkroom preferences.'); }
+  await env.PRIVATE_BUCKET.put(preferencesKey, JSON.stringify(preferences), { httpMetadata: privateMetadata });
+  return preferences;
 }
 export async function grantUpload(env: Env, value: UploadRequest) {
   requireValue(value && typeof value === 'object' && !Array.isArray(value)

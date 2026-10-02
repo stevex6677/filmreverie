@@ -1,4 +1,4 @@
-import { RollRepository, validateBundle, type RollBundle, type StoredRoll } from '../storage/rollRepository';
+import { RollRepository, validateBundle, type DarkroomPreferences, type RollBundle, type StoredRoll } from '../storage/rollRepository';
 import { reconcileShelfSlots } from '../utils/shelfLayout';
 import { ownerClient, uploadOwnerPhoto } from './ownerClient';
 import type { CloudDraft } from './contracts';
@@ -54,6 +54,9 @@ export class AdminRollRepository extends RollRepository {
     await ownerClient.save({ ...draft, roll: change(draft.roll) });
     this.notify();
   }
+  // Owner settings follow the account to every signed-in device.
+  override async preferences() { return ownerClient.preferences(); }
+  override async savePreferences(preferences: DarkroomPreferences) { await ownerClient.savePreferences(preferences); }
   override async trash(id: string, trashed = true) {
     const draft = await ownerClient.load(id);
     if (trashed) await ownerClient.withdraw(id);

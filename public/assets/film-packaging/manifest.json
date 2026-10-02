@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "accessed": "2026-09-25",
+  "accessed": "2026-10-01",
   "sourceRoot": "ignored_assets",
   "method": "Original photographs mapped onto measured box panels and curved cartridge labels with perspective-correct GPU UVs; authored adaptations are identified in the packaging README. Unphotographed carton panels use a stock-appropriate solid color. Stored source photograph bytes are unchanged.",
   "limitations": [
@@ -993,6 +993,364 @@
       "multipack": true,
       "sizeMm": [135, 72, 28],
       "dimensionBasis": "Photograph-supported nominal five-roll carton envelope, not a caliper measurement. Near-frontal Provia 100F and Velvia 100 retailer photographs show approximately 1.88:1 front proportions; 135 x 72 mm preserves that ratio. Width and 28 mm depth remain nominal. No edition-specific measured dimensions were found."
+    },
+    {
+      "id": "fuji-200-135",
+      "stockId": "fuji-200",
+      "format": "135",
+      "box": {
+        "stock": "fuji-200",
+        "format": "135",
+        "role": "box",
+        "source": "https://alpinecamerausa.com/products/fujifilm-200-35",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0759/4613/1490/files/fujifilm_200_35.jpg?v=1731015216",
+        "file": "fuji-200-135.jpg",
+        "width": 2709,
+        "height": 2709,
+        "sha256": "bc13c371f1a797ca178dea22d7e31d631c3fdda285a58eab7245548f8de99bcf",
+        "sourcePath": "film-packaging/new-stocks-20261001/fuji-200-135.jpg",
+        "asset": "/assets/film-packaging/fuji-200-135.jpg"
+      },
+      "front": [
+        [
+          0.259,
+          0.665
+        ],
+        [
+          0.714,
+          0.665
+        ],
+        [
+          0.713,
+          0.953
+        ],
+        [
+          0.26,
+          0.953
+        ]
+      ],
+      "top": [
+        [
+          0.278,
+          0.615
+        ],
+        [
+          0.687,
+          0.615
+        ],
+        [
+          0.713,
+          0.66
+        ],
+        [
+          0.26,
+          0.66
+        ]
+      ],
+      "bodyColor": "#e6eee4",
+      "sizeMm": [
+        60,
+        40,
+        38
+      ],
+      "multipack": false,
+      "edition": "FUJIFILM 200 US single-roll hanging carton; rectangular carton mapped, hanging header omitted.",
+      "cartridge": {
+        "stock": "fuji-200",
+        "format": "135",
+        "role": "cartridge",
+        "source": "https://alpinecamerausa.com/products/fujifilm-200-35",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0759/4613/1490/files/fujifilm_200_35.jpg?v=1731015216",
+        "file": "fuji-200-135.jpg",
+        "width": 2709,
+        "height": 2709,
+        "sha256": "bc13c371f1a797ca178dea22d7e31d631c3fdda285a58eab7245548f8de99bcf",
+        "sourcePath": "film-packaging/new-stocks-20261001/fuji-200-135.jpg",
+        "asset": "/assets/film-packaging/fuji-200-135.jpg"
+      },
+      "cartridgePanel": [
+        [
+          0.572,
+          0.736
+        ],
+        [
+          0.692,
+          0.736
+        ],
+        [
+          0.692,
+          0.911
+        ],
+        [
+          0.574,
+          0.911
+        ]
+      ],
+      "cartridgeProjection": "photographic",
+      "cartridgeCurvature": [
+        0.05,
+        0.07
+      ],
+      "limitations": "Cassette label sampled from the photographed carton illustration, not a separately photographed cassette; source lighting retained. Hanging retail header omitted."
+    },
+    {
+      "id": "pro-image-100-135",
+      "stockId": "pro-image-100",
+      "format": "135",
+      "box": {
+        "stock": "pro-image-100",
+        "format": "135",
+        "role": "box",
+        "source": "https://www.glazerscamera.com/products/proimage-100-35mm-36exp-single",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0397/6167/4285/files/94362_02.png?v=1690427489",
+        "file": "pro-image-100-135.png",
+        "width": 2000,
+        "height": 2000,
+        "sha256": "83375951c0785568ff9fd9abe0c6714d68e051e2c62c74d41bb74a51b63fa006",
+        "sourcePath": "film-packaging/new-stocks-20261001/pro-image-100-135.png",
+        "asset": "/assets/film-packaging/pro-image-100-135.png"
+      },
+      "front": [
+        [
+          0.184,
+          0.454
+        ],
+        [
+          0.896,
+          0.357
+        ],
+        [
+          0.895,
+          0.567
+        ],
+        [
+          0.192,
+          0.683
+        ]
+      ],
+      "top": [
+        [
+          0.12,
+          0.408
+        ],
+        [
+          0.8,
+          0.322
+        ],
+        [
+          0.892,
+          0.354
+        ],
+        [
+          0.184,
+          0.448
+        ]
+      ],
+      "bodyColor": "#eeb523",
+      "sizeMm": [
+        135,
+        47,
+        30
+      ],
+      "multipack": true,
+      "edition": "Kodak Professional Pro Image 100 five-roll 135 pro-pack; nominal dimensions, not a single-roll adaptation.",
+      "cartridge": {
+        "stock": "pro-image-100",
+        "format": "135",
+        "role": "cartridge",
+        "source": "https://www.glazerscamera.com/products/proimage-100-35mm-36exp-single",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0397/6167/4285/files/94362_01_Hero.png?v=1690427489",
+        "file": "pro-image-100-135-cartridge.png",
+        "width": 2000,
+        "height": 2000,
+        "sha256": "c609b48229d516937a31a0b840463b4751cac7de4bcb756bd89c10608a3e2f5f",
+        "sourcePath": "film-packaging/new-stocks-20261001/pro-image-100-135-cartridge.png",
+        "asset": "/assets/film-packaging/pro-image-100-135-cartridge.png"
+      },
+      "cartridgePanel": [
+        [
+          0.342,
+          0.294
+        ],
+        [
+          0.651,
+          0.294
+        ],
+        [
+          0.652,
+          0.747
+        ],
+        [
+          0.348,
+          0.747
+        ]
+      ],
+      "cartridgeProjection": "photographic",
+      "cartridgeCurvature": [
+        0.035,
+        0.075
+      ],
+      "cartridgePlacement": "on-box"
+    },
+    {
+      "id": "gold-200-135",
+      "stockId": "gold-200",
+      "format": "135",
+      "box": {
+        "stock": "gold-200",
+        "format": "135",
+        "role": "box",
+        "source": "https://kodak.photosys.com/products/ek-200-gold-color-negative-film-35mm",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/Kodak_Gold_200_35mm_36exp_Single.jpg?v=1774384166",
+        "file": "gold-200-135.jpg",
+        "width": 1000,
+        "height": 1000,
+        "sha256": "f363a56557c848584c65e3e30bf2892a61826b7c1d5abaa6523283e005708bee",
+        "sourcePath": "film-packaging/new-stocks-20261001/gold-200-135.jpg",
+        "asset": "/assets/film-packaging/gold-200-135.jpg"
+      },
+      "front": [
+        [
+          0.334,
+          0.366
+        ],
+        [
+          0.878,
+          0.286
+        ],
+        [
+          0.867,
+          0.672
+        ],
+        [
+          0.338,
+          0.8
+        ]
+      ],
+      "top": [
+        [
+          0.11,
+          0.291
+        ],
+        [
+          0.604,
+          0.213
+        ],
+        [
+          0.873,
+          0.28
+        ],
+        [
+          0.33,
+          0.36
+        ]
+      ],
+      "bodyColor": "#ffb719",
+      "sizeMm": [
+        60,
+        40,
+        38
+      ],
+      "multipack": false,
+      "edition": "Eastman Kodak yellow/black/purple GOLD 200 135-36 single-roll carton.",
+      "cartridge": {
+        "stock": "gold-200",
+        "format": "135",
+        "role": "cartridge",
+        "source": "https://www.macodirect.de/film/farbnegativfilm/kodak-gold-200-135-36",
+        "imageUrl": "https://www.macodirect.de/media/image/ff/a6/ef/KG2011_1.jpg",
+        "file": "gold-200-135-cartridge.jpg",
+        "width": 1240,
+        "height": 1000,
+        "sha256": "fe64dd27acc18504a08374b7078074e9947f805f9ae4d7844089085a25d02447",
+        "sourcePath": "film-packaging/new-stocks-20261001/gold-200-135-cartridge.jpg",
+        "asset": "/assets/film-packaging/gold-200-135-cartridge.jpg"
+      },
+      "cartridgePanel": [
+        [
+          0.353,
+          0.274
+        ],
+        [
+          0.631,
+          0.274
+        ],
+        [
+          0.629,
+          0.783
+        ],
+        [
+          0.354,
+          0.783
+        ]
+      ],
+      "cartridgeProjection": "photographic",
+      "cartridgeCurvature": [
+        0.035,
+        0.085
+      ]
+    },
+    {
+      "id": "gold-200-120",
+      "stockId": "gold-200",
+      "format": "120",
+      "box": {
+        "stock": "gold-200",
+        "format": "120",
+        "role": "box",
+        "source": "https://kodak.photosys.com/products/ek-200-gold-color-negative-film-120-5-pack",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/Kodak_Gold_200_120_5R.jpg?v=1774386194",
+        "file": "gold-200-120.jpg",
+        "width": 1000,
+        "height": 1000,
+        "sha256": "43771f9adc5c7e70ee7fa37f9a34d0f0132b4c90043e03afab6ac20b60098381",
+        "sourcePath": "film-packaging/new-stocks-20261001/gold-200-120.jpg",
+        "asset": "/assets/film-packaging/gold-200-120.jpg"
+      },
+      "front": [
+        [
+          0.212,
+          0.325
+        ],
+        [
+          0.902,
+          0.231
+        ],
+        [
+          0.901,
+          0.647
+        ],
+        [
+          0.215,
+          0.776
+        ]
+      ],
+      "top": [
+        [
+          0.123,
+          0.29
+        ],
+        [
+          0.808,
+          0.208
+        ],
+        [
+          0.896,
+          0.225
+        ],
+        [
+          0.211,
+          0.32
+        ]
+      ],
+      "bodyColor": "#ffb719",
+      "sizeMm": [
+        135,
+        79,
+        28
+      ],
+      "multipack": true,
+      "edition": "Eastman Kodak yellow/black/purple GOLD 200 five-roll 120 carton."
     }
   ]
 }

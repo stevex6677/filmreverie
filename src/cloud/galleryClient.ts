@@ -1,5 +1,5 @@
 import { FILM_FORMATS, FILM_UNIT, FRAME_GAP_MM, filmLengthUsage, formatLayout, frameAspect, isFilmFormat, rollFormatLabel } from '../data/filmFormats';
-import { isFilmStockId } from '../data/filmStocks';
+import { isFilmStockId, supportsFilmFormat } from '../data/filmStocks';
 import { FILM_RENDER_SCALE } from '../data/physicalScale';
 import { sha256Hex } from '../storage/crypto';
 import type { SavedView } from '../storage/rollRepository';
@@ -35,7 +35,7 @@ function publicImage(value: unknown): value is GalleryImage {
   } catch { return false; }
 }
 export function validateGalleryRoll(value: unknown): asserts value is GalleryRoll {
-  if (!object(value) || typeof value.id !== 'string' || !value.id || typeof value.revision !== 'string' || !value.revision || typeof value.name !== 'string' || !value.name.trim() || value.name.length > 120 || typeof value.stockId !== 'string' || !isFilmStockId(value.stockId) || typeof value.format !== 'string' || !isFilmFormat(value.format) || !Array.isArray(value.frames) || !value.frames.length || !Number.isFinite(value.publishedAt) || (value.sizing !== undefined && value.sizing !== 'fixed' && value.sizing !== 'free') || (value.filmStrength !== undefined && (typeof value.filmStrength !== 'number' || !Number.isFinite(value.filmStrength) || value.filmStrength < 0 || value.filmStrength > 100))) throw new Error('The gallery returned invalid roll metadata.');
+  if (!object(value) || typeof value.id !== 'string' || !value.id || typeof value.revision !== 'string' || !value.revision || typeof value.name !== 'string' || !value.name.trim() || value.name.length > 120 || typeof value.stockId !== 'string' || !isFilmStockId(value.stockId) || typeof value.format !== 'string' || !isFilmFormat(value.format) || !supportsFilmFormat(value.stockId, value.format) || !Array.isArray(value.frames) || !value.frames.length || !Number.isFinite(value.publishedAt) || (value.sizing !== undefined && value.sizing !== 'fixed' && value.sizing !== 'free') || (value.filmStrength !== undefined && (typeof value.filmStrength !== 'number' || !Number.isFinite(value.filmStrength) || value.filmStrength < 0 || value.filmStrength > 100))) throw new Error('The gallery returned invalid roll metadata.');
   if (value.camera !== undefined && (typeof value.camera !== 'string' || value.camera.length > 120)) throw new Error('The gallery returned invalid camera metadata.');
   const ids = new Set<string>();
   for (const frame of value.frames) {

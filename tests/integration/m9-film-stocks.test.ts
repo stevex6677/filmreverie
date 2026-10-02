@@ -21,8 +21,8 @@ function pixel(canvas: HTMLCanvasElement, x: number, y: number) {
 }
 
 describe("M9 — whole-strip stock profiles, state, material and real rebate raster", () => {
-  it("resolves all eight unique local profiles and their provenance without bundled reference photographs", () => {
-    expect(new Set(FILM_STOCKS.map((s) => s.id)).size).toBe(8);
+  it("resolves all eleven unique local profiles and their provenance without bundled reference photographs", () => {
+    expect(new Set(FILM_STOCKS.map((s) => s.id)).size).toBe(11);
     const provenance = JSON.parse(fs.readFileSync("public/assets/provenance.json", "utf8"));
     for (const stock of FILM_STOCKS) {
       const entry = provenance.filmStocks.find((item: {id: string}) => item.id === stock.id);
@@ -83,7 +83,7 @@ describe("M9 — whole-strip stock profiles, state, material and real rebate ras
       const {filmStockId: _nextStock, filmMode: _nextMode, ...after} = state;
       expect(after).toEqual(before);
     }
-    expect(state.filmStockId).toBe("velvia-100");
+    expect(state.filmStockId).toBe(FILM_STOCKS.at(-1)!.id);
     expect(viewerReducer(state, {type: "RESET"}).filmStockId).toBe(DEFAULT_FILM_STOCK_ID);
   });
 
@@ -109,7 +109,7 @@ describe("M9 — whole-strip stock profiles, state, material and real rebate ras
         else expect(Math.max(...base.slice(0, 3))).toBeLessThan(40);
       }
     }
-    expect(signatures.size).toBe(8);
+    expect(signatures.size).toBe(11);
   });
 
   it("propagates the physical mask to photo materials at zero strength without grading positive images; base artwork remains reusable for whole-strip inversion", () => {

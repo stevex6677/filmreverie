@@ -11,11 +11,9 @@ for (const format of ["135", "67"]) test(`${format} photo edges stay aligned wit
   const png = new PNG({ width: 600, height: 400 });
   for (let i = 0; i < png.data.length; i += 4) png.data.set([40, 180, 70, 255], i);
   await page.getByLabel("Choose photographs").setInputFiles([{ name: "green.png", mimeType: "image/png", buffer: PNG.sync.write(png) }]);
-  await page.getByRole("button", { name: "Continue to roll details", exact: true }).click();
   await page.getByLabel("Roll name", { exact: true }).fill("Edge alignment");
   await page.getByRole("radio", { name: format === "135" ? "35mm" : "120", exact: true }).check();
   await page.getByLabel("Film format", { exact: true }).selectOption(format);
-  await page.getByRole("button", { name: "Review photographs", exact: true }).click();
   await page.getByRole("button", { name: "Save and open", exact: true }).click();
   await expect(page.locator("main")).toHaveAttribute("data-assets-ready", "true");
   await expect(page.locator("main")).toHaveAttribute("data-is-transitioning", "false");
