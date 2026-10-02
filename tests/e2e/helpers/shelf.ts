@@ -47,12 +47,10 @@ export async function room(page: Page) {
 export async function add(page: Page, name: string, stock = 'portra-400', format = '135') {
   await shelfAction(page, 'New roll');
   await page.getByLabel('Choose photographs').setInputFiles('photos/roll-01/frame-01-harbor.png');
-  await page.getByRole('button', { name: 'Continue to roll details' }).click();
   await page.getByLabel('Roll name', { exact: true }).fill(name);
   await page.getByRole('dialog').getByLabel('Film stock', { exact: true }).selectOption(stock);
   if (format !== '135') await page.getByRole('radio', { name: '120', exact: true }).check();
   await page.getByLabel('Film format', { exact: true }).selectOption(format);
-  await page.getByRole('button', { name: 'Review photographs', exact: true }).click();
   await page.getByRole('button', { name: 'Save and open', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 60000 }); await ready(page);
   await room(page);

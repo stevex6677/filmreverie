@@ -8,11 +8,6 @@
 .roll-editor-summary { margin:4px 0 0; color:var(--editor-muted); font-size:13px; overflow-wrap:anywhere; }
 .roll-editor-workspace { flex:1; min-height:0; display:grid; grid-template-columns:clamp(250px,21vw,300px) minmax(0,1fr); gap:22px; padding-top:16px; }
 .roll-editor-workspace > section { min-width:0; min-height:0; }
-/* New rolls review frames in the same fixed-height workbench. */
-.roll-editor-review { flex:1; min-height:0; display:flex; flex-direction:column; }
-.roll-editor-review > .roll-editor-frames { flex:1; }
-.roll-editor-dialog .import-steps, .roll-editor-dialog > h2[data-step-title] { flex:none; }
-.roll-editor-dialog > h2[data-step-title] { margin:12px 0 8px; }
 
 /* Details column */
 .roll-editor-details { overflow-y:auto; overscroll-behavior:contain; padding:2px 18px 12px 2px; border-right:1px solid var(--editor-line); }
@@ -23,6 +18,7 @@
 .roll-editor-workspace .library-details small { color:var(--editor-muted); font-size:12px; font-weight:400; line-height:1.45; }
 .roll-editor-workspace .film-length { margin:22px 0 0; padding:12px 14px; background:var(--editor-panel); border-radius:8px; font-size:13px; }
 .roll-editor-workspace .film-length p { font-size:12px; color:var(--editor-muted); }
+.roll-editor-note { margin:14px 0 0; font-size:12px; line-height:1.45; color:var(--editor-muted); }
 
 /* Segmented choices keep real radio inputs for forms and assistive technology. */
 .library-dialog fieldset.segmented { display:flex; flex-wrap:nowrap; gap:0; border:0; padding:0; margin:0; min-width:0; }
@@ -39,14 +35,35 @@
 
 /* Frames column */
 .library-dialog .roll-editor-frames { display:flex; flex-direction:column; min-height:0; }
-.roll-editor-frames > .review-summary { flex:none; margin:0 0 12px; color:var(--editor-muted); font-size:12px; overflow-wrap:anywhere; }
+.roll-editor-progress { color:var(--editor-muted); font-size:12px; font-variant-numeric:tabular-nums; }
+.roll-drop .roll-editor-progress { color:var(--editor-ink); font-weight:600; }
+
+/* An empty new roll: the workbench becomes a drop target for scans. */
+.roll-drop { flex:1; min-height:300px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:32px 24px; border:1.5px dashed #b9b09c; border-radius:10px; background:var(--editor-panel); text-align:center; transition:background-color .15s, border-color .15s; }
+.roll-drop-film { width:132px; height:auto; margin-bottom:6px; color:#4a4538; filter:drop-shadow(0 4px 10px #0002); }
+.library-dialog .roll-drop h3 { margin:0; font:24px/1.25 Georgia,serif; color:var(--editor-ink); }
+.roll-drop p { max-width:440px; margin:0 0 6px; color:var(--editor-muted); font-size:14px; line-height:1.5; }
+.roll-drop small { max-width:440px; color:var(--editor-muted); font-size:12px; line-height:1.45; }
+.roll-drop[aria-busy=true] .roll-drop-film { animation:roll-drop-develop 1.4s ease-in-out infinite alternate; }
+@keyframes roll-drop-develop { from { opacity:.45; } to { opacity:1; } }
+.roll-editor-frames.is-dropping .roll-drop { border-color:var(--editor-accent); background:#e6e8dc; }
+.roll-editor-frames.is-dropping .frame-workbench { outline:2px dashed var(--editor-accent); outline-offset:-2px; }
+/* File pickers look like buttons; the visually hidden input keeps keyboard and native picking. */
+.choose-photos, .frame-add { position:relative; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; white-space:nowrap; }
+.choose-photos input, .frame-add input { position:absolute; width:1px; height:1px; padding:0; margin:0; border:0; opacity:0; overflow:hidden; clip-path:inset(50%); }
+.choose-photos:has(input:focus-visible), .frame-add:has(input:focus-visible) { outline:2px solid #69572f; outline-offset:2px; }
+.choose-photos:has(input:disabled), .frame-add:has(input:disabled) { opacity:.5; cursor:default; }
+.choose-photos { min-height:40px; padding:9px 22px; border-radius:7px; background:var(--editor-accent); color:#fffaf0; font-size:14px; font-weight:600; }
+.choose-photos:hover { background:#26392a; }
+.frame-add { flex:none; min-height:28px; padding:3px 12px; border:1px solid #bfb7a7; border-radius:6px; background:#faf8f3; color:var(--editor-ink); font-size:12px; font-weight:600; }
+.frame-add:hover { background:var(--editor-well); }
 .frame-editor { flex:1; min-height:0; display:flex; flex-direction:column; gap:12px; }
 
 .frame-strip { flex:none; min-width:0; }
 .frame-strip-heading { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:4px; }
 .frame-strip-heading h3 { margin:0; font:600 11px/1.4 system-ui,sans-serif; letter-spacing:.16em; text-transform:uppercase; color:#71623e; }
 .frame-strip-heading h3 span { margin-left:4px; color:var(--editor-muted); letter-spacing:0; }
-.frame-strip-heading p { margin:0; font-size:12px; color:var(--editor-muted); }
+.frame-strip-heading p { margin:0 0 0 auto; font-size:12px; color:var(--editor-muted); }
 .library-dialog .frame-editor .draft-photos { display:flex; gap:6px; overflow-x:auto; overscroll-behavior-x:contain; margin:0; padding:4px 2px 8px; max-height:none; scroll-snap-type:x proximity; }
 .library-dialog .frame-editor .draft-photos li { flex:none; width:auto; display:block; padding:0; border:0; scroll-snap-align:start; }
 .library-dialog .frame-editor .draft-photos li > button { display:grid; justify-items:center; gap:1px; width:auto; min-width:76px; max-width:128px; padding:6px 6px 4px; border:1px solid transparent; border-radius:8px; background:transparent; text-align:center; }
@@ -121,6 +138,7 @@
 .library-dialog .film-strength input[type=range] { grid-column:1/-1; width:100%; height:28px; margin:0; padding:0; border:0; background:none; accent-color:var(--editor-accent); }
 .film-strength-presets { grid-column:1/-1; display:flex; gap:6px; }
 .library-dialog .film-strength-presets button { flex:1; padding:4px 0; border-radius:6px; font-size:12px; }
+.film-strength-remembered { grid-column:1/-1; color:var(--editor-muted); font-size:11px; line-height:1.4; }
 .library-dialog .film-strength-all { align-self:flex-start; padding:6px 12px; border-radius:6px; font-size:12px; }
 .film-effect-note { margin:auto 0 0; font-size:12px; line-height:1.45; color:var(--editor-muted); }
 
@@ -135,13 +153,8 @@
 
 .roll-editor-dialog .import-footer { flex:none; position:static; margin-top:12px; padding:12px 0 0; }
 .roll-editor-dialog .delete-roll { margin-right:auto; color:#873f31; }
-/* While reviewing a new roll, film length shares the footer row with the actions. */
-.roll-editor-dialog .import-footer:has(> .film-length) { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:4px 24px; }
-.roll-editor-dialog .import-footer > .film-length { display:grid; grid-template-columns:auto minmax(80px,1fr); align-items:center; gap:2px 12px; margin:0; font-size:13px; }
-.roll-editor-dialog .import-footer > .film-length > div { gap:8px; }
-.roll-editor-dialog .import-footer > .film-length p { grid-column:1/-1; margin:0; font-size:12px; color:var(--editor-muted); }
-.roll-editor-dialog .import-footer > .film-length.is-overfull p { color:#923b2d; }
-.roll-editor-dialog .import-footer:has(> .film-length) .import-footer-actions { gap:10px; }
+.roll-editor-dialog .import-footer-actions { align-items:center; }
+.roll-editor-hint { margin:0 0 0 auto; min-width:0; color:var(--editor-muted); font-size:12px; text-align:right; }
 
 @media (max-width:1100px) {
   .roll-editor-workspace { grid-template-columns:230px minmax(0,1fr); gap:18px; }
@@ -156,10 +169,7 @@
   .frame-editor { gap:8px; }
   .film-effect-controls { gap:12px; padding:12px; }
   .film-effect-note { display:none; }
-  .roll-editor-dialog .import-steps { margin-top:8px; padding-bottom:8px; }
-  .roll-editor-dialog .import-steps button { padding:4px 10px; }
-  .roll-editor-dialog > h2[data-step-title] { margin:8px 0 0; font-size:21px; }
-  .roll-editor-frames > .review-summary { margin-bottom:6px; }
+  .roll-drop { gap:8px; padding:20px; }
   .frame-details { padding:6px 12px; }
 }
 /* A narrow workbench (portrait tablets, phones) puts the print above its controls. */
@@ -174,7 +184,12 @@
   .roll-editor-details { overflow:visible; padding:0 0 20px; border-right:0; }
   .library-dialog .roll-editor-frames { display:block; padding-top:18px; border-top:1px solid var(--editor-line); }
   .frame-strip-heading p { display:none; }
-  .roll-editor-review { display:block; overflow-y:auto; overscroll-behavior:contain; }
+  /* Until photographs arrive, choosing them comes before the roll details. */
+  .roll-editor-workspace.is-empty { display:flex; flex-direction:column; }
+  .roll-editor-workspace.is-empty > section { flex:none; }
+  .roll-editor-workspace.is-empty .roll-editor-frames { order:-1; padding:0 0 18px; border-top:0; }
+  .roll-drop { min-height:0; padding:22px 16px; }
+  .roll-drop p { font-size:13px; }
   .frame-workbench { height:auto; }
   .frame-toolbar { flex-wrap:wrap; }
   .library-dialog .frame-tool-panel .crop-inspector { grid-template:"head" auto "stage" auto "notes" auto "controls" auto / minmax(0,1fr); }
@@ -183,7 +198,7 @@
   .library-dialog .frame-tool-panel .crop-position-controls label { flex:1 1 100%; }
   .library-dialog .frame-tool-panel .crop-position-controls input { flex:1; width:auto; }
   .frame-tool-panel.is-film { grid-template-rows:auto auto; }
-  .roll-editor-dialog .import-footer:has(> .film-length) { grid-template-columns:minmax(0,1fr); }
+  .roll-editor-hint { order:-1; flex-basis:100%; margin:0; text-align:left; }
   .roll-editor-dialog .import-footer-actions { flex-wrap:wrap; gap:8px; }
   .roll-editor-dialog .import-footer-actions button { font-size:12px; padding:8px; }
 }

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { ReactNode, useRef, useState } from 'react';
 import { DraftPhoto } from '../storage/importPhotos';
 import { StoredFrame } from '../storage/rollRepository';
 import { FilmFormat, FrameSizing, frameAspect } from '../data/filmFormats';
@@ -21,10 +21,12 @@ interface Props {
   format: FilmFormat; sizing: FrameSizing; stock: FilmStockId; busy: boolean;
   strengthMode: StrengthMode; onStrengthMode: (mode: StrengthMode) => void;
   rollStrength: number; onRollStrength: (strength: number) => void;
+  /** Extra controls beside the frame count, such as adding photographs to a new roll. */
+  stripActions?: ReactNode;
 }
 
 /** Per-frame crop and film effect, with a contact strip for choosing and ordering frames. */
-export function RollFrameEditor({ photos, onPhotos, selected, onSelect, cover, onCover, onMove, onRemove, format, sizing, stock, busy, strengthMode, onStrengthMode, rollStrength, onRollStrength }: Props) {
+export function RollFrameEditor({ photos, onPhotos, selected, onSelect, cover, onCover, onMove, onRemove, format, sizing, stock, busy, strengthMode, onStrengthMode, rollStrength, onRollStrength, stripActions }: Props) {
   const [tool, setTool] = useState<'crop' | 'film'>('crop'), [compare, setCompare] = useState<FilmCompare>('film');
   const drag = useRef<number | null>(null);
   const active = selected ?? photos[0], index = Math.max(0, photos.findIndex(p => p.id === active?.id));
@@ -52,7 +54,7 @@ export function RollFrameEditor({ photos, onPhotos, selected, onSelect, cover, o
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); step(event.key === 'ArrowLeft' ? -1 : 1); }
   }}>
     <div className="frame-strip">
-      <div className="frame-strip-heading"><h3>Frames <span>{photos.length}</span></h3><p>Drag to reorder · ← → to step through</p></div>
+      <div className="frame-strip-heading"><h3>Frames <span>{photos.length}</span></h3><p>Drag to reorder · ← → to step through</p>{stripActions}</div>
       <ol className="draft-photos">{photos.map((p, i) => {
         const aspect = frameAspect(format, sizing, p.frame);
         return <li key={p.id} draggable={!busy} onDragStart={() => { drag.current = i; onSelect(p.id); }} onDragOver={event => event.preventDefault()}
@@ -104,6 +106,7 @@ export function RollFrameEditor({ photos, onPhotos, selected, onSelect, cover, o
                   data-testid="film-strength-slider" onChange={event => setStrength(Number(event.target.value))}/>
                 <div className="film-strength-presets">{[0, DEFAULT_FILM_STRENGTH, 100].map(value =>
                   <button key={value} disabled={busy || !active.frame} aria-pressed={strength === value} onClick={() => setStrength(value)}>{strengthName(value)}</button>)}</div>
+                {strengthMode === 'roll' && <small className="film-strength-remembered">New rolls start at the strength you last chose.</small>}
               </div>
               {strengthMode === 'frame' && <button className="film-strength-all" disabled={busy || photos.every(p => !p.frame || frameStrength(p, strengthMode, rollStrength) === strength)}
                 onClick={() => { onRollStrength(strength); onPhotos(photos.map(p => p.frame ? { ...p, frame: { ...p.frame, filmStrength: strength } } : p)); }}>Use {strength} for all frames</button>}

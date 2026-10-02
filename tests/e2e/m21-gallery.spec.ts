@@ -264,9 +264,7 @@ test('guest welcome, deletable example and private edits stay in guest storage w
     await shelfAction(page, 'New roll');
     await page.getByLabel('Choose photographs', { exact: true }).setInputFiles({ name: 'private-location-source.png', mimeType: 'image/png', buffer: photo() });
     await expect(page.getByText('Processed 1 / 1', { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Continue to roll details' }).click();
     await page.getByLabel('Roll name', { exact: true }).fill('Private guest roll');
-    await page.getByRole('button', { name: 'Review photographs' }).click();
     await page.getByRole('button', { name: 'Save and open', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Review roll' })).toHaveCount(0);
     const id = await page.locator('main').getAttribute('data-roll-id');

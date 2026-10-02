@@ -116,8 +116,8 @@ test('M19 actual photograph import preserves strength through edits, all film fo
   await page.getByRole('button',{name:'Film Shelf',exact:true}).click();await shelfAction(page, 'New roll');
   await page.getByLabel('Choose photographs').setInputFiles(files);
   await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText('2 / 2',{timeout:120000});
-  await page.getByRole('button',{name:'Continue to roll details'}).click();await page.getByLabel('Roll name',{exact:true}).fill('M19 photographs');
-  await page.getByRole('button',{name:'Review photographs',exact:true}).click();await page.getByRole('button',{name:'Save and open',exact:true}).click();
+  await page.getByLabel('Roll name',{exact:true}).fill('M19 photographs');
+  await page.getByRole('button',{name:'Save and open',exact:true}).click();
   await expect(page.getByRole('dialog',{name:'Review roll',exact:true})).not.toBeVisible({timeout:60000});
   await expect(page.locator('main')).not.toHaveAttribute('data-roll-id','roll-01');await ready(page);
   const rollId=(await page.locator('main').getAttribute('data-roll-id'))!;
@@ -152,8 +152,7 @@ test('M19 roll editor previews and saves whole-roll and per-frame strength',asyn
   await page.getByRole('button',{name:'Film Shelf',exact:true}).click();await shelfAction(page, 'New roll');
   await page.getByLabel('Choose photographs').setInputFiles(files);
   await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText('3 / 3',{timeout:120000});
-  await page.getByRole('button',{name:'Continue to roll details'}).click();await page.getByLabel('Roll name',{exact:true}).fill('Strength review');
-  await page.getByRole('button',{name:'Review photographs',exact:true}).click();
+  await page.getByLabel('Roll name',{exact:true}).fill('Strength review');
   const dialog=page.getByRole('dialog',{name:'Review roll',exact:true}),preview=dialog.getByTestId('film-look-preview');
   await dialog.getByRole('tab',{name:'Film effect',exact:true}).click();
   await expect(dialog.getByRole('tab',{name:'Film effect',exact:true})).toHaveAttribute('aria-selected','true');
@@ -200,4 +199,13 @@ test('M19 roll editor previews and saves whole-roll and per-frame strength',asyn
   await saveEditor(page);
   expect(await frames()).toEqual({roll:35,frames:[undefined,undefined,undefined]});
   await expect(page.locator('main')).toHaveAttribute('data-film-strength','35');
+  // The last whole-roll strength is the guest darkroom's starting strength, kept in this browser across reloads.
+  await expect.poll(()=>page.evaluate(()=>localStorage.getItem('darkroom-guest-rolls-preferences'))).toBe('{"filmStrength":35}');
+  await page.reload();await ready(page);
+  await page.getByRole('button',{name:'Film Shelf',exact:true}).click();await shelfAction(page, 'New roll');
+  await page.getByLabel('Choose photographs').setInputFiles(files[0]);
+  await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText('1 / 1',{timeout:120000});
+  await dialog.getByRole('tab',{name:'Film effect',exact:true}).click();
+  await expect(dialog.getByRole('slider',{name:'Roll film strength',exact:true})).toHaveValue('35');
+  await dialog.getByRole('button',{name:'Cancel draft',exact:true}).click();
 });

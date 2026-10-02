@@ -45,3 +45,20 @@ it('withdraws deleted rolls, retains cloud Trash, and republishes restoration', 
   expect(current.roll.trashedAt).toBeNull();
   expect(publish).toHaveBeenCalledWith('roll', current.roll.updatedAt);
 });
+
+it('keeps the owner film strength preference on the server rather than in this browser', async () => {
+  const stored: Record<string, unknown> = {};
+  const fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+    if (init?.method === 'PUT') Object.assign(stored, JSON.parse(String(init.body)));
+    return Response.json(stored);
+  });
+  vi.stubGlobal('fetch', fetch);
+  const repository = new AdminRollRepository();
+  expect(await repository.preferences()).toEqual({});
+  await repository.savePreferences({ filmStrength: 30 });
+  expect(await repository.preferences()).toEqual({ filmStrength: 30 });
+  expect(fetch.mock.calls.map(([url, init]) => [String(url), init?.method ?? 'GET', init?.credentials])).toEqual([
+    ['/api/owner/preferences', 'GET', 'same-origin'], ['/api/owner/preferences', 'PUT', 'same-origin'], ['/api/owner/preferences', 'GET', 'same-origin']]);
+  await expect(repository.savePreferences({ filmStrength: 120 })).rejects.toThrow(/film effect strength/);
+  vi.unstubAllGlobals();
+});
