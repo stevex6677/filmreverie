@@ -8,6 +8,7 @@ import { FilmShelfState } from '../utils/useFilmShelf';
 import { packagingMaterial } from '../utils/packagingMaterial';
 import { placeholderPackaging, SHELF_CAPACITY } from '../utils/shelfLayout';
 import { ShelfCoverFrame, type ShelfCoverSource } from './ShelfCoverFrame';
+import { woodTexture } from '../utils/darkroomTextures';
 
 import { mm, WORLD_UNITS_PER_MM, CARTRIDGE_MM, SHELF_CELL_MM, SHELF_WIDTH, SHELF_HEIGHT, SHELF_FLOOR, SHELF_ORIGIN, SHELF_FILM_YAW, shelfArrangement } from '../data/physicalScale';
 export { SHELF_ORIGIN } from '../data/physicalScale';
@@ -148,22 +149,25 @@ export function FilmShelf({ shelf, activeId, interactive, portal, focused, onApp
   readOnly?: boolean; coverSource?: ShelfCoverSource;
 }) {
   const wood = useMemo(() => {
-    const material = new THREE.MeshStandardMaterial({ color: '#705841', roughness: .72 });
-    material.onBeforeCompile = shader => {
-      shader.vertexShader = 'varying vec3 shelfWood;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nshelfWood = position;');
-      shader.fragmentShader = 'varying vec3 shelfWood;\n' + shader.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\nfloat grain = sin(shelfWood.y * 470.0 + sin(shelfWood.x * 4.0) * 2.5 + shelfWood.z * 150.0); diffuseColor.rgb *= .94 + .06 * grain;');
+    const textures = { rows: woodTexture('#7a5c40', 101), columns: woodTexture('#74573c', 107, true), back: woodTexture('#3a2a1d', 109, true) };
+    textures.back.repeat.set(6, 1);
+    return {
+      textures,
+      rows: new THREE.MeshStandardMaterial({ map: textures.rows, roughness: .62 }),
+      columns: new THREE.MeshStandardMaterial({ map: textures.columns, roughness: .62 }),
+      back: new THREE.MeshStandardMaterial({ map: textures.back, color: '#8a8580', roughness: .8 }),
+      channel: new THREE.MeshStandardMaterial({ color: '#7f8386', roughness: .35, metalness: .8 }),
     };
-    return material;
   }, []);
-  useEffect(() => () => wood.dispose(), [wood]);
+  useEffect(() => () => [...Object.values(wood.textures), wood.rows, wood.columns, wood.back, wood.channel].forEach(item => item.dispose()), [wood]);
   const cells = Array.from({ length: SHELF_CAPACITY }, (_, index) => {
     const slot = shelf.page * SHELF_CAPACITY + index;
     return { slot, position: [(index % 4 - 1.5) * WIDTH, (1.5 - Math.floor(index / 4)) * HEIGHT, DEPTH / 2] as [number, number, number], roll: shelf.rolls.find(r => r.shelfSlot === slot) };
   });
   return <group position={SHELF_ORIGIN}>
-    <mesh position={[0, 0, -DEPTH / 2]} receiveShadow><boxGeometry args={[SHELF_WIDTH, SHELF_HEIGHT, mm(6)]} /><meshStandardMaterial color="#292822" roughness={.95} /></mesh>
-    {[-2, -1, 0, 1, 2].map(i => <mesh key={`row-${i}`} position={[0, i * HEIGHT, 0]} castShadow receiveShadow material={wood}><boxGeometry args={[SHELF_WIDTH, mm(Math.abs(i) === 2 ? 18 : 10), DEPTH]} /></mesh>)}
-    {[-2, -1, 0, 1, 2].map(i => <mesh key={`col-${i}`} position={[i * WIDTH, 0, 0]} castShadow receiveShadow material={wood}><boxGeometry args={[mm(Math.abs(i) === 2 ? 18 : 8), HEIGHT * 4, DEPTH]} /></mesh>)}
+    <mesh position={[0, 0, -DEPTH / 2]} receiveShadow material={wood.back}><boxGeometry args={[SHELF_WIDTH, SHELF_HEIGHT, mm(6)]} /></mesh>
+    {[-2, -1, 0, 1, 2].map(i => <mesh key={`row-${i}`} position={[0, i * HEIGHT, 0]} castShadow receiveShadow material={wood.rows}><boxGeometry args={[SHELF_WIDTH, mm(Math.abs(i) === 2 ? 18 : 10), DEPTH]} /></mesh>)}
+    {[-2, -1, 0, 1, 2].map(i => <mesh key={`col-${i}`} position={[i * WIDTH, 0, 0]} castShadow receiveShadow material={wood.columns}><boxGeometry args={[mm(Math.abs(i) === 2 ? 18 : 8), HEIGHT * 4, DEPTH]} /></mesh>)}
     {[-WIDTH * 2, WIDTH * 2].flatMap(x => [-HEIGHT * 2, HEIGHT * 2].map(y => <mesh key={`${x}-${y}`} position={[x, y, DEPTH / 2 + .001]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[.009, .009, .004, 12]} /><meshStandardMaterial color="#8f8065" roughness={.35} metalness={.8} /></mesh>))}
     {cells.map(({ slot, position, roll }) => <group key={slot}>
       <group name={`shelf-cell:${slot}`} position={[position[0], position[1], 0]}><FilmPackage entry={roll ? getPackaging(roll.stockId, roll.format) : placeholderPackaging(slot)} owned={!!roll} textures={textures} />{roll && <ShelfCoverFrame roll={roll} coverSource={coverSource} />}</group>
@@ -172,5 +176,6 @@ export function FilmShelf({ shelf, activeId, interactive, portal, focused, onApp
     {interactive && !focused && <CellLabel focused={false} position={[0, 0, DEPTH / 2]} slot={-1} active={false} portal={portal} shelf={shelf} onApproach={onApproach} readOnly={readOnly} />}
     {/* A narrow light strip brightens only the cabinet; no spill on the table. */}
     <mesh position={[0, HEIGHT * 2 - mm(12), DEPTH / 2 - mm(4)]}><boxGeometry args={[SHELF_WIDTH - mm(40), mm(2), mm(4)]} /><meshBasicMaterial color="#d1c7aa" /></mesh>
+    <mesh position={[0, HEIGHT * 2 - mm(11.5), DEPTH / 2 - mm(4)]} material={wood.channel}><boxGeometry args={[SHELF_WIDTH - mm(36), mm(3), mm(8)]} /></mesh>
   </group>;
 }

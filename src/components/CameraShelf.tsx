@@ -1,9 +1,10 @@
 import { Html } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Box3, Euler, Matrix4, Quaternion, Raycaster, Texture, Vector2, Vector3 } from 'three';
+import { Box3, Euler, Matrix4, MeshStandardMaterial, Quaternion, Raycaster, Texture, Vector2, Vector3 } from 'three';
 import type { RefObject } from 'react';
-import { mountModel, studioEnvironment } from '../../standalone/model-viewer/model-core.js';
+import { mountModel } from '../../standalone/model-viewer/model-core.js';
+import { useDarkroomEnvironment } from './DarkroomParts';
 import { CAMERAS } from '../data/cameras';
 import type { CameraEntry } from '../data/cameras';
 import { mm, CAMERA_SHELF_MM, CAMERA_SHELF_ORIGIN, CAMERA_SHELF_YAW, cameraShelfSlot, CAMERA_PRESENTATION_YAW } from '../data/physicalScale';
@@ -14,6 +15,7 @@ import { FilmPackage } from './FilmShelf';
 import { getPackaging } from '../data/filmPackaging';
 import { roomCameraModel } from '../utils/roomCameraModel';
 import { cameraLabelRow } from '../utils/cameraLabelRow';
+import { feltTexture, woodTexture } from '../utils/darkroomTextures';
 
 type MountedCamera = ReturnType<typeof mountModel> & { object: ReturnType<typeof roomCameraModel>['object'] };
 
@@ -93,8 +95,7 @@ export function CameraShelf({ focused, interactive, load, portal, onApproach, on
   onSettled?: (progress: CameraCollectionProgress) => void; textures: Record<string, Texture>;
 }) {
   const { gl, camera } = useThree();
-  const environment = useMemo(() => studioEnvironment(gl), [gl]);
-  useEffect(() => () => environment.dispose(), [environment]);
+  const environment = useDarkroomEnvironment();
   const [statuses, setStatuses] = useState<Map<number, CameraStatus>>(new Map());
   const updateStatus = useCallback((index: number, status: CameraStatus) => setStatuses(current => {
     if (current.get(index)?.state === status.state && current.get(index)?.retry === status.retry) return current;
@@ -169,12 +170,30 @@ export function CameraShelf({ focused, interactive, load, portal, onApproach, on
     return () => { canvas.removeEventListener('pointerdown', down); window.removeEventListener('pointerup', up); window.removeEventListener('pointermove', move); canvas.removeEventListener('click', click, true); window.removeEventListener('pointercancel', cancel); };
   }, [gl, camera]);
   const w = mm(CAMERA_SHELF_MM.width), h = mm(CAMERA_SHELF_MM.height), d = mm(CAMERA_SHELF_MM.depth);
+  const cabinet = useMemo(() => {
+    const textures = { shelf: woodTexture('#6a4b31', 113), side: woodTexture('#5e4229', 127, true), edge: woodTexture('#6a4b31', 113), felt: feltTexture([3, 2]) };
+    return {
+      textures,
+      shelf: new MeshStandardMaterial({ map: textures.shelf, roughness: .55, envMap: environment.texture, envMapIntensity: .25 }),
+      side: new MeshStandardMaterial({ map: textures.side, roughness: .55, envMap: environment.texture, envMapIntensity: .25 }),
+      edge: new MeshStandardMaterial({ map: textures.edge, roughness: .5, envMap: environment.texture, envMapIntensity: .25 }),
+      felt: new MeshStandardMaterial({ map: textures.felt, color: '#2f3531', roughness: 1 }),
+      channel: new MeshStandardMaterial({ color: '#7f8386', roughness: .35, metalness: .8, envMap: environment.texture, envMapIntensity: .4 }),
+    };
+  }, [environment]);
+  useEffect(() => () => [...Object.values(cabinet.textures), cabinet.shelf, cabinet.side, cabinet.edge, cabinet.felt, cabinet.channel].forEach(item => item.dispose()), [cabinet]);
   return <group name="camera-collection-cabinet" position={CAMERA_SHELF_ORIGIN} rotation={[0, CAMERA_SHELF_YAW, 0]}>
-    <mesh position={[0, h / 2, 0]} receiveShadow><boxGeometry args={[w, h, mm(14)]} /><meshStandardMaterial color="#242823" roughness={.9} /></mesh>
-    {[mm(10), h / 2, h - mm(10)].map(y => <mesh key={y} position={[0, y, d / 2]} castShadow receiveShadow><boxGeometry args={[w, mm(20), d]} /><meshStandardMaterial color="#806246" roughness={.7} /></mesh>)}
-    {[-1, 1].map(side => <mesh key={side} position={[side * (w / 2 - mm(9)), h / 2, d / 2]} castShadow><boxGeometry args={[mm(18), h, d]} /><meshStandardMaterial color="#70553e" roughness={.75} /></mesh>)}
+    {/* Wall-hung walnut carcass with a felt display back and a crown. */}
+    <mesh position={[0, h / 2, 0]} receiveShadow material={cabinet.felt}><boxGeometry args={[w, h, mm(14)]} /></mesh>
+    {[mm(10), h / 2, h - mm(10)].map(y => <group key={y}>
+      <mesh position={[0, y, d / 2]} castShadow receiveShadow material={cabinet.shelf}><boxGeometry args={[w, mm(20), d]} /></mesh>
+      <mesh position={[0, y, d + mm(2)]} material={cabinet.edge}><boxGeometry args={[w - mm(36), mm(20), mm(4)]} /></mesh>
+    </group>)}
+    {[-1, 1].map(side => <mesh key={side} position={[side * (w / 2 - mm(9)), h / 2, d / 2]} castShadow material={cabinet.side}><boxGeometry args={[mm(18), h, d]} /></mesh>)}
+    <mesh position={[0, h + mm(11), d / 2 + mm(4)]} castShadow material={cabinet.shelf}><boxGeometry args={[w + mm(24), mm(22), d + mm(8)]} /></mesh>
     {[h / 2, h].map(y => <group key={y}>
       <mesh position={[0, y - mm(14), d * .68]}><boxGeometry args={[w - mm(55), mm(3), mm(6)]} /><meshBasicMaterial color="#efe2c6" /></mesh>
+      <mesh position={[0, y - mm(12.5), d * .68]} material={cabinet.channel}><boxGeometry args={[w - mm(50), mm(4), mm(10)]} /></mesh>
       <pointLight position={[0, y - mm(70), d * .83]} color="#fff1d7" intensity={1.4} distance={2.8} decay={2} />
     </group>)}
     {/* Keep the film props on the lower tier, clear of the camera collection above. */}

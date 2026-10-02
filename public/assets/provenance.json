@@ -84,8 +84,8 @@
     {
       "name": "Photographic Enlarger Station",
       "type": "Procedural PBR Mesh",
-      "components": "Baseboard, vertical steel support column, condenser lamphouse, bellows assembly, lens mount, and red swing safety filter",
-      "provenance": "Custom in-repo procedural implementation (inspired by classic Beseler 23C)"
+      "components": "Baseboard, extruded column with rack and crank carriage, colour head with Y/M/C filtration dials, negative carrier, pleated bellows, lens with red swing filter, masking easel, grain focuser and enlarging timer",
+      "provenance": "Custom in-repo procedural implementation (inspired by classic colour-head enlargers)"
     },
     {
       "name": "Darkroom Interval Timer",

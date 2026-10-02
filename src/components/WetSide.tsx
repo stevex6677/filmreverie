@@ -1,8 +1,8 @@
-import { useEffect, useMemo } from "react";
-import { useThree } from "@react-three/fiber";
+import { useMemo } from "react";
 import * as THREE from "three";
-import { studioEnvironment } from "../../standalone/model-viewer/model-core.js";
 import { ROOM_ENVELOPE } from "../utils/cameraBounds";
+import { Box, Cylinder, Part, useDisposeResources, useRoomReflections } from "./DarkroomParts";
+import { lathe, roundedPlane, sweptRect, tube, type V3 } from "../utils/darkroomGeometry";
 import { labelTexture, matTexture, negativeStripTexture, plasterTexture, printTexture, seeded, signTexture, tileTexture, timerDialTexture, woodTexture } from "../utils/darkroomTextures";
 
 // The wet side along the rear wall: stainless sink with a tray line, tiled
@@ -13,46 +13,6 @@ const F = ROOM_ENVELOPE.floor;
 const RIM = -.76, SINK_FLOOR = -.93, SINK = { length: 2.8, depth: .74, z: .39 };
 const TRAY = { width: .5, depth: .4, height: .068 };
 const WIRE_Y = 1.25;
-
-type V3 = [number, number, number];
-
-function roundedRect(w: number, d: number, r: number, segments = 4) {
-  const hw = w / 2 - r, hd = d / 2 - r, points: [number, number][] = [];
-  for (const [cx, cz, start] of [[hw, hd, 0], [-hw, hd, .5], [-hw, -hd, 1], [hw, -hd, 1.5]])
-    for (let i = 0; i <= segments; i++) { const a = (start + i / segments / 2) * Math.PI; points.push([cx + Math.cos(a) * r, cz + Math.sin(a) * r]); }
-  return points;
-}
-
-/** Sweeps an (inset, height) profile around a rounded rectangle: trays, sink tubs, jugs. */
-function sweptRect(w: number, d: number, r: number, profile: [number, number][], caps: { start?: boolean; end?: boolean } = {}) {
-  const positions: number[] = [], indices: number[] = [];
-  const ring = ([inset, y]: [number, number]) => roundedRect(w - 2 * inset, d - 2 * inset, Math.max(r - inset, .002)).map(([x, z]) => [x, y, z]);
-  const n = ring(profile[0]).length;
-  for (let s = 0; s < profile.length - 1; s++) {
-    const base = positions.length / 3;
-    for (const p of [...ring(profile[s]), ...ring(profile[s + 1])]) positions.push(...p);
-    for (let i = 0; i < n; i++) { const j = (i + 1) % n; indices.push(base + i, base + n + i, base + j, base + j, base + n + i, base + n + j); }
-  }
-  const cap = (point: [number, number]) => {
-    const base = positions.length / 3;
-    positions.push(0, point[1], 0);
-    for (const p of ring(point)) positions.push(...p);
-    for (let i = 0; i < n; i++) indices.push(base, base + 1 + (i + 1) % n, base + 1 + i);
-  };
-  if (caps.start) cap(profile[0]);
-  if (caps.end) cap(profile[profile.length - 1]);
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setIndex(indices); geometry.computeVertexNormals();
-  return geometry;
-}
-
-const lathe = (points: [number, number][], segments = 28) => new THREE.LatheGeometry(points.map(([r, y]) => new THREE.Vector2(r, y)), segments);
-const tube = (points: V3[], radius: number, segments = 48) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p))), segments, radius, 8);
-const roundedPlane = (w: number, d: number, r: number) => {
-  const shape = new THREE.Shape(roundedRect(w, d, r).map(([x, z]) => new THREE.Vector2(x, z)));
-  return new THREE.ShapeGeometry(shape).rotateX(Math.PI / 2);
-};
 
 /** A hanging 35 mm strip with a gentle lengthwise curl and slight cupping. */
 function filmStripGeometry(length: number, seed: number) {
@@ -77,10 +37,8 @@ function apronGeometry() {
   return geometry;
 }
 
-function useWetSideResources(roomBrightness: number) {
-  const gl = useThree(state => state.gl);
+function useWetSideResources(environment: THREE.WebGLRenderTarget, roomBrightness: number) {
   const resources = useMemo(() => {
-    const environment = studioEnvironment(gl);
     const textures = {
       tiles: tileTexture([2.9 / .4, .62 / .4]),
       plaster: plasterTexture([ROOM_ENVELOPE.width / 2.6, (ROOM_ENVELOPE.ceiling - ROOM_ENVELOPE.floor) / 2.6]),
@@ -158,37 +116,15 @@ function useWetSideResources(roomBrightness: number) {
       cord: tube([[-.9, .03, .08], [-.845, .012, .2], [-.835, -.012, .252], [-.86, -.12, .22], [-.95, -.24, .07], [-1, -.29, .02]], .0035),
       apronStrap: tube([[-.105, .43, .03], [-.05, .52, .012], [0, .55, .01], [.05, .52, .012], [.105, .43, .03]], .006),
     };
-    return { environment, textures, materials, geometries };
-  }, [gl]);
-
-  useEffect(() => () => {
-    resources.environment.dispose();
-    const each = (value: unknown): void => {
-      if (Array.isArray(value)) value.forEach(each);
-      else if (value && typeof (value as { dispose?: () => void }).dispose === "function") (value as { dispose: () => void }).dispose();
-    };
-    [resources.textures, resources.materials, resources.geometries].forEach(group => Object.values(group).forEach(each));
-  }, [resources]);
-
-  // Reflections follow the room lights, so chrome does not glow in safelight-only darkness.
-  useEffect(() => {
-    const intensity = .02 + .6 * roomBrightness;
-    Object.values(resources.materials).flat().forEach(material => { if (material.envMap) material.envMapIntensity = intensity; });
-  }, [resources, roomBrightness]);
+    return { textures, materials, geometries };
+  }, [environment]);
+  useDisposeResources(resources);
+  useRoomReflections(resources.materials, roomBrightness);
   return resources;
 }
 
 type Resources = ReturnType<typeof useWetSideResources>;
 type Mat = THREE.Material;
-const Box = ({ at, size, material, rotation }: { at: V3; size: V3; material: Mat; rotation?: V3 }) =>
-  <mesh castShadow receiveShadow position={at} rotation={rotation} material={material}><boxGeometry args={size} /></mesh>;
-const Cylinder = ({ at, radius, height, material, rotation, segments = 24 }: { at: V3; radius: number | [number, number]; height: number; material: Mat; rotation?: V3; segments?: number }) => {
-  const [top, bottom] = typeof radius === "number" ? [radius, radius] : radius;
-  return <mesh castShadow receiveShadow position={at} rotation={rotation} material={material}><cylinderGeometry args={[top, bottom, height, segments]} /></mesh>;
-};
-const Part = ({ geometry, material, at = [0, 0, 0], rotation, scale }: { geometry: THREE.BufferGeometry; material: Mat; at?: V3; rotation?: V3; scale?: number }) =>
-  <mesh castShadow receiveShadow geometry={geometry} material={material} position={at} rotation={rotation} scale={scale} />;
-
 function Tongs({ material, tip, at, rotation }: { material: Mat; tip: Mat; at: V3; rotation: [number, number, number, string] }) {
   return <group position={at} rotation={rotation as unknown as THREE.Euler}>
     {[-1, 1].map(side => <group key={side} rotation={[0, side * .035, 0]}>
@@ -367,8 +303,8 @@ function Safelight({ resources }: { resources: Resources }) {
   </group>;
 }
 
-export function WetSide({ roomBrightness }: { roomBrightness: number }) {
-  const resources = useWetSideResources(roomBrightness);
+export function WetSide({ environment, roomBrightness }: { environment: THREE.WebGLRenderTarget; roomBrightness: number }) {
+  const resources = useWetSideResources(environment, roomBrightness);
   const { materials: m } = resources;
   return <group>
     {/* Painted rear wall with a skirting board. */}
