@@ -1,5 +1,5 @@
 import { RollRepository, validateBundle, type DarkroomPreferences, type RollBundle, type StoredRoll } from '../storage/rollRepository';
-import { reconcileShelfSlots } from '../utils/shelfLayout';
+import { reconcileShelfSlots, type ShelfArrangement } from '../utils/shelfLayout';
 import { ownerClient, uploadOwnerPhoto } from './ownerClient';
 import type { CloudDraft } from './contracts';
 import { runPhotoUploads } from './uploadQueue';
@@ -53,6 +53,8 @@ export class AdminRollRepository extends RollRepository {
     await ownerClient.save({ ...draft, roll: change(draft.roll) });
     this.notify();
   }
+  // One private record, so a swap is never half-saved; it also orders the public gallery.
+  override async arrange(slots: ShelfArrangement) { await ownerClient.arrange(slots); this.notify(); }
   // Owner settings follow the account to every signed-in device.
   override async preferences() { return ownerClient.preferences(); }
   override async savePreferences(preferences: DarkroomPreferences) { await ownerClient.savePreferences(preferences); }

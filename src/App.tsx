@@ -239,6 +239,13 @@ export function App() {
   const published = usePublishedShelf(!isGuest);
   const shelf = canManageRolls ? managedShelf : published.shelf;
   useEffect(() => { if (!state.shelfFocused && shelf.trash) shelf.changeTrash(false); }, [state.shelfFocused, shelf.trash]);
+  useEffect(() => { if (!state.shelfFocused || state.shelfId !== 'film') shelf.arranger?.finish(); }, [state.shelfFocused, state.shelfId]);
+  const arranger = shelf.arranger?.active ? shelf.arranger : undefined;
+  const shelfRef = useRef(shelf); shelfRef.current = shelf;
+  // The toolbar button or card that started arranging goes away; keep focus on a cubby.
+  const focusCubby = (cell: string) => requestAnimationFrame(() => requestAnimationFrame(() =>
+    document.querySelector<HTMLElement>(`.shelf-cell-label${cell} .shelf-roll-target`)?.focus({ preventScroll: true })));
+  const moveRoll = (moving: StoredRoll) => { shelf.arranger?.start(moving.id); focusCubby(`[data-shelf-slot="${moving.shelfSlot}"]`); };
   // The development fixture is built in and has no saved-library entry.
   const tableRollAvailable = canManageRolls
     ? ((isGuest && roll.fixture) || !managedShelf.loaded || managedShelf.allRolls.some(saved => saved.id === roll.rollId && saved.trashedAt === null))
@@ -442,6 +449,8 @@ export function App() {
         if (/^[1-9]$/.test(e.key)) { dispatch({type:state.focusMode?'OPEN_FRAME':'SELECT_FRAME',frameIndex:Number(e.key)-1}); return; }
       }
       if (state.roomMode === "room") {
+        const arranging = shelfRef.current.arranger;
+        if (state.shelfFocused && e.key === "Escape" && arranging?.active) { e.preventDefault(); arranging.cancel(); return; }
         if (state.shelfFocused && e.key === "Escape") { e.preventDefault(); shelf.close(); dispatch({ type: "RETURN_TO_ROOM" }); return; }
         if (e.target instanceof HTMLElement && e.target.closest('button, input, select, textarea, [role="dialog"], [contenteditable="true"]')) return;
         const look: Record<string, [number, number]> = { ArrowLeft: [.12, 0], ArrowRight: [-.12, 0], ArrowUp: [0, -.1], ArrowDown: [0, .1] };
@@ -527,6 +536,9 @@ export function App() {
       data-adjusting-view={state.adjustingView}
       data-inspect-pan={`${state.inspectPan.x},${state.inspectPan.z}`}
       data-shelf-trash={shelf.trash}
+      data-shelf-arranging={!!arranger}
+      data-shelf-carrying={arranger?.carrying ?? ''}
+      data-shelf-target={arranger?.target ?? ''}
       data-table-roll-available={tableRollAvailable}
       data-shelf-focused={state.shelfFocused}
       data-shelf-roll-focused={shelf.selection?.pinned && state.shelfId === 'film' ? shelf.selection.id : ''}
@@ -617,24 +629,31 @@ export function App() {
           <div className="shelf-toolbar-summary">
             <svg className="shelf-archive-icon" width="30" height="36" viewBox="0 0 30 36" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true"><rect x="4" y="3" width="22" height="30" rx="2"/><path d="M10 3v30M20 3v30M10 13h10M10 23h10"/><path d="M6.5 7h1M6.5 12h1M6.5 17h1M6.5 22h1M6.5 27h1M22.5 7h1M22.5 12h1M22.5 17h1M22.5 22h1M22.5 27h1" strokeWidth="2"/></svg>
             <div className="shelf-toolbar-identity">
-              <h2>{shelf.trash ? 'Trash' : canManageRolls ? 'Your collection' : 'Published gallery'}</h2>
+              <h2>{arranger ? 'Arranging shelf' : shelf.trash ? 'Trash' : canManageRolls ? 'Your collection' : 'Published gallery'}</h2>
               <span>{shelf.trash ? shelf.trashCount : shelf.savedCount} {shelf.trash ? 'deleted' : canManageRolls ? 'saved' : 'published'} {(shelf.trash ? shelf.trashCount : shelf.savedCount) === 1 ? 'roll' : 'rolls'}</span>
             </div>
           </div>
-          {canManageRolls && <div className="shelf-toolbar-actions">
+          {arranger ? <div className="shelf-toolbar-actions">
+            <button className="shelf-new-roll shelf-arrange-done" onClick={arranger.finish}>Done</button>
+          </div> : canManageRolls && <div className="shelf-toolbar-actions">
             <button className="shelf-new-roll" onClick={() => openEditor()}><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>New roll</button>
             <button className="shelf-trash" aria-label={shelf.trash ? 'Saved rolls' : `Trash (${shelf.trashCount})`} onClick={() => shelf.changeTrash(!shelf.trash)}>
               <svg width="16" height="18" viewBox="0 0 18 20" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{shelf.trash ? <path d="M14 5H4m0 0 4-4M4 5l4 4M4 5h6a6 6 0 0 1 0 12H5"/> : <><path d="M2 5h14M7 2h4l1 3M6 5l1-3M4 5l1 13h8l1-13M7 8v7M11 8v7"/></>}</svg>
               {shelf.trash ? 'Saved rolls' : <>Trash<span className="shelf-trash-count" aria-hidden="true">{shelf.trashCount}</span></>}
             </button>
+            {!shelf.trash && shelf.arranger && shelf.savedCount > 0 && <button className="shelf-arrange" onClick={() => { shelf.arranger!.start(); focusCubby('.is-owned'); }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 2v12M5 2 2.5 4.5M5 2l2.5 2.5M11 14V2m0 12-2.5-2.5M11 14l2.5-2.5"/></svg>
+              Arrange
+            </button>}
           </div>}
           {shelf.pages > 1 && <nav aria-label="Shelf pages">
-            <button aria-label="Previous shelf page" disabled={shelf.page === 0} onClick={() => shelf.changePage(shelf.page - 1)}>‹</button>
+            <button aria-label="Previous shelf page" data-shelf-page="-1" disabled={shelf.page === 0} onClick={() => shelf.changePage(shelf.page - 1)}>‹</button>
             <span>Page {shelf.page + 1}/{shelf.pages}</span>
-            <button aria-label="Next shelf page" disabled={shelf.page + 1 === shelf.pages} onClick={() => shelf.changePage(shelf.page + 1)}>›</button>
+            <button aria-label="Next shelf page" data-shelf-page="1" disabled={shelf.page + 1 === shelf.pages} onClick={() => shelf.changePage(shelf.page + 1)}>›</button>
           </nav>}
-          <p className="shelf-toolbar-hint">{shelf.trash ? 'Select a roll to restore it.' : canManageRolls ? 'Select a roll to open, edit or delete it.' : 'Select a roll to view its photographs.'}</p>
+          {arranger ? <p className="shelf-toolbar-hint" role="status">{arranger.status}</p> : <p className="shelf-toolbar-hint">{shelf.trash ? 'Select a roll to restore it.' : canManageRolls ? 'Select a roll to open, edit or delete it.' : 'Select a roll to view its photographs.'}</p>}
         </section>
+        {canManageRolls && !deletedRoll && shelf.arranger?.lastMove && <div className="library-notice"><span>Moved {shelf.arranger.lastMove.name}</span><button onClick={shelf.arranger.undo}>Undo</button><button aria-label="Dismiss move notice" onClick={shelf.arranger.dismiss}>×</button></div>}
         {canManageRolls && deletedRoll && <div className="library-notice" role="status"><span>{deletedRoll.name} moved to Trash</span><button onClick={() => { void restoreRoll(deletedRoll.id).catch(error => setLibraryError(storageMessage(error))); }}>Undo</button><button aria-label="Dismiss deletion notice" onClick={() => setDeletedRoll(null)}>×</button></div>}
         {shelf.error && <div className="library-notice" role="alert">{shelf.error}<button onClick={shelf.retry}>Retry</button></div>}
       </>}
@@ -650,6 +669,7 @@ export function App() {
         onEdit={canManageRolls ? openEditor : undefined}
         onDelete={canManageRolls ? deleteRoll : undefined}
         onRestore={canManageRolls ? restoreRoll : undefined}
+        onMove={canManageRolls && shelf.arranger ? moveRoll : undefined}
       />}
       {!state.cameraDisplay && (state.roomMode === 'room'
         ? mobile

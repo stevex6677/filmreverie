@@ -314,6 +314,13 @@ effect strength as the starting strength for new rolls: guest darkrooms keep it 
 this browser, and the owner darkroom stores it on the server. **Trash** shows
 deleted rolls on the shelf with Restore; deletion also offers Undo. Additional
 pages accommodate more than 16 saved rolls. **Back to room** restores the room view.
+**Arrange** (or **Move** on a roll record) rearranges the shelf: tap a roll to lift
+it, then tap an empty cubby to move it there or another roll to swap the two. Rolls
+can also be dragged; holding one over a page arrow turns the page, and arranging
+offers one spare empty page. Keyboard users press Enter to pick up and put down,
+arrow keys to choose a cubby, Page Up/Down for pages and Escape to put the roll back
+or finish. Each move saves at once and offers Undo. The owner's arrangement also
+orders the public gallery shelf.
 Dragging over the cabinet in room mode moves the view, just like dragging the room.
 Dragging in shelf mode smoothly returns to the room; clicking a saved roll focuses its compartment and opens the details record.
 Shelf entry and exit animate for about 0.42 seconds. Navigation stays available

@@ -1,6 +1,6 @@
 import type { CloudDraft, UploadRequest } from '../src/cloud/contracts';
 import { authorize, checkConfig, checkMutationOrigin } from './auth';
-import { completeUpload, grantUpload, listDrafts, privateImage, publicCatalog, publishDraft, readDraft, readPreferences, saveDraft, savePreferences, withdrawPublication } from './storage';
+import { completeUpload, grantUpload, listDrafts, privateImage, publicCatalog, publishDraft, readDraft, readPreferences, saveArrangement, saveDraft, savePreferences, withdrawPublication } from './storage';
 import { Env, HttpError, Kind, requireValue, validId } from './types';
 import { exchangeDevLogin, startDevLogin } from './devLogin';
 
@@ -49,6 +49,7 @@ async function route(request: Request, env: Env): Promise<Response | object> {
   if (path === '/api/owner/drafts' && method === 'GET') return listDrafts(env);
   if (path === '/api/owner/preferences' && method === 'GET') return readPreferences(env);
   if (path === '/api/owner/preferences' && method === 'PUT') return savePreferences(env, await readJson<unknown>(request));
+  if (path === '/api/owner/shelf' && method === 'PUT') return saveArrangement(env, await readJson<unknown>(request));
   const match = /^\/api\/owner\/(uploads|drafts|publications)\/([^/]+)(?:\/(complete|viewing|thumbnail|publish))?$/.exec(path);
   if (!match || !validId(match[2])) throw new HttpError(404, 'API route was not found.');
   const [, collection, id, action] = match;

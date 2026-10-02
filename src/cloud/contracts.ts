@@ -13,6 +13,8 @@ export interface GalleryRoll {
   id: string; revision: string; name: string; stockId: StoredRoll['stockId'];
   format: StoredRoll['format']; sizing?: StoredRoll['sizing']; filmStrength?: number;
   coverId: string; frames: GalleryFrame[]; publishedAt: number;
+  /** The owner's cubby; absent until the owner arranges the shelf. */
+  shelfSlot?: number;
 }
 export interface GalleryCatalog { version: 1; rolls: GalleryRoll[] }
 // Cloud drafts contain only browser-produced derivatives; guest StoredFrame retains its original fields.
@@ -41,5 +43,6 @@ export interface WithdrawResult { withdrawn: boolean }
 // GET /api/owner/uploads/:id/:kind -> private viewing/thumbnail bytes
 // GET /api/owner/preferences -> DarkroomPreferences
 // PUT /api/owner/preferences DarkroomPreferences -> DarkroomPreferences
+// PUT /api/owner/shelf { slots: Record<rollId, shelfSlot> } -> same (also places published rolls)
 // POST /api/owner/drafts/:id/publish { updatedAt: number; continuation?: string } -> PublishResult
 // DELETE /api/owner/publications/:id -> { withdrawn: boolean } (repeat while false)

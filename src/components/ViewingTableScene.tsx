@@ -146,7 +146,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       interactive={state.roomMode === 'room' && !inputBlocked && state.shelfId !== 'film'}
       onApproach={() => { shelf.close(); dispatch({ type: 'APPROACH_CAMERA_SHELF' }); }}
       onOpen={id => dispatch({ type: 'OPEN_CAMERA', id })} />
-    <group visible={!cabinetOnly}><FilmShelf textures={packagingTextures} readOnly={readOnlyShelf} coverSource={coverSource} focused={state.shelfId === 'film'} onApproach={point => {
+    <group visible={!cabinetOnly}><FilmShelf textures={packagingTextures} readOnly={readOnlyShelf} coverSource={coverSource} immediate={isDeterministic || isReducedMotion} focused={state.shelfId === 'film'} onApproach={point => {
       const target = point ? roomHitTarget(camera, gl.domElement, point.x, point.y, tableSize) : 'shelf';
       if (!target) return;
       shelf.close(); dispatch({ type: target === 'table' ? 'APPROACH_TABLE' : target === 'camera' ? 'APPROACH_CAMERA_SHELF' : 'APPROACH_SHELF' });
@@ -158,7 +158,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
       <TableAngleNavigation state={state} dispatch={dispatch} blocked={inputBlocked} />
       <LoupeNavigation state={state} dispatch={dispatch} blocked={inputBlocked} />
       <TouchNavigation state={state} dispatch={dispatch} blocked={inputBlocked} livePose={livePose} />
-      <ShelfNavigation enabled={state.shelfFocused && !shelf.selection?.pinned && !inputBlocked} onLeave={() => { shelf.close(); dispatch({ type: 'RETURN_TO_ROOM' }); }} onLook={(dx, dy) => dispatch({ type: 'LOOK_ROOM', yaw: dx * .0035, pitch: -dy * .0035 })} />
+      <ShelfNavigation enabled={state.shelfFocused && !shelf.selection?.pinned && !shelf.arranger?.active && !inputBlocked} onLeave={() => { shelf.close(); dispatch({ type: 'RETURN_TO_ROOM' }); }} onLook={(dx, dy) => dispatch({ type: 'LOOK_ROOM', yaw: dx * .0035, pitch: -dy * .0035 })} />
       {/* Darkroom Atmosphere Scene Background */}
       <color attach="background" args={[cabinetOnly ? "#0b0c0e" : "#13151b"]} />
 
