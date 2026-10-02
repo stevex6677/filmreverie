@@ -7,7 +7,7 @@ import { hash, kinds } from '../../cloudflare/types';
 import { completeUpload, grantUpload, saveDraft } from '../../cloudflare/storage';
 
 interface Entry { bytes: Uint8Array; etag: string; httpMetadata: { contentType?: string; cacheControl?: string } }
-interface PutOptions { httpMetadata?: Entry['httpMetadata']; onlyIf?: { etagMatches?: string; etagDoesNotMatch?: string } }
+interface PutOptions { httpMetadata?: Entry['httpMetadata']; onlyIf?: { etagMatches?: string; etagDoesNotMatch?: string }; sha256?: string }
 export class MemoryBucket {
   objects = new Map<string, Entry>();
   calls = 0;
@@ -36,6 +36,7 @@ export class MemoryBucket {
     if (condition?.etagMatches && current?.etag !== condition.etagMatches || condition?.etagDoesNotMatch === '*' && current) return null;
     const bytes = typeof value === 'string' ? new TextEncoder().encode(value)
       : value instanceof ReadableStream ? new Uint8Array(await new Response(value).arrayBuffer()) : new Uint8Array(value).slice();
+    if (options.sha256 && await hash(bytes) !== options.sha256) throw new Error('R2 SHA-256 checksum mismatch');
     const entry = { bytes, etag: webcrypto.randomUUID(), httpMetadata: options.httpMetadata ?? {} };
     this.objects.set(key, entry);
     return this.metadata(key, entry);

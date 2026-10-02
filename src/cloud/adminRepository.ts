@@ -2,6 +2,7 @@ import { RollRepository, validateBundle, type DarkroomPreferences, type RollBund
 import { reconcileShelfSlots } from '../utils/shelfLayout';
 import { ownerClient, uploadOwnerPhoto } from './ownerClient';
 import type { CloudDraft } from './contracts';
+import { runPhotoUploads } from './uploadQueue';
 
 /** The shared shelf/editor interface, backed by authenticated cloud derivatives. */
 export class AdminRollRepository extends RollRepository {
@@ -31,15 +32,13 @@ export class AdminRollRepository extends RollRepository {
     const controller = new AbortController(), operationSignal = signal ?? controller.signal;
     // Existing frames retain their completed uploads; originals never leave the browser.
     const existing = (await ownerClient.list(operationSignal)).find(draft => draft.roll.id === bundle.roll.id);
-    const frames: CloudDraft['frames'] = [];
-    for (const frame of bundle.frames) {
-      operationSignal.throwIfAborted();
+    const frames: CloudDraft['frames'] = await runPhotoUploads(bundle.frames, operationSignal, async frame => {
       const prior = existing?.frames.find(candidate => candidate.id === frame.id);
-      frames.push(prior ? { ...prior, rotation: frame.rotation, cropPosition: frame.cropPosition, filmStrength: frame.filmStrength } : await uploadOwnerPhoto({
+      return prior ? { ...prior, rotation: frame.rotation, cropPosition: frame.cropPosition, filmStrength: frame.filmStrength } : await uploadOwnerPhoto({
         id: frame.id, filename: frame.filename, frame, blobs: bundle.blobs,
         duplicate: false, keepDuplicate: true,
-      }, operationSignal, () => {}));
-    }
+      }, operationSignal, () => {});
+    });
     const pending = this.pendingPublication.get(bundle.roll.id);
     const updatedAt = pending?.inputVersion === bundle.roll.updatedAt && pending.savedVersion === existing?.roll.updatedAt
       ? pending.savedVersion : bundle.roll.updatedAt;

@@ -1,5 +1,6 @@
 import { authorize } from './auth';
 import { Env, HttpError, hash, requireValue } from './types';
+import { matchesDevOrigin } from './devOrigins';
 
 interface Grant { challenge: string; redirectUri: string; expiresAt: number; encrypted: string; iv: string }
 const encoded = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -12,8 +13,7 @@ function callback(env: Env, value: string) {
   let url: URL;
   try { url = new URL(value); } catch { throw new HttpError(400, 'Invalid development callback.'); }
   const origins = env.DEV_LOGIN_ORIGINS?.split(',').map(origin => origin.trim()) ?? [];
-  requireValue(origins.includes(url.origin) && !url.username && !url.password
-    && (url.protocol === 'https:' || url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname))
+  requireValue(origins.some(origin => matchesDevOrigin(url.origin, origin)) && !url.username && !url.password
     && url.pathname === '/api/dev-auth/callback' && !url.search && !url.hash, 'Development callback is not allowed.');
   return url;
 }

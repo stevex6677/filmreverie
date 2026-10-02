@@ -19,17 +19,18 @@ export async function signUpload(env: Env, id: string, request: UploadRequest, n
   for (const kind of kinds) {
     const image = request[kind];
     const path = `/${env.PRIVATE_BUCKET_NAME}/${stagingKey(id, kind)}`;
-    const signedHeaders = 'content-length;content-type;host;x-amz-content-sha256';
+    const signedHeaders = 'content-length;content-type;host';
     const query = Object.entries({
       'X-Amz-Algorithm': 'AWS4-HMAC-SHA256', 'X-Amz-Credential': `${env.R2_ACCESS_KEY_ID}/${scope}`,
       'X-Amz-Date': dateTime, 'X-Amz-Expires': String(UPLOAD_LIFETIME_MS / 1000), 'X-Amz-SignedHeaders': signedHeaders,
     }).sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => `${encode(key)}=${encode(value)}`).join('&');
     // Content-Length is a forbidden browser header: Fetch supplies it from the exact Blob.
-    // All three constraints are in the signature, not merely checked after transfer.
-    const headers = `content-length:${image.bytes}\ncontent-type:${image.mime}\nhost:${host}\nx-amz-content-sha256:${image.sha256}\n`;
-    const canonical = `PUT\n${path}\n${query}\n${headers}\n${signedHeaders}\n${image.sha256}`;
+    // Query-authenticated S3 uploads use UNSIGNED-PAYLOAD. R2 verifies the
+    // grant's SHA-256 while streaming the staged object into its sealed copy.
+    const headers = `content-length:${image.bytes}\ncontent-type:${image.mime}\nhost:${host}\n`;
+    const canonical = `PUT\n${path}\n${query}\n${headers}\n${signedHeaders}\nUNSIGNED-PAYLOAD`;
     const signature = hex((await hmac(signingKey, `AWS4-HMAC-SHA256\n${dateTime}\n${scope}\n${await hash(new TextEncoder().encode(canonical))}`)).buffer as ArrayBuffer);
-    grant.uploads[kind] = { url: `https://${host}${path}?${query}&X-Amz-Signature=${signature}`, headers: { 'Content-Type': image.mime, 'x-amz-content-sha256': image.sha256 } };
+    grant.uploads[kind] = { url: `https://${host}${path}?${query}&X-Amz-Signature=${signature}`, headers: { 'Content-Type': image.mime } };
   }
   return grant;
 }

@@ -10,6 +10,7 @@ import { validateBundle, type RollBundle, type StoredRoll } from '../storage/rol
 import { photoCropPreview } from '../utils/photoFraming';
 import type { CloudDraft } from './contracts';
 import { OwnerSessionRequired, ownerClient, uploadOwnerPhoto, type OwnerPhoto } from './ownerClient';
+import { runPhotoUploads } from './uploadQueue';
 import { adoptOwnerDraft, copyOwnerArchive, createOwnerPreview, loadOwnerPhotos, type OwnerPreview } from './ownerDraft';
 import './owner.css';
 
@@ -160,8 +161,13 @@ export function OwnerPanel({ onClose, onPreview, onPreviewActiveChange }: Props)
     const frames = photos.map(photo => photo.frame!);
     const metadata = { ...roll, name: roll.name.trim(), frameIds: frames.map(frame => frame.id) };
     validateBundle({ roll: metadata, frames, blobs: photos.flatMap(photo => photo.blobs) });
-    const uploaded = [];
-    for (let i = 0; i < photos.length; i++) uploaded.push(await uploadOwnerPhoto(photos[i], signal, kind => setProgress(`Uploading photograph ${i + 1} / ${photos.length} · ${kind}`)));
+    let completed = 0;
+    setProgress(`Uploading photographs · ${completed} / ${photos.length} complete`);
+    const uploaded = await runPhotoUploads(photos, signal, async photo => {
+      const frame = await uploadOwnerPhoto(photo, signal, () => {});
+      setProgress(`Uploading photographs · ${++completed} / ${photos.length} complete`);
+      return frame;
+    });
     setProgress('Saving complete private draft…');
     const result = await ownerClient.save({ roll: metadata, frames: uploaded }, signal);
     signal.throwIfAborted();

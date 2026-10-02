@@ -57,6 +57,8 @@ export default defineConfig({
     video,
   },
   webServer: {
+    // Browser fixtures supply their own backend; never connect tests to production.
+    env: { FILM_PHOTO_DEV_ADMIN_BRIDGE: '0' },
     command: process.env.PLAYWRIGHT_STATIC_PREVIEW === "1"
       ? `PORT=${port} node scripts/serve-production.mjs`
       : `npm run preview -- --host 0.0.0.0 --port ${port}`,

@@ -92,9 +92,12 @@ Cloudflare token and private deployment configuration secrets are configured.
 Production settings live in ignored `cloudflare/deployment.local.json`; the
 committed configuration is generic. Normal local builds do not need a Cloudflare account.
 Local development can use real Cloudflare login, return to the same dev URL,
-and edit the published gallery through the opt-in
+and edit the published gallery through the automatically configured
 [development admin bridge](docs/CLOUD_GALLERY.md). Its session stays on the local
-server; the guest darkroom remains browser-local.
+server; the guest darkroom remains browser-local. With private deployment settings,
+normal development and Vite preview serve published rolls anonymously at
+`http://macbook:<port>`; Admin Login enables adding and deleting cloud rolls.
+The Worker must allow that private callback host/port as documented above.
 `npm run validate:m21` includes the app/Worker builds, cumulative integration/E2E
 suites and all three standalone viewer gates; hosted checks remain separate.
 

@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { AdminRollRepository } from '../../src/cloud/adminRepository';
 import { ownerClient } from '../../src/cloud/ownerClient';
+import * as ownerUploads from '../../src/cloud/ownerClient';
 import type { CloudDraft } from '../../src/cloud/contracts';
 import type { RollBundle } from '../../src/storage/rollRepository';
 
@@ -11,6 +12,40 @@ frames: [{ id: 'frame', rollId: 'roll', filename: 'photo.jpg', width: 180, heigh
 const bundle = (source: CloudDraft): RollBundle => ({ roll: source.roll,
   frames: source.frames.map(frame => ({ ...frame, originalKey: '', hash: '', mime: 'image/jpeg' })), blobs: [] });
 afterEach(() => vi.restoreAllMocks());
+
+it('uploads six new photographs at a time and saves in roll order only after all complete', async () => {
+  const source = draft();
+  source.frames = Array.from({ length: 8 }, (_, index) => ({ ...source.frames[0], id: `frame-${index}` }));
+  source.roll.frameIds = source.frames.map(frame => frame.id);
+  source.roll.coverId = source.frames[0].id;
+  const release: Array<() => void> = [];
+  vi.spyOn(ownerClient, 'list').mockResolvedValue([]);
+  const upload = vi.spyOn(ownerUploads, 'uploadOwnerPhoto').mockImplementation(photo => new Promise(resolve => {
+    release.push(() => resolve({ ...source.frames.find(frame => frame.id === photo.id)! }));
+  }));
+  const save = vi.spyOn(ownerClient, 'save').mockImplementation(async input => input);
+  const publish = vi.spyOn(ownerClient, 'publish').mockResolvedValue({} as never);
+  const result = new AdminRollRepository().save(bundle(source));
+  await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(6));
+  expect(save).not.toHaveBeenCalled();
+  release[5](); release[4]();
+  await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(8));
+  expect(save).not.toHaveBeenCalled();
+  for (const index of [7, 6, 3, 2, 1, 0]) release[index]();
+  await result;
+  expect(save.mock.calls[0][0].frames.map(frame => frame.id)).toEqual(source.roll.frameIds);
+  expect(publish).toHaveBeenCalledOnce();
+});
+
+it('never saves or publishes a partial roll when an upload fails', async () => {
+  vi.spyOn(ownerClient, 'list').mockResolvedValue([]);
+  vi.spyOn(ownerUploads, 'uploadOwnerPhoto').mockRejectedValue(new Error('Upload failed'));
+  const save = vi.spyOn(ownerClient, 'save');
+  const publish = vi.spyOn(ownerClient, 'publish');
+  await expect(new AdminRollRepository().save(bundle(draft()))).rejects.toThrow('Upload failed');
+  expect(save).not.toHaveBeenCalled();
+  expect(publish).not.toHaveBeenCalled();
+});
 
 it('retries failed publication of saved edits without uploading retained images or masking concurrent changes', async () => {
   let current = draft();

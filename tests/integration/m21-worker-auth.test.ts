@@ -71,6 +71,21 @@ describe('M21 owner authorization boundary', () => {
     try { expect((await exchange(env, { code, verifier: grant.verifier, redirectUri: grant.redirectUri })).status).toBe(401); }
     finally { vi.restoreAllMocks(); }
   });
+  it('allows configured macbook ports while rejecting lookalike hosts and unauthorized callbacks', async () => {
+    const { env } = environment(); trustedIssuer();
+    env.DEV_LOGIN_ORIGINS = 'http://macbook:*,http://macbook.tail2b1388.ts.net:*';
+    const assertion = await token(env);
+    for (const origin of ['http://macbook:5211', 'http://macbook:5236', 'http://macbook.tail2b1388.ts.net:5180']) {
+      const grant = await devGrant(env, assertion, `${origin}/api/dev-auth/callback`);
+      expect(grant.response.status).toBe(303);
+      const location = new URL(grant.response.headers.get('location')!);
+      expect(location.origin).toBe(origin);
+      expect((await exchange(env, { code: location.searchParams.get('code'), verifier: grant.verifier, redirectUri: grant.redirectUri })).status).toBe(200);
+    }
+    for (const uri of ['http://macbook.evil.test:5211/api/dev-auth/callback', 'http://evil.test:5211/api/dev-auth/callback', 'http://macbook:5211/other', 'http://user@macbook:5211/api/dev-auth/callback', 'https://macbook:5211/api/dev-auth/callback']) {
+      expect((await devGrant(env, assertion, uri)).response.status).toBe(400);
+    }
+  });
   it('authenticates cross-site top-level login navigation and redirects to the hosted darkroom without exposing identity', async () => {
     const { env } = environment(); trustedIssuer();
     const navigation = { 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'document' };
@@ -164,28 +179,31 @@ describe('M21 owner authorization boundary', () => {
 });
 
 describe('M21 direct upload grant scope', () => {
-  it('cryptographically binds PUT destination, exact byte count, MIME, payload hash and expiry', async () => {
-    const { env } = environment(), id = webcrypto.randomUUID();
+  it('uses S3 presigned payload semantics and binds PUT destination, exact byte count, MIME and expiry', async () => {
+    const { env } = environment(), id = '11111111-1111-4111-8111-111111111111';
     const image = { bytes: 12345, mime: 'image/jpeg' as const, sha256: 'a'.repeat(64) }, now = Date.UTC(2026, 8, 25);
     const grant = await signUpload(env, id, { viewing: image, thumbnail: image }, now);
     const target = grant.uploads.viewing, url = new URL(target.url), signature = url.searchParams.get('X-Amz-Signature');
+    // Independently generated with aws4fetch's S3 query signer (allHeaders: true).
+    expect(signature).toBe('7f6a2bc245ce1f5dc74f9b21c7d6a6ec5f84f8cd4680f816a4620e60685f6979');
     url.searchParams.delete('X-Amz-Signature');
     const signedHeaders = url.searchParams.get('X-Amz-SignedHeaders');
     const scope = url.searchParams.get('X-Amz-Credential')!.slice(env.R2_ACCESS_KEY_ID.length + 1);
     let key: Buffer = Buffer.from(`AWS4${env.R2_SECRET_ACCESS_KEY}`);
     for (const value of scope.split('/')) key = createHmac('sha256', key).update(value).digest();
-    const calculate = (method: string, path: string, length: number, mime: string, digest: string) => {
-      const canonicalHeaders = `content-length:${length}\ncontent-type:${mime}\nhost:${url.host}\nx-amz-content-sha256:${digest}\n`;
-      const canonical = `${method}\n${path}\n${url.search.slice(1)}\n${canonicalHeaders}\n${signedHeaders}\n${digest}`;
+    const calculate = (method: string, path: string, length: number, mime: string) => {
+      const canonicalHeaders = `content-length:${length}\ncontent-type:${mime}\nhost:${url.host}\n`;
+      const canonical = `${method}\n${path}\n${url.search.slice(1)}\n${canonicalHeaders}\n${signedHeaders}\nUNSIGNED-PAYLOAD`;
       const stringToSign = `AWS4-HMAC-SHA256\n${url.searchParams.get('X-Amz-Date')}\n${scope}\n${createHash('sha256').update(canonical).digest('hex')}`;
       return createHmac('sha256', key).update(stringToSign).digest('hex');
     };
-    expect(calculate('PUT', url.pathname, image.bytes, image.mime, image.sha256)).toBe(signature);
-    expect(calculate('GET', url.pathname, image.bytes, image.mime, image.sha256)).not.toBe(signature);
-    expect(calculate('PUT', `${url.pathname}-another`, image.bytes, image.mime, image.sha256)).not.toBe(signature);
-    expect(calculate('PUT', url.pathname, image.bytes + 1, image.mime, image.sha256)).not.toBe(signature);
-    expect(calculate('PUT', url.pathname, image.bytes, 'text/html', image.sha256)).not.toBe(signature);
-    expect(calculate('PUT', url.pathname, image.bytes, image.mime, 'b'.repeat(64))).not.toBe(signature);
+    expect(calculate('PUT', url.pathname, image.bytes, image.mime)).toBe(signature);
+    expect(calculate('GET', url.pathname, image.bytes, image.mime)).not.toBe(signature);
+    expect(calculate('PUT', `${url.pathname}-another`, image.bytes, image.mime)).not.toBe(signature);
+    expect(calculate('PUT', url.pathname, image.bytes + 1, image.mime)).not.toBe(signature);
+    expect(calculate('PUT', url.pathname, image.bytes, 'text/html')).not.toBe(signature);
+    expect(signedHeaders).toBe('content-length;content-type;host');
+    expect(target.headers).not.toHaveProperty('x-amz-content-sha256');
     expect(grant.expiresAt).toBe(now + 300_000);
     expect(url.searchParams.get('X-Amz-Expires')).toBe('300');
     expect(url.pathname).toBe(`/${env.PRIVATE_BUCKET_NAME}/staging/${id}/viewing`);

@@ -63,13 +63,13 @@ describe('M21 private derivative boundary', () => {
     vi.useFakeTimers(); vi.setSystemTime(grant.expiresAt);
     await expect(completeUpload(env, grant.id)).rejects.toMatchObject({ status: 410 });
     vi.useRealTimers();
-    // Bytes are opaque to the Worker. The browser supplies a digest in the signed
-    // PUT and R2 verifies it; the Worker checks only staged R2 size/type metadata.
+    // R2 must reject mismatched bytes during sealing even when size/type match.
     const opaque = new Uint8Array(bytes.length).fill(42);
     const newGrant = await grantUpload(env, { viewing: image, thumbnail: image });
     for (const kind of kinds) await privateBucket.put(`staging/${newGrant.id}/${kind}`, opaque, { httpMetadata: { contentType: 'image/jpeg' } });
-    await completeUpload(env, newGrant.id);
-    expect((await completedUpload(env, newGrant.id)).images.viewing.sha256).toBe(image.sha256);
+    await expect(completeUpload(env, newGrant.id)).rejects.toThrow('checksum mismatch');
+    expect(privateBucket.objects.has(`uploads/completed/${newGrant.id}.json`)).toBe(false);
+    expect([...privateBucket.objects.keys()].filter(key => key.startsWith('sealed/'))).toEqual([]);
   });
 });
 
