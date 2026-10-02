@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -78,5 +78,30 @@ describe('private Cloudflare deployment configuration', () => {
     expect(result.status).toBe(1);
     expect(result.stdout + result.stderr).not.toContain('private-sentinel');
     expect(result.stdout).not.toContain('wrangler');
+  });
+
+  it('invokes Pages with a discoverable configuration and the pushed commit', () => {
+    const root = realpathSync(fixture());
+    mkdirSync(path.join(root, 'scripts'));
+    for (const name of ['cloudflare-config.ts', 'cloudflare-deploy.ts']) {
+      cpSync(path.join(projectRoot, 'scripts', name), path.join(root, 'scripts', name));
+    }
+    const cli = path.join(root, 'node_modules/wrangler/bin');
+    mkdirSync(cli, { recursive: true });
+    writeFileSync(path.join(cli, 'wrangler.js'), `
+      const fs = require('node:fs');
+      if (process.argv.includes('--config')) throw new Error('Pages rejects --config');
+      const config = JSON.parse(fs.readFileSync('wrangler.jsonc', 'utf8'));
+      console.log(JSON.stringify({ config, args: process.argv.slice(2) }));
+    `);
+    const result = spawnSync(process.execPath, ['scripts/cloudflare-deploy.ts', 'pages'], {
+      cwd: root, encoding: 'utf8', env: { ...process.env,
+        CLOUDFLARE_DEPLOYMENT_CONFIG: JSON.stringify(settings), GITHUB_SHA: 'a'.repeat(40) },
+    });
+    expect(result.status, result.stderr).toBe(0);
+    const invocation = JSON.parse(result.stdout);
+    expect(invocation.config).toMatchObject({ name: settings.pagesProject, pages_build_output_dir: path.join(root, 'dist') });
+    expect(invocation.args).toEqual(['pages', 'deploy', path.join(root, 'dist'),
+      '--project-name', settings.pagesProject, '--branch', settings.pagesBranch, '--commit-hash', 'a'.repeat(40)]);
   });
 });

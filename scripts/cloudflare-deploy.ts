@@ -22,13 +22,14 @@ async function main() {
     return;
   }
   const args = command === 'pages'
-    ? ['pages', 'deploy', path.join(projectRoot, 'dist'), '--config', config.pages,
+    ? ['pages', 'deploy', path.join(projectRoot, 'dist'),
       '--project-name', settings.pagesProject, '--branch', settings.pagesBranch,
       ...(process.env.GITHUB_SHA ? ['--commit-hash', process.env.GITHUB_SHA] : [])]
     : ['deploy', '--config', config.worker,
       ...(command === 'check' ? ['--dry-run', '--outdir', path.join(projectRoot, '.cache/cloud-worker-production')] : [])];
   const result = spawnSync(process.execPath, [path.join(projectRoot, 'node_modules/wrangler/bin/wrangler.js'), ...args], {
-    cwd: projectRoot, stdio: 'inherit',
+    // Pages discovers a standard Wrangler filename in cwd and rejects --config.
+    cwd: command === 'pages' ? path.dirname(config.pages) : projectRoot, stdio: 'inherit',
     env: { ...process.env, CLOUDFLARE_ACCOUNT_ID: settings.accountId, WRANGLER_SEND_METRICS: 'false',
       WRANGLER_LOG_PATH: path.join(projectRoot, '.cache/wrangler-logs') },
   });

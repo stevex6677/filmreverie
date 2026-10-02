@@ -80,7 +80,7 @@ export function prepareDeployment(d: Deployment, root = projectRoot) {
     vars: { ...base.vars, APP_ORIGIN: d.appOrigin, PHOTO_ORIGIN: d.photoOrigin, ACCESS_ISSUER: d.accessIssuer,
       R2_ACCOUNT_ID: d.accountId, PRIVATE_BUCKET_NAME: d.privateBucket, DEV_LOGIN_ORIGINS: d.devLoginOrigins.join(',') },
   });
-  const pages = write('pages.json', { ...read('wrangler.pages.jsonc'),
+  const pages = write('wrangler.jsonc', { ...read('wrangler.pages.jsonc'),
     $schema: path.join(root, 'node_modules/wrangler/config-schema.json'),
     name: d.pagesProject, pages_build_output_dir: path.join(root, 'dist') });
   for (const name of ['private-cors.json', 'public-cors.json']) {
