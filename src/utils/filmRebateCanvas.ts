@@ -130,7 +130,7 @@ function paintRebate(ctx: CanvasRenderingContext2D, stock: FilmStockProfile, lay
     const step = (frameWidth + layout.gap * scaleX) / 8;
 
     // Latent registration marks between perforation holes in inner margins
-    if (stock.type === "negative") {
+    if (stock.type === "negative" && STOCK_DX_BITS[stock.id]) {
       ctx.fillStyle = colors.rebateText;
       for (let k = 0; k < 7; k++) {
         const dashX = left + (k + 1.0) * step;
@@ -161,7 +161,7 @@ function paintRebate(ctx: CanvasRenderingContext2D, stock: FilmStockProfile, lay
     // Bottom outer rail: frame numbers, advance arrow, and authentic DX edge code barcode track
     ctx.fillText(String(frameNum), left + 12, height - 13);
 
-    if (stock.type === "negative") {
+    if (stock.type === "negative" && STOCK_DX_BITS[stock.id]) {
       // DX Barcode segment 1 (Manufacturer / Stock ID) under holes 1, 2, 3
       const b1Start = left + 0.9 * step;
       const b1End = midpoint - 0.25 * step;

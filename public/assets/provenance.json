@@ -154,6 +154,24 @@
       "runtimeUrl": "/assets/film-stocks/velvia-100.json",
       "license": "ISC \u2014 original procedural artwork; external reference photographs linked only",
       "referenceEdition": "Fujifilm Velvia 100 Professional (RVP 100), 135 still film"
+    },
+    {
+      "id": "fuji-200",
+      "runtimeUrl": "/assets/film-stocks/fuji-200.json",
+      "license": "ISC \u2014 original procedural artwork; manufacturer references linked only",
+      "referenceEdition": "Fujifilm 200, 135 color negative film (not Superia or C200)"
+    },
+    {
+      "id": "pro-image-100",
+      "runtimeUrl": "/assets/film-stocks/pro-image-100.json",
+      "license": "ISC \u2014 original procedural artwork; manufacturer references linked only",
+      "referenceEdition": "Kodak Professional Pro Image 100, 135 still film"
+    },
+    {
+      "id": "gold-200",
+      "runtimeUrl": "/assets/film-stocks/gold-200.json",
+      "license": "ISC \u2014 original procedural artwork; manufacturer references linked only",
+      "referenceEdition": "Kodak Gold 200, 135 and 120 color negative film"
     }
   ]
 }

@@ -152,7 +152,7 @@ export function ShelfCoverFrame({ roll, coverSource = localCoverSource }: { roll
   useEffect(() => () => wood.dispose(), [wood]);
 
   const entry = getPackaging(roll.stockId, roll.format);
-  const arrangement = shelfArrangement(entry.sizeMm[0], roll.format === '135', true, entry.sizeMm[2]);
+  const arrangement = shelfArrangement(entry.sizeMm[0], roll.format === '135' && entry.cartridgePlacement !== 'on-box', true, entry.sizeMm[2]);
 
   return <group name={`cover-frame:${roll.id}`} position={[arrangement.companionX, SHELF_FLOOR + mm(HEIGHT / 2), mm(6)]} rotation={[0, SHELF_FRAME_YAW, 0]} scale={WORLD_UNITS_PER_MM}>
     {/* Sculpted wood moulding with sight-edge inner bevel and outer rounded chamfer */}

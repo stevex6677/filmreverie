@@ -10,6 +10,7 @@ export interface FilmPackaging {
   box: PackagingSource; front: PanelCorners; top?: PanelCorners;
   bodyColor?: string; // Unphotographed carton faces; never borrow another stock's color.
   cartridge?: PackagingSource; cartridgePanel?: PanelCorners;
+  cartridgePlacement?: 'on-box'; // Wide 35mm multipacks keep the cassette above the carton.
   cartridgeProjection?: 'photographic'; // A photographed cylinder, not a flat unwrapped label.
   cartridgeCurvature?: [number, number]; // Top/bottom center sag, normalized to the photographed panel height.
   sizeMm: [number, number, number]; multipack: boolean;
@@ -21,5 +22,6 @@ export function getPackaging(stockId: FilmStockId, format: FilmFormat | Packagin
 }
 export const FILM_ISO: Record<FilmStockId, number> = {
   'ektachrome-e100': 100, 'ektar-100': 100, 'portra-160': 160, 'portra-400': 400, 'portra-800': 800,
+  'fuji-200': 200, 'pro-image-100': 100, 'gold-200': 200,
   'provia-100': 100, 'velvia-50': 50, 'velvia-100': 100,
 };

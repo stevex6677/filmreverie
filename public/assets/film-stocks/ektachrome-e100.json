@@ -33,5 +33,9 @@
     "accessed": "2026-09-09",
     "license": "Linked for study only; reference photograph not redistributed. Runtime lettering and geometry are original project artwork (ISC).",
     "limitations": "Lettering, frame and half-frame numbers reconstructed from the developed 135 reference. No optical code track is discernible in this reference and one is omitted. Placement normalized to five frames; font and base color are approximations, not a calibrated measurement."
-  }
+  },
+  "formats": [
+    "135",
+    "120"
+  ]
 }

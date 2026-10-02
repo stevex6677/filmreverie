@@ -11,7 +11,8 @@ fits the whole cabinet to the viewport and respects reduced motion.
 
 ## Artwork coverage
 
-[manifest.json](manifest.json) records eight stocks in 35mm and 120: Kodak
+[manifest.json](manifest.json) records twenty packaging variants across eleven stocks.
+The original eight stocks support both 35mm and 120: Kodak
 Ektachrome E100, Ektar 100, Portra 160/400/800 and Fujifilm Provia 100F,
 Velvia 50/100. Fourteen box fronts and all eight 35mm cartridge labels use original
 photographs. Fuji cartons and cassette labels were corrected from separate
@@ -179,7 +180,7 @@ coordinates are normalized, in top-left, top-right, bottom-right, bottom-left
 order. Original image bytes are untouched. Cartridge labels wrap around a
 cylinder with modeled caps and spindle. The material desaturates empty cells.
 
-When adding a supported stock, add both formats and a matching 35mm cartridge,
+When adding a supported stock, add only its supported formats and a matching 35mm cartridge,
 record sources/checksums, measure panels, then check all variants in the room.
 `tests/integration/m18-film-shelf.test.ts` checks stock/format coverage and corner
 projection. `npm run validate:m19` runs the build and full integration/browser
@@ -189,3 +190,34 @@ or a host with limited process capacity.
 The photographs retain some baked-in lighting. Unseen box sides and cartridge
 reverse faces are simplified, without fabricated lettering. Packaging failure
 leaves a plain physical package and does not prevent opening photographs.
+
+### Fuji 200, Pro Image 100 and Gold 200 (2026-10-01)
+
+| Stock | Formats | Photographic packaging sources |
+| --- | --- | --- |
+| Fujifilm 200 | 135 only | [Alpine Camera](https://alpinecamerausa.com/products/fujifilm-200-35), checked against [Fujifilm's product photograph](https://www.fujifilm.com/us/en/consumer/films/consumer-film/fujifilm-200) |
+| Kodak Pro Image 100 | 135 only | [Glazer's Camera](https://www.glazerscamera.com/products/proimage-100-35mm-36exp-single), separate five-roll carton and cassette photographs |
+| Kodak Gold 200 | 135 and 120 | [Kodak Photo Systems 135](https://kodak.photosys.com/products/ek-200-gold-color-negative-film-35mm), [120](https://kodak.photosys.com/products/ek-200-gold-color-negative-film-120-5-pack), [Macodirect cassette](https://www.macodirect.de/film/farbnegativfilm/kodak-gold-200-135-36) |
+
+The six original image files are bundled unchanged, with URLs, dimensions and
+SHA-256 in the manifest; byte-identical originals are retained under
+`ignored_assets/film-packaging/new-stocks-20261001/` in shared storage. They
+remain third-party product photographs; source attribution is not a license grant.
+
+Fuji uses the photographed rectangular carton without the tall retail hanging
+header. Its cassette face samples the cassette illustration printed on that
+carton, rather than an invented label or a separately photographed cassette.
+The carton is nominally 60×40×38 mm. The green top retains the source's shallow
+view and printed texture. This is Fujifilm 200 packaging, not a C200 edition.
+
+Pro Image retains its actual five-roll pro-pack design at a nominal 135×47×30 mm,
+with its cassette standing on the carton so it fits beside the saved cover frame.
+It still represents one saved roll. Gold uses the yellow/black/purple Eastman
+Kodak editions in nominal 60×40×38 mm (135) and 135×79×28 mm (120) envelopes.
+These dimensions are display estimates, not caliper measurements. Unseen faces
+are plain stock-colored surfaces. Cassette photographic projections preserve the
+source label curvature; hidden reverse labels are not fabricated.
+
+Stock `formats` metadata is authoritative for editor choices and save/import/
+publication validation. Fuji 200 and Pro Image have no 120 manifest entries.
+The offline build includes all new packaging and stock records.

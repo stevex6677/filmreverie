@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { IDBFactory } from 'fake-indexeddb';
 import { RollBundle, RollRepository, openRollDatabase } from '../../src/storage/rollRepository';
 import { FILM_PACKAGING, getPackaging } from '../../src/data/filmPackaging';
-import { FILM_STOCKS } from '../../src/data/filmStocks';
+import { FILM_STOCKS, supportsFilmFormat } from '../../src/data/filmStocks';
 import { FILM_FORMATS } from '../../src/data/filmFormats';
 import { placeholderPackaging, reconcileShelfSlots, shelfPageCount } from '../../src/utils/shelfLayout';
 import { panelProjection } from '../../src/utils/packagingMaterial';
@@ -58,8 +58,12 @@ describe('M18 shelf persistence with real IndexedDB transactions', () => {
 });
 describe('M18 packaging coverage and texture projection', () => {
   it('covers every stock and format, with stock-correct cartridge images only for 35mm', () => {
-    expect(FILM_PACKAGING).toHaveLength(FILM_STOCKS.length * 2);
+    expect(FILM_PACKAGING).toHaveLength(FILM_STOCKS.reduce((count, stock) => count + stock.formats.length, 0));
     for (const stock of FILM_STOCKS) for (const format of Object.keys(FILM_FORMATS) as (keyof typeof FILM_FORMATS)[]) {
+      if (!supportsFilmFormat(stock.id, format)) {
+        expect(FILM_PACKAGING.some(entry => entry.stockId === stock.id && entry.format === '120')).toBe(false);
+        continue;
+      }
       const entry = getPackaging(stock.id, format);
       expect(entry.stockId).toBe(stock.id); expect(entry.format).toBe(format === '135' ? '135' : '120');
       expect(!!entry.cartridge).toBe(format === '135'); expect(entry.box.sha256).toMatch(/^[0-9a-f]{64}$/);

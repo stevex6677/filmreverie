@@ -1,4 +1,4 @@
-import { FilmStockId, isFilmStockId } from '../data/filmStocks';
+import { FilmStockId, isFilmStockId, supportsFilmFormat } from '../data/filmStocks';
 import { FilmFormat, FrameSizing, filmLengthUsage, isFilmFormat } from '../data/filmFormats';
 import { reconcileShelfSlots } from '../utils/shelfLayout';
 export interface SavedView {
@@ -51,6 +51,7 @@ const complete = (tx: IDBTransaction) => new Promise<void>((resolve, reject) => 
 export function validateBundle(bundle: { roll: StoredRoll; frames: Pick<StoredFrame, 'id' | 'rollId' | 'rotation' | 'width' | 'height' | 'cropPosition' | 'filmStrength'>[]; blobs?: BlobRecord[] }) {
   const { roll, frames } = bundle;
   if (!roll.name.trim() || roll.name.length > 120 || !isFilmStockId(roll.stockId) || !isFilmFormat(roll.format)) throw new Error('Enter a name, stock and valid film format.');
+  if (!supportsFilmFormat(roll.stockId, roll.format)) throw new Error('This film stock is only available in 35mm. Choose a compatible stock or film type.');
   if (!frames.length || new Set(roll.frameIds).size !== frames.length || roll.frameIds.length !== frames.length || !roll.frameIds.includes(roll.coverId)) throw new Error('Invalid frame membership or cover.');
   for (const frame of frames) if (frame.rollId !== roll.id || !roll.frameIds.includes(frame.id) || ![0,90,180,270].includes(frame.rotation)) throw new Error('Invalid frame metadata.');
   if (roll.sizing !== undefined && !['fixed','free'].includes(roll.sizing)) throw new Error('Invalid frame sizing.');

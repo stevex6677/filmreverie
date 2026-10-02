@@ -1,0 +1,42 @@
+{
+  "id": "gold-200",
+  "displayName": "Kodak Gold 200",
+  "type": "negative",
+  "process": "C-41",
+  "allowedViews": [
+    "negative",
+    "positive"
+  ],
+  "base": {
+    "substrateBase": "rgba(230, 122, 46, 0.88)",
+    "rebateText": "#2a1208",
+    "rebateSecondary": "#2a1208",
+    "frameShadow": "rgba(35, 15, 8, 0.4)",
+    "negativeMask": [
+      0.9,
+      0.48,
+      0.18
+    ]
+  },
+  "rebate": {
+    "label": "KODAK GOLD 200",
+    "font": "Arial, Helvetica, sans-serif",
+    "fontWeight": "bold",
+    "orientation": "same-direction",
+    "halfFrameNumbers": true,
+    "codePattern": null
+  },
+  "reference": {
+    "edition": "Kodak Gold 200, 135 and 120 color negative film",
+    "title": "Kodak Gold 200 manufacturer product information",
+    "url": "https://www.kodak.com/en/still-film/product/consumer/gold-200-film/",
+    "imageUrl": "https://www.kodak.com/en/still-film/product/consumer/gold-200-film/",
+    "accessed": "2026-10-01",
+    "license": "Manufacturer reference linked for study only. Procedural film lettering is original project artwork (ISC).",
+    "limitations": "Color, grain, base and edge lettering are artistic approximations, not calibrated sensitometry or a factory edge-print reconstruction. Exact optical codes, batch IDs and production tolerances are unverified and omitted."
+  },
+  "formats": [
+    "135",
+    "120"
+  ]
+}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CropInspector } from '../components/CropInspector';
 import { FILM_FORMATS, filmLengthUsage, frameAspect, type FilmFormat, type FrameSizing } from '../data/filmFormats';
-import { DEFAULT_FILM_STOCK_ID, FILM_STOCKS, type FilmStockId } from '../data/filmStocks';
+import { DEFAULT_FILM_STOCK_ID, FILM_STOCKS, supportsFilmFormat, type FilmStockId } from '../data/filmStocks';
 import { blockUpdate } from '../offline/client';
 import { generateUuid } from '../storage/crypto';
 import { IMPORT_LIMITS, processPhotos, releaseDraft } from '../storage/importPhotos';
@@ -229,9 +229,9 @@ export function OwnerPanel({ onClose, onPreview, onPreviewActiveChange }: Props)
           <div className="owner-details"><h2>Private draft details {dirty && <small>· unsaved</small>}</h2>
             <div className="library-details">
               <label>Roll name<input aria-label="Owner roll name" value={roll.name} maxLength={120} disabled={busy} onChange={event => changeRoll({ name: event.target.value })}/></label>
-              <fieldset disabled={busy}><legend>Film type</legend><label><input type="radio" name="owner-film-type" checked={roll.format === '135'} onChange={() => changeRoll({ format: '135', sizing: 'fixed' })}/>35mm</label><label><input type="radio" name="owner-film-type" checked={roll.format !== '135'} onChange={() => changeRoll({ format: '66', sizing: 'free' })}/>120</label></fieldset>
+              <fieldset disabled={busy}><legend>Film type</legend><label><input type="radio" name="owner-film-type" checked={roll.format === '135'} onChange={() => changeRoll({ format: '135', sizing: 'fixed' })}/>35mm</label><label><input type="radio" name="owner-film-type" disabled={!supportsFilmFormat(roll.stockId, '120')} checked={roll.format !== '135'} onChange={() => changeRoll({ format: '66', sizing: 'free' })}/>120</label></fieldset>
               <label>Frame size<select aria-label="Owner film format" value={roll.sizing === 'free' ? 'free' : roll.format} disabled={busy} onChange={event => changeRoll(event.target.value === 'free' ? { sizing: 'free' as FrameSizing } : { format: event.target.value as FilmFormat, sizing: 'fixed' })}>{(roll.format === '135' ? ['135'] : ['645', '66', '67', '69']).map(format => <option key={format} value={format}>{FILM_FORMATS[format as FilmFormat].label}</option>)}<option value="free">Free · keep original proportions</option></select></label>
-              <label>Film stock<select aria-label="Owner film stock" value={roll.stockId} disabled={busy} onChange={event => changeRoll({ stockId: event.target.value as FilmStockId })}>{FILM_STOCKS.map(stock => <option key={stock.id} value={stock.id}>{stock.displayName}</option>)}</select></label>
+              <label>Film stock<select aria-label="Owner film stock" value={roll.stockId} disabled={busy} onChange={event => changeRoll({ stockId: event.target.value as FilmStockId })}>{FILM_STOCKS.map(stock => <option key={stock.id} value={stock.id} disabled={!supportsFilmFormat(stock.id, roll.format)}>{stock.displayName}{stock.formats.length === 1 ? ' · 35mm only' : ''}</option>)}</select></label>
               <label>Film strength <output>{roll.filmStrength ?? 50}</output><input aria-label="Owner film strength" type="range" min="0" max="100" step="1" value={roll.filmStrength ?? 50} disabled={busy} onChange={event => changeRoll({ filmStrength: Number(event.target.value) })}/><small>0 Original · 50 Default · 100 Strong</small></label>
             </div>
             <label className="choose-photos">{photos.length ? 'Add photographs' : 'Choose photographs'}<input aria-label="Choose owner photographs" type="file" accept="image/jpeg,image/png" multiple disabled={busy} onChange={event => { choosePhotos(Array.from(event.target.files ?? [])); event.target.value = ''; }}/></label>

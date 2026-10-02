@@ -1,4 +1,5 @@
 import { ready, room, add, focusShelf } from './helpers/shelf';
+import { FILM_PACKAGING } from '../../src/data/filmPackaging';
 import { SHELF_CAMERA } from '../../src/data/physicalScale';
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs/promises';
@@ -7,7 +8,7 @@ test('M18 first example roll shares the cabinet with inert gray placeholders', a
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto('/guest?mode=room&reduced_motion=true'); await ready(page);
-  await expect(page.locator('canvas')).toHaveAttribute('data-packaging-loaded', '24');
+  await expect(page.locator('canvas')).toHaveAttribute('data-packaging-loaded', String(new Set(FILM_PACKAGING.flatMap(entry => [entry.singleRollArtwork ?? entry.box.asset, ...(entry.cartridge ? [entry.cartridge.asset] : [])])).size));
   await expect(page.locator('[data-shelf-slot]')).toHaveCount(16);
   await expect(page.locator('[data-owned="false"]')).toHaveCount(15);
   await expect(page.getByRole('button', { name: /Show saved roll/ })).toHaveCount(0);

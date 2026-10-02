@@ -10,6 +10,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const ALIASES = {
+  'fuji-200': 'fuji-200', 'fuji200': 'fuji-200',
+  'pro-image-100': 'pro-image-100', 'proimage100': 'pro-image-100',
+  'gold-200': 'gold-200', 'gold200': 'gold-200',
   'portra-160': 'portra-160',
   'portra160': 'portra-160',
   '160': 'portra-160',
@@ -53,6 +56,9 @@ Options / Flags:
   -h, --help               Show this help message
 
 Supported Film Stocks:
+  - fuji-200         (alias: fuji200)              Fujifilm 200 (Vivid color, fresh greens)
+  - pro-image-100    (alias: proimage100)          Kodak Pro Image 100 (Balanced color, natural skin)
+  - gold-200         (alias: gold200)              Kodak Gold 200 (Warm golden color, classic grain)
   - portra-160       (aliases: portra160, 160)       Kodak Portra 160 (Soft tones, fine grain)
   - portra-400       (aliases: portra400, 400)       Kodak Portra 400 (Natural warm tone, versatile)
   - portra-800       (aliases: portra800, 800)       Kodak Portra 800 (Rich tones, visible analog grain)

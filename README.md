@@ -23,9 +23,12 @@ table. Opening a roll from the shelf enters the light table.
 - **Whole-Strip Inversion:** Toggle between negative and positive modes across the entire physical strip, including borders, sprockets, and manufacturer markings.
 
 ### 2. Authentic Film Stocks & Rebate Markings
-Faithfully modeled film characteristics, color gamuts, and edgeprints for five classic emulsions:
+Eleven film stocks with distinct adjustable color/grain effects and procedural edge markings:
 - **Kodak Portra 160, 400, and 800:** Fine grain, true orange mask normalization, and dual-track edge cadence.
 - **Kodak Ektar 100:** Ultra-vivid color negative emulsion with high-contrast edge branding.
+- **Fujifilm 200 and Kodak Pro Image 100:** 35mm only; vivid greens and balanced portrait color respectively.
+- **Kodak Gold 200:** 35mm and 120, with warm color and classic grain.
+- **Fujifilm Provia 100F and Velvia 50/100:** Color reversal stocks in 35mm and 120.
 - **Kodak Ektachrome E100:** Reversal slide film with neutral clear base and positive-only viewing.
 
 For complete physical standards (KS-1870 / ISO 1007), coordinate spaces, modification instructions, and how to add new stocks, see [docs/FILM_SPECS.md](docs/FILM_SPECS.md).

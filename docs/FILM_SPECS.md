@@ -137,6 +137,10 @@ When updating dimensions:
 
 Follow this checklist to introduce a new film stock (e.g., Kodak Tri-X 400, Fuji Velvia 50, Cinestill 800T):
 
+Film type availability is enforced by `supportsFilmFormat` in the roll editors and
+shared save/import/publication validation. Add packaging only for the film types
+listed in the profile; every 120 gate uses the same `"120"` packaging entry.
+
 ### Step 1: Create the Stock Profile JSON
 Create `public/assets/film-stocks/<stock-id>.json` (modeled after [`public/assets/film-stocks/portra-400.json`](file:///Users/zhangzimou/orca/workspaces/film_photo/infra/public/assets/film-stocks/portra-400.json) or [`public/assets/film-stocks/ektachrome-e100.json`](file:///Users/zhangzimou/orca/workspaces/film_photo/infra/public/assets/film-stocks/ektachrome-e100.json)):
 ```json
@@ -146,6 +150,7 @@ Create `public/assets/film-stocks/<stock-id>.json` (modeled after [`public/asset
   "type": "negative", // or "reversal"
   "process": "C-41",  // or "E-6", "B&W"
   "allowedViews": ["negative", "positive"],
+  "formats": ["135", "120"], // Use only ["135"] for 35mm-only stocks
   "base": {
     "substrateBase": "rgba(217, 119, 36, 0.88)", // Base film acetate color & opacity
     "rebateText": "rgba(70, 30, 10, 0.95)",       // Edge lettering color
