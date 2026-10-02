@@ -1,6 +1,7 @@
 import type { R2Bucket, R2ObjectBody } from '@cloudflare/workers-types';
 import type { CloudDraft, GalleryCatalog, GalleryRoll, PublishResult, UploadRequest } from '../src/cloud/contracts';
 import { validateBundle, validatePreferences, type DarkroomPreferences } from '../src/storage/rollRepository';
+import { applyShelfArrangement, validShelfArrangement, type ShelfArrangement } from '../src/utils/shelfLayout';
 import { CatalogState, CompletedUpload, DraftHead, DraftSnapshot, Env, HttpError, ImageRecord, Kind, PendingPublication, PendingUpload, kinds, requireValue, validId } from './types';
 import { signUpload, stagingKey, UPLOAD_LIFETIME_MS } from './signing';
 
@@ -36,6 +37,32 @@ async function commitCatalog(env: Env, next: CatalogState, etag?: string) {
 }
 export async function publicCatalog(env: Env) {
   return catalogValue(env, (await catalog(env)).value.catalogKey);
+}
+const arrangementKey = 'shelf/arrangement.json';
+async function readArrangement(env: Env): Promise<ShelfArrangement> {
+  return (await record<{ slots: ShelfArrangement }>(env.PRIVATE_BUCKET, arrangementKey))?.value.slots ?? {};
+}
+// Public rolls carry the owner's cubby, so visitors see the owner's arrangement.
+function placeRoll(roll: GalleryRoll, slots: ShelfArrangement): GalleryRoll {
+  const { shelfSlot: _, ...rest } = roll;
+  return Object.hasOwn(slots, roll.id) ? { ...rest, shelfSlot: slots[roll.id] } : rest;
+}
+export async function saveArrangement(env: Env, value: unknown): Promise<{ slots: ShelfArrangement }> {
+  const slots = (value as { slots?: unknown } | null)?.slots;
+  requireValue(validShelfArrangement(slots) && Object.keys(slots).every(validId), 'Invalid shelf arrangement.');
+  await env.PRIVATE_BUCKET.put(arrangementKey, JSON.stringify({ slots }), { httpMetadata: privateMetadata });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const state = await catalog(env), old = await catalogValue(env, state.value.catalogKey);
+    const rolls = old.rolls.map(roll => placeRoll(roll, slots));
+    if (rolls.every((roll, index) => roll.shelfSlot === old.rolls[index].shelfSlot)) return { slots };
+    const key = `catalog/versions/${crypto.randomUUID()}.json`;
+    const written = await env.PUBLIC_BUCKET.put(key, JSON.stringify({ version: 1, rolls } satisfies GalleryCatalog),
+      { httpMetadata: { contentType: 'application/json', cacheControl: 'private, no-store' }, onlyIf: { etagDoesNotMatch: '*' } });
+    if (!written) continue;
+    if (await commitCatalog(env, { ...state.value, catalogKey: key }, state.etag)) return { slots };
+    await env.PUBLIC_BUCKET.delete(key);
+  }
+  throw new HttpError(409, 'The shelf was saved, but the gallery changed concurrently. Move the roll again to update the gallery.');
 }
 const preferencesKey = 'preferences/darkroom.json';
 export async function readPreferences(env: Env): Promise<DarkroomPreferences> {
@@ -147,7 +174,9 @@ export async function listDrafts(env: Env) {
     for (const object of page.objects) drafts.push(await readDraft(env, object.key.slice('drafts/heads/'.length, -5)));
     cursor = page.truncated ? page.cursor : undefined;
   } while (cursor);
-  return { drafts: drafts.sort((a, b) => b.roll.updatedAt - a.roll.updatedAt) };
+  const slots = await readArrangement(env);
+  const rolls = applyShelfArrangement(drafts.map(draft => draft.roll), slots);
+  return { drafts: drafts.map((draft, index) => ({ ...draft, roll: rolls[index] })).sort((a, b) => b.roll.updatedAt - a.roll.updatedAt) };
 }
 function checkDraft(value: CloudDraft, id: string) {
   requireValue(value && typeof value === 'object' && value.roll && Array.isArray(value.frames) && value.frames.length > 0 && value.frames.length <= 585, 'Invalid private draft.');
@@ -306,7 +335,8 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
     if (next.nextFrame < draft.roll.frameIds.length) return { pending: true, continuation: pending.revision };
     const old = await catalogValue(env, pending.catalogKey);
     const key = `catalog/versions/${crypto.randomUUID()}.json`;
-    const version: GalleryCatalog = { version: 1, rolls: [...old.rolls.filter(roll => roll.id !== id), publication] };
+    const slots = await readArrangement(env);
+    const version: GalleryCatalog = { version: 1, rolls: [...old.rolls.filter(roll => roll.id !== id), publication].map(roll => placeRoll(roll, slots)) };
     const written = await env.PUBLIC_BUCKET.put(key, JSON.stringify(version),
       { httpMetadata: { contentType: 'application/json', cacheControl: 'private, no-store' }, onlyIf: { etagDoesNotMatch: '*' } });
     if (!written) throw new HttpError(409, 'Public catalog version conflicted.');
@@ -318,7 +348,7 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
       throw error;
     }
     await env.PRIVATE_BUCKET.delete(pendingKey).catch(() => {});
-    return publication;
+    return version.rolls.at(-1)!;
   } catch (error) {
     // A competing invocation of the SAME continuation may own the progress
     // CAS. Never delete objects that its successful publication may reference.

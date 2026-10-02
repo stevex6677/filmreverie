@@ -1,6 +1,6 @@
 import { FilmStockId, isFilmStockId, supportsFilmFormat } from '../data/filmStocks';
 import { FilmFormat, FrameSizing, filmLengthUsage, isFilmFormat } from '../data/filmFormats';
-import { reconcileShelfSlots } from '../utils/shelfLayout';
+import { applyShelfArrangement, reconcileShelfSlots, validShelfArrangement, type ShelfArrangement } from '../utils/shelfLayout';
 export interface SavedView {
   filmScale?: number;
   frameId: string; level: 'roll' | 'strip' | 'frame'; mode: 'negative' | 'positive'; brightness: number; magnification: number;
@@ -188,6 +188,21 @@ export class RollRepository {
         for (const roll of reconcileShelfSlots(existing.map(r => r.id === id ? updated : r))) {
           if (roll.id === id || existing.find(r => r.id === roll.id)?.shelfSlot !== roll.shelfSlot) store.put(roll);
         }
+      };
+      await done;
+      this.changed();
+    } finally { db.close(); }
+  }
+  /** Places saved rolls in one transaction, so a swap never exposes a shared cubby. */
+  async arrange(slots: ShelfArrangement) {
+    if (!validShelfArrangement(slots)) throw new Error('Invalid shelf arrangement.');
+    const db = await openRollDatabase(this.factory, this.name);
+    try {
+      const tx = db.transaction('rolls', 'readwrite'), done = complete(tx), store = tx.objectStore('rolls');
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const existing = request.result as StoredRoll[];
+        for (const roll of reconcileShelfSlots(applyShelfArrangement(existing, slots))) if (existing.find(r => r.id === roll.id)?.shelfSlot !== roll.shelfSlot) store.put(roll);
       };
       await done;
       this.changed();

@@ -1,19 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { StoredFrame, StoredRoll } from '../storage/rollRepository';
 import type { FilmShelfState, ShelfSelection } from '../utils/useFilmShelf';
-import { shelfPageCount } from '../utils/shelfLayout';
+import { reconcileShelfSlots, shelfPageCount } from '../utils/shelfLayout';
 import type { GalleryRoll } from './contracts';
 import { downloadGalleryImage, fetchGallery, openLiveGalleryRoll, type GalleryRuntime } from './galleryClient';
 
 // Gallery metadata contains no original image keys or visitor-local roll records.
-function shelfRoll(roll: GalleryRoll, shelfSlot: number): StoredRoll {
+function shelfRoll(roll: GalleryRoll): StoredRoll {
   return {
     id: roll.id, name: roll.name, camera: roll.camera, stockId: roll.stockId, format: roll.format,
     sizing: roll.sizing, filmStrength: roll.filmStrength,
     frameIds: roll.frames.map(frame => frame.id), coverId: roll.coverId,
-    createdAt: roll.publishedAt, updatedAt: roll.publishedAt, trashedAt: null, shelfSlot,
+    createdAt: roll.publishedAt, updatedAt: roll.publishedAt, trashedAt: null, shelfSlot: roll.shelfSlot,
   };
 }
+// The owner's cubbies; rolls published since the last arrangement fill free cubbies.
+const shelfRolls = (catalog: GalleryRoll[]) => reconcileShelfSlots(catalog.map(shelfRoll));
 
 export type PublicCoverFrame = Pick<StoredFrame, 'id' | 'width' | 'height' | 'rotation' | 'cropPosition'>;
 export type PublicCover = { blob: Blob; frame: PublicCoverFrame; rotation: number };
@@ -35,7 +37,7 @@ export function usePublishedShelf(visible: boolean): PublishedShelf {
   const [revision, setRevision] = useState(0);
   const [page, setPage] = useState(0), [selection, setSelection] = useState<ShelfSelection | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const rolls = catalog.map(shelfRoll);
+  const rolls = useMemo(() => shelfRolls(catalog), [catalog]);
   const pages = shelfPageCount(rolls);
   const keep = useCallback(() => { clearTimeout(timer.current); }, []);
   const close = useCallback(() => { keep(); setSelection(null); }, [keep]);
@@ -61,7 +63,7 @@ export function usePublishedShelf(visible: boolean): PublishedShelf {
       if (controller.signal.aborted) return;
       keep();
       setCatalog(result.rolls);
-      setPage(current => Math.min(current, shelfPageCount(result.rolls.map(shelfRoll)) - 1));
+      setPage(current => Math.min(current, shelfPageCount(shelfRolls(result.rolls)) - 1));
       setSelection(current => current && result.rolls.some(roll => roll.id === current.id) ? current : null);
     }).catch(failure => {
       keep();
