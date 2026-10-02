@@ -29,7 +29,7 @@ export class TouchGestures {
     const before = this.contacts.get(point.id); if (!before) return;
     const old = [...this.contacts.values()]; this.contacts.set(point.id, point);
     if (this.contacts.size >= 2) {
-      if (this.mode === 'room' || this.contacts.size !== 2) return;
+      if (this.contacts.size !== 2) return;
       const next = [...this.contacts.values()];
       const center = (p: Contact[]) => ({ id: -1, x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 });
       const distance = (p: Contact[]) => Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);

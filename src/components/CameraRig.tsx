@@ -10,7 +10,8 @@ import {
   TABLE_SURFACE_Y,
   RoomCameraPose,
   ROOM_EYE,
-  ROOM_CAMERA_FOV,
+  roomFov,
+  clampRoomZoom,
   roomLookTarget,
 } from "../utils/cameraBounds";
 import { TableAngle, TOP_DOWN, tableCameraPose, tablePointAt } from "../utils/tableCamera";
@@ -39,6 +40,7 @@ interface CameraRigProps {
   loupeInspection?: boolean;
   onUpdateRoomPose: (pose: Partial<RoomCameraPose>) => void;
   onCameraMotion?: (moving: boolean) => void;
+  onZoomRoom?: (factor: number, ndc: { x: number; y: number }, aspect: number) => void;
   onZoomAt?: (delta: number, x: number, z: number) => void;
   onAdjustInspectZoom?: (delta: number) => void;
   onAdjustInspectPan?: (dx: number, dz: number) => void;
@@ -71,6 +73,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
   loupeInspection = false,
   onUpdateRoomPose,
   onCameraMotion,
+  onZoomRoom,
   onZoomAt,
   onAdjustInspectZoom,
   onAdjustInspectPan,
@@ -164,11 +167,22 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     };
   }, []);
 
-  // Wheel zoom in inspect mode
+  // Wheel zoom: the table in inspect mode, the standing eye's lens in the room
   useEffect(() => {
     const canvas = gl.domElement;
     const handleWheel = (e: WheelEvent) => {
       if (loupeInspection) { e.preventDefault(); return; }
+      if (roomMode === "room") {
+        if (inputBlocked || shelfFocused || navigationBlocked) return;
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const ndc = { x: (e.clientX - rect.left) / rect.width * 2 - 1, y: -(e.clientY - rect.top) / rect.height * 2 + 1 };
+        // Trackpads send small deltas and mice large ones; scale exponentially.
+        const delta = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? rect.height : 1);
+        onZoomRoom?.(Math.exp(-Math.max(-120, Math.min(120, delta)) * .0025), ndc, rect.width / rect.height);
+        return;
+      }
+      if (e.target !== canvas) return;
       if (inputBlocked || roomMode !== "inspect" || (isTransitioning && !journeyTransition)) return;
       e.preventDefault();
       if (onAdjustInspectZoom) {
@@ -185,9 +199,12 @@ export const CameraRig: React.FC<CameraRigProps> = ({
       }
     };
 
+    // The room's cabinet overlay sits above the canvas; it zooms the room too.
+    const overlayWheel = (e: WheelEvent) => { if (e.target !== canvas && e.target instanceof Element && e.target.closest('.shelf-approach-target, .camera-shelf-target')) handleWheel(e); };
     canvas.addEventListener("wheel", handleWheel, { passive: false });
-    return () => canvas.removeEventListener("wheel", handleWheel);
-  }, [gl, roomMode, isTransitioning, inspectZoom, onAdjustInspectZoom, onZoomAt, camera, inputBlocked, loupeInspection]);
+    document.addEventListener("wheel", overlayWheel, { passive: false, capture: true });
+    return () => { canvas.removeEventListener("wheel", handleWheel); document.removeEventListener("wheel", overlayWheel, { capture: true }); };
+  }, [gl, roomMode, isTransitioning, inspectZoom, onAdjustInspectZoom, onZoomAt, camera, inputBlocked, loupeInspection, shelfFocused, navigationBlocked, onZoomRoom]);
 
   // Pointer drag for fixed-eye room look or table pan
   useEffect(() => {
@@ -249,7 +266,8 @@ export const CameraRig: React.FC<CameraRigProps> = ({
           maxDragDistRef.current = dist;
         }
 
-        const sensitivity = 0.0035;
+        // A zoomed lens turns proportionally less so the room still tracks the pointer.
+        const sensitivity = 0.0035 / clampRoomZoom(savedRoomPose.zoom);
         // Grab the room: its contents follow the pointer on both axes.
         const newYaw = dragStartRef.current.yaw + dx * sensitivity;
         const newPitch = dragStartRef.current.pitch - dy * sensitivity;
@@ -451,8 +469,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({
     perspective.near = inspecting ? Math.min(.04, effectiveZoom * .025) : .04;
     // Keep the entire cabinet reachable on a portrait screen from the same
     // standing eye. Widen the lens, never move the viewer through the room.
-    const roomFov = 2 * Math.atan(Math.tan(ROOM_CAMERA_FOV * Math.PI / 360) * Math.max(1, 1.6 / (size.width / size.height))) * 180 / Math.PI;
-    const desiredFov = inspecting ? 45 : shelfFocused ? cabinetFov : roomFov;
+    const desiredFov = inspecting ? 45 : shelfFocused ? cabinetFov : roomFov(size.width / size.height, savedRoomPose.zoom);
     perspective.fov = immediate ? desiredFov : shelfProgress !== null
       ? THREE.MathUtils.lerp(shelfFlight.current!.fov, desiredFov, shelfProgress)
       : THREE.MathUtils.lerp(perspective.fov, desiredFov, 1 - Math.exp(-delta * (journeyTransition ? 8.5 : 7)));

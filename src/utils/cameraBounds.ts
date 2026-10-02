@@ -2,6 +2,7 @@ export interface RoomCameraPose {
   yaw: number; // horizontal azimuth angle in radians
   pitch: number; // vertical elevation angle in radians
   distance: number; // distance from target in world units
+  zoom?: number; // lens magnification at the fixed eye; 1 is the standing view
 }
 
 export interface CameraBounds {
@@ -25,8 +26,31 @@ export const DEFAULT_CAMERA_BOUNDS: CameraBounds = {
   minDistance: 3.5, maxDistance: 3.5,
 };
 // Stand on the room's centerline, looking straight ahead at the film cabinet.
-export const DEFAULT_ROOM_POSE: RoomCameraPose = { yaw: 0, pitch: 0, distance: 3.5 };
+export const DEFAULT_ROOM_POSE: RoomCameraPose = { yaw: 0, pitch: 0, distance: 3.5, zoom: 1 };
 export const ROOM_CAMERA_FOV = 64;
+// Room zoom narrows or widens the lens; the viewer never walks through the room.
+export const MIN_ROOM_ZOOM = .8;
+export const MAX_ROOM_ZOOM = 4;
+export function clampRoomZoom(zoom: number | undefined): number {
+  return Number.isFinite(zoom) ? clamp(zoom!, MIN_ROOM_ZOOM, MAX_ROOM_ZOOM) : 1;
+}
+/** Vertical room FOV in degrees; portrait screens widen it to keep the cabinet reachable. */
+export function roomFov(aspect: number, zoom = 1): number {
+  const base = Math.tan(ROOM_CAMERA_FOV * Math.PI / 360) * Math.max(1, 1.6 / aspect);
+  return 2 * Math.atan(base / clampRoomZoom(zoom)) * 180 / Math.PI;
+}
+/**
+ * Zooms the room lens about a screen point (normalized device coordinates),
+ * turning the fixed eye so the direction under that point stays put.
+ */
+export function zoomRoomAt(pose: RoomCameraPose, zoom: number, ndc: { x: number; y: number }, aspect: number): RoomCameraPose {
+  const from = clampRoomZoom(pose.zoom), to = clampRoomZoom(zoom);
+  const halfV = (z: number) => Math.tan(roomFov(aspect, z) * Math.PI / 360);
+  const angle = (n: number, half: number) => Math.atan(n * half);
+  const yaw = pose.yaw - (angle(ndc.x, halfV(from) * aspect) - angle(ndc.x, halfV(to) * aspect));
+  const pitch = pose.pitch - (angle(ndc.y, halfV(from)) - angle(ndc.y, halfV(to)));
+  return clampRoomPose({ ...pose, yaw, pitch, zoom: to });
+}
 export const ROOM_EYE: [number, number, number] = [
   0,
   -.78 + 3.5 * Math.sin(.28),
@@ -73,6 +97,7 @@ export function clampRoomPose(
     yaw: Number.isFinite(pose.yaw) ? pose.yaw : DEFAULT_ROOM_POSE.yaw,
     pitch: clamp(Number.isFinite(pose.pitch) ? pose.pitch : DEFAULT_ROOM_POSE.pitch, bounds.minPitch, bounds.maxPitch),
     distance: DEFAULT_ROOM_POSE.distance,
+    zoom: clampRoomZoom(pose.zoom),
   };
 }
 

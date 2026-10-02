@@ -42,8 +42,14 @@ export function TouchNavigation({
     const emit = (intent: GestureIntent) => {
       const s = live.current;
       if (blocked || s.shelfFocused) return;
-      if (intent.type === 'look') { dispatch({ type: 'LOOK_ROOM', yaw: intent.dx*.0035, pitch: -intent.dy*.0035 }); return; }
+      if (intent.type === 'look') { const k = .0035 / (s.savedRoomPose.zoom ?? 1); dispatch({ type: 'LOOK_ROOM', yaw: intent.dx*k, pitch: -intent.dy*k }); return; }
       if (s.roomMode === 'room') {
+        if (intent.type === 'pinch') {
+          // Zoom the lens about the fingers' midpoint; accumulate before React renders.
+          const r = canvas.getBoundingClientRect();
+          const action: ViewerAction = { type: 'ZOOM_ROOM', factor: 1 / intent.ratio, ndc: { x: (intent.to.x - r.left) / r.width * 2 - 1, y: 1 - (intent.to.y - r.top) / r.height * 2 }, aspect: r.width / r.height };
+          live.current = viewerReducer(s, action); dispatch(action);
+        }
         if (intent.type === 'tap') {
           const target = roomHitTarget(camera, canvas, intent.x, intent.y, lightTableSize(s.roll));
           if (target) dispatch({ type: target === 'table' ? 'APPROACH_TABLE' : target === 'camera' ? 'APPROACH_CAMERA_SHELF' : 'APPROACH_SHELF' });

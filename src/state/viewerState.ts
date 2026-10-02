@@ -6,6 +6,8 @@ import {
   DEFAULT_ROOM_POSE,
   RoomCameraPose,
   clampRoomPose,
+  clampRoomZoom,
+  zoomRoomAt,
   DEFAULT_TABLE_BRIGHTNESS,
   TABLE_CENTER_Z,
   clampInspectZoom,
@@ -190,6 +192,7 @@ export type ViewerAction =
   | { type: "RETURN_TO_ROOM" }
   | { type: "SET_TRANSITIONING"; isTransitioning: boolean }
   | { type: "UPDATE_ROOM_POSE"; pose: Partial<RoomCameraPose> }
+  | { type: "ZOOM_ROOM"; factor: number; ndc?: { x: number; y: number }; aspect?: number }
   | { type: "SET_TABLE_ZOOM"; zoom: number }
   | { type: "ADJUST_TABLE_ZOOM"; delta: number }
   | { type: "SET_TABLE_PAN"; x: number; z: number }
@@ -538,6 +541,13 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
         ...state,
         savedRoomPose: clampRoomPose(updated),
       };
+    }
+
+    case "ZOOM_ROOM": {
+      if (!Number.isFinite(action.factor) || action.factor <= 0) return state;
+      const zoom = clampRoomZoom(state.savedRoomPose.zoom) * action.factor;
+      const aspect = action.aspect && Number.isFinite(action.aspect) && action.aspect > 0 ? action.aspect : state.viewportAspect;
+      return viewerReducer(state, { type: "UPDATE_ROOM_POSE", pose: zoomRoomAt(state.savedRoomPose, zoom, action.ndc ?? { x: 0, y: 0 }, aspect) });
     }
 
     case "SET_TABLE_ZOOM":
