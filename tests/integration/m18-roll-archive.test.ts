@@ -15,7 +15,7 @@ function bundle(id = 'roll'): RollBundle {
 describe('M18 portable roll backups', () => {
   it('preserves all bytes, metadata, ordering, trash and saved views across independent databases', async () => {
     const a = new RollRepository(new IDBFactory()), b = new RollRepository(new IDBFactory());
-    const one = bundle(), two = bundle('trash'); two.roll.trashedAt = 99; two.roll.view!.zoom = NaN;
+    const one = bundle(), two = bundle('trash'); one.roll.camera = 'Mamiya RZ67'; two.roll.trashedAt = 99; two.roll.view!.zoom = NaN;
     await a.save(one); await a.save(two);
     const archive = await exportRolls(a, ['roll','trash']), decoded = await decodeArchive(archive);
     expect(decoded[0].roll).toEqual((await a.read('roll')).roll);
@@ -29,6 +29,7 @@ describe('M18 portable roll backups', () => {
     expect(copy.frames[0].cropPosition).toEqual(one.frames[0].cropPosition);
     expect(copy.frames[0].rotation).toBe(90);
     expect(copy.roll.sizing).toBe('free');
+    expect(copy.roll.camera).toBe('Mamiya RZ67');
     for (const key of ['originalKey','viewingKey','thumbnailKey'] as const) {
       expect(await copy.blobs.find(x=>x.key===copy.frames[0][key])!.blob.arrayBuffer()).toEqual(await one.blobs.find(x=>x.key===one.frames[0][key])!.blob.arrayBuffer());
     }

@@ -36,6 +36,7 @@ function publicImage(value: unknown): value is GalleryImage {
 }
 export function validateGalleryRoll(value: unknown): asserts value is GalleryRoll {
   if (!object(value) || typeof value.id !== 'string' || !value.id || typeof value.revision !== 'string' || !value.revision || typeof value.name !== 'string' || !value.name.trim() || value.name.length > 120 || typeof value.stockId !== 'string' || !isFilmStockId(value.stockId) || typeof value.format !== 'string' || !isFilmFormat(value.format) || !Array.isArray(value.frames) || !value.frames.length || !Number.isFinite(value.publishedAt) || (value.sizing !== undefined && value.sizing !== 'fixed' && value.sizing !== 'free') || (value.filmStrength !== undefined && (typeof value.filmStrength !== 'number' || !Number.isFinite(value.filmStrength) || value.filmStrength < 0 || value.filmStrength > 100))) throw new Error('The gallery returned invalid roll metadata.');
+  if (value.camera !== undefined && (typeof value.camera !== 'string' || value.camera.length > 120)) throw new Error('The gallery returned invalid camera metadata.');
   const ids = new Set<string>();
   for (const frame of value.frames) {
     if (!object(frame) || typeof frame.id !== 'string' || !frame.id || ids.has(frame.id) || !positiveInteger(frame.width) || !positiveInteger(frame.height) || ![0, 90, 180, 270].includes(frame.rotation as number) || !publicImage(frame.viewing) || !publicImage(frame.thumbnail)) throw new Error('The gallery returned invalid image metadata.');

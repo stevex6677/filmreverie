@@ -16,6 +16,21 @@ async function finish(env: Env, id: string, updatedAt: number): Promise<GalleryR
 }
 
 describe('M21 private derivative boundary', () => {
+  it('saves, publishes and clears optional camera metadata while rejecting invalid values', async () => {
+    const { env, privateBucket } = environment(), { draft } = await draftFixture(env, privateBucket);
+    expect(draft.roll.camera).toBeUndefined();
+    for (const camera of [42, 'x'.repeat(121)]) {
+      await expect(saveDraft(env, draft.roll.id, { ...draft, roll: { ...draft.roll, camera: camera as string } })).rejects.toMatchObject({ status: 400 });
+    }
+    const saved = await saveDraft(env, draft.roll.id, { ...draft, roll: { ...draft.roll, camera: '  Nikon F3  ' } });
+    expect((await readDraft(env, saved.roll.id)).roll.camera).toBe('Nikon F3');
+    expect((await finish(env, saved.roll.id, saved.roll.updatedAt)).camera).toBe('Nikon F3');
+    expect((await publicCatalog(env)).rolls[0].camera).toBe('Nikon F3');
+    const cleared = await saveDraft(env, saved.roll.id, { ...saved, roll: { ...saved.roll, camera: '' } });
+    expect((await readDraft(env, saved.roll.id)).roll.camera).toBeUndefined();
+    expect((await finish(env, cleared.roll.id, cleared.roll.updatedAt)).camera).toBeUndefined();
+  });
+
   it('retains cloud Trash across reads, rejects publication until restored, and republishes restored rolls', async () => {
     const { env, privateBucket } = environment(), { draft } = await draftFixture(env, privateBucket);
     await finish(env, draft.roll.id, draft.roll.updatedAt);

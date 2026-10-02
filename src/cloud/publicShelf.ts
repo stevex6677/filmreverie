@@ -8,7 +8,7 @@ import { downloadGalleryImage, fetchGallery, openLiveGalleryRoll, type GalleryRu
 // Gallery metadata contains no original image keys or visitor-local roll records.
 function shelfRoll(roll: GalleryRoll, shelfSlot: number): StoredRoll {
   return {
-    id: roll.id, name: roll.name, stockId: roll.stockId, format: roll.format,
+    id: roll.id, name: roll.name, camera: roll.camera, stockId: roll.stockId, format: roll.format,
     sizing: roll.sizing, filmStrength: roll.filmStrength,
     frameIds: roll.frames.map(frame => frame.id), coverId: roll.coverId,
     createdAt: roll.publishedAt, updatedAt: roll.publishedAt, trashedAt: null, shelfSlot,

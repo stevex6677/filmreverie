@@ -36,6 +36,27 @@ async function expectThumbnailCaptionSeparated(page:Page) {
   await page.keyboard.press('Escape');
 }
 test.beforeEach(async({page})=>{await fs.mkdir(OUT,{recursive:true});await page.goto('/guest?mode=inspect&reduced_motion=true');});
+test('camera is optional and persists through creating, editing and clearing a roll', async ({page}) => {
+  await start(page,'Camera notes');
+  await details(page);
+  const camera=page.getByRole('textbox',{name:'Camera (optional)',exact:true});
+  await expect(camera).toHaveValue('');
+  await camera.fill('  Nikon F3  ');
+  await save(page);
+  expect((await dbRolls(page))[0].camera).toBe('Nikon F3');
+  await page.reload();
+  await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true');
+  await library(page);await editRoll(page,'Camera notes');
+  await expect(camera).toHaveValue('Nikon F3');
+  await camera.fill('Olympus OM-1');await save(page);
+  expect((await dbRolls(page))[0].camera).toBe('Olympus OM-1');
+  await library(page);await editRoll(page,'Camera notes');
+  await expect(camera).toHaveValue('Olympus OM-1');
+  await camera.fill('');await save(page);
+  expect((await dbRolls(page))[0].camera).toBeUndefined();
+  await library(page);await editRoll(page,'Camera notes');
+  await expect(camera).toHaveValue('');
+});
 test('M12 real import, editing, duplicate handling, switching and persistent Trash',async({page})=>{
   const requests:string[]=[];page.on('request',r=>{if(r.method()!=='GET'||r.postData())requests.push(r.url());});
   await start(page,'Harbor scans','135',[photo('scan10.png',600,400,1),photo('scan2.png'),{name:'bad.jpg',mimeType:'image/jpeg',buffer:Buffer.from('invalid')},photo('duplicate.png')]);

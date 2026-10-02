@@ -14,6 +14,7 @@ export interface StoredFrame {
   originalKey: string; viewingKey: string; thumbnailKey: string;
 }
 export interface StoredRoll {
+  camera?: string;
   shelfSlot?: number;
   sizing?: FrameSizing;
   filmStrength?: number;
@@ -51,6 +52,7 @@ const complete = (tx: IDBTransaction) => new Promise<void>((resolve, reject) => 
 export function validateBundle(bundle: { roll: StoredRoll; frames: Pick<StoredFrame, 'id' | 'rollId' | 'rotation' | 'width' | 'height' | 'cropPosition' | 'filmStrength'>[]; blobs?: BlobRecord[] }) {
   const { roll, frames } = bundle;
   if (!roll.name.trim() || roll.name.length > 120 || !isFilmStockId(roll.stockId) || !isFilmFormat(roll.format)) throw new Error('Enter a name, stock and valid film format.');
+  if (roll.camera !== undefined && (typeof roll.camera !== 'string' || roll.camera.length > 120)) throw new Error('Camera must be text of at most 120 characters.');
   if (!frames.length || new Set(roll.frameIds).size !== frames.length || roll.frameIds.length !== frames.length || !roll.frameIds.includes(roll.coverId)) throw new Error('Invalid frame membership or cover.');
   for (const frame of frames) if (frame.rollId !== roll.id || !roll.frameIds.includes(frame.id) || ![0,90,180,270].includes(frame.rotation)) throw new Error('Invalid frame metadata.');
   if (roll.sizing !== undefined && !['fixed','free'].includes(roll.sizing)) throw new Error('Invalid frame sizing.');
@@ -139,7 +141,7 @@ export class RollRepository {
             const others = options.insertFirstIfMissing
               ? reconcileShelfSlots(existing).map(r => r.trashedAt === null ? { ...r, shelfSlot: r.shelfSlot! + 1 } : r)
               : existing.filter(r => r.id !== bundle.roll.id);
-            const saved = { ...bundle.roll, shelfSlot: options.insertFirstIfMissing ? 0 : prior?.shelfSlot, name: bundle.roll.name.trim(), updatedAt: Date.now() };
+            const saved = { ...bundle.roll, shelfSlot: options.insertFirstIfMissing ? 0 : prior?.shelfSlot, name: bundle.roll.name.trim(), camera: bundle.roll.camera?.trim() || undefined, updatedAt: Date.now() };
             for (const roll of reconcileShelfSlots([...others, saved])) {
               if (roll.id === saved.id || existing.find(r => r.id === roll.id)?.shelfSlot !== roll.shelfSlot) tx.objectStore('rolls').put(roll);
             }

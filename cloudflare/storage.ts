@@ -189,7 +189,7 @@ export async function saveDraft(env: Env, id: string, value: CloudDraft): Promis
       viewingKey: images.viewing.key, thumbnailKey: images.thumbnail.key });
   }
   const roll = value.roll;
-  const draft: CloudDraft = { roll: { id, name: roll.name.trim(), stockId: roll.stockId, format: roll.format, sizing: roll.sizing,
+  const draft: CloudDraft = { roll: { id, name: roll.name.trim(), camera: roll.camera?.trim() || undefined, stockId: roll.stockId, format: roll.format, sizing: roll.sizing,
     filmStrength: roll.filmStrength, frameIds: [...roll.frameIds], coverId: roll.coverId, createdAt: previous?.roll.createdAt ?? roll.createdAt,
     updatedAt: Math.max(Date.now(), (previous?.roll.updatedAt ?? 0) + 1), trashedAt: roll.trashedAt, shelfSlot: roll.shelfSlot, view: roll.view }, frames };
   const snapshot = `drafts/snapshots/${id}/${crypto.randomUUID()}.json`;
@@ -227,7 +227,7 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
     const roll = draft.roll, revision = crypto.randomUUID();
     pending = { id, revision, snapshot: head.value.snapshot, updatedAt,
       catalogEtag: state.etag, catalogKey: state.value.catalogKey, generation: state.value.generations[id] ?? 0,
-      nextFrame: 0, publication: { id, revision, name: roll.name, stockId: roll.stockId, format: roll.format,
+      nextFrame: 0, publication: { id, revision, name: roll.name, camera: roll.camera, stockId: roll.stockId, format: roll.format,
         sizing: roll.sizing, filmStrength: roll.filmStrength, coverId: roll.coverId, frames: [], publishedAt: Date.now() } };
     const created = await env.PRIVATE_BUCKET.put(`publications/pending/${revision}.json`, JSON.stringify(pending),
       { httpMetadata: privateMetadata, onlyIf: { etagDoesNotMatch: '*' } });

@@ -9,6 +9,7 @@ export interface GalleryFrame {
   viewing: GalleryImage; thumbnail: GalleryImage;
 }
 export interface GalleryRoll {
+  camera?: string;
   id: string; revision: string; name: string; stockId: StoredRoll['stockId'];
   format: StoredRoll['format']; sizing?: StoredRoll['sizing']; filmStrength?: number;
   coverId: string; frames: GalleryFrame[]; publishedAt: number;
