@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { createServer, request as httpRequest, type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { ViteDevServer } from 'vite';
 import { devAdminBridge } from '../../scripts/dev-admin-bridge';
@@ -7,12 +7,28 @@ import { devAdminBridge } from '../../scripts/dev-admin-bridge';
 const appOrigin = 'https://filmreverie.app', photoOrigin = 'https://photos.filmreverie.app';
 const servers: ReturnType<typeof createServer>[] = [];
 afterEach(async () => { vi.restoreAllMocks(); for (const server of servers.splice(0)) await new Promise<void>(resolve => { server.close(() => resolve()); server.closeAllConnections(); }); });
-async function fixture() {
+async function fixture(hostname = '127.0.0.1', preview = false, loginEnabled = true) {
   let middleware!: (request: IncomingMessage, response: ServerResponse, next: () => void) => void;
   const server = createServer((request, response) => middleware(request, response, () => { response.statusCode = 404; response.end(); }));
   servers.push(server);
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-  const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  const port = (server.address() as AddressInfo).port;
+  const origin = `http://${hostname}:${port}`;
+  const request = async (path: string, init?: RequestInit): Promise<Response> => {
+    const bytes = init?.body ? Buffer.from(await new Response(init.body).arrayBuffer()) : undefined;
+    return new Promise((resolve, reject) => {
+      const req = httpRequest(`http://127.0.0.1:${port}${path}`, {
+        method: init?.method, headers: { ...Object.fromEntries(new Headers(init?.headers)), Host: `${hostname}:${port}` },
+      }, res => {
+        const chunks: Buffer[] = [], headers = new Headers();
+        for (let i = 0; i < res.rawHeaders.length; i += 2) headers.append(res.rawHeaders[i], res.rawHeaders[i + 1]);
+        res.on('data', chunk => chunks.push(chunk));
+        res.on('end', () => resolve(new Response(Buffer.concat(chunks), { status: res.statusCode, headers })));
+        res.on('error', reject);
+      });
+      req.on('error', reject); req.end(bytes);
+    });
+  };
   const fetcher = vi.fn<typeof fetch>(async (input, init) => {
     const url = String(input);
     if (url.endsWith('/api/dev-auth/exchange')) return Response.json({ token: 'secret-access-application-token', email: 'owner@example.com', expiresAt: Date.now() + 300_000 });
@@ -26,21 +42,49 @@ async function fixture() {
     if (init?.method === 'DELETE') return Response.json({ withdrawn: true });
     return Response.json({ email: 'owner@example.com' });
   });
-  const plugin = devAdminBridge({ origins: [origin], appOrigin, photoOrigin, fetcher });
-  (plugin.configureServer as (server: ViteDevServer) => unknown)({ httpServer: server, middlewares: { use: (value: typeof middleware) => { middleware = value; } } } as unknown as ViteDevServer);
+  const plugin = devAdminBridge({ origins: loginEnabled ? [hostname === '127.0.0.1' ? origin : `http://${hostname}:*`] : [], appOrigin, photoOrigin, fetcher });
+  ((preview ? plugin.configurePreviewServer : plugin.configureServer) as (server: ViteDevServer) => unknown)({ httpServer: server, middlewares: { use: (value: typeof middleware) => { middleware = value; } } } as unknown as ViteDevServer);
   async function start(returnTo = '/') {
-    const response = await fetch(`${origin}/api/dev-auth/login?returnTo=${encodeURIComponent(returnTo)}`, { redirect: 'manual' });
+    const response = await request(`/api/dev-auth/login?returnTo=${encodeURIComponent(returnTo)}`, { redirect: 'manual' });
     const destination = new URL(response.headers.get('location')!);
     return { pendingCookie: response.headers.get('set-cookie')!.split(';')[0], state: destination.searchParams.get('state')!, destination };
   }
   async function complete(login: Awaited<ReturnType<typeof start>>) {
-    const response = await fetch(`${origin}/api/dev-auth/callback?code=one-time-code&state=${login.state}`, { headers: { Cookie: login.pendingCookie }, redirect: 'manual' });
+    const response = await request(`/api/dev-auth/callback?code=one-time-code&state=${login.state}`, { headers: { Cookie: login.pendingCookie }, redirect: 'manual' });
     return { response, sessionCookie: response.headers.getSetCookie().find(value => value.startsWith('film_dev_session='))!.split(';')[0] };
   }
-  return { origin, fetcher, start, complete };
+  return { origin, fetcher, start, complete, request };
 }
 
 describe('real-gallery development bridge', () => {
+  it('does not require an admin callback allowlist to read public data on macbook', async () => {
+    const { request } = await fixture('macbook', false, false);
+    expect((await request('/api/gallery')).status).toBe(200);
+    expect((await request('/api/dev-images/rolls/test/viewing.jpg')).status).toBe(200);
+    expect((await request('/api/dev-auth/login')).status).toBe(403);
+  });
+  it.each([['macbook', false], ['macbook.tail2b1388.ts.net', true]] as const)('serves anonymous photos and authenticated mutations over HTTP on %s (preview: %s)', async (hostname, preview) => {
+    const { origin, request, start, complete, fetcher } = await fixture(hostname, preview);
+    const gallery = await (await request('/api/gallery')).json();
+    const photo = new URL(gallery.rolls[0].frames[0].viewing.url);
+    expect(photo.origin).toBe(origin);
+    expect((await request(photo.pathname)).headers.get('content-type')).toBe('image/jpeg');
+    expect((await request('/api/owner/session')).status).toBe(401);
+    expect((await request('/api/owner/uploads', { method: 'POST', headers: { Origin: origin } })).status).toBe(401);
+    expect((await request('/api/owner/publications/id', { method: 'DELETE', headers: { Origin: origin } })).status).toBe(401);
+    // Non-secure HTTP navigation lacks Sec-Fetch-* headers, including in static previews.
+    const navigation = await request('/api/owner/session', { headers: { Accept: 'text/html' }, redirect: 'manual' });
+    expect(navigation.status).toBe(303);
+    expect(new URL(navigation.headers.get('location')!).searchParams.get('redirect_uri')).toBe(`${origin}/api/dev-auth/callback`);
+    const { response, sessionCookie } = await complete(await start('/?mode=room#shelf'));
+    expect(response.headers.get('location')).toBe(`${origin}/?mode=room#shelf`);
+    expect(response.headers.getSetCookie()[0]).not.toContain('; Secure');
+    const headers = { Cookie: sessionCookie, Origin: origin };
+    expect((await request('/api/owner/uploads', { method: 'POST', headers, body: '{}' })).status).toBe(200);
+    expect((await request('/api/owner/publications/id', { method: 'DELETE', headers })).status).toBe(200);
+    expect(fetcher.mock.calls.at(-1)![1]!.headers).toMatchObject({ Cookie: 'CF_Authorization=secret-access-application-token' });
+    expect((await request('/api/owner/publications/id', { method: 'DELETE', headers: { ...headers, Origin: 'http://evil.test' } })).status).toBe(403);
+  });
   it('returns to the initiating dev URL, keeps Access tokens server-side, and binds login to state and a pending cookie', async () => {
     const { origin, fetcher, start, complete } = await fixture();
     expect((await fetch(`${origin}/api/owner/session`)).status).toBe(401);

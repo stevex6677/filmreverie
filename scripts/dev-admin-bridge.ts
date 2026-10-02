@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import type { Plugin } from 'vite';
+import type { Plugin, ViteDevServer, PreviewServer } from 'vite';
 import type { GalleryCatalog, UploadGrant } from '../src/cloud/contracts.ts';
+import { isDevOrigin, isDevOriginPattern, matchesDevOrigin } from '../cloudflare/devOrigins.ts';
 
 interface Options { origins: string[]; appOrigin: string; photoOrigin: string; fetcher?: typeof fetch }
 interface Pending { origin: string; verifier: string; state: string; returnPath: string; expiresAt: number }
@@ -28,20 +29,29 @@ function sameOrigin(request: IncomingMessage, origin: string) {
   }
 }
 
-/** Explicitly enabled local development backend. Credentials stay in server memory. */
+/** Local development backend. Credentials stay in server memory. */
 export function devAdminBridge(options: Options): Plugin {
   const fetcher = options.fetcher ?? fetch;
   const pending = new Map<string, Pending>(), sessions = new Map<string, Session>(), uploads = new Map<string, Upload>();
   const origins = options.origins.map(value => {
-    const url = new URL(value);
-    if (url.origin !== value || url.username || url.password || !(url.protocol === 'https:' || url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname))) throw new Error('Invalid dev admin origin');
+    if (!isDevOriginPattern(value)) throw new Error('Invalid dev admin origin');
     return value;
   });
   const sweep = () => {
     for (const records of [pending, sessions, uploads]) for (const [id, record] of records) if (record.expiresAt <= Date.now()) records.delete(id);
   };
-  const originFor = (request: IncomingMessage) => {
-    const matches = origins.filter(origin => new URL(origin).host === request.headers.host);
+  const originFor = (request: IncomingMessage, publicRead: boolean) => {
+    // Keep explicitly configured HTTPS reverse-proxy origins ahead of port patterns.
+    const exact = origins.filter(origin => !origin.endsWith(':*') && new URL(origin).host === request.headers.host);
+    const matches = exact.length ? exact : [...new Set(origins.map(pattern => {
+      const protocol = pattern.slice(0, pattern.indexOf(':'));
+      const origin = `${protocol}://${request.headers.host}`;
+      return matchesDevOrigin(origin, pattern) ? origin : undefined;
+    }).filter((origin): origin is string => !!origin))];
+    if (!matches.length && publicRead) {
+      const origin = `http://${request.headers.host}`;
+      if (isDevOrigin(origin)) return origin;
+    }
     if (matches.length !== 1) throw new BridgeError(403, 'This development host is not configured for admin login.');
     return matches[0];
   };
@@ -52,12 +62,16 @@ export function devAdminBridge(options: Options): Plugin {
   };
   async function handle(request: IncomingMessage, response: ServerResponse) {
     sweep();
-    const origin = originFor(request), url = new URL(request.url!, origin), path = url.pathname;
+    const path = new URL(request.url!, 'http://development.invalid').pathname;
+    const publicRead = request.method === 'GET' && (path === '/api/gallery' || path.startsWith('/api/dev-images/rolls/'));
+    const origin = originFor(request, publicRead), url = new URL(request.url!, origin);
     response.setHeader('Cache-Control', 'no-store'); response.setHeader('Referrer-Policy', 'no-referrer');
     response.setHeader('X-Content-Type-Options', 'nosniff');
     const redirect = (location: string) => { response.statusCode = 303; response.setHeader('Location', location); response.end(); };
     const json = (value: unknown) => { response.setHeader('Content-Type', 'application/json'); response.end(JSON.stringify(value)); };
-    if (request.method === 'GET' && (path === '/api/dev-auth/login' || path === '/api/owner/session' && request.headers['sec-fetch-mode'] === 'navigate' && request.headers['sec-fetch-dest'] === 'document')) {
+    const navigation = request.headers['sec-fetch-mode'] === 'navigate' && request.headers['sec-fetch-dest'] === 'document'
+      || !request.headers['sec-fetch-mode'] && request.headers.accept?.includes('text/html');
+    if (request.method === 'GET' && (path === '/api/dev-auth/login' || path === '/api/owner/session' && navigation)) {
       if (request.headers['sec-fetch-dest'] === 'iframe' || request.headers['sec-fetch-site'] === 'cross-site') throw new BridgeError(403, 'Open Admin Login from the development app.');
       const id = random(), state = random(), verifier = random();
       const returnUrl = new URL(url.searchParams.get('returnTo') ?? '/', origin);
@@ -135,19 +149,21 @@ export function devAdminBridge(options: Options): Plugin {
     }
     return send(response, upstream);
   }
+  const configure = (server: ViteDevServer | PreviewServer) => {
+    server.middlewares.use((request, response, next) => {
+      if (!request.url?.startsWith('/api/')) return next();
+      void handle(request, response).catch(error => {
+        if (response.headersSent) return response.destroy();
+        response.statusCode = error instanceof BridgeError ? error.status : 502;
+        response.setHeader('Content-Type', 'application/json');
+        response.end(JSON.stringify({ error: error instanceof BridgeError ? error.message : 'Cloud gallery is unavailable. Your saved work is retained.' }));
+      });
+    });
+    server.httpServer?.once('close', () => { pending.clear(); sessions.clear(); uploads.clear(); });
+  };
   return {
     name: 'film-photo-dev-admin', apply: 'serve',
-    configureServer(server) {
-      server.middlewares.use((request, response, next) => {
-        if (!request.url?.startsWith('/api/')) return next();
-        void handle(request, response).catch(error => {
-          if (response.headersSent) return response.destroy();
-          response.statusCode = error instanceof BridgeError ? error.status : 502;
-          response.setHeader('Content-Type', 'application/json');
-          response.end(JSON.stringify({ error: error instanceof BridgeError ? error.message : 'Cloud gallery is unavailable. Your saved work is retained.' }));
-        });
-      });
-      server.httpServer?.once('close', () => { pending.clear(); sessions.clear(); uploads.clear(); });
-    },
+    configureServer: configure,
+    configurePreviewServer: configure,
   };
 }

@@ -10,7 +10,7 @@ import { devAdminBridge } from '../../scripts/dev-admin-bridge';
 import type { ViteDevServer } from 'vite';
 
 async function listen(server: Server) {
-  await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
+  await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(0, '0.0.0.0', resolve); });
   return `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 }
 async function close(server: Server) {
@@ -42,6 +42,8 @@ function metadataBearingPhotograph(): Buffer {
 
 
 test('Admin publishes browser-derived JPEGs; a new gallery session sees only public images, while guest stays local', async ({ page, browser, baseURL }, info) => {
+  // This fixture uses its own origin, outside the configured storageState origin.
+  await page.addInitScript(() => localStorage.setItem('film-reverie-intro-tour', 'done'));
   const { env, privateBucket, publicBucket } = environment();
   const { token, jwk } = await ownerToken(env);
   const nativeFetch = globalThis.fetch, uploads: string[] = [];
@@ -60,10 +62,10 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
     }).catch(() => { response.writeHead(500); response.end(); });
   });
   try {
-    const origin = await listen(app);
+    const origin = (await listen(app)).replace('127.0.0.1', process.env.FILM_PHOTO_TEST_HOST ?? '127.0.0.1');
     const edgeOrigin = await listen(edge);
-    env.DEV_LOGIN_ORIGINS = origin;
-    const bridge = devAdminBridge({ origins: [origin], appOrigin: edgeOrigin, photoOrigin: env.PHOTO_ORIGIN,
+    env.DEV_LOGIN_ORIGINS = process.env.FILM_PHOTO_TEST_HOST === 'macbook' ? 'http://macbook:*' : origin;
+    const bridge = devAdminBridge({ origins: [env.DEV_LOGIN_ORIGINS], appOrigin: edgeOrigin, photoOrigin: env.PHOTO_ORIGIN,
       fetcher: async (input, init) => {
         const url = new URL(String(input));
         if (url.origin === edgeOrigin) {
@@ -96,6 +98,7 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
     };
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${origin}/?mode=room&reduced_motion=true`); await ready(page);
+    if (process.env.FILM_PHOTO_TEST_HOST === 'macbook') expect(await page.evaluate(() => window.isSecureContext)).toBe(false);
     await page.getByRole('button', { name: 'More options' }).click();
     await expect(page.getByRole('menu')).toContainText('Admin Login');
     await page.getByRole('menuitem', { name: 'Admin Login' }).click();
@@ -166,6 +169,8 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
     await page.getByRole('button', { name: 'Show saved roll Edited published photograph' }).click();
     await page.getByRole('button', { name: 'Delete Edited published photograph' }).click();
     await expect(editor).toHaveCount(0);
+    await expectShelfSummary(page, '0 saved rolls');
+    await expect.poll(async () => (await (await nativeFetch(`${origin}/api/gallery`)).json()).rolls.length).toBe(0);
     await page.reload(); await ready(page); await focusShelf(page);
     await shelfAction(page, 'Trash (1)');
     await page.getByRole('button', { name: 'Show saved roll Edited published photograph' }).click();
@@ -179,6 +184,7 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
 
     const fresh = await browser.newContext();
     try {
+      await fresh.addInitScript(() => localStorage.setItem('film-reverie-intro-tour', 'done'));
       const visitor = await fresh.newPage();
       await visitor.goto(`${origin}/?mode=room&reduced_motion=true`); await ready(visitor);
       await focusShelf(visitor);

@@ -31,7 +31,9 @@ function publicImage(value: unknown): value is GalleryImage {
   try {
     const url = new URL(value.url, globalThis.location?.href ?? 'https://gallery.invalid/');
     const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
-    return (url.protocol === 'https:' || (url.protocol === 'http:' && local)) && !url.username && !url.password && !url.hash && !/^\/api\/owner(?:\/|$)/.test(decodeURIComponent(url.pathname));
+    const privateProxy = ['macbook', 'macbook.tail2b1388.ts.net'].includes(url.hostname)
+      && url.origin === globalThis.location?.origin && url.pathname.startsWith('/api/dev-images/rolls/') && !url.search;
+    return (url.protocol === 'https:' || (url.protocol === 'http:' && (local || privateProxy))) && !url.username && !url.password && !url.hash && !/^\/api\/owner(?:\/|$)/.test(decodeURIComponent(url.pathname));
   } catch { return false; }
 }
 export function validateGalleryRoll(value: unknown): asserts value is GalleryRoll {

@@ -17,7 +17,7 @@ afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: 
 function fixture() {
   const root = mkdtempSync(path.join(tmpdir(), 'cloud-config-')); roots.push(root);
   mkdirSync(path.join(root, 'cloudflare'));
-  for (const name of ['wrangler.jsonc', 'deployment.example.json', 'private-cors.json', 'public-cors.json']) {
+  for (const name of ['wrangler.jsonc', 'deployment.example.json', 'private-cors.json', 'public-cors.json', 'devOrigins.ts']) {
     cpSync(path.join(projectRoot, 'cloudflare', name), path.join(root, 'cloudflare', name));
   }
   cpSync(path.join(projectRoot, 'wrangler.pages.jsonc'), path.join(root, 'wrangler.pages.jsonc'));
@@ -64,6 +64,7 @@ describe('private Cloudflare deployment configuration', () => {
     { privateBucket: settings.publicBucket }, { appOrigin: 'http://gallery.test' },
     { appOrigin: 'https://user:password@gallery.test' }, { zoneName: 'unrelated.test' },
     { devLoginOrigins: ['http://preview.internal.test'] }, { accessIssuer: 'https://attacker.test' },
+    { devLoginOrigins: ['https://attacker.test:*'] }, { devLoginOrigins: ['http://macbook.evil.test:*'] },
     { R2_SECRET_ACCESS_KEY: 'must-not-enter-config' },
   ])('rejects unsafe deployment settings: %j', change => {
     expect(() => validateDeployment({ ...settings, ...change })).toThrow();

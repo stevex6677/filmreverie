@@ -89,8 +89,8 @@ export async function completeUpload(env: Env, id: string) {
         || image.mime !== 'image/jpeg' || typeof image.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(image.sha256);
     })) throw new HttpError(400, 'Upload authorization metadata is invalid.');
   if (Date.now() >= pending.value.expiresAt) throw new HttpError(410, 'Upload authorization expired. Obtain a new upload grant.');
-  // Validate BOTH staged objects via HEAD before copying any body. The signed
-  // browser PUT binds the supplied digest; the Worker never computes a digest.
+  // Validate BOTH staged objects via HEAD before copying any body. R2 checks
+  // each grant's digest during the sealed PUT; the Worker never hashes images.
   for (const kind of kinds) {
     const expected = pending.value.request[kind];
     const staged = await env.PRIVATE_BUCKET.head(stagingKey(id, kind));
@@ -108,7 +108,7 @@ export async function completeUpload(env: Env, id: string) {
       if (!source || source.size !== expected.bytes || source.httpMetadata?.contentType !== expected.mime)
         throw new HttpError(400, 'Uploaded size or media type changed before sealing.');
       const key = `${prefix}${kind}`;
-      const written = await env.PRIVATE_BUCKET.put(key, source.body, { onlyIf: { etagDoesNotMatch: '*' },
+      const written = await env.PRIVATE_BUCKET.put(key, source.body, { onlyIf: { etagDoesNotMatch: '*' }, sha256: expected.sha256,
         httpMetadata: { contentType: 'image/jpeg', cacheControl: 'private, no-store' } });
       if (!written) throw new HttpError(409, 'A private photograph version conflicted.');
       images[kind] = { key, bytes: expected.bytes, sha256: expected.sha256, mime: 'image/jpeg' };

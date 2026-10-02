@@ -20,9 +20,22 @@ async function fixture(revision = 'revision-1') {
   });
   return { roll, viewing, thumbnail, fetcher };
 }
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('M21 account-free gallery boundaries', () => {
+  it('opens same-origin macbook HTTP proxy images without allowing unrelated insecure image URLs', async () => {
+    const { roll, fetcher } = await fixture();
+    vi.stubGlobal('location', new URL('http://macbook:5236/'));
+    roll.frames[0].viewing.url = 'http://macbook:5236/api/dev-images/rolls/revision-1/view.jpg';
+    roll.frames[0].thumbnail.url = 'http://macbook:5236/api/dev-images/rolls/revision-1/thumb.jpg';
+    const runtime = await openLiveGalleryRoll(roll, { fetcher });
+    expect(runtime.definition.frames).toHaveLength(1);
+    runtime.dispose();
+    for (const url of ['http://macbook:5211/api/dev-images/rolls/view.jpg', 'http://macbook:5236/api/owner/private', 'http://macbook:5236/photo.jpg', 'http://macbook.evil.test:5236/api/dev-images/rolls/view.jpg']) {
+      roll.frames[0].viewing.url = url;
+      expect(() => parseGalleryCatalog({ version: 1, rolls: [roll] })).toThrow(/image metadata/);
+    }
+  });
   it('loads metadata without image requests and opens only selected roll display derivatives', async () => {
     const { roll, fetcher } = await fixture();
     const catalogFetcher = vi.fn<typeof fetch>(async () => Response.json({ version: 1, rolls: [roll] }));

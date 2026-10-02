@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDevOriginPattern } from '../cloudflare/devOrigins.ts';
 
 export const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export interface Deployment {
@@ -17,12 +18,12 @@ export interface Deployment {
   devLoginOrigins: string[];
 }
 
-function origin(value: unknown, allowLoopback = false): boolean {
+function origin(value: unknown): boolean {
   if (typeof value !== 'string') return false;
   try {
     const url = new URL(value);
     return url.origin === value && !url.username && !url.password
-      && (url.protocol === 'https:' || allowLoopback && url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname));
+      && url.protocol === 'https:';
   } catch { return false; }
 }
 
@@ -42,7 +43,7 @@ export function validateDeployment(value: unknown): Deployment {
   if (hostname !== d.zoneName && !hostname.endsWith(`.${d.zoneName}`)) fail('zoneName (must contain appOrigin)');
   if (!new URL(d.accessIssuer).hostname.endsWith('.cloudflareaccess.com') || d.accessIssuer === 'https://your-team.cloudflareaccess.com') fail('accessIssuer');
   if (d.appOrigin === d.photoOrigin) fail('photoOrigin (must differ from appOrigin)');
-  if (!Array.isArray(d.devLoginOrigins) || !d.devLoginOrigins.every(value => origin(value, true))) fail('devLoginOrigins');
+  if (!Array.isArray(d.devLoginOrigins) || !d.devLoginOrigins.every(value => typeof value === 'string' && isDevOriginPattern(value))) fail('devLoginOrigins');
   const fields = ['accountId', 'workerName', 'zoneName', 'pagesProject', 'pagesBranch', 'appOrigin', 'photoOrigin', 'accessIssuer', 'privateBucket', 'publicBucket', 'devLoginOrigins'];
   if (Object.keys(value).some(key => !fields.includes(key))) throw new Error('Unknown deployment setting. Store credentials in Worker/GitHub secrets, not deployment JSON.');
   return d;

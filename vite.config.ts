@@ -2,12 +2,12 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { devAdminBridge } from './scripts/dev-admin-bridge.ts';
 import { readDeployment } from './scripts/cloudflare-config.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const host = process.env.FILM_PHOTO_HOST || "127.0.0.1";
+const host = process.env.FILM_PHOTO_HOST || "0.0.0.0";
 const allowedHosts = process.env.FILM_PHOTO_ALLOWED_HOSTS?.split(',') ?? [
   "macbook",
   "macbook.tail2b1388.ts.net",
@@ -18,9 +18,11 @@ const proxy = process.env.FILM_PHOTO_CLOUD_API
   ? { '/api': { target: process.env.FILM_PHOTO_CLOUD_API } }
   : undefined;
 
-const bridgeEnabled = process.env.FILM_PHOTO_DEV_ADMIN_BRIDGE === '1';
-export default defineConfig(({ command, isPreview }) => {
-  const deployment = bridgeEnabled && command === 'serve' && !isPreview ? readDeployment() : undefined;
+const bridgeEnabled = process.env.FILM_PHOTO_DEV_ADMIN_BRIDGE === '1'
+  || process.env.FILM_PHOTO_DEV_ADMIN_BRIDGE !== '0' && !process.env.FILM_PHOTO_CLOUD_API
+    && (process.env.CLOUDFLARE_DEPLOYMENT_CONFIG !== undefined || existsSync(path.join(__dirname, 'cloudflare/deployment.local.json')));
+export default defineConfig(({ command }) => {
+  const deployment = bridgeEnabled && command === 'serve' ? readDeployment() : undefined;
   return {
     plugins: [react(), ...(deployment ? [devAdminBridge({
       origins: process.env.FILM_PHOTO_DEV_ADMIN_ORIGINS?.split(',').filter(Boolean) ?? deployment.devLoginOrigins,
