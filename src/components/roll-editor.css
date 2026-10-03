@@ -4,9 +4,14 @@
   --editor-well: #e7e2d8; --editor-accent: #394b3b; --editor-brass: #8b7448; --editor-stage: #262723;
 }
 .roll-editor-dialog[open] { display:flex; flex-direction:column; width:min(1440px,96vw); height:94dvh; max-height:94dvh; overflow:hidden; padding:20px 26px 16px; }
-.roll-editor-dialog > header { flex:none; align-items:flex-end; padding-bottom:14px; border-bottom:1px solid var(--editor-line); }
-.roll-editor-summary { margin:4px 0 0; color:var(--editor-muted); font-size:13px; overflow-wrap:anywhere; }
-.roll-editor-workspace { flex:1; min-height:0; display:grid; grid-template-columns:clamp(250px,21vw,300px) minmax(0,1fr); gap:22px; padding-top:16px; }
+.roll-editor-dialog > header { flex:none; flex-wrap:nowrap; align-items:center; padding-bottom:10px; border-bottom:1px solid var(--editor-line); }
+/* Title and summary share one line so the frame stage keeps the height. */
+.roll-editor-dialog > header > div { min-width:0; display:flex; flex-wrap:wrap; align-items:baseline; column-gap:14px; }
+.roll-editor-dialog > header .library-eyebrow { flex-basis:100%; }
+.library-dialog.roll-editor-dialog h1 { font-size:28px; }
+.roll-editor-summary { margin:0; min-width:0; color:var(--editor-muted); font-size:13px; overflow-wrap:anywhere; }
+.library-dialog.roll-editor-dialog > header > button { flex:none; padding:6px 14px; }
+.roll-editor-workspace { flex:1; min-height:0; display:grid; grid-template-columns:clamp(250px,21vw,300px) minmax(0,1fr); gap:22px; padding-top:12px; }
 .roll-editor-workspace > section { min-width:0; min-height:0; }
 
 /* Details column */
@@ -57,19 +62,19 @@
 .choose-photos:hover { background:#26392a; }
 .frame-add { flex:none; min-height:28px; padding:3px 12px; border:1px solid #bfb7a7; border-radius:6px; background:#faf8f3; color:var(--editor-ink); font-size:12px; font-weight:600; }
 .frame-add:hover { background:var(--editor-well); }
-.frame-editor { flex:1; min-height:0; display:flex; flex-direction:column; gap:12px; }
+.frame-editor { flex:1; min-height:0; display:flex; flex-direction:column; gap:8px; }
 
 .frame-strip { flex:none; min-width:0; }
 .frame-strip-heading { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:4px; }
 .frame-strip-heading h3 { margin:0; font:600 11px/1.4 system-ui,sans-serif; letter-spacing:.16em; text-transform:uppercase; color:#71623e; }
 .frame-strip-heading h3 span { margin-left:4px; color:var(--editor-muted); letter-spacing:0; }
 .frame-strip-heading p { margin:0 0 0 auto; font-size:12px; color:var(--editor-muted); }
-.library-dialog .frame-editor .draft-photos { display:flex; gap:6px; overflow-x:auto; overscroll-behavior-x:contain; margin:0; padding:4px 2px 8px; max-height:none; scroll-snap-type:x proximity; }
+.library-dialog .frame-editor .draft-photos { display:flex; gap:6px; overflow-x:auto; overscroll-behavior-x:contain; margin:0; padding:2px 2px 4px; max-height:none; scroll-snap-type:x proximity; }
 .library-dialog .frame-editor .draft-photos li { flex:none; width:auto; display:block; padding:0; border:0; scroll-snap-align:start; }
-.library-dialog .frame-editor .draft-photos li > button { display:grid; justify-items:center; gap:1px; width:auto; min-width:76px; max-width:128px; padding:6px 6px 4px; border:1px solid transparent; border-radius:8px; background:transparent; text-align:center; }
+.library-dialog .frame-editor .draft-photos li > button { display:grid; justify-items:center; gap:1px; width:auto; min-width:76px; max-width:128px; padding:5px 6px 3px; border:1px solid transparent; border-radius:8px; background:transparent; text-align:center; }
 .library-dialog .frame-editor .draft-photos li > button:hover { background:var(--editor-well); }
 .library-dialog .frame-editor .draft-photos li > button[aria-pressed=true] { background:#e3dbc9; border-color:var(--editor-brass); }
-.library-dialog .frame-editor .draft-preview { width:auto; height:60px; max-height:none; border-radius:2px; box-shadow:0 1px 3px #0003; }
+.library-dialog .frame-editor .draft-preview { width:auto; height:54px; max-height:none; border-radius:2px; box-shadow:0 1px 3px #0003; }
 .library-dialog .frame-editor .draft-photos strong { margin-top:4px; font-size:11px; line-height:1.2; }
 .library-dialog .frame-editor .draft-photos span { margin:0; max-width:112px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; line-height:1.3; color:var(--editor-muted); }
 .library-dialog .frame-editor .draft-photos .photo-issue { color:#923b2d; font-weight:600; }
@@ -78,7 +83,11 @@
 .library-dialog .frame-editor .draft-photos .frame-badge.is-strength { right:3px; bottom:3px; font-variant-numeric:tabular-nums; }
 
 .frame-workbench { container:frame-workbench / inline-size; flex:1; min-height:0; display:flex; flex-direction:column; border:1px solid var(--editor-line); border-radius:10px; background:var(--editor-panel); overflow:hidden; }
-.frame-toolbar { flex:none; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 10px; border-bottom:1px solid var(--editor-line); }
+.frame-toolbar { flex:none; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 12px; padding:6px 8px; border-bottom:1px solid var(--editor-line); }
+.frame-toolbar .frame-title { position:absolute; width:1px; height:1px; margin:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.library-dialog .frame-toolbar .draft-actions { flex-wrap:nowrap; gap:4px; margin:0 0 0 auto; }
+.library-dialog .frame-toolbar .draft-actions button { min-height:32px; padding:4px 10px; border-radius:6px; font-size:12px; white-space:nowrap; }
+.library-dialog .frame-toolbar .frame-remove { color:#873f31; }
 .frame-tabs { display:flex; gap:2px; padding:3px; border-radius:8px; background:var(--editor-well); }
 .library-dialog .frame-tabs button { min-height:32px; padding:4px 16px; border:0; border-radius:6px; background:transparent; color:var(--editor-muted); font-weight:600; font-size:13px; }
 .library-dialog .frame-tabs button:hover { background:#dcd5c7; color:var(--editor-ink); }
@@ -90,17 +99,20 @@
 .frame-tool-panel { flex:1; min-height:0; display:grid; }
 .frame-tool-panel.is-film { grid-template-columns:minmax(0,1fr) clamp(240px,24vw,290px); }
 
-/* Crop tool: a large stage with its crop controls underneath. */
-.library-dialog .frame-tool-panel .crop-inspector { min-height:0; display:grid; grid-template:"head head" auto "stage stage" minmax(0,1fr) "notes controls" auto / minmax(0,1fr) auto; }
-.library-dialog .frame-tool-panel .crop-heading { grid-area:head; padding:8px 12px; color:var(--editor-muted); font-size:12px; }
-.library-dialog .frame-tool-panel .crop-heading button { padding:4px 10px; border-radius:6px; font-size:12px; }
-.library-dialog .frame-tool-panel .crop-stage { grid-area:stage; height:auto; min-height:0; margin:0; padding:18px; border-radius:0; background:var(--editor-stage); container-type:size; --crop-edge:calc(100cqh - 2px); }
+/* Crop tool: the stage fills the workbench; caption, notes and controls share one bar beneath it. */
+.library-dialog .frame-tool-panel .crop-inspector { min-height:0; display:grid; grid-template:"stage stage stage" minmax(0,1fr) "caption toggle controls" auto "notes toggle controls" auto / minmax(0,1fr) auto auto; column-gap:12px; padding-bottom:6px; }
+.library-dialog .frame-tool-panel .crop-heading { display:contents; }
+.library-dialog .frame-tool-panel .crop-heading span { grid-area:caption; align-self:end; padding:6px 0 0 12px; color:var(--editor-ink); font-size:12px; font-weight:600; }
+.library-dialog .frame-tool-panel .crop-heading button { grid-area:toggle; align-self:center; margin-top:6px; padding:4px 10px; border-radius:6px; font-size:12px; white-space:nowrap; }
+.library-dialog .frame-tool-panel .crop-stage { grid-area:stage; height:auto; min-height:0; margin:0; padding:10px; border-radius:0; background:var(--editor-stage); container-type:size; --crop-edge:calc(100cqh - 2px); }
 .library-dialog .frame-tool-panel .crop-composition { box-shadow:0 10px 30px #0007; }
 .library-dialog .frame-tool-panel .crop-gate { border-color:#fff9dfcc; box-shadow:0 0 0 999px #0d0e0cb8; }
-.library-dialog .frame-tool-panel .crop-notes { grid-area:notes; align-self:center; padding:8px 12px; }
+.library-dialog .frame-tool-panel .crop-notes { grid-area:notes; align-self:start; min-width:0; padding:0 0 0 12px; line-height:1.4; }
+/* The header summary and the Film effect tab already show the format and strength. */
+.library-dialog .frame-tool-panel .crop-notes :is(.crop-format-note,.crop-look-note) { display:none; }
+.library-dialog .frame-tool-panel .crop-notes p:not(.crop-format-note,.crop-look-note) ~ p::before { content:' '; }
 .library-dialog .frame-tool-panel .crop-notes p { display:inline; margin:0; font-size:12px; color:var(--editor-muted); }
-.library-dialog .frame-tool-panel .crop-notes p + p::before { content:' · '; }
-.library-dialog .frame-tool-panel .crop-position-controls { grid-area:controls; display:flex; align-items:center; gap:14px; margin:0; padding:8px 12px; }
+.library-dialog .frame-tool-panel .crop-position-controls { grid-area:controls; display:flex; align-items:center; gap:12px; margin:6px 0 0; padding:0 12px 0 0; }
 .library-dialog .frame-tool-panel .crop-position-controls label { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--editor-muted); }
 .library-dialog .frame-tool-panel .crop-position-controls input { width:120px; padding:0; border:0; background:none; accent-color:var(--editor-accent); }
 .library-dialog .frame-tool-panel .crop-position-controls button { padding:4px 10px; border-radius:6px; font-size:12px; }
@@ -142,16 +154,12 @@
 .library-dialog .film-strength-all { align-self:flex-start; padding:6px 12px; border-radius:6px; font-size:12px; }
 .film-effect-note { margin:auto 0 0; font-size:12px; line-height:1.45; color:var(--editor-muted); }
 
-/* Frame actions */
-.frame-details { flex:none; display:flex; align-items:center; justify-content:space-between; gap:8px 16px; flex-wrap:wrap; padding:10px 12px; border-top:1px solid var(--editor-line); }
-.frame-details h3 { min-width:0; margin:0; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Frame notices (unreadable or duplicate files) appear only when needed. */
+.frame-details { flex:none; display:flex; align-items:center; gap:8px 16px; flex-wrap:wrap; padding:6px 12px; border-bottom:1px solid var(--editor-line); background:#f1e6d6; }
 .frame-details > label { display:flex; align-items:center; gap:6px; font-size:13px; }
 .frame-details p[role=alert] { margin:0; color:#923b2d; font-size:13px; }
-.library-dialog .frame-details .draft-actions { gap:6px; }
-.library-dialog .frame-details .draft-actions button { padding:6px 12px; border-radius:6px; font-size:13px; }
-.library-dialog .frame-details .frame-remove { color:#873f31; }
 
-.roll-editor-dialog .import-footer { flex:none; position:static; margin-top:12px; padding:12px 0 0; }
+.roll-editor-dialog .import-footer { flex:none; position:static; margin-top:10px; padding:10px 0 0; }
 .roll-editor-dialog .delete-roll { margin-right:auto; color:#873f31; }
 .roll-editor-dialog .import-footer-actions { align-items:center; }
 .roll-editor-hint { margin:0 0 0 auto; min-width:0; color:var(--editor-muted); font-size:12px; text-align:right; }
@@ -170,10 +178,19 @@
   .film-effect-controls { gap:12px; padding:12px; }
   .film-effect-note { display:none; }
   .roll-drop { gap:8px; padding:20px; }
-  .frame-details { padding:6px 12px; }
+}
+/* A narrower workbench stacks the crop bar: caption and toggle, notes, then position controls. */
+@container frame-workbench (max-width:760px) {
+  .library-dialog .frame-tool-panel .crop-inspector { grid-template:"stage stage" minmax(0,1fr) "caption toggle" auto "notes notes" auto "controls controls" auto / minmax(0,1fr) auto; }
+  .library-dialog .frame-tool-panel .crop-heading span { align-self:center; padding-top:6px; }
+  .library-dialog .frame-tool-panel .crop-heading button { margin-right:12px; }
+  .library-dialog .frame-tool-panel .crop-notes { padding-right:12px; }
+  .library-dialog .frame-tool-panel .crop-position-controls { flex-wrap:wrap; padding-left:12px; }
 }
 /* A narrow workbench (portrait tablets, phones) puts the print above its controls. */
 @container frame-workbench (max-width:620px) {
+  .library-dialog .frame-toolbar .draft-actions { order:3; flex:1 1 100%; flex-wrap:wrap; margin:0; }
+  .library-dialog .frame-toolbar .draft-actions button { flex:1 1 auto; padding:4px 8px; }
   .frame-tool-panel.is-film { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(240px,1fr) auto; }
   .film-effect-controls { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); align-items:start; gap:14px 18px; overflow:visible; border-left:0; border-top:1px solid var(--editor-line); }
   .film-effect-note { grid-column:1/-1; margin:0; }
@@ -192,7 +209,6 @@
   .roll-drop p { font-size:13px; }
   .frame-workbench { height:auto; }
   .frame-toolbar { flex-wrap:wrap; }
-  .library-dialog .frame-tool-panel .crop-inspector { grid-template:"head" auto "stage" auto "notes" auto "controls" auto / minmax(0,1fr); }
   .library-dialog .frame-tool-panel .crop-stage, .film-look-stage { height:clamp(220px,46dvh,380px); padding:12px; }
   .library-dialog .frame-tool-panel .crop-position-controls { flex-wrap:wrap; }
   .library-dialog .frame-tool-panel .crop-position-controls label { flex:1 1 100%; }

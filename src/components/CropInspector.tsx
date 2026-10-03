@@ -31,7 +31,7 @@ export function CropInspector({photo,format,sizing='fixed',disabled=false,look,o
         {!final&&<div data-testid="crop-gate" className="crop-gate" style={{width:`${crop.x*100}%`,height:`${crop.y*100}%`}}/>}
       </div>
     </div>
-    <div className="crop-notes"><p>{rollFormatLabel(format,sizing)} · Originals stay unchanged</p>{look&&<p>Film effect {look.strength}</p>}
+    <div className="crop-notes"><p className="crop-format-note">{rollFormatLabel(format,sizing)} · Originals stay unchanged</p>{look&&<p className="crop-look-note">Film effect {look.strength}</p>}
     {movable?<><p>Aspect mismatch: edges will be cropped.</p><p>Drag the photograph to recompose within the crop.</p></>:<p>The whole photograph fits this format.</p>}</div>
     {movable&&<div className="crop-position-controls">
       {crop.x<1&&<label>Horizontal position<input aria-label="Horizontal crop position" type="range" min="-1" max="1" step="0.01" value={position.x} disabled={disabled} onChange={e=>change(Number(e.target.value),position.y)}/></label>}
