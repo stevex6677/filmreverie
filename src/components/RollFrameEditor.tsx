@@ -75,13 +75,24 @@ export function RollFrameEditor({ photos, onPhotos, selected, onSelect, cover, o
     {active && <div className="frame-workbench">
       <div className="frame-toolbar">
         <div role="tablist" aria-label="Frame tools" className="frame-tabs">{toolTab('crop', 'Crop')}{toolTab('film', 'Film effect')}</div>
+        <h3 className="frame-title">Frame {index + 1} · {active.filename}</h3>
+        <div className="draft-actions">
+          <button disabled={busy || index === 0} aria-label={`Move frame ${index + 1} earlier`} title="Move earlier" onClick={() => onMove(index, index - 1)}>← Earlier</button>
+          <button disabled={busy || index === photos.length - 1} aria-label={`Move frame ${index + 1} later`} title="Move later" onClick={() => onMove(index, index + 1)}>Later →</button>
+          <button disabled={busy || !active.frame} aria-label={`Rotate frame ${index + 1}`} title="Rotate 90°" onClick={() => changeFrame(active.id, frame => ({ ...frame, rotation: (frame.rotation + 90) % 360, cropPosition: frame.cropPosition ? { x: -frame.cropPosition.y, y: frame.cropPosition.x } : undefined }))}>↻ Rotate</button>
+          <button disabled={busy || !active.frame} aria-pressed={cover === active.id} onClick={() => onCover(active.id)}><span aria-hidden="true">★ </span>Cover</button>
+          <button className="frame-remove" disabled={busy} aria-label={`Remove ${active.filename}`} onClick={() => onRemove(active.id)}>Remove</button>
+        </div>
         <div className="frame-stepper">
           <button aria-label="Previous frame" disabled={index === 0} onClick={() => step(-1)}>‹</button>
           <span aria-live="polite">Frame {index + 1} <small>of {photos.length}</small></span>
           <button aria-label="Next frame" disabled={index === photos.length - 1} onClick={() => step(1)}>›</button>
         </div>
       </div>
-
+      {(active.error || active.duplicate) && <div className="frame-details">
+        {active.error && <p role="alert">{active.error}</p>}
+        {active.duplicate && <label><input type="checkbox" checked={active.keepDuplicate} disabled={busy} onChange={event => onPhotos(photos.map(p => p.id === active.id ? { ...p, keepDuplicate: event.target.checked } : p))}/>Keep this duplicate content</label>}
+      </div>}
       <div id="frame-tool-panel" role="tabpanel" aria-labelledby={`frame-tool-${tool}`} className={`frame-tool-panel is-${tool}`}>
         {tool === 'crop'
           ? <CropInspector key={active.id} photo={active} format={format} sizing={sizing} disabled={busy} look={{ stockId: stock, strength }} onChange={cropPosition => changeFrame(active.id, frame => ({ ...frame, cropPosition }))}/>
@@ -113,19 +124,6 @@ export function RollFrameEditor({ photos, onPhotos, selected, onSelect, cover, o
               <p className="film-effect-note">{getFilmStock(stock).displayName} · {compare === 'split' ? 'Drag across the photograph to move the divider.' : compare === 'film' ? 'Press and hold the photograph to see the original.' : 'Showing the photograph without the film effect.'}</p>
             </div>
           </>}
-      </div>
-
-      <div className="frame-details">
-        <h3>Frame {index + 1} · {active.filename}</h3>
-        {active.error && <p role="alert">{active.error}</p>}
-        {active.duplicate && <label><input type="checkbox" checked={active.keepDuplicate} disabled={busy} onChange={event => onPhotos(photos.map(p => p.id === active.id ? { ...p, keepDuplicate: event.target.checked } : p))}/>Keep this duplicate content</label>}
-        <div className="draft-actions">
-          <button disabled={busy || index === 0} aria-label={`Move frame ${index + 1} earlier`} onClick={() => onMove(index, index - 1)}>← Earlier</button>
-          <button disabled={busy || index === photos.length - 1} aria-label={`Move frame ${index + 1} later`} onClick={() => onMove(index, index + 1)}>Later →</button>
-          <button disabled={busy || !active.frame} aria-label={`Rotate frame ${index + 1}`} onClick={() => changeFrame(active.id, frame => ({ ...frame, rotation: (frame.rotation + 90) % 360, cropPosition: frame.cropPosition ? { x: -frame.cropPosition.y, y: frame.cropPosition.x } : undefined }))}>↻ Rotate 90°</button>
-          <button disabled={busy || !active.frame} aria-pressed={cover === active.id} onClick={() => onCover(active.id)}><span aria-hidden="true">★ </span>Cover</button>
-          <button className="frame-remove" disabled={busy} aria-label={`Remove ${active.filename}`} onClick={() => onRemove(active.id)}>Remove</button>
-        </div>
       </div>
     </div>}
   </div>;
