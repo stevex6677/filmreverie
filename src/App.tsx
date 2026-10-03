@@ -698,7 +698,11 @@ export function App() {
       </Suspense>}
       {state.cameraDisplay && <CameraDisplayView id={state.cameraDisplay} onBack={closeCamera} onNavigate={openCamera} reducedMotion={isReducedMotion} />}
       {libraryError && <div className="library-notice" role="alert">{libraryError}<button onClick={() => { setLibraryError(""); openShelf(); }}>Open shelf</button></div>}
-      {editorOpen && <RollEditor publication={!isGuest} repository={repository} onDelete={deleteRoll} editId={editingRollId} onClose={() => { setEditorOpen(false); setEditingRollId(undefined); }} onOpen={openSaved} />}
+      {editorOpen && <RollEditor publication={!isGuest} repository={repository} onDelete={deleteRoll} editId={editingRollId} onClose={() => { setEditorOpen(false); setEditingRollId(undefined); }} onOpen={openSaved} onSaved={async id => {
+        // Keep the current table's data fresh without changing rooms. Otherwise a
+        // later saved view could restore the old stock over the user's edits.
+        if (id === stateRef.current.roll.rollId) await openSaved(id, stateRef.current.roomMode);
+      }} />}
       {isGuest && guestWelcome && <GuestWelcome onClose={() => { try { localStorage.setItem(guestWelcomeKey, 'done'); } catch { /* Browsing can continue when localStorage is blocked. */ } setGuestWelcome(false); }} />}
     </main>
       {touring && <IntroTour stage={tourStage} onClose={endTour} createHref="/guest?welcome=1" />}

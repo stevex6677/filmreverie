@@ -71,8 +71,8 @@ export function photograph(): Uint8Array {
   }
   return new Uint8Array(jpeg.encode({ width: 8, height: 4, data: pixels }, 95).data);
 }
-export async function uploadFixture(env: Env, privateBucket: MemoryBucket) {
-  const bytes = photograph(), request = {} as UploadRequest;
+export async function uploadFixture(env: Env, privateBucket: MemoryBucket, bytes = photograph()) {
+  const request = {} as UploadRequest;
   for (const kind of kinds) request[kind] = { bytes: bytes.length, sha256: await hash(bytes), mime: 'image/jpeg' };
   const grant = await grantUpload(env, request);
   for (const kind of kinds) await privateBucket.put(`staging/${grant.id}/${kind}`, bytes, { httpMetadata: { contentType: 'image/jpeg' } });

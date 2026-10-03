@@ -305,6 +305,8 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
   }
   // A single invocation streams at most six frames (36 R2 image operations),
   // leaving room for metadata, the immutable catalog and the CAS pointer.
+  const old = await catalogValue(env, pending.catalogKey);
+  const previousFrames = new Map(old.rolls.find(roll => roll.id === id)?.frames.map(frame => [frame.id, frame]));
   const publication: GalleryRoll = { ...pending.publication, frames: [...pending.publication.frames] };
   try {
     for (let index = pending.nextFrame; index < Math.min(draft.roll.frameIds.length, pending.nextFrame + publicationBatch); index++) {
@@ -316,7 +318,15 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
         ...(frame.filmStrength !== undefined ? { filmStrength: frame.filmStrength } : {}),
         viewing: null!, thumbnail: null! };
       for (const kind of kinds) {
-        const image = upload.images[kind], source = await env.PRIVATE_BUCKET.get(image.key);
+        const image = upload.images[kind], prior = previousFrames.get(frame.id)?.[kind];
+        // Only reuse trusted committed URLs in this roll's active generation.
+        // Crops, rotation and film effects are metadata; their JPEG bytes are unchanged.
+        if (prior && prior.sha256 === image.sha256 && prior.bytes === image.bytes
+          && prior.url.startsWith(`${env.PHOTO_ORIGIN}/rolls/${id}/${pending.generation}/`)) {
+          publicFrame[kind] = prior;
+          continue;
+        }
+        const source = await env.PRIVATE_BUCKET.get(image.key);
         if (!source || source.size !== image.bytes || source.httpMetadata?.contentType !== 'image/jpeg')
           throw new HttpError(409, 'A sealed derivative is unavailable or has changed. The previous publication is unchanged.');
         const key = `${prefix}${frame.id}/${kind}.jpg`;
@@ -333,7 +343,6 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
     if (!advanced) throw new HttpError(409, 'Publication continuation is already being processed.');
     pending = next; pendingEtag = advanced.etag;
     if (next.nextFrame < draft.roll.frameIds.length) return { pending: true, continuation: pending.revision };
-    const old = await catalogValue(env, pending.catalogKey);
     const key = `catalog/versions/${crypto.randomUUID()}.json`;
     const slots = await readArrangement(env);
     const version: GalleryCatalog = { version: 1, rolls: [...old.rolls.filter(roll => roll.id !== id), publication].map(roll => placeRoll(roll, slots)) };

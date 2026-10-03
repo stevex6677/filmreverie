@@ -129,6 +129,9 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
     await editor.getByLabel('Choose photographs', { exact: true }).setInputFiles({ name: 'private-location.jpg', mimeType: 'image/jpeg', buffer: original });
     await expect(editor.getByText('Processed 1 / 1', { exact: true })).toBeVisible();
     await editor.getByLabel('Roll name', { exact: true }).fill('Browser-published photograph');
+    await expect(editor.getByText('Photographs uploaded. Ready to save.', { exact: true })).toBeVisible();
+    expect(uploads).toHaveLength(2);
+    expect((await (await nativeFetch(`${origin}/api/gallery`)).json()).rolls).toHaveLength(0);
     await editor.getByRole('button', { name: 'Save and open' }).click();
     await expect(editor).toHaveCount(0);
     expect(uploads).toHaveLength(2);
@@ -154,7 +157,7 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
     await authenticated;
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-    await editor.getByRole('button', { name: 'Save and open' }).click();
+    await editor.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(editor).toHaveCount(0);
     expect(uploads).toHaveLength(2);
     await focusShelf(page);

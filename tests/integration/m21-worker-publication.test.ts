@@ -134,15 +134,17 @@ describe('M21 atomic drafts, public catalog and withdrawal', () => {
     const { env, privateBucket, publicBucket } = environment(), { draft } = await draftFixture(env, privateBucket);
     const first = await finish(env, draft.roll.id, draft.roll.updatedAt);
     const before = [...publicBucket.objects.keys()].sort();
+    const newFrame = { ...draft.frames[0], id: webcrypto.randomUUID() };
+    const changed = await saveDraft(env, draft.roll.id, { roll: { ...draft.roll, frameIds: [newFrame.id], coverId: newFrame.id }, frames: [newFrame] });
     publicBucket.beforePut = async key => { if (key.endsWith('thumbnail.jpg')) throw new Error('Storage unavailable'); };
-    await expect(finish(env, draft.roll.id, draft.roll.updatedAt)).rejects.toThrow('Storage unavailable');
+    await expect(finish(env, draft.roll.id, changed.roll.updatedAt)).rejects.toThrow('Storage unavailable');
     expect(await publicCatalog(env)).toEqual({ version: 1, rolls: [first] });
     expect([...publicBucket.objects.keys()].sort()).toEqual(before);
     const gate = barrier(); let pause = true;
     publicBucket.beforePut = async key => { if (pause && key.endsWith('viewing.jpg')) { pause = false; await gate.block(); } };
-    const loser = finish(env, draft.roll.id, draft.roll.updatedAt).catch(error => error);
+    const loser = finish(env, draft.roll.id, changed.roll.updatedAt).catch(error => error);
     await gate.entered;
-    const winner = await finish(env, draft.roll.id, draft.roll.updatedAt);
+    const winner = await finish(env, draft.roll.id, changed.roll.updatedAt);
     gate.release();
     expect(await loser).toMatchObject({ status: 409 });
     expect(await publicCatalog(env)).toEqual({ version: 1, rolls: [winner] });
@@ -184,20 +186,22 @@ describe('M21 atomic drafts, public catalog and withdrawal', () => {
   it('invalidates in-flight publications, retains a tombstone on delete failure and isolates later generations', async () => {
     const { env, privateBucket, publicBucket } = environment(), { draft } = await draftFixture(env, privateBucket);
     await finish(env, draft.roll.id, draft.roll.updatedAt);
+    const newFrame = { ...draft.frames[0], id: webcrypto.randomUUID() };
+    const changed = await saveDraft(env, draft.roll.id, { roll: { ...draft.roll, frameIds: [newFrame.id], coverId: newFrame.id }, frames: [newFrame] });
     const gate = barrier(); let pause = true;
     publicBucket.beforePut = async key => { if (pause && key.endsWith('viewing.jpg')) { pause = false; await gate.block(); } };
-    const publication = finish(env, draft.roll.id, draft.roll.updatedAt).catch(error => error);
+    const publication = finish(env, draft.roll.id, changed.roll.updatedAt).catch(error => error);
     await gate.entered;
     publicBucket.beforeDelete = async () => { throw new Error('Delete unavailable'); };
     await expect(withdrawPublication(env, draft.roll.id)).rejects.toThrow('Delete unavailable');
     expect(await publicCatalog(env)).toEqual({ version: 1, rolls: [] });
-    await expect(finish(env, draft.roll.id, draft.roll.updatedAt)).rejects.toMatchObject({ status: 409 });
+    await expect(finish(env, draft.roll.id, changed.roll.updatedAt)).rejects.toMatchObject({ status: 409 });
     publicBucket.beforeDelete = undefined;
     while (!(await withdrawPublication(env, draft.roll.id)).withdrawn) { /* bounded cleanup */ }
     gate.release();
     expect(await publication).toMatchObject({ status: 409 });
     expect([...publicBucket.objects.keys()].filter(key => key.startsWith('rolls/'))).toEqual([]);
-    const next = await finish(env, draft.roll.id, draft.roll.updatedAt);
+    const next = await finish(env, draft.roll.id, changed.roll.updatedAt);
     expect(next.frames[0].viewing.url).toContain(`/rolls/${draft.roll.id}/1/`);
   });
   it('resumes withdrawal over multiple requests without touching a later generation', async () => {
@@ -231,4 +235,46 @@ describe('M21 atomic drafts, public catalog and withdrawal', () => {
     expect([...publicBucket.objects.keys()].filter(key => key.startsWith(`rolls/${id}/`))).toEqual([newer]);
     expect(publicBucket.objects.has(oldKey)).toBe(false);
   });
+});
+
+it('publishes crop and title edits without copying unchanged images, then withdraws reused images', async () => {
+  const { env, privateBucket, publicBucket } = environment(), { draft } = await draftFixture(env, privateBucket);
+  const first = await finish(env, draft.roll.id, draft.roll.updatedAt);
+  const writes: string[] = [];
+  publicBucket.beforePut = async key => { if(key.startsWith('rolls/'))writes.push(key); };
+  const saved = await saveDraft(env, draft.roll.id, { ...draft, roll: { ...draft.roll, name: 'New title' },
+    frames: [{ ...draft.frames[0], rotation: 90, cropPosition: { x: .5, y: 0 }, filmStrength: 20 }] });
+  const edited = await finish(env, saved.roll.id, saved.roll.updatedAt);
+  expect(writes).toEqual([]);
+  expect(edited.name).toBe('New title');
+  expect(edited.frames[0]).toMatchObject({ rotation: 90, cropPosition: { x: .5, y: 0 }, filmStrength: 20,
+    viewing: first.frames[0].viewing, thumbnail: first.frames[0].thumbnail });
+  while (!(await withdrawPublication(env, saved.roll.id)).withdrawn) { /* bounded cleanup */ }
+  expect([...publicBucket.objects.keys()].filter(key => key.startsWith('rolls/'))).toEqual([]);
+  const restored = await finish(env, saved.roll.id, saved.roll.updatedAt);
+  expect(writes).toHaveLength(2);
+  expect(restored.frames[0].viewing.url).not.toBe(first.frames[0].viewing.url);
+});
+
+it('copies only changed image bytes and keeps reused images intact if catalog commit fails', async () => {
+  const { env, privateBucket, publicBucket } = environment(), { draft } = await draftFixture(env, privateBucket);
+  const second = { ...draft.frames[0], id: webcrypto.randomUUID() };
+  const two = await saveDraft(env, draft.roll.id, { roll: { ...draft.roll, frameIds: [...draft.roll.frameIds, second.id] }, frames: [...draft.frames, second] });
+  const first = await finish(env, two.roll.id, two.roll.updatedAt);
+  const replacement = await uploadFixture(env, privateBucket, new Uint8Array([...photograph(), 0]));
+  const changed = await saveDraft(env, two.roll.id, { ...two, frames: [two.frames[0], { ...second,
+    uploadId: replacement.grant.id, viewingSha256: replacement.request.viewing.sha256 }] });
+  const writes: string[] = [];
+  publicBucket.beforePut = async key => { if(key.startsWith('rolls/'))writes.push(key); };
+  privateBucket.beforePut = async key => { if(key==='catalog/head.json')throw new Error('Catalog unavailable'); };
+  await expect(finish(env, changed.roll.id, changed.roll.updatedAt)).rejects.toThrow('Catalog unavailable');
+  expect(writes).toHaveLength(2);
+  expect((await publicCatalog(env)).rolls).toEqual([first]);
+  for(const frame of first.frames)for(const kind of kinds)expect(publicBucket.objects.has(new URL(frame[kind].url).pathname.slice(1))).toBe(true);
+  privateBucket.beforePut = undefined; writes.length = 0;
+  const edited = await finish(env, changed.roll.id, changed.roll.updatedAt);
+  expect(writes).toHaveLength(2);
+  expect(edited.frames[0].viewing).toEqual(first.frames[0].viewing);
+  expect(edited.frames[1].viewing.sha256).toBe(replacement.request.viewing.sha256);
+  expect(edited.frames[1].viewing.url).not.toBe(first.frames[1].viewing.url);
 });

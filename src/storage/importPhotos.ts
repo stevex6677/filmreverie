@@ -1,7 +1,8 @@
 import { BlobRecord, StoredFrame } from './rollRepository';
 import { normalizeNativeImage } from './nativeImage';
 import { FILM_LENGTH_MM, FRAME_GAP_MM } from '../data/filmFormats';
-import { generateUuid, sha256Hex } from './crypto';
+import { generateUuid } from './crypto';
+import { processImage } from './processImage';
 // Even zero-width frames cannot fit more advances than this. Actual capacity is measured after sizing.
 export const IMPORT_LIMITS = { files: Math.ceil(FILM_LENGTH_MM['135'] / FRAME_GAP_MM), bytes: 40 * 1024 * 1024, pixels: 40_000_000, batchBytes: 300 * 1024 * 1024, viewingEdge: 2048, thumbnailEdge: 256, concurrency: 1 };
 export interface DraftPhoto { id: string; filename: string; frame?: StoredFrame; blobs: BlobRecord[]; preview?: string; reviewPreview?: string; error?: string; notice?: string; duplicate: boolean; keepDuplicate: boolean }
@@ -24,14 +25,6 @@ export function imageHeader(bytes: Uint8Array): { mime: string; width: number; h
   }
   throw new Error('Unreadable or unsupported file. Choose a JPEG or PNG positive scan.');
 }
-function canvasBlob(canvas: HTMLCanvasElement) { return new Promise<Blob>((resolve,reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Image conversion failed.')), 'image/jpeg', .92)); }
-async function derivative(bitmap: ImageBitmap, edge: number) {
-  const ratio = Math.min(1, edge / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(bitmap.width * ratio)); canvas.height = Math.max(1, Math.round(bitmap.height * ratio));
-  const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('Image processing is unavailable.');
-  ctx.fillStyle = '#000'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
-  try { return await canvasBlob(canvas); } finally { canvas.width = canvas.height = 1; }
-}
 export async function processPhotos(files: readonly File[], rollId: string, signal: AbortSignal, progress: (done: number, total: number) => void, existing: readonly DraftPhoto[] = []): Promise<DraftPhoto[]> {
   if (!files.length || files.length + existing.length > IMPORT_LIMITS.files) throw new Error(`Choose between 1 and ${IMPORT_LIMITS.files} photographs per draft; the final limit depends on film length.`);
   if (files.reduce((sum,f) => sum + f.size,0) + existing.reduce((sum,p)=>sum+(p.blobs.find(b=>b.key===p.frame?.originalKey)?.blob.size??0),0) > IMPORT_LIMITS.batchBytes) throw new Error('This draft would exceed 300 MB. Choose a smaller batch.');
@@ -48,17 +41,12 @@ export async function processPhotos(files: readonly File[], rollId: string, sign
         photo.notice=normalized.notice;photo.filename=source.name;
         const bytes = source===file?inputBytes:new Uint8Array(await source.arrayBuffer()), header = imageHeader(bytes);
         if (!header.width || !header.height || header.width * header.height > IMPORT_LIMITS.pixels) throw new Error('Image exceeds the 40 megapixel limit or has invalid dimensions.');
-        const hash = await sha256Hex(bytes);
-        // Chrome applies EXIF orientation here once. Derived JPEGs contain no EXIF orientation.
-        const bitmap = await createImageBitmap(new Blob([bytes], { type: header.mime }), { imageOrientation: 'from-image' });
-        try {
-          signal.throwIfAborted();
-          const viewing = await derivative(bitmap, IMPORT_LIMITS.viewingEdge), thumbnail = await derivative(bitmap, IMPORT_LIMITS.thumbnailEdge);
-          photo.frame = { id, rollId, filename: source.name, mime: header.mime, width: bitmap.width, height: bitmap.height, rotation: 0, hash, originalKey: `${id}:original`, viewingKey: `${id}:view`, thumbnailKey: `${id}:thumb` };
-          // Store self-contained original bytes, independent of the picker handle.
-          photo.blobs = [{ key: photo.frame.originalKey, blob: new Blob([bytes], {type:header.mime}) }, { key: photo.frame.viewingKey, blob: viewing }, { key: photo.frame.thumbnailKey, blob: thumbnail }];
-          photo.preview = URL.createObjectURL(thumbnail); photo.reviewPreview = URL.createObjectURL(viewing); photo.duplicate = hashes.has(hash); hashes.add(hash);
-        } finally { bitmap.close(); }
+        const original = new Blob([bytes], { type: header.mime });
+        const { hash, width, height, viewing, thumbnail } = await processImage(original, signal);
+        signal.throwIfAborted();
+        photo.frame = { id, rollId, filename: source.name, mime: header.mime, width, height, rotation: 0, hash, originalKey: `${id}:original`, viewingKey: `${id}:view`, thumbnailKey: `${id}:thumb` };
+        photo.blobs = [{ key: photo.frame.originalKey, blob: original }, { key: photo.frame.viewingKey, blob: viewing }, { key: photo.frame.thumbnailKey, blob: thumbnail }];
+        photo.preview = URL.createObjectURL(thumbnail); photo.reviewPreview = URL.createObjectURL(viewing); photo.duplicate = hashes.has(hash); hashes.add(hash);
       } catch (error) { if (signal.aborted) throw error; photo.error = error instanceof Error ? error.message : 'Cannot decode this image.'; }
       photos.push(photo); progress(photos.length, files.length);
     }

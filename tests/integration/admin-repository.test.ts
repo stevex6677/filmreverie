@@ -51,6 +51,7 @@ it('retries failed publication of saved edits without uploading retained images 
   let current = draft();
   const repository = new AdminRollRepository(), edited = bundle(current);
   vi.spyOn(ownerClient, 'list').mockImplementation(async () => [current]);
+  vi.spyOn(ownerClient, 'load').mockImplementation(async () => current);
   const save = vi.spyOn(ownerClient, 'save').mockImplementation(async input => {
     if (input.roll.updatedAt !== current.roll.updatedAt) throw new Error('Conflict');
     current = { ...input, roll: { ...input.roll, updatedAt: current.roll.updatedAt + 1 } };
@@ -96,4 +97,58 @@ it('keeps the owner film strength preference on the server rather than in this b
     ['/api/owner/preferences', 'GET', 'same-origin'], ['/api/owner/preferences', 'PUT', 'same-origin'], ['/api/owner/preferences', 'GET', 'same-origin']]);
   await expect(repository.savePreferences({ filmStrength: 120 })).rejects.toThrow(/film effect strength/);
   vi.unstubAllGlobals();
+});
+
+it('prepares private images before saving, shares in-flight uploads and uses the latest crop', async () => {
+  const repository = new AdminRollRepository(), source = draft(), input = bundle(source);
+  let finish!: (frame: CloudDraft['frames'][number]) => void;
+  const upload = vi.spyOn(ownerUploads, 'uploadOwnerPhoto').mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  vi.spyOn(ownerClient, 'list').mockResolvedValue([]);
+  const save = vi.spyOn(ownerClient, 'save').mockImplementation(async input => input);
+  const publish = vi.spyOn(ownerClient, 'publish').mockResolvedValue({} as never);
+  const preparation = repository.prepareImages(input, new AbortController().signal);
+  await vi.waitFor(() => expect(upload).toHaveBeenCalledOnce());
+  expect(save).not.toHaveBeenCalled(); expect(publish).not.toHaveBeenCalled();
+  input.frames[0] = { ...input.frames[0], rotation: 90, cropPosition: { x: .4, y: 0 } };
+  const saving = repository.save(input);
+  finish(source.frames[0]);
+  await preparation; await saving;
+  expect(upload).toHaveBeenCalledOnce();
+  expect(save.mock.calls[0][0].frames[0]).toMatchObject({ rotation: 90, cropPosition: { x: .4, y: 0 } });
+});
+
+it('retains completed background uploads on failure and retries only failed photographs', async () => {
+  const repository = new AdminRollRepository(), source = draft();
+  source.frames.push({ ...source.frames[0], id: 'second' });
+  source.roll.frameIds.push('second');
+  const upload = vi.spyOn(ownerUploads, 'uploadOwnerPhoto').mockImplementation(async photo => {
+    if(photo.id==='second')throw new Error('Offline');
+    return source.frames[0];
+  });
+  const input = bundle(source);
+  await expect(repository.prepareImages(input, new AbortController().signal)).rejects.toThrow('Offline');
+  upload.mockImplementation(async photo => source.frames.find(frame => frame.id===photo.id)!);
+  vi.spyOn(ownerClient, 'list').mockResolvedValue([]);
+  vi.spyOn(ownerClient, 'save').mockImplementation(async input => input);
+  vi.spyOn(ownerClient, 'publish').mockResolvedValue({} as never);
+  await repository.save(input);
+  expect(upload.mock.calls.map(([photo]) => photo.id)).toEqual(['frame', 'second', 'second']);
+});
+
+it('reopens saved edits without downloading the unchanged derivatives again and releases editor memory', async () => {
+  const repository = new AdminRollRepository(), source = draft();
+  vi.spyOn(ownerClient, 'load').mockResolvedValue(source);
+  const image = vi.spyOn(ownerClient, 'image').mockResolvedValue(new Blob(['jpeg'], { type: 'image/jpeg' }));
+  const list = vi.spyOn(ownerClient, 'list');
+  vi.spyOn(ownerClient, 'save').mockImplementation(async input => input);
+  vi.spyOn(ownerClient, 'publish').mockResolvedValue({} as never);
+  const input = await repository.read('roll');
+  input.frames[0].rotation = 90;
+  await repository.save({ ...input, blobs: [] });
+  await repository.read('roll');
+  expect(image).toHaveBeenCalledTimes(2);
+  expect(list).not.toHaveBeenCalled();
+  repository.releaseEditorResources('roll');
+  await repository.read('roll');
+  expect(image).toHaveBeenCalledTimes(4);
 });

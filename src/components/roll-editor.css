@@ -202,3 +202,5 @@
   .roll-editor-dialog .import-footer-actions { flex-wrap:wrap; gap:8px; }
   .roll-editor-dialog .import-footer-actions button { font-size:12px; padding:8px; }
 }
+
+.roll-save-actions { display:flex; gap:8px; flex-wrap:wrap; }
