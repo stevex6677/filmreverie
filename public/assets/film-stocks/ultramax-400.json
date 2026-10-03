@@ -1,0 +1,41 @@
+{
+  "id": "ultramax-400",
+  "displayName": "Kodak Ultramax 400",
+  "type": "negative",
+  "process": "C-41",
+  "allowedViews": [
+    "negative",
+    "positive"
+  ],
+  "base": {
+    "substrateBase": "rgba(224, 120, 48, 0.88)",
+    "rebateText": "#2a1208",
+    "rebateSecondary": "#2a1208",
+    "frameShadow": "rgba(35, 15, 8, 0.4)",
+    "negativeMask": [
+      0.88,
+      0.47,
+      0.19
+    ]
+  },
+  "rebate": {
+    "label": "KODAK GC 400",
+    "font": "Arial, Helvetica, sans-serif",
+    "fontWeight": "bold",
+    "orientation": "same-direction",
+    "halfFrameNumbers": true,
+    "codePattern": null
+  },
+  "reference": {
+    "edition": "Kodak Ultramax 400 (GC), 135 color negative film",
+    "title": "Kodak Ultramax manufacturer information and El Grafo’s first-hand GC 400 identification",
+    "url": "https://www.kodak.com/en/still-film/product/consumer/ultramax-400-film/",
+    "imageUrl": "https://commons.wikimedia.org/wiki/File:Kodak_Ultramax_400_135_film_cartridge.jpg",
+    "accessed": "2026-10-03",
+    "license": "Manufacturer and specimen references linked for study. Procedural film lettering is original project artwork (ISC). See packaging README for bundled photograph licensing.",
+    "limitations": "KODAK GC 400 identification follows the photographed specimen’s first-hand description. Orange base, lettering placement, frame/half-frame cadence and color/grain look are artistic approximations, not calibrated sensitometry. Exact optical DX codes, batch IDs and production tolerances are unverified and omitted."
+  },
+  "formats": [
+    "135"
+  ]
+}

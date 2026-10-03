@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "accessed": "2026-10-01",
+  "accessed": "2026-10-03",
   "sourceRoot": "ignored_assets",
   "method": "Original photographs mapped onto measured box panels and curved cartridge labels with perspective-correct GPU UVs; authored adaptations are identified in the packaging README. Unphotographed carton panels use a stock-appropriate solid color. Stored source photograph bytes are unchanged.",
   "limitations": [
@@ -1351,6 +1351,107 @@
       ],
       "multipack": true,
       "edition": "Eastman Kodak yellow/black/purple GOLD 200 five-roll 120 carton."
+    },
+    {
+      "id": "ultramax-400-135",
+      "stockId": "ultramax-400",
+      "format": "135",
+      "box": {
+        "stock": "ultramax-400",
+        "format": "135",
+        "role": "box",
+        "source": "https://kodak.photosys.com/products/ek-400-ultramax-color-negative-film-35mm",
+        "imageUrl": "https://cdn.shopify.com/s/files/1/0339/5113/files/Kodak_Ultramax_400_35mm_24exp_Single.jpg?v=1774384712",
+        "file": "ultramax-400-135.jpg",
+        "width": 1000,
+        "height": 1000,
+        "sha256": "b140251f1ce305b749900cee040317e6dfc3b9266d20ca7687406b0ffb90702e",
+        "sourcePath": "film-packaging/ultramax-20261003/ultramax-400-135.jpg",
+        "asset": "/assets/film-packaging/ultramax-400-135.jpg"
+      },
+      "cartridge": {
+        "stock": "ultramax-400",
+        "format": "135",
+        "role": "cartridge",
+        "source": "https://commons.wikimedia.org/wiki/File:Kodak_Ultramax_400_135_film_cartridge.jpg",
+        "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d3/Kodak_Ultramax_400_135_film_cartridge.jpg",
+        "file": "ultramax-400-135-cartridge.jpg",
+        "width": 2157,
+        "height": 2875,
+        "sha256": "aeffa0a5f1d7c440ec543a6b621a134fb603f1622f339b24ac6d442fb5904435",
+        "sourcePath": "film-packaging/ultramax-20261003/ultramax-400-135-cartridge.jpg",
+        "asset": "/assets/film-packaging/ultramax-400-135-cartridge.jpg",
+        "credit": "El Grafo, Kodak Ultramax 400 135 film cartridge.jpg (2017)",
+        "license": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+      },
+      "front": [
+        [
+          0.335,
+          0.366
+        ],
+        [
+          0.877,
+          0.285
+        ],
+        [
+          0.865,
+          0.668
+        ],
+        [
+          0.34,
+          0.799
+        ]
+      ],
+      "top": [
+        [
+          0.111,
+          0.286
+        ],
+        [
+          0.607,
+          0.211
+        ],
+        [
+          0.874,
+          0.28
+        ],
+        [
+          0.329,
+          0.361
+        ]
+      ],
+      "bodyColor": "#ffb719",
+      "sizeMm": [
+        60,
+        40,
+        38
+      ],
+      "multipack": false,
+      "cartridgePanel": [
+        [
+          0.309,
+          0.231
+        ],
+        [
+          0.856,
+          0.23
+        ],
+        [
+          0.854,
+          0.834
+        ],
+        [
+          0.309,
+          0.84
+        ]
+      ],
+      "cartridgeProjection": "photographic",
+      "cartridgeCurvature": [
+        0.004,
+        0.018
+      ],
+      "edition": "Current Eastman Kodak yellow/black/blue 135-24 carton; separately photographed 2017 yellow/black 24-exposure cassette. Packaging illustrates the stock, not a matched production batch."
     }
   ]
 }

@@ -172,6 +172,12 @@
       "runtimeUrl": "/assets/film-stocks/gold-200.json",
       "license": "ISC \u2014 original procedural artwork; manufacturer references linked only",
       "referenceEdition": "Kodak Gold 200, 135 and 120 color negative film"
+    },
+    {
+      "id": "ultramax-400",
+      "runtimeUrl": "/assets/film-stocks/ultramax-400.json",
+      "license": "ISC \u2014 original procedural artwork; external film references linked only",
+      "referenceEdition": "Kodak Ultramax 400 (GC), 135 color negative film"
     }
   ]
 }

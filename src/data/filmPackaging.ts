@@ -22,6 +22,6 @@ export function getPackaging(stockId: FilmStockId, format: FilmFormat | Packagin
 }
 export const FILM_ISO: Record<FilmStockId, number> = {
   'ektachrome-e100': 100, 'ektar-100': 100, 'portra-160': 160, 'portra-400': 400, 'portra-800': 800,
-  'fuji-200': 200, 'pro-image-100': 100, 'gold-200': 200,
+  'fuji-200': 200, 'pro-image-100': 100, 'gold-200': 200, 'ultramax-400': 400,
   'provia-100': 100, 'velvia-50': 50, 'velvia-100': 100,
 };
