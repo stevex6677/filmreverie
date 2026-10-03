@@ -125,6 +125,9 @@ export class RollRepository {
       return { blob: imageRecord(record).blob, rotation: frame.rotation, frame };
     } finally { db.close(); }
   }
+  /** Cloud editors may stage private derivatives before the explicit save. */
+  async prepareImages(_bundle: Pick<RollBundle, 'frames' | 'blobs'>, _signal: AbortSignal): Promise<void> {}
+  releaseEditorResources(_rollId?: string): void {}
   async save(bundle: RollBundle, signal?: AbortSignal, options: { insertFirstIfMissing?: boolean } = {}) {
     validateBundle(bundle); signal?.throwIfAborted();
     // WebKit's Blob serialization can fail and leave the transaction unsettled.

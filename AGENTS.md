@@ -112,6 +112,41 @@ prerequisites. `npm run prepare:photos` explicitly regenerates published photo
 derivatives from local sources/cache. `npm run fetch:packaging` is optional source
 acquisition, not a startup step.
 
+### Gallery configuration in testing worktrees
+
+- A request to start the app on a testing port includes a working published
+  gallery at `/`, unless the user explicitly requests guest-only or isolated
+  backend testing. Read [docs/CLOUD_GALLERY.md](docs/CLOUD_GALLERY.md) before
+  configuring the local gallery bridge. A new worktree does not inherit ignored
+  `cloudflare/deployment.local.json` settings from the main checkout.
+- Before starting Vite, check the active checkout's private settings and the
+  `CLOUDFLARE_DEPLOYMENT_CONFIG`, `FILM_PHOTO_CLOUD_API` and
+  `FILM_PHOTO_DEV_ADMIN_BRIDGE` overrides. Preserve an explicitly selected
+  backend; otherwise use the existing gallery bridge. Confirm that the intended
+  localhost and macbook ports match the configured `devLoginOrigins`.
+- If private settings are missing, discover the main checkout using
+  `git worktree list --porcelain` and check its existing private configuration.
+  Validate it with `readDeployment` from `scripts/cloudflare-config.ts`. Reuse
+  valid settings by copying them into the active checkout's ignored
+  `cloudflare/deployment.local.json` with owner-only permissions (`0600`),
+  without overwriting an existing file. This local setup is part of startup;
+  it does not require separate approval. Never print or commit private settings,
+  invent production values, or change remote infrastructure to make startup work.
+  If no valid settings are available, report the missing configuration and offer
+  `/guest`; do not describe the published gallery as ready.
+- After adding or changing connection settings, restart only the verified
+  testing process. Before reporting readiness, verify `/api/gallery` through
+  the actual local app port: require a successful JSON response containing a
+  `rolls` array, and load a returned thumbnail when the gallery is nonempty.
+  Check both localhost and the macbook Host header through the local listener;
+  this does not establish access from another device. A homepage HTTP 200 alone
+  is insufficient: Vite can return its HTML fallback for an unconfigured API.
+- State that the app runs locally and whether it connects to the real published
+  gallery. The gallery bridge uses production data: admin background uploads,
+  saves, deletes and restores affect real cloud storage. Startup verification
+  uses read-only requests. Automated mutation tests must use their isolated
+  backend fixtures with `FILM_PHOTO_DEV_ADMIN_BRIDGE=0`.
+
 ### Local preview and phone/iPad access
 
 - Start the application process locally in the active checkout. Check working

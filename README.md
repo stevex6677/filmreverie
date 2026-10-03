@@ -68,7 +68,10 @@ rolls there. Its room header shares the guest darkroom's controls; **Create Your
 sits after **Lights**, followed by a vertical three-dot menu.
 The menu shows **Admin Login** until authenticated, then **Logged in**. Admins use
 the same shelf and roll editor as guests: **New roll**, edit, delete, Trash and
-Undo. **Save and open** publishes the reviewed roll; deletion withdraws it from
+Undo. Images process in a worker while roll details remain editable. Admin derivatives
+upload privately in the background. **Save** publishes the reviewed roll and closes
+the editor; **Save and open** also opens it on the light table. Unchanged images are
+reused when saving edits. Deletion withdraws the roll from
 the gallery and retains it in cloud Trash; restoration republishes it. Cloudflare
 Access JWT verification, short-lived key-scoped direct R2 uploads of browser-re-encoded
 JPEG derivatives (never originals), versioned R2 catalog publication and withdrawal
@@ -84,7 +87,7 @@ database at best effort, without accounts, uploads or synchronization. Guest
 backup, migration and offline/storage controls are not offered. Earlier
 `darkroom-rolls` libraries remain untouched.
 
-**The API Worker is deployed. Current menu and shared roll editor changes remain local; they have not been published to Pages.** See
+**The API Worker is deployed. Current menu, shared roll editor and publication optimizations remain local; these changes have not been deployed to the Worker or Pages.** See
 [deployment/privacy/recovery instructions](docs/CLOUD_GALLERY.md) and
 [M21 validation and blockers](docs/M21_REVIEW.md).
 Pushes to GitHub `master` can deploy both the API Worker and website through
