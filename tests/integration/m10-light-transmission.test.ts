@@ -72,7 +72,7 @@ describe("M10 shared linear table illumination", () => {
     target.dispose(); film.dispose(); lens.dispose();
   });
 
-  it("preserves dimmer state through reset and room navigation, and defaults to 100% on reload", () => {
+  it("preserves dimmer state through reset and room navigation, and defaults to 80% on reload", () => {
     for (const brightness of [0.3, 0.6, 1]) {
       let state = viewerReducer(createInitialViewerState("inspect"), { type: "SET_TABLE_BRIGHTNESS", brightness });
       state = viewerReducer(state, { type: "SET_TABLE_ZOOM", zoom: 0.32 });
@@ -82,7 +82,7 @@ describe("M10 shared linear table illumination", () => {
       state = viewerReducer(state, { type: "APPROACH_TABLE" });
       expect(state.tableBrightness).toBe(brightness);
     }
-    expect(createInitialViewerState("inspect").tableBrightness).toBe(1);
+    expect(createInitialViewerState("inspect").tableBrightness).toBe(0.8);
   });
 });
 

@@ -68,7 +68,7 @@ export const DEFAULT_INSPECT_DISTANCE = 3.2;
 
 export const MIN_TABLE_BRIGHTNESS = 0.3;
 export const MAX_TABLE_BRIGHTNESS = 1.0;
-export const DEFAULT_TABLE_BRIGHTNESS = 1.0;
+export const DEFAULT_TABLE_BRIGHTNESS = 0.8;
 
 export const MIN_TABLE_PAN_X = -1.4;
 export const MAX_TABLE_PAN_X = 1.4;

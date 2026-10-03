@@ -18,7 +18,7 @@ describe("M8 Integration — Continuous Light Table Dimmer & Physical Optical Lo
     it("defines MIN_TABLE_BRIGHTNESS as 0.30 and MAX_TABLE_BRIGHTNESS as 1.00", () => {
       expect(MIN_TABLE_BRIGHTNESS).toBe(0.3);
       expect(MAX_TABLE_BRIGHTNESS).toBe(1.0);
-      expect(DEFAULT_TABLE_BRIGHTNESS).toBe(1.0);
+      expect(DEFAULT_TABLE_BRIGHTNESS).toBe(0.8);
     });
 
     it("clamps brightness values strictly between 0.30 (30%) and 1.00 (100%)", () => {
@@ -51,9 +51,9 @@ describe("M8 Integration — Continuous Light Table Dimmer & Physical Optical Lo
     });
 
     it("dispatches ADJUST_TABLE_BRIGHTNESS incrementally within bounds", () => {
-      let state = INITIAL_VIEWER_STATE; // 1.0
+      let state = INITIAL_VIEWER_STATE; // 0.8
       state = viewerReducer(state, { type: "ADJUST_TABLE_BRIGHTNESS", delta: -0.15 });
-      expect(state.tableBrightness).toBeCloseTo(0.85, 4);
+      expect(state.tableBrightness).toBeCloseTo(0.65, 4);
 
       state = viewerReducer(state, { type: "ADJUST_TABLE_BRIGHTNESS", delta: -0.80 });
       expect(state.tableBrightness).toBe(0.3); // Clamped at 30%
@@ -65,12 +65,12 @@ describe("M8 Integration — Continuous Light Table Dimmer & Physical Optical Lo
       expect(state.tableBrightness).toBe(1.0); // Clamped at 100%
     });
 
-    it("initializes both room and inspect modes with calibrated 100% brightness", () => {
+    it("initializes both room and inspect modes with calibrated 80% brightness", () => {
       const roomState = createInitialViewerState("room");
-      expect(roomState.tableBrightness).toBe(1.0);
+      expect(roomState.tableBrightness).toBe(0.8);
 
       const inspectState = createInitialViewerState("inspect");
-      expect(inspectState.tableBrightness).toBe(1.0);
+      expect(inspectState.tableBrightness).toBe(0.8);
     });
   });
 

@@ -59,15 +59,15 @@ describe("M7 Integration — Deep Macro Zoom (1000%) & Light Table Dimmer Calibr
   });
 
   describe("Light Table Brightness Dimmer State & Calibration", () => {
-    it("initializes with default calibrated light table brightness (1.0 = 100%)", () => {
+    it("initializes with default calibrated light table brightness (0.8 = 80%)", () => {
       expect(INITIAL_VIEWER_STATE.tableBrightness).toBe(DEFAULT_TABLE_BRIGHTNESS);
-      expect(INITIAL_VIEWER_STATE.tableBrightness).toBe(1.0);
+      expect(INITIAL_VIEWER_STATE.tableBrightness).toBe(0.8);
 
       const inspectState = createInitialViewerState("inspect");
-      expect(inspectState.tableBrightness).toBe(1.0);
+      expect(inspectState.tableBrightness).toBe(0.8);
 
       const roomState = createInitialViewerState("room");
-      expect(roomState.tableBrightness).toBe(1.0);
+      expect(roomState.tableBrightness).toBe(0.8);
     });
 
     it("clamps brightness values strictly between MIN (0.3) and MAX (1.0)", () => {
@@ -100,10 +100,10 @@ describe("M7 Integration — Deep Macro Zoom (1000%) & Light Table Dimmer Calibr
       let state = INITIAL_VIEWER_STATE;
 
       state = viewerReducer(state, { type: "ADJUST_TABLE_BRIGHTNESS", delta: -0.2 });
-      expect(state.tableBrightness).toBeCloseTo(0.8, 4);
+      expect(state.tableBrightness).toBeCloseTo(0.6, 4);
 
       state = viewerReducer(state, { type: "ADJUST_TABLE_BRIGHTNESS", delta: -0.1 });
-      expect(state.tableBrightness).toBeCloseTo(0.7, 4);
+      expect(state.tableBrightness).toBeCloseTo(0.5, 4);
 
       // Extreme adjustments clamp properly
       state = viewerReducer(state, { type: "ADJUST_TABLE_BRIGHTNESS", delta: -10.0 });

@@ -301,7 +301,7 @@ export function viewerReducer(state: ViewerState, action: ViewerAction): ViewerS
         next = viewerReducer(next, { type: "SELECT_FRAME", frameIndex: index });
         next = viewerReducer(next, { type: "VIEW_LEVEL", level: ["roll", "strip", "frame"].includes(v.level) ? v.level : "roll" });
         next = viewerReducer(next, { type: "SET_FILM_MODE", mode: v.mode });
-        next = viewerReducer(next, { type: "SET_TABLE_BRIGHTNESS", brightness: Number.isFinite(v.brightness) ? v.brightness : 1 });
+        next = viewerReducer(next, { type: "SET_TABLE_BRIGHTNESS", brightness: Number.isFinite(v.brightness) ? v.brightness : DEFAULT_TABLE_BRIGHTNESS });
         next = viewerReducer(next, { type: "SET_LOUPE_MAGNIFICATION", magnification: Number.isFinite(v.magnification) ? v.magnification : 4 });
         if (Number.isFinite(v.zoom) && Number.isFinite(v.pan?.x) && Number.isFinite(v.pan?.z)) {
           next = viewerReducer(next, { type: "SET_TABLE_ZOOM", zoom: v.zoom });

@@ -101,13 +101,18 @@ function paintRebate(ctx: CanvasRenderingContext2D, stock: FilmStockProfile, lay
   ctx.save();
   const colors = getRebateColors(stock);
   const { width: stripWidth, height: stripHeight } = getStripDimensions(layout);
-  // Draw in a fixed design space so text and apertures scale together at macro resolution.
-  const width = 3072;
+  // Keep design units proportional to physical film length. A fixed width
+  // squeezed lettering on the shorter final strip (and stretched full strips).
   const height = 468;
+  const width = height * stripWidth / stripHeight;
   ctx.scale(canvasWidth / width, canvasHeight / height);
   const scaleX = width / stripWidth;
   const scaleY = height / stripHeight;
-  ctx.fillStyle = colors.substrateBase;
+  // Alpha here is aperture coverage, not film density (the shader supplies
+  // transmission). Translucent canvas paint loses RGB precision through
+  // premultiplication, which inversion amplifies into tinted rails on Safari.
+  const channels = colors.substrateBase.match(/[\d.]+/g)!.slice(0, 3);
+  ctx.fillStyle = `rgb(${channels.join(',')})`;
   ctx.fillRect(0, 0, width, height);
 
   const py = layout.marginY * scaleY;
@@ -223,7 +228,9 @@ export function createFilmRebateAtlas(stock: FilmStockProfile, layout: FilmStrip
     ctx.save();
     ctx.beginPath(); ctx.rect(0, bottom ? railPixels : 0, canvas.width, railPixels); ctx.clip();
     if (bottom) ctx.translate(0, canvas.height - virtualHeight);
-    paintRebate(ctx, stock, layout, canvas.width, virtualHeight);
+    // Coverage only: reconstruct stock colors from uniforms in the shader.
+    // This avoids amplifying GPU sRGB/alpha rounding into a blue positive base.
+    paintRebate(ctx, { ...stock, base: { ...stock.base, substrateBase: 'rgb(255,255,255)', rebateText: '#000000', rebateSecondary: '#000000' } }, layout, canvas.width, virtualHeight);
     ctx.restore();
   }
   return canvas;
@@ -236,7 +243,7 @@ export function createFilmRebateTexture(
   maxAnisotropy = 1
 ): THREE.CanvasTexture {
   const texture = new THREE.CanvasTexture(createFilmRebateAtlas(stock, layout, maxTextureSize));
-  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.colorSpace = THREE.NoColorSpace;
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
   texture.generateMipmaps = true;
