@@ -10,6 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const ALIASES = {
+  'ultramax-400': 'ultramax-400', 'ultramax400': 'ultramax-400', 'ultramax': 'ultramax-400',
   'fuji-200': 'fuji-200', 'fuji200': 'fuji-200',
   'pro-image-100': 'pro-image-100', 'proimage100': 'pro-image-100',
   'gold-200': 'gold-200', 'gold200': 'gold-200',
@@ -56,6 +57,7 @@ Options / Flags:
   -h, --help               Show this help message
 
 Supported Film Stocks:
+  - ultramax-400     (aliases: ultramax400, ultramax) Kodak Ultramax 400 (Vivid color, visible grain)
   - fuji-200         (alias: fuji200)              Fujifilm 200 (Vivid color, fresh greens)
   - pro-image-100    (alias: proimage100)          Kodak Pro Image 100 (Balanced color, natural skin)
   - gold-200         (alias: gold200)              Kodak Gold 200 (Warm golden color, classic grain)

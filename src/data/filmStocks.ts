@@ -10,9 +10,10 @@ import velvia_100 from "../../public/assets/film-stocks/velvia-100.json" with { 
 import fuji_200 from "../../public/assets/film-stocks/fuji-200.json" with { type: "json" };
 import pro_image_100 from "../../public/assets/film-stocks/pro-image-100.json" with { type: "json" };
 import gold_200 from "../../public/assets/film-stocks/gold-200.json" with { type: "json" };
+import ultramax_400 from "../../public/assets/film-stocks/ultramax-400.json" with { type: "json" };
 import type { FilmFormat } from './filmFormats';
 
-export type FilmStockId = "fuji-200" | "pro-image-100" | "gold-200" | "ektachrome-e100" | "ektar-100" | "portra-160" | "portra-400" | "portra-800" | "provia-100" | "velvia-50" | "velvia-100";
+export type FilmStockId = "ultramax-400" | "fuji-200" | "pro-image-100" | "gold-200" | "ektachrome-e100" | "ektar-100" | "portra-160" | "portra-400" | "portra-800" | "provia-100" | "velvia-50" | "velvia-100";
 export interface FilmStockProfile {
   readonly id: FilmStockId;
   readonly displayName: string;
@@ -39,7 +40,7 @@ export interface FilmStockProfile {
 }
 
 // The local JSON files are also reviewable reference records. No runtime network lookup.
-export const FILM_STOCKS = [ektachrome_e100, ektar_100, portra_160, portra_400, portra_800, provia_100, velvia_50, velvia_100, fuji_200, pro_image_100, gold_200] as readonly FilmStockProfile[];
+export const FILM_STOCKS = [ektachrome_e100, ektar_100, portra_160, portra_400, portra_800, provia_100, velvia_50, velvia_100, fuji_200, pro_image_100, gold_200, ultramax_400] as readonly FilmStockProfile[];
 export const DEFAULT_FILM_STOCK_ID: FilmStockId = "portra-400";
 export function getFilmStock(id: FilmStockId): FilmStockProfile {
   return FILM_STOCKS.find((stock) => stock.id === id) ?? FILM_STOCKS[3];

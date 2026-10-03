@@ -13,8 +13,8 @@ function bundle(stockId: FilmStockId, format: FilmFormat): RollBundle {
     blobs: ['o', 'v', 't'].map(key => ({ key, blob: new Blob(['unchanged photo'], { type: 'image/jpeg' }) })) };
 }
 
-describe('Fuji 200, Pro Image 100 and Gold 200', () => {
-  for (const stockId of ['fuji-200', 'pro-image-100', 'gold-200'] as const) {
+describe('Consumer color negative stocks', () => {
+  for (const stockId of ['fuji-200', 'pro-image-100', 'gold-200', 'ultramax-400'] as const) {
     it(`${stockId} validates its real formats and preserves stock, strength and photo bytes`, async () => {
       const repository = new RollRepository(new IDBFactory());
       for (const format of Object.keys(FILM_FORMATS) as FilmFormat[]) {
@@ -44,10 +44,10 @@ describe('Fuji 200, Pro Image 100 and Gold 200', () => {
   it('produces distinct looks, keeps zero exact, and makes Gold warmer than Pro Image and Fuji', () => {
     const pixel = [0.55, 0.45, 0.35] as const;
     const render = (id: FilmStockId, strength: number) => applyFilmLookPerceptualPixel(...pixel, .5, .5, FILM_LOOKS[id], strength, 36, 24, 1, 0);
-    const ids = ['fuji-200', 'pro-image-100', 'gold-200'] as const;
+    const ids = ['fuji-200', 'pro-image-100', 'gold-200', 'ultramax-400'] as const;
     const warmth = ids.map(id => { const c = render(id, 50); return c[0] - c[2]; });
     expect(warmth[2]).toBeGreaterThan(warmth[1]); expect(warmth[1]).toBeGreaterThan(warmth[0]);
-    expect(new Set(ids.map(id => JSON.stringify(render(id, 50)))).size).toBe(3);
+    expect(new Set(ids.map(id => JSON.stringify(render(id, 50)))).size).toBe(4);
     for (const id of ids) {
       expect(render(id, 0)).toEqual(pixel);
       const distance = (strength: number) => render(id, strength).reduce((total, value, i) => total + Math.abs(value - pixel[i]), 0);

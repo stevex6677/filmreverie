@@ -12,6 +12,7 @@ import { FILM_LOOKS, filmGrainSeed } from '../src/data/filmLooks.ts';
 import { applyFilmLookToBuffer } from '../src/shaders/filmLook.ts';
 
 const STOCK_NAMES = {
+  'ultramax-400': 'Kodak Ultramax 400',
   'fuji-200': 'Fujifilm 200',
   'pro-image-100': 'Kodak Pro Image 100',
   'gold-200': 'Kodak Gold 200',

@@ -11,7 +11,7 @@ fits the whole cabinet to the viewport and respects reduced motion.
 
 ## Artwork coverage
 
-[manifest.json](manifest.json) records twenty packaging variants across eleven stocks.
+[manifest.json](manifest.json) records twenty-one packaging variants across twelve stocks.
 The original eight stocks support both 35mm and 120: Kodak
 Ektachrome E100, Ektar 100, Portra 160/400/800 and Fujifilm Provia 100F,
 Velvia 50/100. Fourteen box fronts and all eight 35mm cartridge labels use original
@@ -221,3 +221,35 @@ source label curvature; hidden reverse labels are not fabricated.
 Stock `formats` metadata is authoritative for editor choices and save/import/
 publication validation. Fuji 200 and Pro Image have no 120 manifest entries.
 The offline build includes all new packaging and stock records.
+
+### Kodak Ultramax 400 (2026-10-03)
+
+Ultramax is 135-only, as listed by [Kodak](https://www.kodak.com/en/still-film/product/consumer/ultramax-400-film/).
+The carton uses the unchanged [Kodak Photo Systems product photograph](https://kodak.photosys.com/products/ek-400-ultramax-color-negative-film-35mm)
+of the current yellow/black/blue Eastman Kodak 135-24 single-roll edition.
+The separately photographed yellow/black 24-exposure cassette is an older 2017
+specimen; these are real stock references, not a claim of a matched production batch.
+The nominal carton envelope is 60×40×38 mm, not a caliper measurement. Front/top
+panels are perspective projected, and unseen faces use plain Kodak yellow.
+Cassette sampling excludes the photographed caps, spindle and protruding film;
+its photographic projection follows the slight label curvature. Source lighting
+and edge foreshortening remain; the reverse label is not reconstructed.
+
+**Cassette photograph credit:** [“Kodak Ultramax 400 135 film cartridge.jpg”](https://commons.wikimedia.org/wiki/File:Kodak_Ultramax_400_135_film_cartridge.jpg)
+by [El Grafo](https://commons.wikimedia.org/wiki/User:El_Grafo), 2017,
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+The bundled JPEG is unchanged. Cropped/geometrically projected photographic
+adaptations are also offered under CC BY-SA 4.0; this does not relicense unrelated
+application code or other product images. The carton retains the existing
+third-party product-imagery status; attribution is not a license grant.
+Both source files have dimensions, URLs and SHA-256 records in the manifest,
+with retained originals under `film-packaging/ultramax-20261003/`.
+
+The film border uses **KODAK GC 400**, supported by El Grafo's first-hand specimen
+description, rather than the retail ULTRAMAX name. It uses the existing 35mm
+perforations, an orange negative base, and frame/half-frame numbering. Exact
+latent DX barcode bits and batch IDs are unverified and omitted. Base color,
+lettering cadence and the vivid, gently warm ISO-400 grain treatment are authored
+approximations, not measured film sensitometry. The stock is included in offline
+assets, filter tooling and the shared editor/save/import/publication validation;
+there is no 120 profile or packaging entry.
