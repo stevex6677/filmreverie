@@ -69,7 +69,7 @@ export const FilmStrip: React.FC<FilmStripProps> = ({
   const rebateMaterial = useMemo(() => {
     const channels = stock.base.substrateBase.match(/[\d.]+/g)!.slice(0, 3).map(Number);
     const base = new THREE.Color().setRGB(channels[0] / 255, channels[1] / 255, channels[2] / 255, THREE.SRGBColorSpace);
-    return createRebateMaterial(rebateTexture, brightness, isPositive, stock.type === "negative", base, Number(stock.base.substrateBase.match(/[\d.]+/g)?.[3] ?? 1), layout);
+    return createRebateMaterial(rebateTexture, brightness, isPositive, stock.type === "negative", base, layout, new THREE.Color(stock.base.rebateText));
   }, [rebateTexture, stock]);
   rebateMaterial.uniforms.uModeTransition.value = isPositive && stock.type === "negative" ? 1 : 0;
   updateTableIllumination(rebateMaterial, brightness);

@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { PHOTO_RADIANCE_GLSL } from './photoRadiance';
 import { clampTableBrightness } from "../utils/cameraBounds";
 
 // Linear radiance, shared by the diffuser, film and local bounce lights.
@@ -11,6 +12,7 @@ export function getTableIllumination(brightness = 1) {
 
 export const DISPLAY_EXPOSURE = 1;
 export const FILM_TRANSMISSION_GLSL = `
+  ${PHOTO_RADIANCE_GLSL}
   vec3 filmTransmittance(vec3 source, float mode, vec3 base) {
     vec3 positive = clamp(source, 0.0, 1.0);
     vec3 exposure = pow(positive, vec3(0.45));
@@ -25,6 +27,11 @@ export const FILM_TRANSMISSION_GLSL = `
   }
   vec3 transmitTableLight(vec3 transmission, float tableRadiance, float reflection) {
     return transmission * tableRadiance + vec3(reflection);
+  }
+  vec3 illuminatedFilm(vec3 source, float mode, vec3 base, float tableRadiance, float reflection) {
+    vec3 negative = transmitTableLight(filmTransmittance(source, 0.0, base), tableRadiance, reflection);
+    // Positive viewing has no added reflection veil or second photographic grade.
+    return mix(negative, photoRadiance(source, tableRadiance), clamp(mode, 0.0, 1.0));
   }
 `;
 

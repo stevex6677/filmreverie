@@ -96,8 +96,7 @@ export const LoupeFragmentShader = `
     float bChannel = texture2D(uTexture, clamp(baseUv - chromOffset, vec2(0.001), vec2(0.999))).b;
     vec3 sampledColor = vec3(rChannel, gChannel, bChannel);
 
-    vec3 transmission = filmTransmittance(sampledColor * uExposure, uModeTransition, uOrangeMask);
-    vec3 imgColor = transmitTableLight(transmission, uTableOutput, uSurfaceReflection);
+    vec3 imgColor = illuminatedFilm(sampledColor * uExposure, uModeTransition, uOrangeMask, uTableOutput, uSurfaceReflection);
     vec3 activeRgb = imgColor * vignette + vec3(0.025) * (1.0 - vignette);
 
     // Smooth optical transition between resting table and active inspection

@@ -56,8 +56,7 @@ export const FilmFragmentShader = `
     float c = cos(uPhotoRotation), s = sin(uPhotoRotation);
     vec2 photoUV = vec2(c * p.x - s * p.y, s * p.x + c * p.y) + 0.5;
     vec3 source = texture2D(uTexture, clamp(photoUV, vec2(0.0), vec2(1.0))).rgb * uExposure;
-    vec3 transmission = filmTransmittance(applyFilmLook(source, vUv), revealMode(uModeTransition), uOrangeMask);
-    gl_FragColor = vec4(transmitTableLight(transmission, uTableOutput * revealLight(), uSurfaceReflection), 1.0);
+    gl_FragColor = vec4(illuminatedFilm(applyFilmLook(source, vUv), revealMode(uModeTransition), uOrangeMask, uTableOutput * revealLight(), uSurfaceReflection), 1.0);
     ${DISPLAY_FRAGMENT}
   }
 `;
@@ -84,7 +83,7 @@ export function createFilmShaderMaterial(texture: THREE.Texture, isPositive: boo
 /** How far the rebate continues under each frame's edge, in millimetres of film. */
 export const GATE_OVERLAP_MM = .4;
 
-export function createRebateMaterial(texture: THREE.Texture, brightness = 1, isPositive = false, negativeStock = true, base = new THREE.Color("rgb(217,119,36)"), baseOpacity = .88, layout?: FilmStripLayout) {
+export function createRebateMaterial(texture: THREE.Texture, brightness = 1, isPositive = false, negativeStock = true, base = new THREE.Color("rgb(217,119,36)"), layout?: FilmStripLayout, ink = new THREE.Color("#2a1208")) {
   const size = layout ? getStripDimensions(layout) : undefined;
   const gates = Array.from({ length: layout?.frameCount || 1 }, (_, i) => {
     if (!layout || !size) return new THREE.Vector2();
@@ -97,7 +96,7 @@ export function createRebateMaterial(texture: THREE.Texture, brightness = 1, isP
   const overlap = .55 / 36 * GATE_OVERLAP_MM;
   return new THREE.ShaderMaterial({
     vertexShader: FilmVertexShader,
-    uniforms: { uGates: { value: gates }, uTexture: { value: texture }, uModeTransition: { value: isPositive && negativeStock ? 1 : 0 }, uRebateBase: { value: base.clone() }, uBaseOpacity: { value: baseOpacity },
+    uniforms: { uGates: { value: gates }, uTexture: { value: texture }, uModeTransition: { value: isPositive && negativeStock ? 1 : 0 }, uRebateBase: { value: base.clone() }, uRebateInk: { value: ink.clone() },
       uRailFraction: { value: layout && size ? layout.marginY / size.height : 0 },
       uGateInset: { value: size ? new THREE.Vector2(overlap / size.width, overlap / size.height) : new THREE.Vector2() },
       ...revealUniforms(size ? -size.width / 2 : 0, size?.width ?? 1),
@@ -108,7 +107,7 @@ export function createRebateMaterial(texture: THREE.Texture, brightness = 1, isP
       uniform float uSurfaceReflection;
       uniform float uModeTransition;
       uniform vec3 uRebateBase;
-      uniform float uBaseOpacity;
+      uniform vec3 uRebateInk;
       uniform float uRailFraction;
       uniform vec2 uGates[${gates.length}];
       uniform vec2 uGateInset;
@@ -123,20 +122,19 @@ export function createRebateMaterial(texture: THREE.Texture, brightness = 1, isP
               if (vUv.x > uGates[i].x + uGateInset.x && vUv.x < uGates[i].y - uGateInset.x
                 && vUv.y > uRailFraction + uGateInset.y && vUv.y < 1.0 - uRailFraction - uGateInset.y) discard;
             }
-            rebate = vec4(uRebateBase, uBaseOpacity);
+            rebate = vec4(uRebateBase, 1.0);
           } else {
             float railV = vUv.y < uRailFraction
               ? 0.5 * vUv.y / uRailFraction
               : 0.5 + 0.5 * (vUv.y - (1.0 - uRailFraction)) / uRailFraction;
             rebate = texture2D(uTexture, vec2(vUv.x, railV));
+            rebate.rgb = mix(uRebateInk, uRebateBase, rebate.r / max(rebate.a, 0.001));
           }
         } else {
           rebate = texture2D(uTexture, vUv);
+          rebate.rgb = mix(uRebateInk, uRebateBase, rebate.r / max(rebate.a, 0.001));
         }
         if (rebate.a < 0.1) discard;
-        // Linear filtering mixes transparent gate texels into the edge. Recover
-        // the covered film color so it cannot create a dark (or inverted white) seam.
-        rebate.rgb /= max(min(rebate.a / uBaseOpacity, 1.0), 0.001);
         // Normalize away the orange mask before reversing the entire rebate,
         // including its lettering. E-6 is already positive and bypasses this.
         vec3 positive = vec3(0.004) + max(vec3(0.0), vec3(1.0) - rebate.rgb / max(uRebateBase, vec3(0.001))) * 0.5;
