@@ -4,6 +4,8 @@ import { PACES, REEL_IDS } from './timeline';
 import { useScreeningSnapshot, type ScreeningChoice, type ScreeningSession } from './session';
 import { SoundtrackPlayer } from '../showreel/music';
 import { SHOWREEL_TRACKS, trackById } from '../showreel/settings';
+import { FilmPanelFrames } from '../components/FilmPanelFrames';
+import type { FilmStockId } from '../data/filmStocks';
 import './screening.css';
 
 export const formatDuration = (seconds: number) => {
@@ -19,9 +21,12 @@ export function ScreenRollButton({ onClick, disabled = false }: { onClick: () =>
   </button>;
 }
 
-export function ScreeningPicker({ choice, onChange, onPreview, onExport, onClose, durationFor, frames, reducedMotion }: {
+/** Film Journey leads; the remaining reels keep their order. */
+const PICKER_REELS = ['film-journey', ...REEL_IDS.filter(reel => reel !== 'film-journey')] as const;
+
+export function ScreeningPicker({ choice, onChange, onPreview, onExport, onClose, durationFor, frames, reducedMotion, stockId }: {
   choice: ScreeningChoice; onChange: (choice: ScreeningChoice) => void; onPreview: () => void; onExport: () => void; onClose: () => void;
-  durationFor: (choice: ScreeningChoice) => number; frames: number; reducedMotion: boolean;
+  durationFor: (choice: ScreeningChoice) => number; frames: number; reducedMotion: boolean; stockId: FilmStockId;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [musicPlayer] = useState(() => new SoundtrackPlayer());
@@ -43,48 +48,71 @@ export function ScreeningPicker({ choice, onChange, onPreview, onExport, onClose
     node?.querySelector<HTMLInputElement>('input:checked')?.focus({ preventScroll: true });
     return () => { node?.close(); if (previous?.isConnected) previous.focus({ preventScroll: true }); };
   }, []);
-  const radio = <K extends keyof ScreeningChoice>(key: K, value: ScreeningChoice[K], label: string, detail?: string) => <label key={String(value)} className="screening-choice">
+  const radio = <K extends keyof ScreeningChoice>(key: K, value: ScreeningChoice[K], label: string) => <label key={String(value)} className="screening-choice">
     <input type="radio" name={`screening-${key}`} value={String(value)} checked={choice[key] === value}
       onClick={() => { if (key === 'music' && choice[key] === value) listen(String(value)); }}
       onChange={() => { onChange({ ...choice, [key]: value }); if (key === 'music') listen(String(value)); }} />
-    <span className="screening-choice-card"><strong>{label}</strong>{detail && <small>{detail}</small>}</span>
+    <span className="screening-choice-card"><strong>{label}</strong></span>
   </label>;
   const settings = REEL_SETTINGS[choice.reel], tuning = reelTuning(choice.reel, choice.tuning[choice.reel]);
   const tune = (values: readonly number[] | undefined) => onChange({ ...choice, tuning: { ...choice.tuning, [choice.reel]: values } });
   const adjusted = settings.some((setting, i) => Math.abs(tuning[i] - setting.initial) > .005);
-  return <dialog ref={dialog} className="screening-picker" aria-labelledby="screening-picker-title" onCancel={event => { event.preventDefault(); onClose(); }}
+  // Fine-tuning stays folded away unless this reel has already been adjusted.
+  const [adjusting, setAdjusting] = useState(adjusted);
+  const track = choice.music && choice.music !== 'none' ? trackById(choice.music) : undefined;
+  return <dialog ref={dialog} className="film-panel screening-picker" aria-labelledby="screening-picker-title" onCancel={event => { event.preventDefault(); onClose(); }}
     onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     <div className="screening-picker-body">
-      <header><h2 id="screening-picker-title">Screen roll</h2><button type="button" aria-label="Close" onClick={onClose}>×</button></header>
-      <fieldset className="screening-reels"><legend>Reel</legend>{REEL_IDS.map(reel => radio('reel', reel, REEL_LABEL[reel], REEL_DESCRIPTION[reel]))}</fieldset>
-      <fieldset className="screening-segmented"><legend>Pace</legend>{PACES.map(pace => radio('pace', pace, PACE_LABEL[pace]))}</fieldset>
-      <fieldset className="screening-tuning" data-testid="screening-tuning">
-        <legend>{REEL_LABEL[choice.reel]} settings</legend>
-        {settings.map((setting, i) => <label key={`${choice.reel}-${i}`} className="screening-slider">
-          <span>{setting.label}</span>
-          <input type="range" min={0} max={100} step={1} value={Math.round(tuning[i] * 100)} data-testid={`screening-setting-${i}`}
-            aria-valuetext={`${setting.label}: ${Math.round(tuning[i] * 100)} of 100, from ${setting.low} to ${setting.high}`}
-            onChange={event => tune(tuning.map((value, j) => j === i ? Number(event.currentTarget.value) / 100 : value))} />
-          <small aria-hidden="true"><span>{setting.low}</span><span>{setting.high}</span></small>
-        </label>)}
-        <button type="button" className="screening-reset" data-testid="screening-reset" disabled={!adjusted} onClick={() => tune(undefined)}>Reset</button>
-      </fieldset>
-      <fieldset className="screening-music">
-        <legend>Music</legend>
-        {SHOWREEL_TRACKS.map(track => radio('music', track.id, track.title, `${track.mood} · ${track.artist}${listening === track.id ? ' · Playing preview' : ''}`))}
-        {radio('music', 'none', 'No music')}
-        {choice.music && choice.music !== 'none' && <label className="screening-slider">
-          <span>Music volume · {Math.round((choice.volume ?? .8) * 100)}%</span>
-          <input aria-label="Music volume" type="range" min={0} max={100} value={Math.round((choice.volume ?? .8) * 100)} onChange={event => onChange({ ...choice, volume: Number(event.currentTarget.value) / 100 })} />
-        </label>}
-        <p className="screening-note">CC0 music by HoliznaCC0. Free to use, including in exported videos.</p>
-        {musicError && <p role="alert" className="screening-note">{musicError}</p>}
-      </fieldset>
-      <p className="screening-estimate" data-testid="screening-estimate">{formatDuration(durationFor(choice))} · {frames} {frames === 1 ? 'frame' : 'frames'}{reducedMotion ? ' · Reduced motion' : ''}</p>
-      <p className="screening-note">720p video{choice.music && choice.music !== 'none' ? ' with music' : ' without music'}, made on this device. Nothing is uploaded.</p>
+      <header>
+        <div>
+          <h2 id="screening-picker-title">Screen roll</h2>
+          <p className="screening-estimate" data-testid="screening-estimate">{frames} {frames === 1 ? 'frame' : 'frames'} · {formatDuration(durationFor(choice))}{reducedMotion ? ' · Reduced motion' : ''}</p>
+        </div>
+        <button type="button" className="screening-close" aria-label="Close" onClick={onClose}>×</button>
+      </header>
+      <FilmPanelFrames stockId={stockId}>
+        <fieldset key="reel">
+          <legend className="table-eyebrow">REEL</legend>
+          <div className="screening-reels">{PICKER_REELS.map(reel => radio('reel', reel, REEL_LABEL[reel]))}</div>
+          <p className="screening-description">{REEL_DESCRIPTION[choice.reel]}</p>
+          <button type="button" className="screening-adjust" aria-expanded={adjusting} aria-controls="screening-tuning" onClick={() => setAdjusting(open => !open)}>
+            <span aria-hidden="true">{adjusting ? '▾' : '▸'}</span> Adjust {REEL_LABEL[choice.reel]}
+          </button>
+          {adjusting && <div id="screening-tuning" className="screening-tuning" data-testid="screening-tuning">
+            {settings.map((setting, i) => <label key={`${choice.reel}-${i}`} className="screening-slider">
+              <span>{setting.label}</span>
+              <input type="range" min={0} max={100} step={1} value={Math.round(tuning[i] * 100)} data-testid={`screening-setting-${i}`}
+                aria-valuetext={`${setting.label}: ${Math.round(tuning[i] * 100)} of 100, from ${setting.low} to ${setting.high}`}
+                onChange={event => tune(tuning.map((value, j) => j === i ? Number(event.currentTarget.value) / 100 : value))} />
+              <small aria-hidden="true"><span>{setting.low}</span><span>{setting.high}</span></small>
+            </label>)}
+            <button type="button" className="screening-reset" data-testid="screening-reset" disabled={!adjusted} onClick={() => tune(undefined)}>Reset</button>
+          </div>}
+        </fieldset>
+        <div key="playback" className="screening-playback"><fieldset>
+          <legend className="table-eyebrow">PACE</legend>
+          <div className="screening-segmented">{PACES.map(pace => radio('pace', pace, PACE_LABEL[pace]))}</div>
+        </fieldset>
+        <fieldset>
+          <legend className="table-eyebrow">MUSIC</legend>
+          <div className="screening-music">
+            {radio('music', 'none', 'No music')}
+            {SHOWREEL_TRACKS.map(track => radio('music', track.id, track.title))}
+          </div>
+          {track && <>
+            <p className="screening-description">{listening === track.id ? 'Playing preview · ' : ''}{track.mood} · {track.artist}, CC0</p>
+            <label className="screening-volume">
+              <span>Volume <output>{Math.round((choice.volume ?? .8) * 100)}%</output></span>
+              <input aria-label="Music volume" type="range" min={0} max={100} value={Math.round((choice.volume ?? .8) * 100)} onChange={event => onChange({ ...choice, volume: Number(event.currentTarget.value) / 100 })} />
+            </label>
+          </>}
+          {musicError && <p role="alert" className="screening-description">{musicError}</p>}
+        </fieldset></div>
+      </FilmPanelFrames>
       <footer>
-        <button type="button" className="is-primary" data-testid="screening-preview" onClick={onPreview}>Preview</button>
+        <p className="screening-note">720p, made on this device</p>
         <button type="button" data-testid="screening-export" onClick={onExport}>Export video</button>
+        <button type="button" className="is-primary" data-testid="screening-preview" onClick={onPreview}>Preview</button>
       </footer>
     </div>
   </dialog>;
