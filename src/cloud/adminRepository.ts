@@ -57,16 +57,22 @@ export class AdminRollRepository extends RollRepository {
     this.images.clear(); this.imageRollId=undefined;
   }
   private observers = new Set<() => void>();
-  private pendingPublication = new Map<string, { inputVersion: number; savedVersion: number }>();
+  private rolls = new Map<string, StoredRoll>();
+  private trashTimes = new Map<string, number>();
   override subscribe(listener: () => void) { this.observers.add(listener); return () => { this.observers.delete(listener); }; }
   private notify() { this.observers.forEach(listener => listener()); }
-  override async list() { return reconcileShelfSlots((await ownerClient.list()).map(draft => draft.roll)); }
+  override async list() {
+    const rolls = reconcileShelfSlots((await ownerClient.list()).map(draft => draft.roll));
+    this.rolls = new Map(rolls.map(roll => [roll.id, roll]));
+    return rolls;
+  }
   override async shelf() { return (await this.list()).filter(roll => roll.trashedAt === null); }
   override async read(id: string, _includeOriginals = false, onProgress?: ProgressReporter): Promise<RollBundle> {
     onProgress?.({ label: 'Loading roll details…' });
     this.useImagesFor(id);
     const draft = await ownerClient.load(id);
     this.editorDrafts.set(id, draft);
+    this.rolls.set(id, draft.roll);
     const frames = draft.frames.map(frame => ({ ...frame, mime: 'image/jpeg', hash: '', originalKey: '' }));
     let completed = 0;
     const report = () => onProgress?.({ label: 'Opening photographs…', detail: `${completed} / ${draft.frames.length} photographs`, completed, total: draft.frames.length });
@@ -100,9 +106,7 @@ export class AdminRollRepository extends RollRepository {
     finally { this.uploadObservers.delete(reportBackground); }
     operationSignal.throwIfAborted();
     options.onProgress?.({ label: 'Checking saved roll…' });
-    const existing = this.pendingPublication.has(bundle.roll.id)
-      ? await ownerClient.load(bundle.roll.id, operationSignal)
-      : this.editorDrafts.get(bundle.roll.id) ?? (await ownerClient.list(operationSignal)).find(draft => draft.roll.id === bundle.roll.id);
+    const existing = this.editorDrafts.get(bundle.roll.id);
     let completed = 0;
     const reportUploads = () => options.onProgress?.({ label: 'Uploading photographs…', detail: `${completed} / ${bundle.frames.length} photographs`, completed, total: bundle.frames.length });
     reportUploads();
@@ -112,22 +116,27 @@ export class AdminRollRepository extends RollRepository {
       if (!operationSignal.aborted) { completed++; reportUploads(); }
       return { ...uploaded, rotation: frame.rotation, uprightRotation: frame.uprightRotation, cropPosition: frame.cropPosition, filmStrength: frame.filmStrength };
     });
-    const pending = this.pendingPublication.get(bundle.roll.id);
-    const updatedAt = pending?.inputVersion === bundle.roll.updatedAt && pending.savedVersion === existing?.roll.updatedAt
-      ? pending.savedVersion : bundle.roll.updatedAt;
     options.onProgress?.({ label: 'Saving roll…' });
-    const saved = await ownerClient.save({ roll: { ...bundle.roll, updatedAt }, frames }, operationSignal);
+    const changes = existing ? Object.fromEntries(Object.entries(bundle.roll).filter(([key, value]) =>
+      JSON.stringify(value) !== JSON.stringify(existing.roll[key as keyof StoredRoll]))) : {};
+    const rollFields = ['name', 'camera', 'stockId', 'format', 'sizing', 'filmStrength', 'coverId', 'trashedAt', 'view'];
+    const canPatch = existing && JSON.stringify(frames) === JSON.stringify(existing.frames)
+      && Object.keys(changes).length > 0 && Object.entries(changes).every(([key, value]) => rollFields.includes(key) && value !== undefined);
+    const saved = canPatch
+      ? await ownerClient.patchRoll(bundle.roll.id, bundle.roll.updatedAt, changes, operationSignal)
+      : await ownerClient.saveRoll({ roll: bundle.roll, frames }, operationSignal);
     this.editorDrafts.set(bundle.roll.id, saved);
-    this.pendingPublication.set(bundle.roll.id, { inputVersion: bundle.roll.updatedAt, savedVersion: saved.roll.updatedAt });
+    this.rolls.set(bundle.roll.id, saved.roll);
     this.notify();
-    let batches = 0;
-    options.onProgress?.({ label: 'Publishing roll…' });
-    await ownerClient.publish(saved.roll.id, saved.roll.updatedAt, operationSignal, () => options.onProgress?.({ label: 'Publishing roll…', detail: `${++batches} batches completed` }));
-    this.pendingPublication.delete(bundle.roll.id);
   }
   override async update(id: string, change: (roll: StoredRoll) => StoredRoll) {
-    const draft = await ownerClient.load(id);
-    await ownerClient.save({ ...draft, roll: change(draft.roll) });
+    const roll = this.rolls.get(id) ?? (await ownerClient.load(id)).roll;
+    const next = change(roll);
+    const changes = Object.fromEntries(Object.entries(next).filter(([key, value]) =>
+      JSON.stringify(value) !== JSON.stringify(roll[key as keyof StoredRoll])));
+    if (!Object.keys(changes).length) return;
+    const saved = await ownerClient.patchRoll(id, roll.updatedAt, changes);
+    this.rolls.set(id, saved.roll);
     this.notify();
   }
   // One private record, so a swap is never half-saved; it also orders the public gallery.
@@ -136,11 +145,12 @@ export class AdminRollRepository extends RollRepository {
   override async preferences() { return ownerClient.preferences(); }
   override async savePreferences(preferences: DarkroomPreferences) { await ownerClient.savePreferences(preferences); }
   override async trash(id: string, trashed = true) {
-    const draft = await ownerClient.load(id);
-    if (trashed) await ownerClient.withdraw(id);
-    const saved = await ownerClient.save({ ...draft, roll: { ...draft.roll, trashedAt: trashed ? Date.now() : null } });
+    const roll = this.rolls.get(id) ?? (await ownerClient.load(id)).roll;
+    if (trashed && !this.trashTimes.has(id)) this.trashTimes.set(id, roll.trashedAt ?? Date.now());
+    const saved = await ownerClient.patchRoll(id, roll.updatedAt, { trashedAt: trashed ? this.trashTimes.get(id)! : null });
+    this.trashTimes.delete(id);
+    this.rolls.set(id, saved.roll);
     this.notify();
-    if (!trashed) await ownerClient.publish(id, saved.roll.updatedAt);
   }
 }
 export const adminRollRepository = new AdminRollRepository();

@@ -21,9 +21,67 @@ checks do not create cloud resources or change existing secrets.
 - Admin re-encodes selected JPEG/PNG or imported archive originals **in the browser** into viewing JPEGs (at most 2,048 pixels per side) and thumbnails (at most 256 pixels per side). Canvas JPEG output does not carry source EXIF/GPS metadata. Admin retains the original locally; **no original is uploaded to R2**, even as a private draft. Keep the source photographs and `.darkroom` backups yourself. Private R2 holds only staged and sealed derivatives, completed-upload metadata and immutable draft snapshots.
 - Five-minute S3 PUT grants bind each derivative to one private-bucket key, method, exact byte count and `image/jpeg` content type. Presigned URLs use the S3 `UNSIGNED-PAYLOAD` canonical value; the expected SHA-256 stays in the private pending grant. Browser PUTs go directly to R2. Worker completion verifies R2 object headers and size, then supplies the expected SHA-256 to R2 when streaming each sealed copy. R2 rejects mismatched bytes before a completed-upload record can be saved; it does **not** decode, sanitize or inspect the image body. A compromised browser could submit a JPEG with metadata despite the normal Admin re-encode; the Worker cannot independently prove its absence. Completion seals private derivative copies to prevent staging replay from changing a saved photograph.
 - The existing local importer constrains sources to 40 MiB, 40 megapixels and 16,384 pixels per side; cloud upload limits are 5 MiB per viewing JPEG and 512 KiB per thumbnail. Drafts retain film-length checks and the browser's 300 MiB import limit. PNG originals are accepted locally but sent only as JPEG derivatives; HEIC conversion is not part of cloud import.
-- A cloud save uses optimistic concurrency. A second session cannot silently overwrite a newer saved draft. Publication requires the saved version's server-generated `updatedAt`, streams private derivative bytes to complete versioned public objects in bounded batches, then conditionally replaces a private R2 catalog pointer referencing an immutable public catalog version. Readers load that pointer on every gallery request; failed or conflicting publication preserves the prior complete catalog revision. No Pages rebuild is needed.
+- A cloud save uses optimistic concurrency. A second session cannot silently overwrite a newer saved draft. The roll API saves and publishes in the same request, streams any new private derivative bytes to complete versioned public objects within an image-copy budget, then conditionally replaces a private R2 catalog pointer referencing an immutable public catalog version. Readers load that pointer on every gallery request; failed or conflicting publication preserves the prior complete catalog revision. No Pages rebuild is needed.
 - Withdrawal removes the current catalog entry before deleting public images in bounded numeric-generation batches. Failed deletion leaves a resumable tombstone; repeat withdrawal. Later explicit republication gets a new generation and is not removed by an earlier withdrawal. Private derivative drafts remain; originals exist only in the owner's local files/backups.
 - Public photographs can be downloaded or captured. Withdrawal cannot revoke screenshots, downloaded files, browser caches or previously saved offline copies. Configure photo-domain caching as described below; deleting R2 objects alone does not purge an independently cached CDN copy.
+
+## Roll mutation API
+
+The shared admin editor uses `PUT` and `PATCH /api/owner/rolls/:id`.
+A successful response means both the private save and requested public update
+have finished. The browser no longer coordinates a draft PUT followed by a
+publish POST. Existing `/drafts` and `/publications` routes remain available to
+older installed clients and the separate private-draft workspace.
+
+| Action | Request |
+| --- | --- |
+| Cover, title, camera, stock, or other roll fields | `PATCH` with `{ updatedAt, mutationId, changes }` |
+| Create a roll; reorder, remove, add, crop or rotate frames; edit frame effects | `PUT` with `{ roll, frames, mutationId }` |
+| Trash / restore | `PATCH` with `changes: { trashedAt: <timestamp or null> }` |
+| Save viewer position only | `PATCH` with `changes: { view }`; stays private |
+| Arrange shelf / save preferences | Existing single-request `PUT /shelf` / `PUT /preferences` |
+
+For example, a cover change sends only:
+
+```json
+{
+  "updatedAt": 1791000000000,
+  "mutationId": "6b1749ab-46a4-42d3-8569-a274f17db03c",
+  "changes": { "coverId": "52c7544f-7c93-4e86-8731-09a9c139231d" }
+}
+```
+
+`updatedAt` is the version being edited, not the browser's current time.
+The response is `{ draft }`, containing the server's new version. The server
+retains trusted sealed-upload records in private snapshots, so subsequent edits
+do not fetch each upload record again. It reuses unchanged public image URLs;
+cover changes do not upload, download or copy image bytes during the mutation.
+Older snapshots are upgraded on their next save. Public catalogs still exclude
+filenames, private storage references, saved views and operation fingerprints.
+
+`mutationId` is a client-generated UUID retained for an unchanged retry. The
+server checks its request fingerprint and returns/resumes the same save after a
+lost response or publication error. Stale edits from another session return
+409. A publication failure can leave a newer private draft while retaining the
+previous complete public gallery; retry the same request to finish publishing.
+Changing the request after such a failure requires reopening the saved version.
+
+Ordinary creation, editing, trash and restore finish in one mutation request.
+New photo derivatives still upload separately in the background before Save.
+The server budgets image copying rather than batching every six frames: a
+36-frame publication fits in one request, and even a 580-frame metadata edit
+needs one. More than 60 frames requiring new public image copies may return
+`{ draft, pending: true, continuation }`; repeat the same request with that token.
+Very large historical-image cleanup can return `{ draft, pending: true }`;
+repeat the same request. The client handles these exceptional continuations.
+No partial public roll becomes visible.
+
+The budget reserves headroom below Workers Free's **1,000 internal-service
+subrequests**, which is separate from its 50 external subrequests. See
+[Cloudflare's current limits](https://developers.cloudflare.com/workers/platform/limits/#subrequests).
+Local tests check request counts, immutable-image reuse, bounded R2 work,
+stale edits, lost responses and cleanup failures. They do not measure hosted
+latency or Workers CPU; deployment and hosted measurements are separate steps.
 
 ## Cloudflare provisioning checklist — requires authorization
 
@@ -113,7 +171,7 @@ Checked 2026-09-25; recheck before provisioning. Vendor allowances are not a gua
 - [Pages limits](https://developers.cloudflare.com/pages/platform/limits/): Free lists 500 builds/month, 20,000 files and 25 MiB per asset. Photo publishing does not trigger Pages builds. Tracked camera models remain app assets.
 - [Cloudflare Zero Trust plans](https://www.cloudflare.com/plans/zero-trust-services/): check Free Access seat eligibility for the single owner in the actual account. Visitors need no Access seats. Porkbun domain renewal remains separate.
 
-**Cloudflare Free measurements are not yet available:** the operator reports deploying the Worker with its four secrets; a read-only hosted gallery request returned an empty catalog, but no CPU/subrequest measurements have been collected. Wrangler dry-run and local in-memory R2 tests are not hosted Free measurements. Before production publication, enable [Workers invocation logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/) or [real-time logs](https://developers.cloudflare.com/workers/observability/logs/real-time-logs/) and record `cpuTimeMs`, `wallTimeMs`, outcome and R2 subrequest count for: anonymous `GET /api/gallery`, owner `GET /api/owner/session`, `POST /api/owner/uploads`, `POST /api/owner/uploads/:id/complete`, `GET /api/owner/uploads/:id/viewing` and `/thumbnail`, `PUT /api/owner/drafts/:id`, `GET /api/owner/drafts/:id`, `GET /api/owner/drafts`, every `POST /api/owner/drafts/:id/publish` continuation, and each `DELETE /api/owner/publications/:id` withdrawal continuation. Use at least a five-frame representative roll with real 2,048-pixel viewing derivatives and 256-pixel thumbnails, including a second revision and withdrawal; sample repeated successful invocations and errors. The hosted budget is **<10 ms CPU** and **≤50 external subrequests** on each invocation. Logs/metrics must confirm this rather than extrapolating Node or dry-run timings. Check account-wide requests, R2 operations/storage and photo-domain cache behavior before promising free operation. [Workers timing fields](https://developers.cloudflare.com/changelog/post/2025-04-09-workers-timing/) distinguish CPU from wall time.
+**Cloudflare Free measurements are not yet available:** the operator reports deploying the Worker with its four secrets; a read-only hosted gallery request returned an empty catalog, but no CPU/subrequest measurements have been collected. Wrangler dry-run and local in-memory R2 tests are not hosted Free measurements. Before production publication, enable [Workers invocation logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/) or [real-time logs](https://developers.cloudflare.com/workers/observability/logs/real-time-logs/) and record `cpuTimeMs`, `wallTimeMs`, outcome and R2 subrequest count for: anonymous `GET /api/gallery`, owner `GET /api/owner/session`, `POST /api/owner/uploads`, `POST /api/owner/uploads/:id/complete`, `GET /api/owner/uploads/:id/viewing` and `/thumbnail`, `PUT /api/owner/drafts/:id`, `GET /api/owner/drafts/:id`, `GET /api/owner/drafts`, every `POST /api/owner/drafts/:id/publish` continuation, and each `DELETE /api/owner/publications/:id` withdrawal continuation. Use at least a five-frame representative roll with real 2,048-pixel viewing derivatives and 256-pixel thumbnails, including a second revision and withdrawal; sample repeated successful invocations and errors. The hosted budget is **<10 ms CPU**, **≤50 external subrequests** and **≤1,000 internal-service subrequests** on each invocation. Include the current `PUT`/`PATCH /api/owner/rolls/:id` routes when collecting new measurements; the draft/publish measurements below describe the older flow. Logs/metrics must confirm this rather than extrapolating Node or dry-run timings. Check account-wide requests, R2 operations/storage and photo-domain cache behavior before promising free operation. [Workers timing fields](https://developers.cloudflare.com/changelog/post/2025-04-09-workers-timing/) distinguish CPU from wall time.
 
 **Local diagnostic only (Node/Vitest, in-memory R2):** a five-frame roll using 2,048×1,365 viewing JPEGs and 256×171 thumbnails, two publication revisions and withdrawal produced the following per-invocation observations. CPU is Node `process.cpuUsage` including local JWT verification and test-fake I/O; it is **not workerd or hosted Workers CPU**. R2 counts omit the one external Access-JWKS lookup for owner routes. The throwaway measuring test was removed after the run.
 
@@ -129,7 +187,7 @@ Checked 2026-09-25; recheck before provisioning. Vendor allowances are not a gua
 | `POST /api/owner/drafts/:id/publish` (each revision) | 2.40–3.52 | 33–34 |
 | `DELETE /api/owner/publications/:id` | 1.17 | 8 |
 
-In the separate 13-frame bounded-publication and multi-generation withdrawal regression, each continuation used at most 50 fake R2 calls. These numbers demonstrate call-count design under a local mock, not actual Cloudflare Free eligibility.
+In the historical, separate 13-frame bounded-publication and multi-generation withdrawal regression, each continuation used at most 50 fake R2 calls. These numbers demonstrate call-count design under a local mock, not actual Cloudflare Free eligibility.
 
 ## Acceptance checks still required on the hosted account
 

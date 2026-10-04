@@ -1,6 +1,6 @@
-import type { CloudDraft, UploadRequest } from '../src/cloud/contracts';
+import type { CloudDraft, UploadRequest, SaveRollRequest, PatchRollRequest } from '../src/cloud/contracts';
 import { authorize, checkConfig, checkMutationOrigin } from './auth';
-import { completeUpload, grantUpload, listDrafts, privateImage, publicCatalog, publishDraft, readDraft, readPreferences, saveArrangement, saveDraft, savePreferences, withdrawPublication } from './storage';
+import { completeUpload, grantUpload, listDrafts, mutateRoll, privateImage, publicCatalog, publishDraft, readDraft, readPreferences, saveArrangement, saveDraft, savePreferences, withdrawPublication } from './storage';
 import { Env, HttpError, Kind, requireValue, validId } from './types';
 import { exchangeDevLogin, startDevLogin } from './devLogin';
 
@@ -50,9 +50,14 @@ async function route(request: Request, env: Env): Promise<Response | object> {
   if (path === '/api/owner/preferences' && method === 'GET') return readPreferences(env);
   if (path === '/api/owner/preferences' && method === 'PUT') return savePreferences(env, await readJson<unknown>(request));
   if (path === '/api/owner/shelf' && method === 'PUT') return saveArrangement(env, await readJson<unknown>(request));
-  const match = /^\/api\/owner\/(uploads|drafts|publications)\/([^/]+)(?:\/(complete|viewing|thumbnail|publish))?$/.exec(path);
+  const match = /^\/api\/owner\/(uploads|drafts|publications|rolls)\/([^/]+)(?:\/(complete|viewing|thumbnail|publish))?$/.exec(path);
   if (!match || !validId(match[2])) throw new HttpError(404, 'API route was not found.');
   const [, collection, id, action] = match;
+  if (collection === 'rolls' && !action && (method === 'PUT' || method === 'PATCH')) {
+    const input = await readJson<SaveRollRequest | PatchRollRequest>(request);
+    requireValue(input && typeof input === 'object' && (method === 'PATCH' ? 'changes' in input : 'roll' in input && !('changes' in input)), 'Invalid roll request.');
+    return mutateRoll(env, id, input);
+  }
   if (collection === 'uploads') {
     if (action === 'complete' && method === 'POST') return completeUpload(env, id);
     if (['viewing', 'thumbnail'].includes(action) && method === 'GET') {

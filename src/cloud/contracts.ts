@@ -25,6 +25,13 @@ export interface DraftFrame extends Pick<StoredFrame, 'id' | 'rollId' | 'filenam
   viewingSha256: string;
 }
 export interface CloudDraft { roll: StoredRoll; frames: DraftFrame[] }
+// Normal edits finish in one request. Only unusually large image copies/cleanup
+// need a continuation; the same mutation ID makes an interrupted save retryable.
+export interface SaveRollRequest extends CloudDraft { mutationId: string; continuation?: string }
+export interface PatchRollRequest {
+  mutationId: string; updatedAt: number; changes: Partial<StoredRoll>; continuation?: string;
+}
+export interface RollMutationResult { draft: CloudDraft; pending?: true; continuation?: string }
 export type UploadKind = 'viewing' | 'thumbnail';
 export type UploadRequest = Record<UploadKind, { bytes: number; mime: 'image/jpeg'; sha256: string }>;
 export interface UploadGrant {
@@ -36,6 +43,8 @@ export type PublishResult = GalleryRoll | PublishPending;
 export interface WithdrawResult { withdrawn: boolean }
 // Same-origin Worker routes; private responses and grants must always be no-store.
 // GET /api/gallery -> GalleryCatalog
+// PUT /api/owner/rolls/:id SaveRollRequest -> RollMutationResult (save and publish)
+// PATCH /api/owner/rolls/:id PatchRollRequest -> RollMutationResult (edit, trash/restore, or private view)
 // GET /api/owner/session -> { email: string }
 // POST /api/owner/uploads UploadRequest -> UploadGrant
 // POST /api/owner/uploads/:id/complete -> { id: string } (verify grant metadata before use)

@@ -1,8 +1,8 @@
 import type { R2Bucket, R2ObjectBody } from '@cloudflare/workers-types';
-import type { CloudDraft, GalleryCatalog, GalleryRoll, PublishResult, UploadRequest } from '../src/cloud/contracts';
+import type { CloudDraft, GalleryCatalog, GalleryRoll, PublishResult, UploadRequest, SaveRollRequest, PatchRollRequest, RollMutationResult } from '../src/cloud/contracts';
 import { validateBundle, validatePreferences, type DarkroomPreferences } from '../src/storage/rollRepository';
 import { applyShelfArrangement, validShelfArrangement, type ShelfArrangement } from '../src/utils/shelfLayout';
-import { CatalogState, CompletedUpload, DraftHead, DraftSnapshot, Env, HttpError, ImageRecord, Kind, PendingPublication, PendingUpload, kinds, requireValue, validId } from './types';
+import { CatalogState, CompletedUpload, DraftHead, DraftSnapshot, Env, HttpError, ImageRecord, Kind, PendingPublication, PendingUpload, kinds, requireValue, validId, hash } from './types';
 import { signUpload, stagingKey, UPLOAD_LIFETIME_MS } from './signing';
 
 const imageLimits = { viewing: 5 * 1024 * 1024, thumbnail: 512 * 1024 } as const;
@@ -12,8 +12,8 @@ async function record<T>(bucket: R2Bucket, key: string): Promise<{ value: T; eta
   const object = await bucket.get(key);
   return object ? { value: await object.json<T>(), etag: object.etag } : null;
 }
-// A cleanup page is deliberately bounded: R2 calls count against Workers Free's
-// 50-subrequest limit, including work performed after the response.
+// Legacy cleanup remains bounded for older clients. R2 bindings have a separate
+// internal-service request budget; the roll API uses larger pages below.
 async function removePage(bucket: R2Bucket, prefix: string): Promise<boolean> {
   const page = await bucket.list({ prefix, limit: 24 });
   if (!page.objects.length && page.truncated) throw new HttpError(503, 'Public storage pagination did not advance.');
@@ -208,19 +208,30 @@ function checkDraft(value: CloudDraft, id: string) {
   try { validateBundle({ roll, frames: value.frames }); }
   catch (error) { throw new HttpError(400, error instanceof Error ? error.message : 'Invalid roll.'); }
 }
-export async function saveDraft(env: Env, id: string, value: CloudDraft): Promise<CloudDraft> {
+export async function saveDraft(env: Env, id: string, value: CloudDraft, operation?: DraftSnapshot['operation']): Promise<CloudDraft> {
   checkDraft(value, id);
   const head = await draftHead(env, id);
   let previous: CloudDraft | undefined;
+  let previousUploads: DraftSnapshot['uploads'];
   if (head) {
     const snapshot = await record<DraftSnapshot>(env.PRIVATE_BUCKET, head.value.snapshot);
     if (!snapshot) throw new HttpError(503, 'Private draft storage is unavailable.');
     previous = snapshot.value.draft;
+    previousUploads = snapshot.value.uploads;
+    if (operation && snapshot.value.operation?.id === operation.id) {
+      requireValue(snapshot.value.operation.fingerprint === operation.fingerprint, 'Use a new mutation ID for different edits.');
+      return previous;
+    }
     if (previous.roll.updatedAt !== value.roll.updatedAt) throw new HttpError(409, 'This draft changed in another session. Reopen it before saving.');
   }
   const frames: CloudDraft['frames'] = [];
+  const uploads: Record<string, CompletedUpload> = {};
+  // Completed uploads are immutable and validated when first saved. Reusing
+  // their trusted records makes subsequent metadata edits constant-cost in R2.
   for (const frame of value.frames) {
-    const upload = await completedUpload(env, frame.uploadId), images = upload.images;
+    const upload = uploads[frame.uploadId] ?? previousUploads?.[frame.uploadId] ?? await completedUpload(env, frame.uploadId);
+    uploads[frame.uploadId] = upload;
+    const images = upload.images;
     requireValue(frame.viewingSha256 === images.viewing.sha256, 'Frame digest does not match its completed viewing derivative.');
     frames.push({ id: frame.id, rollId: id, uploadId: frame.uploadId, filename: frame.filename,
       width: frame.width, height: frame.height, rotation: frame.rotation, viewingSha256: images.viewing.sha256,
@@ -234,7 +245,7 @@ export async function saveDraft(env: Env, id: string, value: CloudDraft): Promis
     filmStrength: roll.filmStrength, frameIds: [...roll.frameIds], coverId: roll.coverId, createdAt: previous?.roll.createdAt ?? roll.createdAt,
     updatedAt: Math.max(Date.now(), (previous?.roll.updatedAt ?? 0) + 1), trashedAt: roll.trashedAt, shelfSlot: roll.shelfSlot, view: roll.view }, frames };
   const snapshot = `drafts/snapshots/${id}/${crypto.randomUUID()}.json`;
-  await env.PRIVATE_BUCKET.put(snapshot, JSON.stringify({ draft } satisfies DraftSnapshot), { httpMetadata: privateMetadata, onlyIf: { etagDoesNotMatch: '*' } });
+  await env.PRIVATE_BUCKET.put(snapshot, JSON.stringify({ draft, uploads, ...(operation ? { operation } : {}) } satisfies DraftSnapshot), { httpMetadata: privateMetadata, onlyIf: { etagDoesNotMatch: '*' } });
   let committed = false;
   try {
     committed = !!await env.PRIVATE_BUCKET.put(`drafts/heads/${id}.json`, JSON.stringify({ snapshot } satisfies DraftHead), {
@@ -245,8 +256,42 @@ export async function saveDraft(env: Env, id: string, value: CloudDraft): Promis
   } finally { if (!committed) await env.PRIVATE_BUCKET.delete(snapshot); }
 }
 
+const rollChangeKeys = new Set(['name', 'camera', 'stockId', 'format', 'sizing', 'filmStrength', 'coverId', 'trashedAt', 'view']);
+
+/** One user action, one request for ordinary rolls; preserve old draft routes
+ * for installed clients and the explicit private-draft publishing workspace. */
+export async function mutateRoll(env: Env, id: string, input: SaveRollRequest | PatchRollRequest): Promise<RollMutationResult> {
+  requireValue(input && validId(input.mutationId)
+    && (input.continuation === undefined || validId(input.continuation)), 'Invalid roll mutation.');
+  const { continuation, ...request } = input;
+  const operation = { id: input.mutationId, fingerprint: await hash(new TextEncoder().encode(JSON.stringify(request))) };
+  let value: CloudDraft;
+  let privateViewOnly = false;
+  if ('changes' in input) {
+    requireValue(input.changes && typeof input.changes === 'object' && !Array.isArray(input.changes)
+      && Object.keys(input.changes).length > 0 && Object.keys(input.changes).every(key => rollChangeKeys.has(key))
+      && Number.isSafeInteger(input.updatedAt) && input.updatedAt >= 0, 'Invalid roll changes or version.');
+    const current = await readDraft(env, id);
+    value = { ...current, roll: { ...current.roll, ...input.changes, updatedAt: input.updatedAt } };
+    privateViewOnly = Object.keys(input.changes).every(key => key === 'view');
+  } else {
+    value = { roll: input.roll, frames: input.frames };
+  }
+  const draft = await saveDraft(env, id, value, operation);
+  if (privateViewOnly) return { draft };
+  if (draft.roll.trashedAt !== null) {
+    const result = await withdrawPublication(env, id, 1000, 100);
+    return result.withdrawn ? { draft } : { draft, pending: true };
+  }
+  // At most 240 image read/writes plus <=585 first-save upload-record reads,
+  // leaving room below the 1,000 internal-service subrequest limit. Metadata
+  // edits copy zero images, regardless of frame count. No image bytes enter JSON.
+  const result = await publishDraft(env, id, draft.roll.updatedAt, continuation, 120);
+  return 'pending' in result ? { draft, pending: true, continuation: result.continuation } : { draft };
+}
+
 const publicationBatch = 6;
-export async function publishDraft(env: Env, id: string, updatedAt: number, continuation?: string): Promise<PublishResult> {
+export async function publishDraft(env: Env, id: string, updatedAt: number, continuation?: string, imageBudget?: number): Promise<PublishResult> {
   const state = await catalog(env);
   if (state.value.withdrawals[id]) throw new HttpError(409, 'Withdrawal is still in progress. Finish withdrawal before publishing.');
   const head = await draftHead(env, id);
@@ -256,6 +301,14 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
   const draft = snapshot.value.draft;
   if (draft.roll.trashedAt !== null) throw new HttpError(409, 'Restore this roll from Trash before publishing.');
   if (draft.roll.updatedAt !== updatedAt) throw new HttpError(409, 'This draft changed since preview. Reopen it before publishing.');
+  // A lost response can be retried with the same mutation ID without creating
+  // another draft or public revision. Legacy publishing still gets a fresh UUID.
+  const operationId = imageBudget !== undefined ? snapshot.value.operation?.id : undefined;
+  if (operationId) {
+    const published = (await catalogValue(env, state.value.catalogKey)).rolls.find(roll => roll.id === id && roll.revision === operationId);
+    if (published) return published;
+    if (!continuation && await env.PRIVATE_BUCKET.head(`publications/pending/${operationId}.json`)) continuation = operationId;
+  }
   let pending: PendingPublication, pendingEtag: string | undefined;
   if (continuation) {
     if (!validId(continuation)) throw new HttpError(400, 'Invalid publication continuation.');
@@ -265,7 +318,7 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
     if (pending.id !== id || pending.revision !== continuation || pending.snapshot !== head.value.snapshot
       || pending.updatedAt !== updatedAt) throw new HttpError(409, 'Publication no longer matches the saved draft.');
   } else {
-    const roll = draft.roll, revision = crypto.randomUUID();
+    const roll = draft.roll, revision = operationId ?? crypto.randomUUID();
     pending = { id, revision, snapshot: head.value.snapshot, updatedAt,
       catalogEtag: state.etag, catalogKey: state.value.catalogKey, generation: state.value.generations[id] ?? 0,
       nextFrame: 0, publication: { id, revision, name: roll.name, camera: roll.camera, stockId: roll.stockId, format: roll.format,
@@ -304,16 +357,22 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
     if (!done) return { pending: true, continuation: pending.revision };
     throw new HttpError(409, 'The gallery changed concurrently. The previous complete publication is retained.');
   }
-  // A single invocation streams at most six frames (36 R2 image operations),
-  // leaving room for metadata, the immutable catalog and the CAS pointer.
+  // Older clients use six-frame batches. The roll API budgets actual image
+  // copies instead: a metadata-only edit can process the entire roll at once.
   const old = await catalogValue(env, pending.catalogKey);
   const previousFrames = new Map(old.rolls.find(roll => roll.id === id)?.frames.map(frame => [frame.id, frame]));
   const publication: GalleryRoll = { ...pending.publication, frames: [...pending.publication.frames] };
+  const draftFrames = new Map(draft.frames.map(frame => [frame.id, frame]));
+  let copiedImages = 0;
   try {
-    for (let index = pending.nextFrame; index < Math.min(draft.roll.frameIds.length, pending.nextFrame + publicationBatch); index++) {
-      const frame = draft.frames.find(candidate => candidate.id === draft.roll.frameIds[index]);
+    const end = imageBudget === undefined ? Math.min(draft.roll.frameIds.length, pending.nextFrame + publicationBatch) : draft.roll.frameIds.length;
+    for (let index = pending.nextFrame; index < end; index++) {
+      // Reserve both derivatives before starting a frame, so a continuation
+      // never has to recreate a partially processed frame.
+      if (imageBudget !== undefined && copiedImages + 2 > imageBudget) break;
+      const frame = draftFrames.get(draft.roll.frameIds[index]);
       if (!frame) throw new HttpError(409, 'Saved draft frame is missing.');
-      const upload = await completedUpload(env, frame.uploadId);
+      const upload = snapshot.value.uploads?.[frame.uploadId] ?? await completedUpload(env, frame.uploadId);
       const publicFrame: GalleryRoll['frames'][number] = { id: frame.id, width: frame.width, height: frame.height, rotation: frame.rotation,
         ...(frame.uprightRotation !== undefined ? { uprightRotation: frame.uprightRotation } : {}),
         ...(frame.cropPosition ? { cropPosition: { x: frame.cropPosition.x, y: frame.cropPosition.y } } : {}),
@@ -335,6 +394,7 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
         const written = await env.PUBLIC_BUCKET.put(key, source.body, { onlyIf: { etagDoesNotMatch: '*' },
           httpMetadata: { contentType: 'image/jpeg', cacheControl: 'public, max-age=0, must-revalidate' } });
         if (!written) throw new HttpError(409, 'Public image version conflicted. The previous publication is unchanged.');
+        copiedImages++;
         publicFrame[kind] = { url: `${env.PHOTO_ORIGIN}/${key}`, bytes: image.bytes, sha256: image.sha256 };
       }
       publication.frames.push(publicFrame);
@@ -376,7 +436,7 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
     throw error;
   }
 }
-export async function withdrawPublication(env: Env, id: string) {
+export async function withdrawPublication(env: Env, id: string, pageSize = 24, generationLimit = 12) {
   let state = await catalog(env), tombstone = state.value.withdrawals[id];
   if (!tombstone) {
     tombstone = { generation: state.value.generations[id] ?? 0, token: crypto.randomUUID() };
@@ -398,12 +458,12 @@ export async function withdrawPublication(env: Env, id: string) {
   }
   // Scan each exact numeric generation, not a lexicographically sorted roll
   // prefix: \"10/\" precedes \"9/\" and could conceal older images in a page.
-  // Persist progress after at most 12 generations (<=24 delete/list calls).
+  // Persist bounded progress; the roll API can scan more generations per call.
   let nextGeneration = tombstone.nextGeneration ?? 0;
   let scanned = 0;
-  for (; nextGeneration <= tombstone.generation && scanned < 12; scanned++) {
+  for (; nextGeneration <= tombstone.generation && scanned < generationLimit; scanned++) {
     const prefix = `rolls/${id}/${nextGeneration}/`;
-    const page = await env.PUBLIC_BUCKET.list({ prefix, limit: 24 });
+    const page = await env.PUBLIC_BUCKET.list({ prefix, limit: pageSize });
     if (!page.objects.length && page.truncated) throw new HttpError(503, 'Public storage pagination did not advance.');
     if (page.objects.length) await env.PUBLIC_BUCKET.delete(page.objects.map(object => object.key));
     if (page.truncated) break;
