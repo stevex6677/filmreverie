@@ -71,9 +71,13 @@ describe('M22 screening timelines', () => {
         if (reel === 'documentary') expect(pose.tilt).toBe(0);
       }
       expect(createScreeningTimeline(BASELINE_ROLL, options(reel)).segments.some(s => s.act === 'break')).toBe(false);
-      const mediumBreaks = new Set(createScreeningTimeline(medium, options(reel)).segments.filter(s => s.act === 'break').map(s => s.frameIndex)).size;
-      expect(mediumBreaks).toBeGreaterThan(0);
-      expect(mediumBreaks).toBeLessThan(createRollLayout(medium).length - 1);
+      // Short, medium-format and variable-width strips need the same chapter
+      // changes as a full roll, even at the first boundary.
+      const short = { ...BASELINE_ROLL, frames: frames(6), framesPerStrip: 3 };
+      for (const roll of [short, medium, free]) {
+        const changes = new Set(createScreeningTimeline(roll, options(reel, { aspect })).segments.filter(s => s.act === 'break').map(s => s.frameIndex));
+        expect(changes, `${roll.rollId} ${reel}`).toEqual(new Set(createRollLayout(roll).slice(1).map(strip => strip.offset)));
+      }
     }
     expect(breakBoundaries(single).size).toBe(0);
     const at = (reel: ReelId) => createScreeningTimeline(FULL_ROLL_FIXTURE, options(reel));
