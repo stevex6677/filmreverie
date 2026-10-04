@@ -22,6 +22,43 @@ async function save(page:Page){
   await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true');
   await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');
 }
+test('35mm half frame keeps its film type, portrait gates and selection after reopening', async ({ page }, testInfo) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await begin(page, 13, [.75, 4 / 3]);
+  const format = page.getByLabel('Film format', { exact: true });
+  await format.selectOption({ label: '35mm · Half frame' });
+  await expect(page.getByRole('radio', { name: '35mm', exact: true })).toBeChecked();
+  await page.getByRole('dialog').getByLabel('Film stock', { exact: true }).selectOption('ultramax-400');
+  await expect(page.getByRole('radio', { name: '120', exact: true })).toBeDisabled();
+  await expect(page.getByLabel('Film length', { exact: true })).toContainText('254 / 1755 mm');
+  const ratios = await page.locator('.draft-preview').evaluateAll(nodes => nodes.slice(0, 2).map(node => {
+    const rect = node.getBoundingClientRect(); return rect.width / rect.height;
+  }));
+  for (const ratio of ratios) expect(ratio).toBeCloseTo(.75, 2);
+  await page.screenshot({ path: testInfo.outputPath('half-frame-editor.png') });
+  await save(page);
+  await expect(page.locator('main')).toHaveAttribute('data-film-format', '135-half');
+  await page.screenshot({ path: testInfo.outputPath('half-frame-table.png') });
+  await openFrame(page, 13);
+  await expect(page.locator('main')).toHaveAttribute('data-selected-frame', '13');
+  await page.reload();
+  await expect(page.locator('main')).toHaveAttribute('data-assets-ready', 'true');
+  await expect(page.locator('main')).toHaveAttribute('data-film-format', '135-half');
+  await page.getByRole('button', { name: '← Overview', exact: true }).click();
+  await page.getByRole('button', { name: 'Film Shelf', exact: true }).click();
+  await page.getByRole('button', { name: 'Show saved roll Mixed sizes', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit Mixed sizes', exact: true }).click();
+  await expect(format).toHaveValue('135-half');
+  await expect(page.getByRole('radio', { name: '35mm', exact: true })).toBeChecked();
+  await format.selectOption('free');
+  await expect(page.locator('.roll-editor-summary')).toContainText('35mm · Free');
+  await format.selectOption('135');
+  await expect(page.getByLabel('Film length', { exact: true })).toContainText('507 / 1755 mm');
+  await format.selectOption('135-half');
+  await expect(page.getByLabel('Film length', { exact: true })).toContainText('254 / 1755 mm');
+  expect(errors).toEqual([]);
+});
 for(const film of ['35mm','120']) test(`${film} free frames preserve proportions through review, rendering and reload`,async({page},testInfo)=>{
   const out=`${OUT}/${testInfo.project.name}`;
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});

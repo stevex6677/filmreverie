@@ -1,6 +1,7 @@
 export interface FilmStripLayout {
   frameCount: number;
   perforated?: boolean;
+  perforationsPerFrame?: number;
   frameNumberOffset?: number;
   frameWidth: number;
   frameWidths?: readonly number[];
@@ -84,13 +85,14 @@ export function getPerforationPositions(layout: FilmStripLayout = DEFAULT_LAYOUT
     return { top, bottom };
   }
   const frameSpan = layout.frameWidth + layout.gap;
-  const step = frameSpan / PERFORATIONS_PER_FRAME;
+  const count = layout.perforationsPerFrame ?? PERFORATIONS_PER_FRAME;
+  const step = frameSpan / count;
 
   for (let f = 0; f < layout.frameCount; f++) {
     const center = getFrameCenter(f, layout);
     const frameLeft = center.x - layout.frameWidth / 2;
 
-    for (let k = 0; k < PERFORATIONS_PER_FRAME; k++) {
+    for (let k = 0; k < count; k++) {
       const x = frameLeft + (k + 0.5) * step;
       top.push({ x, y: topY, frameIndex: f, perforationIndex: k });
       bottom.push({ x, y: bottomY, frameIndex: f, perforationIndex: k });

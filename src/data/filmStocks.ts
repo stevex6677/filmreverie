@@ -11,7 +11,7 @@ import fuji_200 from "../../public/assets/film-stocks/fuji-200.json" with { type
 import pro_image_100 from "../../public/assets/film-stocks/pro-image-100.json" with { type: "json" };
 import gold_200 from "../../public/assets/film-stocks/gold-200.json" with { type: "json" };
 import ultramax_400 from "../../public/assets/film-stocks/ultramax-400.json" with { type: "json" };
-import type { FilmFormat } from './filmFormats';
+import { filmType, type FilmFormat } from './filmFormats';
 
 export type FilmStockId = "ultramax-400" | "fuji-200" | "pro-image-100" | "gold-200" | "ektachrome-e100" | "ektar-100" | "portra-160" | "portra-400" | "portra-800" | "provia-100" | "velvia-50" | "velvia-100";
 export interface FilmStockProfile {
@@ -51,5 +51,5 @@ export function isFilmStockId(id: string): id is FilmStockId {
 
 /** 120 covers all medium-format gates; free sizing retains the selected film type. */
 export function supportsFilmFormat(id: FilmStockId, format: FilmFormat | '120'): boolean {
-  return getFilmStock(id).formats.includes(format === '135' ? '135' : '120');
+  return getFilmStock(id).formats.includes(filmType(format));
 }

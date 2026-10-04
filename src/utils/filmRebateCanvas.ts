@@ -120,18 +120,27 @@ function paintRebate(ctx: CanvasRenderingContext2D, stock: FilmStockProfile, lay
   ctx.font = `${stock.rebate.fontWeight} 19px ${stock.rebate.font}`;
   ctx.textBaseline = "middle";
 
-  const fujiCode = FUJI_EMULSION_CODES[stock.id];
-
   for (let i = 0; i < layout.frameCount; i++) {
     const center = getFrameCenter(i, layout);
     const left = (center.x + stripWidth / 2 - getFrameWidth(i, layout) / 2) * scaleX;
-    const frameWidth = getFrameWidth(i, layout) * scaleX;
+    ctx.clearRect(left, py, getFrameWidth(i, layout) * scaleX, ph);
+  }
+
+  const fujiCode = FUJI_EMULSION_CODES[stock.id];
+  // The stock's edge print repeats once per full-frame advance, even when
+  // the camera exposes two half frames. Keep lettering and DX codes full size.
+  const halfFrame = layout.perforationsPerFrame === 4 && !layout.frameWidths;
+  const offset = layout.frameNumberOffset ?? 0;
+  const stride = halfFrame ? 2 : 1;
+  for (let i = halfFrame ? -(offset % 2) : 0; i < layout.frameCount; i += stride) {
+    const index = Math.max(0, i), center = getFrameCenter(index, layout);
+    const left = (center.x + stripWidth / 2 - getFrameWidth(index, layout) / 2 + (i < 0 ? -(layout.frameWidth + layout.gap) : 0)) * scaleX;
+    const frameWidth = (halfFrame ? 2 * layout.frameWidth + layout.gap : getFrameWidth(i, layout)) * scaleX;
     const midpoint = left + frameWidth / 2;
-    ctx.clearRect(left, py, frameWidth, ph);
     // No artificial dark stroke around the image gate.
     if (layout.perforated === false) continue;
 
-    const frameNum = i + 1 + (layout.frameNumberOffset ?? 0);
+    const frameNum = (i + offset) / stride + 1;
     const step = (frameWidth + layout.gap * scaleX) / 8;
 
     // Latent registration marks between perforation holes in inner margins
