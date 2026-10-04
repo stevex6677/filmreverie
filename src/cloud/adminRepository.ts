@@ -119,7 +119,7 @@ export class AdminRollRepository extends RollRepository {
     options.onProgress?.({ label: 'Saving roll…' });
     const changes = existing ? Object.fromEntries(Object.entries(bundle.roll).filter(([key, value]) =>
       JSON.stringify(value) !== JSON.stringify(existing.roll[key as keyof StoredRoll]))) : {};
-    const rollFields = ['name', 'camera', 'stockId', 'format', 'sizing', 'filmStrength', 'coverId', 'trashedAt', 'view'];
+    const rollFields = ['name', 'camera', 'stockId', 'format', 'sizing', 'framesPerStrip', 'filmStrength', 'coverId', 'trashedAt', 'view'];
     const canPatch = existing && JSON.stringify(frames) === JSON.stringify(existing.frames)
       && Object.keys(changes).length > 0 && Object.entries(changes).every(([key, value]) => rollFields.includes(key) && value !== undefined);
     const saved = canPatch

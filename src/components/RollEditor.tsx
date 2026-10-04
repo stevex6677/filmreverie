@@ -3,7 +3,7 @@ import { RollProgress } from './RollProgress';
 import { blockUpdate } from '../offline/client';
 import { DragEvent, useEffect, useRef, useState } from 'react';
 import { FILM_STOCKS, DEFAULT_FILM_STOCK_ID, FilmStockId, getFilmStock, supportsFilmFormat } from '../data/filmStocks';
-import { EXTRA_FILM_ALLOWANCE, FILM_FORMATS, filmType, FilmFormat, FrameSizing, filmLengthUsage, rollFormatLabel } from '../data/filmFormats';
+import { EXTRA_FILM_ALLOWANCE, FILM_FORMATS, isFramesPerStrip, filmType, FilmFormat, FrameSizing, filmLengthUsage, rollFormatLabel } from '../data/filmFormats';
 import { RollBundle, RollRepository, StoredRoll, storageMessage, rollRepository } from '../storage/rollRepository';
 import { DraftPhoto, processPhotos, releaseDraft } from '../storage/importPhotos';
 import { generateUuid } from '../storage/crypto';
@@ -20,6 +20,8 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onSaved,onDe
   const [error,setError]=useState(''),[busy,setBusy]=useState(false),[progress,setProgress]=useState(''),[saving,setSaving]=useState<OperationProgress|null>(null),[saveAction,setSaveAction]=useState<'save'|'open'>('save'),[loading,setLoading]=useState(true),[dropping,setDropping]=useState(false);
   const [draft,setDraft]=useState<DraftPhoto[]|null>(null),[editing,setEditing]=useState<StoredRoll|null>(null),[rollId,setRollId]=useState(''),[selected,setSelected]=useState('');
   const [name,setName]=useState(''),[camera,setCamera]=useState(''),[stock,setStock]=useState<FilmStockId>(DEFAULT_FILM_STOCK_ID),[format,setFormat]=useState<FilmFormat>('135'),[sizing,setSizing]=useState<FrameSizing>('fixed'),[cover,setCover]=useState('');
+  const [framesPerStrip,setFramesPerStrip]=useState<string|undefined>(undefined);
+  const validStripCount=framesPerStrip===undefined||isFramesPerStrip(Number(framesPerStrip));
   const [strengthMode,setStrengthMode]=useState<StrengthMode>('roll'),[rollStrength,setRollStrength]=useState(DEFAULT_FILM_STRENGTH);
   // The last whole-roll strength the user chose is the darkroom's starting strength for new rolls.
   const preferredStrength=useRef(DEFAULT_FILM_STRENGTH),strengthChosen=useRef(false),pendingStrength=useRef<number|null>(null),strengthTimer=useRef(0);
@@ -55,7 +57,7 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onSaved,onDe
     updateDraft(draftRef.current.map(p=>p.frame?{...p,frame:reorientForFrameSize(p.frame,previous,next)}:p));
   };
   const reset=()=>{abort.current?.abort();repository.releaseEditorResources(draftRef.current[0]?.frame?.rollId);releaseDraft(draftRef.current);updateDraft(null);setEditing(null);setError('');setProgress('');};
-  const start=()=>{reset();draftCreatedAt.current=Date.now();setRollId(generateUuid());setName('');setCamera('');setStock(DEFAULT_FILM_STOCK_ID);setFormat('135');setSizing('fixed');setCover('');setSelected('');setStrengthMode('roll');setRollStrength(preferredStrength.current);updateDraft([]);};
+  const start=()=>{reset();draftCreatedAt.current=Date.now();setRollId(generateUuid());setName('');setCamera('');setStock(DEFAULT_FILM_STOCK_ID);setFormat('135');setSizing('fixed');setFramesPerStrip(undefined);setCover('');setSelected('');setStrengthMode('roll');setRollStrength(preferredStrength.current);updateDraft([]);};
   const choose=async(files:File[])=>{
     if(processing||busy)return;
     setError('');setProcessing(true);
@@ -88,15 +90,16 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onSaved,onDe
       preferredStrength.current=clampFilmStrength(filmStrength);setRollStrength(preferredStrength.current);
     }).catch(()=>{/* New rolls keep the default strength. */});
   },[]);
-  const edit=(id:string)=>void run(async()=>{const request=++loadRequest.current,b=await repository.read(id);if(!mounted.current||request!==loadRequest.current)return;setEditing(b.roll);setRollId(id);setName(b.roll.name);setCamera(b.roll.camera??'');setStock(b.roll.stockId);setFormat(b.roll.format);setSizing(b.roll.sizing??'fixed');setCover(b.roll.coverId);setRollStrength(clampFilmStrength(b.roll.filmStrength));setStrengthMode(b.frames.some(f=>f.filmStrength!==undefined)?'frame':'roll');setSelected(b.roll.frameIds[0]??'');updateDraft(b.roll.frameIds.map(id=>{const frame=b.frames.find(f=>f.id===id)!;return {id,filename:frame.filename,frame,blobs:[],duplicate:false,keepDuplicate:true,preview:URL.createObjectURL(b.blobs.find(x=>x.key===frame.thumbnailKey)!.blob),reviewPreview:URL.createObjectURL(b.blobs.find(x=>x.key===frame.viewingKey)!.blob)};}));});
+  const edit=(id:string)=>void run(async()=>{const request=++loadRequest.current,b=await repository.read(id);if(!mounted.current||request!==loadRequest.current)return;setEditing(b.roll);setRollId(id);setName(b.roll.name);setCamera(b.roll.camera??'');setStock(b.roll.stockId);setFormat(b.roll.format);setSizing(b.roll.sizing??'fixed');setFramesPerStrip(b.roll.framesPerStrip?.toString());setCover(b.roll.coverId);setRollStrength(clampFilmStrength(b.roll.filmStrength));setStrengthMode(b.frames.some(f=>f.filmStrength!==undefined)?'frame':'roll');setSelected(b.roll.frameIds[0]??'');updateDraft(b.roll.frameIds.map(id=>{const frame=b.frames.find(f=>f.id===id)!;return {id,filename:frame.filename,frame,blobs:[],duplicate:false,keepDuplicate:true,preview:URL.createObjectURL(b.blobs.find(x=>x.key===frame.thumbnailKey)!.blob),reviewPreview:URL.createObjectURL(b.blobs.find(x=>x.key===frame.viewingKey)!.blob)};}));});
   const move=(from:number,to:number)=>{if(!draft||to<0||to>=draft.length)return;const next=[...draft], [p]=next.splice(from,1);next.splice(to,0,p);updateDraft(next);};
   const length=filmLengthUsage(format,sizing,draft?.flatMap(p=>p.frame?[p.frame]:[])??[]);
   const valid=!!draft?.length&&!draft.some(p=>!p.frame||p.duplicate&&!p.keepDuplicate);
   const save=(open:boolean)=>void run(async()=>{
+    if(!validStripCount)throw new Error('Frames per strip must be a positive whole number.');
     if(!valid||!draft)throw new Error('Resolve failed files and duplicates before saving.');
     // Whole-roll strength is stored on the roll; frame strengths only exist while adjusting each frame.
     const frames=draft.map(p=>{const {filmStrength,...frame}=p.frame!;return strengthMode==='frame'?{...frame,filmStrength:clampFilmStrength(filmStrength??rollStrength)}:frame;}),ids=frames.map(f=>f.id);
-    const roll:StoredRoll={filmStrength:rollStrength,id:rollId,name,camera:camera.trim()||undefined,stockId:stock,format,sizing,frameIds:ids,coverId:ids.includes(cover)?cover:ids[0],createdAt:editing?.createdAt??draftCreatedAt.current,updatedAt:editing?.updatedAt??draftCreatedAt.current,trashedAt:null,view:editing?.view?{...editing.view,zoom:NaN,overview:null}:undefined};
+    const roll:StoredRoll={filmStrength:rollStrength,id:rollId,name,camera:camera.trim()||undefined,stockId:stock,format,sizing,framesPerStrip:framesPerStrip===undefined?undefined:Number(framesPerStrip),frameIds:ids,coverId:ids.includes(cover)?cover:ids[0],createdAt:editing?.createdAt??draftCreatedAt.current,updatedAt:editing?.updatedAt??draftCreatedAt.current,trashedAt:null,view:editing?.view?{...editing.view,zoom:NaN,overview:null}:undefined};
     const bundle:RollBundle={roll,frames,blobs:draft.flatMap(p=>p.blobs)};
     const controller=new AbortController();abort.current=controller;
     let reporting=true;
@@ -122,7 +125,7 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onSaved,onDe
     onDrop:(e:DragEvent<HTMLElement>)=>{if(!e.dataTransfer.files.length)return;e.preventDefault();setDropping(false);if(!busy&&!processing)void choose(Array.from(e.dataTransfer.files));},
   };
   const progressStatus=progress&&<span role="status" className="roll-editor-progress">{progress}</span>;
-  const blocker=!draft?.length?'Add photographs to begin this roll.':!name.trim()?'Name this roll to save it.':!valid?'Select flagged photographs to resolve issues before saving.':length.exceeded?'Remove photographs or choose another frame size to fit the film.':'';
+  const blocker=!draft?.length?'Add photographs to begin this roll.':!name.trim()?'Name this roll to save it.':!validStripCount?'Enter a positive whole number of frames per strip.':!valid?'Select flagged photographs to resolve issues before saving.':length.exceeded?'Remove photographs or choose another frame size to fit the film.':'';
   const filmLengthMeter = <div className={`film-length ${length.exceeded?'is-overfull':''}`} aria-label="Film length">
         <div><strong>Film length</strong><span>{Math.ceil(length.used)} / {length.capacity} mm</span></div>
         <progress aria-label="Film length used" max={length.capacity} value={Math.min(length.used,length.capacity)}/>
@@ -138,6 +141,7 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onSaved,onDe
         <label>Camera (optional)<input aria-label="Camera (optional)" type="text" maxLength={120} value={camera} disabled={busy} onChange={e=>setCamera(e.target.value)} placeholder="e.g. Nikon F3"/><small>The camera used to shoot this roll.</small></label>
         <fieldset disabled={busy} className="segmented"><legend>Film type</legend><label><input type="radio" name="film-type" checked={filmType(format)==='135'} onChange={()=>changeFrameSize({format:'135',sizing:'fixed'})}/>35mm</label><label><input type="radio" name="film-type" disabled={!supportsFilmFormat(stock, '120')} checked={filmType(format)!=='135'} onChange={()=>changeFrameSize({format:'66',sizing:'free'})}/>120</label></fieldset>
         <label>Frame size (optional)<select aria-label="Film format" value={sizing==='free'?'free':format} disabled={busy} onChange={e=>changeFrameSize(e.target.value==='free'?{format,sizing:'free'}:{format:e.target.value as FilmFormat,sizing:'fixed'})}>{(filmType(format)==='135'?['135','135-half']:['645','66','67','69']).map(id=><option key={id} value={id}>{FILM_FORMATS[id as FilmFormat].label}</option>)}<option value="free">Free · keep original proportions</option></select><small>{sizing==='free'?'All photographs keep their full composition at the same height. Width varies with each photograph.':'Photographs fill the selected frame size. Adjust each crop in the Crop tab.'}</small></label>
+        <div className="roll-strip-setting"><label>Frames per strip<input aria-label="Frames per strip" aria-describedby="roll-strip-help" aria-invalid={!validStripCount} type="number" min="1" step="1" value={framesPerStrip??(sizing==='free'?'':FILM_FORMATS[format].perStrip)} placeholder="Automatic" disabled={busy} onChange={e=>setFramesPerStrip(e.target.value)}/></label><small id="roll-strip-help">{sizing==='free'?'Default: fit frames into 230 mm strips.':`Default for ${FILM_FORMATS[format].label}: ${FILM_FORMATS[format].perStrip} frames.`} Applies only to this roll’s light-table layout.</small><button type="button" disabled={busy||framesPerStrip===undefined} onClick={()=>setFramesPerStrip(undefined)}>Use default</button></div>
         <label>Film stock<select aria-label="Film stock" value={stock} disabled={busy} onChange={e=>setStock(e.target.value as FilmStockId)}>{FILM_STOCKS.map(s=><option key={s.id} value={s.id} disabled={!supportsFilmFormat(s.id, format)}>{s.displayName}{s.formats.length === 1 ? ' · 35mm only' : ''}</option>)}</select><small>{!supportsFilmFormat(stock, '120') && '35mm only. '}{FILM_LOOKS[stock].description}. Preview and adjust its strength in the Film effect tab.</small></label></div>
         {filmLengthMeter}
         {!editing&&<p className="roll-editor-note">{publication?'Saving publishes this roll to the gallery. Viewing images and thumbnails upload privately in the background; originals stay on this device.':'Your photographs stay in this browser. They are not uploaded or synced across devices.'}</p>}</section>

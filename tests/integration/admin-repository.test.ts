@@ -52,7 +52,7 @@ it('never saves or publishes a partial roll when an upload fails', async () => {
   expect(publish).not.toHaveBeenCalled();
 });
 
-it('sends cover and title edits as one small patch, with no image uploads or draft/publish calls', async () => {
+it('sends cover, title and strip-count edits as one small patch, with no image uploads or draft/publish calls', async () => {
   const repository = new AdminRollRepository(), source = draft();
   source.frames.push({ ...source.frames[0], id: 'second' });
   source.roll.frameIds.push('second');
@@ -63,9 +63,9 @@ it('sends cover and title edits as one small patch, with no image uploads or dra
   const patch = vi.spyOn(ownerClient, 'patchRoll').mockImplementation(async (_id, _version, changes) => ({ ...source, roll: { ...source.roll, ...changes } }));
   const save = vi.spyOn(ownerClient, 'saveRoll');
   const publish = vi.spyOn(ownerClient, 'publish');
-  edited.roll = { ...edited.roll, coverId: 'second', name: 'New title' };
+  edited.roll = { ...edited.roll, coverId: 'second', name: 'New title', framesPerStrip: 4 };
   await repository.save(edited);
-  expect(patch).toHaveBeenCalledExactlyOnceWith('roll', 10, { coverId: 'second', name: 'New title' }, expect.any(AbortSignal), undefined);
+  expect(patch).toHaveBeenCalledExactlyOnceWith('roll', 10, { coverId: 'second', name: 'New title', framesPerStrip: 4 }, expect.any(AbortSignal), undefined);
   expect(upload).not.toHaveBeenCalled(); expect(save).not.toHaveBeenCalled(); expect(publish).not.toHaveBeenCalled();
 });
 

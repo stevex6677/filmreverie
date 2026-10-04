@@ -10,6 +10,15 @@ export const FILM_FORMATS = {
 } as const;
 export type FilmFormat = keyof typeof FILM_FORMATS;
 export const isFilmFormat = (value: string): value is FilmFormat => Object.hasOwn(FILM_FORMATS, value);
+export const isFramesPerStrip = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+/** Per-roll cuts for the light table. Showreel defines its own strip layout. */
+export function rollStripLayout(format: FilmFormat, sizing: FrameSizing = 'fixed', framesPerStrip?: number) {
+  return {
+    framesPerStrip: framesPerStrip ?? FILM_FORMATS[format].perStrip,
+    // Keep existing free-size rolls packed by length until a count is chosen.
+    stripLength: sizing === 'free' && framesPerStrip === undefined ? 230 * FILM_MODEL_UNIT : undefined,
+  };
+}
 /** Frame size and film stock type are independent: half frame uses a 35mm cartridge. */
 export const filmType = (format: FilmFormat | '120') => format === '135' || format === '135-half' ? '135' : '120';
 export function formatLayout(format: FilmFormat) {
