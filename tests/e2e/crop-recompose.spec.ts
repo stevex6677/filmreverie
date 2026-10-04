@@ -37,7 +37,8 @@ test('crop drag follows the image and persists through save, reload, cancellatio
   await page.getByRole('button',{name:'Center crop',exact:true}).click();await expect(page.getByLabel('Horizontal crop position')).toHaveValue('0');
   await page.getByRole('button',{name:'Cancel edits',exact:true}).click();
   await edit();await expect(page.getByLabel('Horizontal crop position')).toHaveValue('-1');
-  await page.getByRole('button',{name:'Rotate frame 1',exact:true}).click();await expect(page.getByLabel('Vertical crop position')).toHaveValue('-1');
+  // The upright view keeps the chosen part of the photograph where it was.
+  await page.getByRole('button',{name:'Vertically',exact:true}).click();await expect(page.getByLabel('Horizontal crop position')).toHaveValue('-1');
   await page.getByRole('button',{name:'Show final crop',exact:true}).click();isRed(PNG.sync.read(await surface.screenshot()));
   await save();await openFrame(page,1);await page.waitForTimeout(700);isRed(PNG.sync.read(await captureCanvas(page)));
 });

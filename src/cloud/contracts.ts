@@ -18,7 +18,7 @@ export interface GalleryRoll {
 }
 export interface GalleryCatalog { version: 1; rolls: GalleryRoll[] }
 // Cloud drafts contain only browser-produced derivatives; guest StoredFrame retains its original fields.
-export interface DraftFrame extends Pick<StoredFrame, 'id' | 'rollId' | 'filename' | 'width' | 'height' | 'rotation' | 'cropPosition' | 'filmStrength' | 'viewingKey' | 'thumbnailKey'> {
+export interface DraftFrame extends Pick<StoredFrame, 'id' | 'rollId' | 'filename' | 'width' | 'height' | 'rotation' | 'uprightRotation' | 'cropPosition' | 'filmStrength' | 'viewingKey' | 'thumbnailKey'> {
   uploadId: string;
   viewingSha256: string;
 }

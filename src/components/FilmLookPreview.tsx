@@ -6,6 +6,7 @@ import { filmGrainSeed } from '../data/filmLooks';
 import { FilmStockId } from '../data/filmStocks';
 import { renderFilmLook } from '../utils/filmLookRenderer';
 import { photoCropPreview, photoCropScale } from '../utils/photoFraming';
+import { cameraTurn, uprightCropPosition, uprightRotation } from '../utils/frameOrientation';
 
 export type FilmCompare = 'film' | 'split' | 'original';
 export interface FilmLook { stockId: FilmStockId; strength: number }
@@ -79,8 +80,9 @@ export function FilmLookPreview({ photo, format, sizing, stockId, strength, comp
   const image = useDecodedImage(photo.reviewPreview ?? photo.preview);
   const [rendered, setRendered] = useState(false), [holding, setHolding] = useState(false), [split, setSplit] = useState(50);
   if (!frame) return <div className="film-look-stage"><p className="crop-unavailable">{photo.error || 'Preview unavailable'}</p></div>;
-  const gateAspect = frameAspect(format, sizing, frame);
-  const placement = photoCropPreview(frame.width / frame.height, gateAspect, frame.rotation, frame.cropPosition);
+  // A print stands upright, so a vertical shot's gate turns with the camera.
+  const filmGate = frameAspect(format, sizing, frame), gateAspect = cameraTurn(frame) % 180 ? 1 / filmGate : filmGate;
+  const placement = photoCropPreview(frame.width / frame.height, gateAspect, uprightRotation(frame), uprightCropPosition(frame));
   const showOriginal = compare === 'original' || holding && compare === 'film';
   const moveSplit = (clientX: number) => {
     const rect = box.current!.getBoundingClientRect();

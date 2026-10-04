@@ -10,6 +10,8 @@ export interface StoredFrame {
   cropPosition?: import('../utils/photoFraming').CropPosition;
   /** Per-frame film effect strength; when any frame has one, the roll is adjusted frame by frame. */
   filmStrength?: number;
+  /** Clockwise turn that stands the image upright; `rotation` places it on the film. See utils/frameOrientation. */
+  uprightRotation?: number;
   id: string; rollId: string; filename: string; mime: string; width: number; height: number; rotation: number; hash: string;
   originalKey: string; viewingKey: string; thumbnailKey: string;
 }
@@ -49,13 +51,13 @@ const complete = (tx: IDBTransaction) => new Promise<void>((resolve, reject) => 
   tx.onabort=()=>reject(failure??tx.error??new DOMException('Save cancelled','AbortError'));
   tx.onerror=event=>{failure=(event.target as IDBRequest)?.error??tx.error;try{tx.abort();}catch{reject(failure??new Error('Storage transaction failed.'));}};
 });
-export function validateBundle(bundle: { roll: StoredRoll; frames: Pick<StoredFrame, 'id' | 'rollId' | 'rotation' | 'width' | 'height' | 'cropPosition' | 'filmStrength'>[]; blobs?: BlobRecord[] }) {
+export function validateBundle(bundle: { roll: StoredRoll; frames: Pick<StoredFrame, 'id' | 'rollId' | 'rotation' | 'uprightRotation' | 'width' | 'height' | 'cropPosition' | 'filmStrength'>[]; blobs?: BlobRecord[] }) {
   const { roll, frames } = bundle;
   if (!roll.name.trim() || roll.name.length > 120 || !isFilmStockId(roll.stockId) || !isFilmFormat(roll.format)) throw new Error('Enter a name, stock and valid film format.');
   if (!supportsFilmFormat(roll.stockId, roll.format)) throw new Error('This film stock is only available in 35mm. Choose a compatible stock or film type.');
   if (roll.camera !== undefined && (typeof roll.camera !== 'string' || roll.camera.length > 120)) throw new Error('Camera must be text of at most 120 characters.');
   if (!frames.length || new Set(roll.frameIds).size !== frames.length || roll.frameIds.length !== frames.length || !roll.frameIds.includes(roll.coverId)) throw new Error('Invalid frame membership or cover.');
-  for (const frame of frames) if (frame.rollId !== roll.id || !roll.frameIds.includes(frame.id) || ![0,90,180,270].includes(frame.rotation)) throw new Error('Invalid frame metadata.');
+  for (const frame of frames) if (frame.rollId !== roll.id || !roll.frameIds.includes(frame.id) || ![0,90,180,270].includes(frame.rotation) || frame.uprightRotation !== undefined && ![0,90,180,270].includes(frame.uprightRotation)) throw new Error('Invalid frame metadata.');
   if (roll.sizing !== undefined && !['fixed','free'].includes(roll.sizing)) throw new Error('Invalid frame sizing.');
   for (const frame of frames) if (![frame.width, frame.height].every(n => Number.isFinite(n) && n > 0)) throw new Error('Invalid image dimensions.');
   const length = filmLengthUsage(roll.format, roll.sizing ?? 'fixed', frames);

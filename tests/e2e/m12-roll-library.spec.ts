@@ -15,7 +15,8 @@ async function details(page:Page){await expect(page.getByLabel('Roll name',{exac
 async function formatOf(page:Page,format:string){await details(page);await page.getByRole('radio',{name:format==='135'?'35mm':'120',exact:true}).check();await page.getByLabel('Film format',{exact:true}).selectOption(format);}
 async function review(page:Page){await expect(page.getByRole('button',{name:'Save and open',exact:true})).toBeVisible();}
 async function editRoll(page:Page,name:string){await showRoll(page,name);await page.getByRole('button',{name:`Edit ${name}`,exact:true}).click();await expect(page.getByLabel('Roll name',{exact:true})).toBeEnabled();}
-async function rotate(page:Page,n:number){await review(page);await page.getByRole('button',{name:`Select frame ${n}`,exact:true}).click();await page.getByLabel(`Rotate frame ${n}`,{exact:true}).click();}
+// Each call turns the frame a further quarter on the film; after the first, the image is turned before the frame is made vertical.
+async function rotate(page:Page,n:number,turnImage=false){await review(page);await page.getByRole('button',{name:`Select frame ${n}`,exact:true}).click();if(turnImage)await page.getByRole('button',{name:'Turn image',exact:true}).click();await page.getByRole('button',{name:'Vertically',exact:true}).click();}
 async function start(page:Page,name:string,format='135',files=[photo('scan2.png'),photo('scan10.png',600,400,1)]) {
   await library(page);await shelfAction(page, 'New roll');await page.getByLabel('Choose photographs').setInputFiles(files);await expect(page.getByRole('status').filter({hasText:'Processed'})).toContainText(`${files.length} / ${files.length}`,{timeout:120000});await page.getByLabel('Roll name',{exact:true}).fill(name);await formatOf(page,format);await review(page);
 }
@@ -163,7 +164,7 @@ test('M12 crop fills the full gate at every rotation and survives reload',async(
 
   await openFrame(page,2);await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');
   for(const rotation of [0,90,180,270]){
-    if(rotation){await library(page);await editRoll(page,'Crop review');await rotate(page,2);await page.screenshot({path:`${OUT}/crop-draft-${rotation}.png`});await save(page);await openFrame(page,2);await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');}
+    if(rotation){await library(page);await editRoll(page,'Crop review');await rotate(page,2,rotation>90);await page.screenshot({path:`${OUT}/crop-draft-${rotation}.png`});await save(page);await openFrame(page,2);await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');}
     const shot=PNG.sync.read(await captureCanvas(page, {path:`${OUT}/crop-filled-${rotation}.png`}));
     for(const x of [left+4,cx,right-4])for(const y of [top+4,cy,bottom-4])expect(green(shot,x,y),`rotation ${rotation}, gate ${x},${y}`).toBe(true);
   }

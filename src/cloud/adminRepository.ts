@@ -87,7 +87,7 @@ export class AdminRollRepository extends RollRepository {
     const frames: CloudDraft['frames'] = await runPhotoUploads(bundle.frames, operationSignal, async frame => {
       const prior = existing?.frames.find(candidate => candidate.id === frame.id);
       const uploaded = prior ?? await this.upload(frame, bundle.blobs, operationSignal);
-      return { ...uploaded, rotation: frame.rotation, cropPosition: frame.cropPosition, filmStrength: frame.filmStrength };
+      return { ...uploaded, rotation: frame.rotation, uprightRotation: frame.uprightRotation, cropPosition: frame.cropPosition, filmStrength: frame.filmStrength };
     });
     const pending = this.pendingPublication.get(bundle.roll.id);
     const updatedAt = pending?.inputVersion === bundle.roll.updatedAt && pending.savedVersion === existing?.roll.updatedAt

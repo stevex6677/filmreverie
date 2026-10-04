@@ -243,7 +243,9 @@ it('publishes crop and title edits without copying unchanged images, then withdr
   const writes: string[] = [];
   publicBucket.beforePut = async key => { if(key.startsWith('rolls/'))writes.push(key); };
   const saved = await saveDraft(env, draft.roll.id, { ...draft, roll: { ...draft.roll, name: 'New title' },
-    frames: [{ ...draft.frames[0], rotation: 90, cropPosition: { x: .5, y: 0 }, filmStrength: 20 }] });
+    frames: [{ ...draft.frames[0], rotation: 90, uprightRotation: 180, cropPosition: { x: .5, y: 0 }, filmStrength: 20 }] });
+  // Which way is up only matters to the editor; the private draft keeps it.
+  expect(saved.frames[0]).toMatchObject({ rotation: 90, uprightRotation: 180 });
   const edited = await finish(env, saved.roll.id, saved.roll.updatedAt);
   expect(writes).toEqual([]);
   expect(edited.name).toBe('New title');

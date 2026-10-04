@@ -224,6 +224,7 @@ export async function saveDraft(env: Env, id: string, value: CloudDraft): Promis
     requireValue(frame.viewingSha256 === images.viewing.sha256, 'Frame digest does not match its completed viewing derivative.');
     frames.push({ id: frame.id, rollId: id, uploadId: frame.uploadId, filename: frame.filename,
       width: frame.width, height: frame.height, rotation: frame.rotation, viewingSha256: images.viewing.sha256,
+      ...(frame.uprightRotation !== undefined ? { uprightRotation: frame.uprightRotation } : {}),
       ...(frame.cropPosition ? { cropPosition: { x: frame.cropPosition.x, y: frame.cropPosition.y } } : {}),
       ...(frame.filmStrength !== undefined ? { filmStrength: frame.filmStrength } : {}),
       viewingKey: images.viewing.key, thumbnailKey: images.thumbnail.key });

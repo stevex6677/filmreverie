@@ -79,7 +79,6 @@ export function RollFrameEditor({ photos, onPhotos, selected, onSelect, cover, o
         <div className="draft-actions">
           <button disabled={busy || index === 0} aria-label={`Move frame ${index + 1} earlier`} title="Move earlier" onClick={() => onMove(index, index - 1)}>← Earlier</button>
           <button disabled={busy || index === photos.length - 1} aria-label={`Move frame ${index + 1} later`} title="Move later" onClick={() => onMove(index, index + 1)}>Later →</button>
-          <button disabled={busy || !active.frame} aria-label={`Rotate frame ${index + 1}`} title="Rotate 90°" onClick={() => changeFrame(active.id, frame => ({ ...frame, rotation: (frame.rotation + 90) % 360, cropPosition: frame.cropPosition ? { x: -frame.cropPosition.y, y: frame.cropPosition.x } : undefined }))}>↻ Rotate</button>
           <button disabled={busy || !active.frame} aria-pressed={cover === active.id} onClick={() => onCover(active.id)}><span aria-hidden="true">★ </span>Cover</button>
           <button className="frame-remove" disabled={busy} aria-label={`Remove ${active.filename}`} onClick={() => onRemove(active.id)}>Remove</button>
         </div>
@@ -95,7 +94,7 @@ export function RollFrameEditor({ photos, onPhotos, selected, onSelect, cover, o
       </div>}
       <div id="frame-tool-panel" role="tabpanel" aria-labelledby={`frame-tool-${tool}`} className={`frame-tool-panel is-${tool}`}>
         {tool === 'crop'
-          ? <CropInspector key={active.id} photo={active} format={format} sizing={sizing} disabled={busy} look={{ stockId: stock, strength }} onChange={cropPosition => changeFrame(active.id, frame => ({ ...frame, cropPosition }))}/>
+          ? <CropInspector key={active.id} photo={active} format={format} sizing={sizing} disabled={busy} look={{ stockId: stock, strength }} onChange={cropPosition => changeFrame(active.id, frame => ({ ...frame, cropPosition }))} onOrient={change => changeFrame(active.id, change)}/>
           : <>
             <div className="film-look-area">
               <FilmLookPreview key={active.id} photo={active} format={format} sizing={sizing} stockId={stock} strength={strength} compare={compare}/>

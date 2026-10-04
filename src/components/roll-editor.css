@@ -100,7 +100,7 @@
 .frame-tool-panel.is-film { grid-template-columns:minmax(0,1fr) clamp(240px,24vw,290px); }
 
 /* Crop tool: the stage fills the workbench; caption, notes and controls share one bar beneath it. */
-.library-dialog .frame-tool-panel .crop-inspector { min-height:0; display:grid; grid-template:"stage stage stage" minmax(0,1fr) "caption toggle controls" auto "notes toggle controls" auto / minmax(0,1fr) auto auto; column-gap:12px; padding-bottom:6px; }
+.library-dialog .frame-tool-panel .crop-inspector { min-height:0; display:grid; grid-template:"stage stage stage" minmax(0,1fr) "orient orient orient" auto "caption toggle controls" auto "notes toggle controls" auto / minmax(0,1fr) auto auto; column-gap:12px; padding-bottom:6px; }
 .library-dialog .frame-tool-panel .crop-heading { display:contents; }
 .library-dialog .frame-tool-panel .crop-heading span { grid-area:caption; align-self:end; padding:6px 0 0 12px; color:var(--editor-ink); font-size:12px; font-weight:600; }
 .library-dialog .frame-tool-panel .crop-heading button { grid-area:toggle; align-self:center; margin-top:6px; padding:4px 10px; border-radius:6px; font-size:12px; white-space:nowrap; }
@@ -116,6 +116,13 @@
 .library-dialog .frame-tool-panel .crop-position-controls label { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--editor-muted); }
 .library-dialog .frame-tool-panel .crop-position-controls input { width:120px; padding:0; border:0; background:none; accent-color:var(--editor-accent); }
 .library-dialog .frame-tool-panel .crop-position-controls button { padding:4px 10px; border-radius:6px; font-size:12px; }
+.library-dialog .frame-tool-panel .crop-orientation { grid-area:orient; display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px; padding:8px 12px 2px; font-size:12px; color:var(--editor-muted); }
+.library-dialog .frame-tool-panel .crop-orientation button { min-height:28px; padding:4px 10px; border-radius:6px; font-size:12px; white-space:nowrap; }
+.library-dialog .frame-tool-panel .crop-orientation-choice { display:flex; align-items:center; gap:4px; }
+.library-dialog .frame-tool-panel .crop-orientation-choice > button:first-of-type { margin-left:4px; }
+.library-dialog .frame-tool-panel .crop-orientation-choice.is-side::before { content:'·'; margin-right:4px; }
+.library-dialog .frame-tool-panel .crop-orientation-end { margin-left:auto; }
+.library-dialog .frame-tool-panel span.crop-orientation-end { font-style:italic; }
 .library-dialog .frame-tool-panel .crop-unavailable { display:grid; place-items:center; color:var(--editor-muted); }
 
 /* Film effect tool: the final print beside its strength controls. */
@@ -181,7 +188,7 @@
 }
 /* A narrower workbench stacks the crop bar: caption and toggle, notes, then position controls. */
 @container frame-workbench (max-width:760px) {
-  .library-dialog .frame-tool-panel .crop-inspector { grid-template:"stage stage" minmax(0,1fr) "caption toggle" auto "notes notes" auto "controls controls" auto / minmax(0,1fr) auto; }
+  .library-dialog .frame-tool-panel .crop-inspector { grid-template:"stage stage" minmax(0,1fr) "orient orient" auto "caption toggle" auto "notes notes" auto "controls controls" auto / minmax(0,1fr) auto; }
   .library-dialog .frame-tool-panel .crop-heading span { align-self:center; padding-top:6px; }
   .library-dialog .frame-tool-panel .crop-heading button { margin-right:12px; }
   .library-dialog .frame-tool-panel .crop-notes { padding-right:12px; }
