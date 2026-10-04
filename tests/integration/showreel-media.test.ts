@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { aacConfig, Mp4Writer, type VideoChunk } from '../../src/screening/export/mp4';
+import { aacConfig, aacSpecificConfig, Mp4Writer, type VideoChunk } from '../../src/screening/export/mp4';
 import { parseBoxes, type Mp4Box } from '../helpers/mp4';
 import { soundtrackGain, trackOffset } from '../../src/showreel/music';
 import { DEFAULT_SETTINGS, loadSettings, saveSettings, SHOWREEL_TRACKS } from '../../src/showreel/settings';
@@ -44,6 +44,23 @@ describe('MP4 writer with a soundtrack', () => {
     expect(bytes[audioOffset]).toBe(200);
     const mdat = top[2];
     expect(mdat.size - 8).toBe(60 * 12 + 94 * 5);
+  });
+
+  it('unwraps the ES_Descriptor that WebKit gives as an AAC description, so iPad exports have sound', async () => {
+    // Recorded from Chrome on iPadOS 27 (WebKit): the AudioSpecificConfig 11 90 inside an esds payload.
+    const ipad = Uint8Array.from('038080802200000004808080144014001800000000000000000005808080021190068080800102'.match(/../g)!, byte => parseInt(byte, 16));
+    expect(Array.from(aacSpecificConfig(ipad)!)).toEqual([0x11, 0x90]);
+    // Chrome on macOS gives the config itself.
+    expect(Array.from(aacSpecificConfig(aacConfig(48000, 2))!)).toEqual([0x11, 0x90]);
+    const writer = new Mp4Writer(1920, 1080);
+    for (let i = 0; i < 30; i++) writer.add(video(i), i ? undefined : { decoderConfig: { description } });
+    writer.setAudio({ codec: 'aac', sampleRate: 48000, channels: 2, bitrate: 192000 });
+    for (let i = 0; i < 10; i++) writer.addAudio({ timestamp: Math.round(i * 1024 * 1e6 / 48000), duration: 21333, byteLength: 5, copyTo: dest => dest.set([200, 201, 202, 203, 204]) },
+      i ? undefined : { decoderConfig: { description: ipad } });
+    const bytes = Array.from(new Uint8Array(await writer.finish().arrayBuffer())).join(',');
+    // The esds holds the two-byte config, not the nested descriptor.
+    expect(bytes).toContain([0x05, 0x80, 0x80, 0x80, 2, 0x11, 0x90, 0x06].join(','));
+    expect(bytes).not.toContain(Array.from(ipad.slice(0, 8)).join(','));
   });
 
   it('writes the same silent file when no audio is added', async () => {
@@ -93,8 +110,8 @@ describe('Showreel soundtrack', () => {
       expect(track.source.sha256).toMatch(/^[0-9a-f]{64}$/);
       const file = path.join(root, 'public', track.src);
       expect(fs.existsSync(file), file).toBe(true);
-      // Published excerpts are 110 s, 192 kbps: they cover the film after the offset.
-      expect(trackOffset(track, timeline.cue) + d).toBeLessThan(110);
+      // Published excerpts are 130 s, 192 kbps: they cover the film after the offset.
+      expect(trackOffset(track, timeline.cue) + d).toBeLessThan(130);
       expect(fs.statSync(file).size).toBeGreaterThan(1e6);
     }
     expect(SHOWREEL_TRACKS.some(track => track.id === music.default)).toBe(true);

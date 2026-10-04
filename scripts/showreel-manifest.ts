@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 // Regenerates src/data/showreelRolls.json from public/assets/photos/showreel/:
 // one roll per subfolder named `<order>_<format>_<stock>` (for example
-// `4_66_gold200`), its JPEGs (sRGB) in filename order. Roll names already in the
+// `4_66_gold200`; half frame is `35half` or `35_half`), its JPEGs (sRGB) in filename order. Roll names already in the
 // manifest are kept. Run `npm run showreel:manifest` after changing the folder.
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const output = path.join(repo, 'src/data/showreelRolls.json');
@@ -41,8 +41,8 @@ function jpegSize(file: string) {
 if (!fs.existsSync(root)) throw new Error(`Showreel photographs not found at ${root}`);
 const previous = fs.existsSync(output) ? JSON.parse(fs.readFileSync(output, 'utf8')) : { rolls: [] };
 const rolls = fs.readdirSync(root, { withFileTypes: true }).filter(entry => entry.isDirectory()).map(entry => entry.name).sort().map(folder => {
-  const match = folder.match(/^(\d+)_([a-z0-9]+)_([a-z0-9]+)$/i);
-  const size = match && FORMATS[match[2].toLowerCase()], stockId = match && STOCKS[match[3].toLowerCase()];
+  const match = folder.match(/^(\d+)_([a-z0-9]+(?:_half)?)_([a-z0-9]+)$/i);
+  const size = match && FORMATS[match[2].toLowerCase().replace('_', '')], stockId = match && STOCKS[match[3].toLowerCase()];
   if (!size || !stockId) throw new Error(`Unrecognized roll folder ${folder}: expected <order>_<${Object.keys(FORMATS).join('|')}>_<${Object.keys(STOCKS).join('|')}>`);
   const files = fs.readdirSync(path.join(root, folder)).filter(name => /\.jpe?g$/i.test(name)).sort();
   if (!files.length) throw new Error(`No photographs in ${folder}`);

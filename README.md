@@ -155,21 +155,24 @@ an iPhone, with detailed device measurements still to be recorded. See
 production build, cumulative integration/E2E suites and standalone viewer gates.
 
 ### 9. Showreel (`/showreel`)
-An unlinked page plays a 90-second, 16:9 promotional film of the app, rendered
+An unlinked page plays a 101-second, 16:9 promotional film of the app, rendered
 live from code: the light table switching on as a band of light develops the
-negatives, the title over the room, the darkroom's wet side, the New roll
-editor taking in a roll of photographs (noting that they stay on the device),
-the published film shelf, then every roll laid out on one light table at true
-size, from 35mm and panoramic to 6×6, 6×7 and 6×9, each format named in turn.
-Each later shot features a different roll: a Tracking Shot excerpt along 35mm,
-the loupe on the panoramic roll's edge printing, the whole 6×6 roll before the
-camera sweeps down and orbits one photograph, the Develop reel lighting up
-slides, the Orbit reel over 6×9, then the Darkroom Prints reel and the
-Projector screening the 6×6 roll, and
-the camera cabinet, ending on a card with filmreverie.app
-and the GitHub link. Titles, captions, light leaks, grain and camera labels are
-drawn over the scene. The page is public to anyone with the URL, is marked
-`noindex`, and is not part of the offline download.
+negatives, the title over the room, the darkroom's wet side, the New roll editor
+taking in a roll of photographs (noting that they stay on the device), the
+published film shelf, then every roll laid out on one light table at true size,
+from half frame, 35mm and panoramic to 6×6, 6×7 and 6×9, each format named in
+turn. Each later shot features a different roll: the camera descends from the
+whole table into a Tracking Shot excerpt along 35mm that carries on, without a
+cut, to two Portra frames (one vertical, seen upright), a glide along the
+half-frame roll that holds on one photograph, the loupe on the panoramic roll's
+edge printing, the whole 6×6 roll before a calm push in on one photograph, two
+6×9 frames held whole from overhead before the camera arcs up and over, without
+a cut, into the Develop reel's moves over a slide, then the Darkroom Prints reel
+along three prints and the Projector screening three frames of the 6×6 roll, and
+the camera cabinet, ending on a card with filmreverie.app and the GitHub link.
+Titles, captions, light leaks, grain and camera labels are drawn over the scene.
+The page is public to anyone with the URL, is marked `noindex`, and is not part
+of the offline download.
 
 It opens on its **settings**: music (five tracks that preview when selected, or
 none) and volume, film grain, vignette, light leaks, and titles and captions.
@@ -185,14 +188,14 @@ The music is by HoliznaCC0, dedicated to the public domain (CC0), so it can be
 used anywhere without credit: *Families* (default), *Blue Skies*, *City In
 The Rearview*, *Dream Pop* and *Autumn*, listed in [`src/data/showreelMusic.json`](src/data/showreelMusic.json).
 `npm run fetch:showreel-music -- --publish` extracts the pinned originals into
-shared `ignored_assets/music/showreel/` and publishes 110 second excerpts to
+shared `ignored_assets/music/showreel/` and publishes 130 second excerpts to
 `public/assets/music/showreel/`.
 
-The film shows seven rolls, one per subfolder of
+The film shows eight rolls, one per subfolder of
 [`public/assets/photos/showreel/`](public/assets/photos/showreel/), tracked in
 Git and left out of the offline download. Each folder is named
-`<order>_<format>_<stock>`, for example `4_66_gold200` or `3_35wide_e100` (a
-free-sized panoramic 35mm roll). After changing the photographs, run
+`<order>_<format>_<stock>`, for example `4_66_gold200`, `3_35wide_e100` (a
+free-sized panoramic 35mm roll) or `0_35_half_portra160` (half frame). After changing the photographs, run
 `npm run showreel:manifest` to regenerate
 [`src/data/showreelRolls.json`](src/data/showreelRolls.json); roll names there
 may be edited and are kept. The photographs each shot must show are listed in

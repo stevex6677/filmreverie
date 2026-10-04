@@ -14,7 +14,7 @@ import './showreel.css';
 const format = (seconds: number) => `${Math.floor(seconds / 60)}:${(seconds % 60).toFixed(1).padStart(4, '0')}`;
 
 /**
- * /showreel: a 90-second promotional film of the darkroom, rendered live
+ * /showreel: a 101-second promotional film of the darkroom, rendered live
  * from code at 16:9, with a soundtrack. Not linked from the app. It opens on
  * its settings (music, grain and other looks), then previews or exports MP4.
  *
