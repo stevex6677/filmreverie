@@ -1,3 +1,4 @@
+import { filmType } from '../data/filmFormats';
 import { createRollLayout, fitRollView, locateFrame, type RollDefinition } from '../utils/rollLayout';
 import { getStripDimensions } from '../utils/loupeMapping';
 import { finishTimeline, lerpCamera, lookAtPose, PACE_SCALE, tablePan, TimelineBuilder, type CameraPose, type Pace, type ReelId, type ScreeningTimeline } from './timeline';
@@ -82,12 +83,12 @@ export function breakBoundaries(roll: RollDefinition) {
   const strips = createRollLayout(roll);
   const boundaries = strips.slice(1).map(strip => strip.offset);
   if (roll.frames.length < 8) return new Set<number>();
-  const medium = roll.format !== undefined && roll.format !== '135';
+  const medium = roll.format !== undefined && filmType(roll.format) !== '135';
   const every = medium || roll.frames.length < 16 ? 2 : 1;
   return new Set(boundaries.filter((_, index) => (index + 1) % every === 0 || boundaries.length === 1));
 }
 
-export function isMediumFormat(roll: RollDefinition) { return roll.format !== undefined && roll.format !== '135'; }
+export function isMediumFormat(roll: RollDefinition) { return roll.format !== undefined && filmType(roll.format) !== '135'; }
 
 /** How long the tour stays with a frame: a lingering look, an even hold, or a pass in a quick run. */
 export type Rhythm = 'linger' | 'hold' | 'quick';

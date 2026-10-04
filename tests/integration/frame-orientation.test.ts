@@ -31,7 +31,7 @@ describe('Automatic frame orientation', () => {
     expect(placeAutomatically(portrait, fixed('66')).rotation).toBe(0);
     // A 4:5 portrait loses less on 35mm when turned.
     expect(prefersTurned({ width: 4, height: 5 }, fixed('135'))).toBe(true);
-    for (const format of ['135', '645', '66', '67', '69'] as const) for (const frame of [portrait, landscape, { width: 4, height: 5, rotation: 0 }])
+    for (const format of ['135', '135-half', '645', '66', '67', '69'] as const) for (const frame of [portrait, landscape, { width: 4, height: 5, rotation: 0 }])
       expect(kept(placeAutomatically(frame, fixed(format)), format)).toBeCloseTo(Math.max(kept(frame, format), kept({ ...frame, rotation: 90 }, format)));
   });
   it('runs the long edge along free-size film', () => {

@@ -1,11 +1,35 @@
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { createCanvas } from '@napi-rs/canvas';
 import { createFilmRebateCanvas, createFilmRebateAtlas } from '../../src/utils/filmRebateCanvas';
 import { DEFAULT_LAYOUT, getStripDimensions } from '../../src/utils/loupeMapping';
 import { FILM_MODEL_UNIT } from '../../src/data/physicalScale';
 import { FILM_STOCKS, getFilmStock } from '../../src/data/filmStocks';
+import { formatLayout } from '../../src/data/filmFormats';
 
 const factory = () => createCanvas(1, 1) as unknown as HTMLCanvasElement;
+
+it('keeps factory print spacing on half frames and preserves the gap between their image gates', () => {
+  const canvas = factory(), context = canvas.getContext('2d')!;
+  const print = vi.spyOn(context, 'fillText');
+  const layout = { ...formatLayout('135-half'), frameCount: 13, frameNumberOffset: 12 };
+  const size = getStripDimensions(layout), density = 1500;
+  try {
+    createFilmRebateCanvas(getFilmStock('gold-200'), layout, Math.round(size.width * density), Math.round(size.height * density), () => canvas);
+    const labels = print.mock.calls.map(call => call[0]);
+    const legends = print.mock.calls.filter(call => call[0] === getFilmStock('gold-200').rebate.label);
+    expect(legends.length).toBeGreaterThan(2);
+    const designPixelsPerMm = 468 * FILM_MODEL_UNIT / size.height;
+    legends.slice(1).forEach((call, i) => expect((call[1] - legends[i][1]) / designPixelsPerMm).toBeCloseTo(50.8));
+    expect(labels).toContain('7');
+    expect(labels).toContain('7A');
+    expect(labels).toContain('13');
+    expect(labels).not.toContain('14');
+    const alpha = (x: number) => context.getImageData(Math.round(x * density), Math.round(size.height * density / 2), 1, 1).data[3];
+    expect(alpha(layout.marginX + layout.frameWidth / 2)).toBe(0);
+    expect(alpha(layout.marginX + layout.frameWidth + layout.gap / 2)).toBe(255);
+    expect(alpha(layout.marginX + layout.frameWidth * 1.5 + layout.gap)).toBe(0);
+  } finally { print.mockRestore(); }
+});
 
 it('keeps 35mm lettering the same physical width on full and partial strips', () => {
   const widths: number[] = [];

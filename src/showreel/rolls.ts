@@ -1,5 +1,5 @@
 import data from '../data/showreelRolls.json' with { type: 'json' };
-import { FILM_FORMATS, FILM_UNIT, FRAME_GAP_MM, formatLayout, isFilmFormat, rollFormatLabel, type FilmFormat } from '../data/filmFormats';
+import { FILM_FORMATS, FILM_UNIT, frameGapMm, formatLayout, isFilmFormat, rollFormatLabel, type FilmFormat } from '../data/filmFormats';
 import { FILM_RENDER_SCALE } from '../data/physicalScale';
 import { getFilmStock, isFilmStockId, type FilmStockId } from '../data/filmStocks';
 import type { RollDefinition } from '../utils/rollLayout';
@@ -21,7 +21,7 @@ export const SHOWREEL_ROLLS: readonly ShowreelRoll[] = data.rolls.map((roll, ind
   const format = roll.format, stockId = roll.stockId;
   const layout = formatLayout(format);
   // The same frame spacing as rolls made in the roll editor.
-  layout.gap = FRAME_GAP_MM * FILM_UNIT;
+  layout.gap = frameGapMm(format) * FILM_UNIT;
   const frames = roll.frames.map((frame, i) => ({ id: frame.id, order: i + 1, src: frame.src, thumbnailSrc: frame.src.replace(/\.jpg$/, '.thumb.jpg'), title: frame.title, alt: frame.alt, aspectRatio: frame.aspectRatio }));
   const definition: RollDefinition = { rollId: roll.id, label: `${roll.name} · ${rollFormatLabel(format)}`, frames, framesPerStrip: FILM_FORMATS[format].perStrip, scale: FILM_RENDER_SCALE, fixture: false, format, layout };
   const stored: StoredRoll = { id: roll.id, name: roll.name, stockId, format, sizing: 'fixed', frameIds: frames.map(frame => frame.id), coverId: frames[0].id, createdAt: 0, updatedAt: 0, trashedAt: null, shelfSlot: SHELF_SLOTS[index] };

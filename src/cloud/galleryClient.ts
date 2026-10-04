@@ -1,5 +1,5 @@
 import type { GalleryImageCache } from './galleryImageCache';
-import { FILM_FORMATS, FILM_UNIT, FRAME_GAP_MM, filmLengthUsage, formatLayout, frameAspect, isFilmFormat, rollFormatLabel } from '../data/filmFormats';
+import { FILM_FORMATS, FILM_UNIT, frameGapMm, filmLengthUsage, formatLayout, frameAspect, isFilmFormat, rollFormatLabel } from '../data/filmFormats';
 import { isFilmStockId, supportsFilmFormat } from '../data/filmStocks';
 import { FILM_RENDER_SCALE } from '../data/physicalScale';
 import { sha256Hex } from '../storage/crypto';
@@ -170,7 +170,7 @@ export function createGalleryRuntime(roll: GalleryRoll, images: readonly Gallery
     urls.push(url); return url;
   };
   try {
-    const layout = { ...formatLayout(roll.format), gap: FRAME_GAP_MM * FILM_UNIT };
+    const layout = { ...formatLayout(roll.format), gap: frameGapMm(roll.format, roll.sizing) * FILM_UNIT };
     const frames = roll.frames.map((frame, index) => {
       const viewing = images.find(image => image.frameId === frame.id && image.kind === 'viewing');
       if (!viewing) throw new Error('This saved gallery revision is incomplete.');
