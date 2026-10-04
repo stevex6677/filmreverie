@@ -7,6 +7,7 @@ import { DraftPhoto, processPhotos, releaseDraft } from '../storage/importPhotos
 import { generateUuid } from '../storage/crypto';
 import { clampFilmStrength, DEFAULT_FILM_STRENGTH, FILM_LOOKS } from '../data/filmLooks';
 import { RollFrameEditor, StrengthMode } from './RollFrameEditor';
+import { FrameSize, placeAutomatically, reorientForFrameSize } from '../utils/frameOrientation';
 interface Props { publication?:boolean; onDelete:(roll:StoredRoll)=>Promise<void>;editId?:string;onClose:()=>void;onOpen:(id:string)=>Promise<void>;onSaved?:(id:string)=>Promise<void>;repository?:RollRepository }
 const photoCount=(n:number)=>`${n} ${n===1?'photograph':'photographs'}`;
 /** New and existing rolls share one workspace: roll details beside the frame workbench. */
@@ -45,6 +46,12 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onSaved,onDe
   },[]);
   useEffect(()=>{if(draft!==null){dialog.current?.querySelector<HTMLElement>('[data-step-title]')?.focus();dialog.current?.scrollTo(0,0);}},[draft===null]);
   const updateDraft=(photos:DraftPhoto[]|null)=>{draftRef.current=photos??[];setDraft(photos);};
+  // Imports finish after the frame size may have changed; they are placed for the current one.
+  const frameSize=useRef<FrameSize>({format,sizing});frameSize.current={format,sizing};
+  const changeFrameSize=(next:FrameSize)=>{
+    const previous=frameSize.current;frameSize.current=next;setFormat(next.format);setSizing(next.sizing);
+    updateDraft(draftRef.current.map(p=>p.frame?{...p,frame:reorientForFrameSize(p.frame,previous,next)}:p));
+  };
   const reset=()=>{abort.current?.abort();repository.releaseEditorResources(draftRef.current[0]?.frame?.rollId);releaseDraft(draftRef.current);updateDraft(null);setEditing(null);setError('');setProgress('');};
   const start=()=>{reset();draftCreatedAt.current=Date.now();setRollId(generateUuid());setName('');setCamera('');setStock(DEFAULT_FILM_STOCK_ID);setFormat('135');setSizing('fixed');setCover('');setSelected('');setStrengthMode('roll');setRollStrength(preferredStrength.current);updateDraft([]);};
   const choose=async(files:File[])=>{
@@ -56,7 +63,8 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onSaved,onDe
       const photos=await processPhotos(files,rollId,controller.signal,(done,total)=>setProgress(`Processed ${done} / ${total}`),draftRef.current);
       controller.signal.throwIfAborted();
       // Details and existing frames remain editable while the new batch is prepared.
-      updateDraft([...draftRef.current,...photos]);
+      // Portraits lie across the film where that keeps more of the picture, as a camera turned on its side would record them.
+      updateDraft([...draftRef.current,...photos.map(p=>p.frame?{...p,frame:placeAutomatically(p.frame,frameSize.current)}:p)]);
       setCover(current=>current||photos.find(p=>p.frame)?.id||'');
       setSelected(current=>current||photos[0]?.id||'');
       if(publication){
@@ -115,8 +123,8 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onSaved,onDe
       <div className={`roll-editor-workspace ${draft.length?'':'is-empty'}`}>
       <section className="roll-editor-details" aria-label="Roll details"><h2 tabIndex={-1} data-step-title>Roll details</h2><div className="library-details"><label>Roll name<input maxLength={120} value={name} disabled={busy} onChange={e=>setName(e.target.value)} placeholder="e.g. Summer on the coast"/></label>
         <label>Camera (optional)<input aria-label="Camera (optional)" type="text" maxLength={120} value={camera} disabled={busy} onChange={e=>setCamera(e.target.value)} placeholder="e.g. Nikon F3"/><small>The camera used to shoot this roll.</small></label>
-        <fieldset disabled={busy} className="segmented"><legend>Film type</legend><label><input type="radio" name="film-type" checked={format==='135'} onChange={()=>{setFormat('135');setSizing('fixed');}}/>35mm</label><label><input type="radio" name="film-type" disabled={!supportsFilmFormat(stock, '120')} checked={format!=='135'} onChange={()=>{setFormat('66');setSizing('free');}}/>120</label></fieldset>
-        <label>Frame size (optional)<select aria-label="Film format" value={sizing==='free'?'free':format} disabled={busy} onChange={e=>{if(e.target.value==='free')setSizing('free');else{setFormat(e.target.value as FilmFormat);setSizing('fixed');}}}>{(format==='135'?['135']:['645','66','67','69']).map(id=><option key={id} value={id}>{FILM_FORMATS[id as FilmFormat].label}</option>)}<option value="free">Free · keep original proportions</option></select><small>{sizing==='free'?'All photographs keep their full composition at the same height. Width varies with each photograph.':'Photographs fill the selected frame size. Adjust each crop in the Crop tab.'}</small></label>
+        <fieldset disabled={busy} className="segmented"><legend>Film type</legend><label><input type="radio" name="film-type" checked={format==='135'} onChange={()=>changeFrameSize({format:'135',sizing:'fixed'})}/>35mm</label><label><input type="radio" name="film-type" disabled={!supportsFilmFormat(stock, '120')} checked={format!=='135'} onChange={()=>changeFrameSize({format:'66',sizing:'free'})}/>120</label></fieldset>
+        <label>Frame size (optional)<select aria-label="Film format" value={sizing==='free'?'free':format} disabled={busy} onChange={e=>changeFrameSize(e.target.value==='free'?{format,sizing:'free'}:{format:e.target.value as FilmFormat,sizing:'fixed'})}>{(format==='135'?['135']:['645','66','67','69']).map(id=><option key={id} value={id}>{FILM_FORMATS[id as FilmFormat].label}</option>)}<option value="free">Free · keep original proportions</option></select><small>{sizing==='free'?'All photographs keep their full composition at the same height. Width varies with each photograph.':'Photographs fill the selected frame size. Adjust each crop in the Crop tab.'}</small></label>
         <label>Film stock<select aria-label="Film stock" value={stock} disabled={busy} onChange={e=>setStock(e.target.value as FilmStockId)}>{FILM_STOCKS.map(s=><option key={s.id} value={s.id} disabled={!supportsFilmFormat(s.id, format)}>{s.displayName}{s.formats.length === 1 ? ' · 35mm only' : ''}</option>)}</select><small>{!supportsFilmFormat(stock, '120') && '35mm only. '}{FILM_LOOKS[stock].description}. Preview and adjust its strength in the Film effect tab.</small></label></div>
         {filmLengthMeter}
         {!editing&&<p className="roll-editor-note">{publication?'Saving publishes this roll to the gallery. Viewing images and thumbnails upload privately in the background; originals stay on this device.':'Your photographs stay in this browser. They are not uploaded or synced across devices.'}</p>}</section>

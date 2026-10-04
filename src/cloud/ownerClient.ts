@@ -127,7 +127,8 @@ function draftFrame(frame: NonNullable<OwnerPhoto['frame']>, uploadId: string, v
   const ratio = Math.min(1, IMPORT_LIMITS.viewingEdge / Math.max(frame.width, frame.height));
   return { id: frame.id, rollId: frame.rollId, filename: frame.filename,
     width: Math.max(1, Math.round(frame.width * ratio)), height: Math.max(1, Math.round(frame.height * ratio)),
-    rotation: frame.rotation, ...(frame.cropPosition ? { cropPosition: frame.cropPosition } : {}),
+    rotation: frame.rotation, ...(frame.uprightRotation !== undefined ? { uprightRotation: frame.uprightRotation } : {}),
+    ...(frame.cropPosition ? { cropPosition: frame.cropPosition } : {}),
     ...(frame.filmStrength !== undefined ? { filmStrength: frame.filmStrength } : {}),
     viewingKey: frame.viewingKey, thumbnailKey: frame.thumbnailKey, viewingSha256, uploadId };
 }

@@ -39,7 +39,7 @@ test('M18 saved covers render in frames, update after editing, and leave gray bl
   await page.getByRole('button', { name: 'Show saved roll Roll 01', exact: true }).click();await page.getByRole('button',{name:'Edit Roll 01',exact:true}).click();
   const editor = page.getByRole('dialog', { name: 'Review roll', exact: true });
   await editor.getByRole('button', { name: 'Select frame 2', exact: true }).click();
-  await editor.getByRole('button', { name: 'Rotate frame 2', exact: true }).click();
+  await editor.getByRole('button', { name: 'Vertically', exact: true }).click();
   await editor.getByRole('button', { name: 'Cover', exact: true }).click();
   await editor.getByRole('button', { name: 'Save and open', exact: true }).click();
   await expect(editor).not.toBeVisible(); await ready(page); await room(page);

@@ -100,7 +100,8 @@ export function adoptOwnerDraft(draft: CloudDraft, photos: readonly OwnerPhoto[]
 
 function storedFrame(frame: CloudDraft['frames'][number]): NonNullable<OwnerPhoto['frame']> {
   return { id: frame.id, rollId: frame.rollId, filename: frame.filename, width: frame.width, height: frame.height,
-    rotation: frame.rotation, ...(frame.cropPosition ? { cropPosition: frame.cropPosition } : {}),
+    rotation: frame.rotation, ...(frame.uprightRotation !== undefined ? { uprightRotation: frame.uprightRotation } : {}),
+    ...(frame.cropPosition ? { cropPosition: frame.cropPosition } : {}),
     ...(frame.filmStrength !== undefined ? { filmStrength: frame.filmStrength } : {}),
     viewingKey: frame.viewingKey, thumbnailKey: frame.thumbnailKey, mime: 'image/jpeg', hash: '', originalKey: '' };
 }

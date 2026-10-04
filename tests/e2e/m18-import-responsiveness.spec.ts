@@ -36,7 +36,7 @@ test('roll details remain editable during worker processing and Save stays on th
   // Adding another batch must not replace edits made to the earlier photographs.
   await editor.getByLabel('Choose photographs', { exact: true }).setInputFiles({ name: 'second.jpg', mimeType: 'image/jpeg', buffer: Buffer.concat([Buffer.from(photograph()), Buffer.from([0])]) });
   await expect.poll(() => page.workers().filter(worker => worker.url().includes('photoDerivatives.worker')).length).toBeGreaterThan(0);
-  await editor.getByRole('button', { name: 'Rotate frame 1', exact: true }).click();
+  await editor.getByRole('button', { name: 'Vertically', exact: true }).click();
   await page.evaluate(() => (window as unknown as { releaseImports(): void }).releaseImports());
   await expect(editor.getByRole('button', { name: 'Select frame 2', exact: true })).toBeVisible();
   // Cancelling a third batch keeps the earlier photographs and edits usable.

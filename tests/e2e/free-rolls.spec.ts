@@ -75,7 +75,7 @@ for(const film of ['35mm','120']) test(`${film} free frames preserve proportions
   await expect(page.getByLabel('Film format',{exact:true})).toHaveValue('free');
 
   await page.getByRole('button',{name:'Select frame 2',exact:true}).click();
-  await page.getByLabel('Rotate frame 2',{exact:true}).click();
+  await page.getByRole('button',{name:'Vertically',exact:true}).click();
   const ratio=await page.locator('.draft-preview').nth(1).evaluate(n=>{const r=n.getBoundingClientRect();return r.width/r.height;});
   expect(ratio).toBeCloseTo(1/aspects[1],1);
   await save(page);expect(errors).toEqual([]);
