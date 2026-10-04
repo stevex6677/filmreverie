@@ -32,7 +32,12 @@ export interface PendingPublication {
   catalogEtag?: string; catalogKey: string | null; generation: number; nextFrame: number;
   publication: GalleryRoll; cleanup?: boolean;
 }
-export interface DraftSnapshot { draft: CloudDraft }
+export interface DraftSnapshot {
+  draft: CloudDraft;
+  // Trusted sealed-image metadata, retained so edits do not re-read every upload.
+  uploads?: Record<string, CompletedUpload>;
+  operation?: { id: string; fingerprint: string };
+}
 export class HttpError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }

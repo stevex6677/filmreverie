@@ -1,7 +1,7 @@
-import type { CloudDraft, DraftFrame, GalleryRoll, PublishResult, UploadGrant, UploadKind, UploadRequest, WithdrawResult } from './contracts';
+import type { CloudDraft, DraftFrame, GalleryRoll, PublishResult, UploadGrant, UploadKind, UploadRequest, WithdrawResult, RollMutationResult } from './contracts';
 import { IMPORT_LIMITS, type DraftPhoto } from '../storage/importPhotos';
-import { sha256Hex } from '../storage/crypto';
-import { validatePreferences, type DarkroomPreferences } from '../storage/rollRepository';
+import { sha256Hex, generateUuid } from '../storage/crypto';
+import { validatePreferences, type DarkroomPreferences, type StoredRoll } from '../storage/rollRepository';
 import type { ShelfArrangement } from '../utils/shelfLayout';
 
 export class OwnerSessionRequired extends Error {
@@ -36,7 +36,39 @@ function restoreView(draft: CloudDraft): CloudDraft {
   return draft;
 }
 const idPath = (id: string) => encodeURIComponent(id);
+const pendingMutations = new Map<string, { body: string; id: string; continuation?: string }>();
+async function mutateRoll(id: string, method: 'PUT' | 'PATCH', value: object, signal?: AbortSignal): Promise<CloudDraft> {
+  const key = `${method}/${id}`, body = JSON.stringify(value);
+  let pending = pendingMutations.get(key);
+  if (!pending || pending.body !== body) {
+    pending = { body, id: generateUuid() };
+    pendingMutations.set(key, pending);
+  }
+  try {
+    for (;;) {
+      signal?.throwIfAborted();
+      const result = await json<RollMutationResult>(`rolls/${idPath(id)}`, {
+        method, headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...value, mutationId: pending.id, ...(pending.continuation ? { continuation: pending.continuation } : {}) }), signal,
+      });
+      if (!result.pending) {
+        if (pendingMutations.get(key) === pending) pendingMutations.delete(key);
+        return restoreView(result.draft);
+      }
+      pending.continuation = result.continuation;
+    }
+  } catch (error) {
+    // The server may have cleaned up a failed publication. Rediscover any
+    // surviving work using the mutation ID on the next explicit retry.
+    pending.continuation = undefined;
+    throw error;
+  }
+}
 export const ownerClient = {
+  async saveRoll(draft: CloudDraft, signal?: AbortSignal) { return mutateRoll(draft.roll.id, 'PUT', draft, signal); },
+  async patchRoll(id: string, updatedAt: number, changes: Partial<StoredRoll>, signal?: AbortSignal) {
+    return mutateRoll(id, 'PATCH', { updatedAt, changes }, signal);
+  },
   async session(signal?: AbortSignal) {
     const session = await json<{ email: string }>('session', { signal });
     if (typeof session.email !== 'string' || !session.email) throw new OwnerSessionRequired();
