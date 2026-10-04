@@ -4,6 +4,7 @@ import { sha256Hex } from '../../src/storage/crypto';
 import { RollRepository } from '../../src/storage/rollRepository';
 import { createGalleryRuntime, downloadGalleryRoll, type GalleryProgress, downloadGalleryImage, fetchGallery, galleryBytes, openLiveGalleryRoll, parseGalleryCatalog } from '../../src/cloud/galleryClient';
 import { GalleryRepository } from '../../src/cloud/galleryStorage';
+import { createRollLayout } from '../../src/utils/rollLayout';
 import type { GalleryRoll } from '../../src/cloud/contracts';
 
 async function fixture(revision = 'revision-1') {
@@ -23,6 +24,17 @@ async function fixture(revision = 'revision-1') {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('M21 account-free gallery boundaries', () => {
+  it.each(['fixed','free'] as const)('honors a saved strip count in the %s published gallery',async(sizing)=>{
+    const {roll,fetcher}=await fixture();
+    roll.sizing=sizing;roll.framesPerStrip=2;
+    roll.frames=Array.from({length:5},(_,i)=>({...roll.frames[0],id:`frame-${i+1}`}));
+    const runtime=await openLiveGalleryRoll(roll,{fetcher});
+    try { expect(createRollLayout(runtime.definition).map(strip=>strip.frames.length)).toEqual([2,2,1]); }
+    finally { runtime.dispose(); }
+    for(const invalid of [0,-1,1.5,NaN,Infinity,'2',null]){
+      expect(()=>parseGalleryCatalog({version:1,rolls:[{...roll,framesPerStrip:invalid}]})).toThrow('frames per strip');
+    }
+  });
   it('opens same-origin macbook HTTP proxy images without allowing unrelated insecure image URLs', async () => {
     const { roll, fetcher } = await fixture();
     vi.stubGlobal('location', new URL('http://macbook:5236/'));

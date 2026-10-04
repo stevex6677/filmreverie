@@ -1,6 +1,6 @@
 import type { ProgressReporter } from '../utils/operationProgress';
 import { FilmStockId, isFilmStockId, supportsFilmFormat } from '../data/filmStocks';
-import { FilmFormat, FrameSizing, filmLengthUsage, isFilmFormat } from '../data/filmFormats';
+import { FilmFormat, FrameSizing, filmLengthUsage, isFilmFormat, isFramesPerStrip } from '../data/filmFormats';
 import { applyShelfArrangement, reconcileShelfSlots, validShelfArrangement, type ShelfArrangement } from '../utils/shelfLayout';
 export interface RollSaveOptions { insertFirstIfMissing?: boolean; onProgress?: ProgressReporter }
 
@@ -22,6 +22,8 @@ export interface StoredRoll {
   camera?: string;
   shelfSlot?: number;
   sizing?: FrameSizing;
+  /** Light-table strip count override; absent uses the format's default cuts. */
+  framesPerStrip?: number;
   filmStrength?: number;
   id: string; name: string; stockId: FilmStockId; format: FilmFormat; frameIds: string[]; coverId: string;
   createdAt: number; updatedAt: number; trashedAt: number | null; view?: SavedView;
@@ -62,6 +64,7 @@ export function validateBundle(bundle: { roll: StoredRoll; frames: Pick<StoredFr
   if (!frames.length || new Set(roll.frameIds).size !== frames.length || roll.frameIds.length !== frames.length || !roll.frameIds.includes(roll.coverId)) throw new Error('Invalid frame membership or cover.');
   for (const frame of frames) if (frame.rollId !== roll.id || !roll.frameIds.includes(frame.id) || ![0,90,180,270].includes(frame.rotation) || frame.uprightRotation !== undefined && ![0,90,180,270].includes(frame.uprightRotation)) throw new Error('Invalid frame metadata.');
   if (roll.sizing !== undefined && !['fixed','free'].includes(roll.sizing)) throw new Error('Invalid frame sizing.');
+  if (roll.framesPerStrip !== undefined && !isFramesPerStrip(roll.framesPerStrip)) throw new Error('Frames per strip must be a positive whole number.');
   for (const frame of frames) if (![frame.width, frame.height].every(n => Number.isFinite(n) && n > 0)) throw new Error('Invalid image dimensions.');
   const length = filmLengthUsage(roll.format, roll.sizing ?? 'fixed', frames);
   if (length.exceeded) throw new Error(`Roll exceeds its film length by ${Math.ceil(length.used - length.capacity)} mm. Remove photographs or change the frame size before saving.`);

@@ -50,16 +50,32 @@ it('changes only the cover with one small PATCH and reuses every published image
   expect(calls).toBeLessThan(25);
 });
 
+it('publishes a strip-count-only edit and can restore the default without touching images', async () => {
+  const f = await fixture(7);
+  const saved = await ownerClient.patchRoll(f.saved.roll.id, f.saved.roll.updatedAt, { framesPerStrip: 2 });
+  expect(f.requests).toHaveLength(1);
+  expect(saved.roll.framesPerStrip).toBe(2);
+  const published = (await publicCatalog(f.env)).rolls[0];
+  expect(published.framesPerStrip).toBe(2);
+  expect(published.frames).toEqual(f.published.frames);
+  await expect(ownerClient.patchRoll(saved.roll.id, saved.roll.updatedAt, { framesPerStrip: 0 })).rejects.toThrow('Frames per strip');
+  expect((await publicCatalog(f.env)).rolls[0]).toEqual(published);
+  const { framesPerStrip, ...roll } = saved.roll;
+  await ownerClient.saveRoll({ roll, frames: saved.frames });
+  expect((await readDraft(f.env, roll.id)).roll.framesPerStrip).toBeUndefined();
+  expect((await publicCatalog(f.env)).rolls[0].framesPerStrip).toBeUndefined();
+});
+
 it('saves crop, rotation, ordering, frame removal and roll metadata in one PUT without image copies', async () => {
   const f = await fixture(13), frames = f.saved.frames.slice(0, 12).reverse().map(frame => ({ ...frame, rotation: 90, cropPosition: { x: .2, y: .3 }, filmStrength: 25 }));
   // Keep the free-frame film length unchanged while testing rotation.
   frames.forEach(frame => { frame.width = 400; frame.height = 8; });
-  const input = { roll: { ...f.saved.roll, name: 'Edited', camera: 'Nikon F3', filmStrength: 30, frameIds: frames.map(frame => frame.id), coverId: frames[0].id }, frames };
+  const input = { roll: { ...f.saved.roll, name: 'Edited', camera: 'Nikon F3', framesPerStrip: 4, filmStrength: 30, frameIds: frames.map(frame => frame.id), coverId: frames[0].id }, frames };
   const keys = [...f.publicBucket.objects.keys()].filter(key => key.startsWith('rolls/'));
   await ownerClient.saveRoll(input);
   expect(f.requests).toHaveLength(1);
   const next = (await publicCatalog(f.env)).rolls[0];
-  expect(next).toMatchObject({ name: 'Edited', camera: 'Nikon F3', filmStrength: 30 });
+  expect(next).toMatchObject({ name: 'Edited', camera: 'Nikon F3', framesPerStrip: 4, filmStrength: 30 });
   expect(next.frames.map(frame => frame.id)).toEqual(input.roll.frameIds);
   expect(next.frames[0]).toMatchObject({ rotation: 90, cropPosition: { x: .2, y: .3 }, filmStrength: 25 });
   expect([...f.publicBucket.objects.keys()].filter(key => key.startsWith('rolls/'))).toEqual(keys);

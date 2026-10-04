@@ -22,6 +22,71 @@ async function save(page:Page){
   await expect(page.locator('main')).toHaveAttribute('data-assets-ready','true');
   await expect(page.locator('main')).toHaveAttribute('data-is-transitioning','false');
 }
+test('frames per strip follows format defaults and persists only on the edited roll', async ({ page }, testInfo) => {
+  await begin(page, 7);
+  const count = page.getByRole('spinbutton', { name: 'Frames per strip', exact: true });
+  const format = page.getByLabel('Film format', { exact: true });
+  const reset = page.getByRole('button', { name: 'Use default', exact: true });
+  await expect(count).toHaveValue('6');
+  await format.selectOption('135-half');
+  await expect(count).toHaveValue('12');
+  await page.getByRole('radio', { name: '120', exact: true }).check();
+  await expect(count).toHaveValue('');
+  await expect(count).toHaveAttribute('placeholder', 'Automatic');
+  for (const [size, value] of [['645', '4'], ['66', '3'], ['67', '3'], ['69', '2']]) {
+    await format.selectOption(size);
+    await expect(count).toHaveValue(value);
+  }
+  await count.fill('4');
+  await format.selectOption('66');
+  await expect(count).toHaveValue('4');
+  await reset.click();
+  await expect(count).toHaveValue('3');
+  await page.getByRole('radio', { name: '35mm', exact: true }).check();
+  for (const value of ['', '0', '-1', '1.5']) {
+    await count.fill(value);
+    await expect(count).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.getByRole('button', { name: 'Save and open', exact: true })).toBeDisabled();
+  }
+  await count.fill('2');
+  await count.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('frames-per-strip-editor.png') });
+  const expectStripSize = async (size: number) => {
+    await openFrame(page, 1);
+    await page.getByRole('button', { name: '← Overview', exact: true }).click();
+    await expect(page.locator('main')).toHaveAttribute('data-is-transitioning', 'false');
+    await page.locator('.canvas-wrapper').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('main')).toHaveAttribute('data-selected-frame', String(size + 1));
+  };
+  await save(page);
+  await expectStripSize(2);
+  await page.reload();
+  await expect(page.locator('main')).toHaveAttribute('data-assets-ready', 'true');
+  await expectStripSize(2);
+  const edit = async () => {
+    await page.getByRole('button', { name: 'Film Shelf', exact: true }).click();
+    await page.getByRole('button', { name: 'Show saved roll Mixed sizes', exact: true }).click();
+    await page.getByRole('button', { name: 'Edit Mixed sizes', exact: true }).click();
+  };
+  await edit();
+  await expect(count).toHaveValue('2');
+  await format.selectOption('free');
+  await count.fill('3');
+  await save(page);
+  await expectStripSize(3);
+  await edit();
+  await expect(count).toHaveValue('3');
+  await format.selectOption('135');
+  await reset.click();
+  await expect(count).toHaveValue('6');
+  await save(page);
+  await expectStripSize(6);
+  await page.getByRole('button', { name: 'Film Shelf', exact: true }).click();
+  await shelfAction(page, 'New roll');
+  await expect(count).toHaveValue('6');
+  await expect(reset).toBeDisabled();
+});
 test('35mm half frame keeps its film type, portrait gates and selection after reopening', async ({ page }, testInfo) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));

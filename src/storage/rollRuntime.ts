@@ -1,7 +1,7 @@
 import { getStripDimensions } from '../utils/loupeMapping';
 import { TABLE_CENTER_Z } from '../utils/cameraBounds';
 import { RollBundle, RollRepository, SavedView } from './rollRepository';
-import { FILM_FORMATS, FILM_UNIT, frameGapMm, frameAspect, rollFormatLabel, formatLayout } from '../data/filmFormats';
+import { FILM_UNIT, frameGapMm, frameAspect, rollFormatLabel, formatLayout, rollStripLayout } from '../data/filmFormats';
 import { FILM_RENDER_SCALE } from '../data/physicalScale';
 import { createRollLayout, RollDefinition } from '../utils/rollLayout';
 export function createRuntimeRoll(bundle: RollBundle): { definition: RollDefinition; view?: SavedView; dispose: () => void } {
@@ -10,13 +10,12 @@ export function createRuntimeRoll(bundle: RollBundle): { definition: RollDefinit
   const retain=()=>{references++;let active=true;return()=>{if(active){active=false;release();}};};
   const urls: string[] = [], blobs = new Map(bundle.blobs.map(b => [b.key,b.blob]));
   const url = (key: string) => { const blob = blobs.get(key); if (!blob) throw new Error('Stored image unavailable.'); const value = URL.createObjectURL(blob); urls.push(value); return value; };
-  const format = FILM_FORMATS[bundle.roll.format], layout = formatLayout(bundle.roll.format);
+  const layout = formatLayout(bundle.roll.format);
   layout.gap = frameGapMm(bundle.roll.format, bundle.roll.sizing) * FILM_UNIT;
   try {
     const frames = bundle.roll.frameIds.map((id, i) => { const f = bundle.frames.find(frame => frame.id === id)!; return { id, order: i+1, src: url(f.viewingKey), thumbnailSrc: url(f.thumbnailKey), title: f.filename, alt: f.filename, aspectRatio: f.width / f.height, rotation: f.rotation, uprightRotation: f.uprightRotation, cropPosition: f.cropPosition, filmStrength: f.filmStrength, original: blobs.get(f.originalKey), loadOriginal: ()=>new RollRepository().original(f.id), sourceWidth: f.width, sourceHeight: f.height }; });
-    const definition: RollDefinition = { rollId: bundle.roll.id, label: `${bundle.roll.name} · ${rollFormatLabel(bundle.roll.format, bundle.roll.sizing)}`, frames, framesPerStrip: format.perStrip, scale: 1, fixture: false, format: bundle.roll.format, layout, imported: true, retainResources: retain,
-      frameWidths: bundle.roll.sizing === 'free' ? bundle.roll.frameIds.map(id => layout.frameHeight * frameAspect(bundle.roll.format, 'free', bundle.frames.find(f => f.id === id)!)) : undefined,
-      stripLength: bundle.roll.sizing === 'free' ? 230 * FILM_UNIT : undefined };
+    const definition: RollDefinition = { rollId: bundle.roll.id, label: `${bundle.roll.name} · ${rollFormatLabel(bundle.roll.format, bundle.roll.sizing)}`, frames, ...rollStripLayout(bundle.roll.format, bundle.roll.sizing, bundle.roll.framesPerStrip), scale: 1, fixture: false, format: bundle.roll.format, layout, imported: true, retainResources: retain,
+      frameWidths: bundle.roll.sizing === 'free' ? bundle.roll.frameIds.map(id => layout.frameHeight * frameAspect(bundle.roll.format, 'free', bundle.frames.find(f => f.id === id)!)) : undefined };
     definition.scale = FILM_RENDER_SCALE;
     return { definition, view: rescaleSavedView(bundle.roll.view, definition), dispose: () => { if(!disposed){disposed=true;release();} } };
   } catch (error) { urls.forEach(value => URL.revokeObjectURL(value)); throw error; }

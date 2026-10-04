@@ -15,6 +15,7 @@ export interface GalleryRoll {
   camera?: string;
   id: string; revision: string; name: string; stockId: StoredRoll['stockId'];
   format: StoredRoll['format']; sizing?: StoredRoll['sizing']; filmStrength?: number;
+  framesPerStrip?: number;
   coverId: string; frames: GalleryFrame[]; publishedAt: number;
   /** The owner's cubby; absent until the owner arranges the shelf. */
   shelfSlot?: number;

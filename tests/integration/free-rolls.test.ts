@@ -14,6 +14,43 @@ function bundle(aspects: number[], format: FilmFormat = '135', sizing: FrameSizi
   return {roll:{id:'r',name:'Mixed roll',format,sizing,stockId:'portra-400',frameIds:frames.map(f=>f.id),coverId:'f0',createdAt:1,updatedAt:1,trashedAt:null},frames,blobs:frames.flatMap(f=>[f.originalKey,f.viewingKey,f.thumbnailKey].map(key=>({key,blob:new Blob([key])})))};
 }
 describe('Film length and variable-width rolls',()=>{
+  it.each([['135',6],['135-half',12],['645',4],['66',3],['67',3],['69',2]] as const)('uses the %s default and saves a count just for the edited roll',async(format,count)=>{
+    const data=bundle(Array(7).fill(1),format,'fixed'),repo=new RollRepository(new IDBFactory());
+    const original=createRuntimeRoll(data);
+    try { expect(createRollLayout(original.definition)[0].frames).toHaveLength(count>7?7:count); }
+    finally { original.dispose(); }
+    data.roll.framesPerStrip=2;
+    await repo.save(data);
+    const loaded=await repo.read('r'),runtime=createRuntimeRoll(loaded);
+    try {
+      expect(loaded.roll.framesPerStrip).toBe(2);
+      expect(createRollLayout(runtime.definition).map(strip=>strip.frames.length)).toEqual([2,2,2,1]);
+      expect(locateFrame(runtime.definition,2).strip.index).toBe(1);
+    } finally { runtime.dispose(); }
+    delete data.roll.framesPerStrip;
+    await repo.save(data);
+    const reset=createRuntimeRoll(await repo.read('r'));
+    try { expect(reset.definition.framesPerStrip).toBe(count); } finally { reset.dispose(); }
+  });
+  it('uses explicit counts for free-size strips even when their widths exceed the automatic strip length',()=>{
+    const data=bundle(Array(7).fill(3));data.roll.framesPerStrip=4;
+    const runtime=createRuntimeRoll(data);
+    try {
+      expect(runtime.definition.stripLength).toBeUndefined();
+      expect(createRollLayout(runtime.definition).map(strip=>strip.frames.length)).toEqual([4,3]);
+      expect(runtime.definition.frameWidths!.every(width=>width===72*FILM_UNIT)).toBe(true);
+      expect(lightTableSize(runtime.definition).width).toBeGreaterThan(getStripDimensions(createRollLayout(runtime.definition)[0].layout).width*runtime.definition.scale);
+    } finally { runtime.dispose(); }
+  });
+  it('rejects invalid counts without replacing a saved roll',async()=>{
+    const data=bundle([1]),repo=new RollRepository(new IDBFactory());
+    data.roll.framesPerStrip=4;await repo.save(data);
+    for(const invalid of [0,-1,1.5,NaN,Infinity,Number.MAX_SAFE_INTEGER+1,'4',null]){
+      data.roll.framesPerStrip=invalid as number;
+      await expect(repo.save(data)).rejects.toThrow('Frames per strip');
+      expect((await repo.read('r')).roll.framesPerStrip).toBe(4);
+    }
+  });
   it('allows extra length beyond typical rolls while enforcing a finite maximum',()=>{
     const frames=Array.from({length:46},()=>({width:3,height:2}));
     expect(filmLengthUsage('135','fixed',frames.slice(0,36))).toMatchObject({used:1404,capacity:1755,usingExtra:false,exceeded:false});

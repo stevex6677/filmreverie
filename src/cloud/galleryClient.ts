@@ -1,5 +1,5 @@
 import type { GalleryImageCache } from './galleryImageCache';
-import { FILM_FORMATS, FILM_UNIT, frameGapMm, filmLengthUsage, formatLayout, frameAspect, isFilmFormat, rollFormatLabel } from '../data/filmFormats';
+import { FILM_UNIT, isFramesPerStrip, rollStripLayout, frameGapMm, filmLengthUsage, formatLayout, frameAspect, isFilmFormat, rollFormatLabel } from '../data/filmFormats';
 import { isFilmStockId, supportsFilmFormat } from '../data/filmStocks';
 import { FILM_RENDER_SCALE } from '../data/physicalScale';
 import { sha256Hex } from '../storage/crypto';
@@ -41,6 +41,7 @@ function publicImage(value: unknown): value is GalleryImage {
 }
 export function validateGalleryRoll(value: unknown): asserts value is GalleryRoll {
   if (!object(value) || typeof value.id !== 'string' || !value.id || typeof value.revision !== 'string' || !value.revision || typeof value.name !== 'string' || !value.name.trim() || value.name.length > 120 || typeof value.stockId !== 'string' || !isFilmStockId(value.stockId) || typeof value.format !== 'string' || !isFilmFormat(value.format) || !supportsFilmFormat(value.stockId, value.format) || !Array.isArray(value.frames) || !value.frames.length || !Number.isFinite(value.publishedAt) || (value.sizing !== undefined && value.sizing !== 'fixed' && value.sizing !== 'free') || (value.filmStrength !== undefined && (typeof value.filmStrength !== 'number' || !Number.isFinite(value.filmStrength) || value.filmStrength < 0 || value.filmStrength > 100))) throw new Error('The gallery returned invalid roll metadata.');
+  if (value.framesPerStrip !== undefined && !isFramesPerStrip(value.framesPerStrip)) throw new Error('The gallery returned invalid frames per strip.');
   if (value.camera !== undefined && (typeof value.camera !== 'string' || value.camera.length > 120)) throw new Error('The gallery returned invalid camera metadata.');
   if (value.shelfSlot !== undefined && !validShelfSlot(value.shelfSlot)) throw new Error('The gallery returned an invalid shelf position.');
   const ids = new Set<string>();
@@ -180,9 +181,8 @@ export function createGalleryRuntime(roll: GalleryRoll, images: readonly Gallery
     });
     const definition: RollDefinition = {
       rollId: `gallery:${roll.id}:${roll.revision}`, label: `${roll.name} · ${rollFormatLabel(roll.format, roll.sizing)}`, frames,
-      framesPerStrip: FILM_FORMATS[roll.format].perStrip, scale: FILM_RENDER_SCALE, fixture: false, imported: false, format: roll.format, layout,
+      ...rollStripLayout(roll.format, roll.sizing, roll.framesPerStrip), scale: FILM_RENDER_SCALE, fixture: false, imported: false, format: roll.format, layout,
       frameWidths: roll.sizing === 'free' ? roll.frames.map(frame => layout.frameHeight * frameAspect(roll.format, 'free', frame)) : undefined,
-      stripLength: roll.sizing === 'free' ? 230 * FILM_UNIT : undefined,
       retainResources: () => {
         if (references === 0) throw new Error('This gallery view has already been released.');
         references++; let active = true;
