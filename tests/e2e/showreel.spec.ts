@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
 
-// The unlinked /showreel page: loads the darkroom with both sample rolls,
+// The unlinked /showreel page: loads the darkroom with every showreel roll on the table,
 // plays its timeline, and is not part of the app or its offline download.
 test('showreel loads, plays and renders through the screening engine', async ({ page, request }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/showreel?paused=1&t=29.6');
+  await page.goto('/showreel?paused=1&t=44.5');
   const root = page.locator('.showreel');
   await expect(root).toHaveAttribute('data-showreel-ready', 'true', { timeout: 200000 });
   await expect(page).toHaveTitle('Film Reverie — Showreel');
@@ -16,7 +16,7 @@ test('showreel loads, plays and renders through the screening engine', async ({ 
   // A held moment renders the loupe shot, then playback advances the timeline.
   await expect.poll(() => page.evaluate(() => (window as any).__showreel.sample.shot)).toBe('loupe');
   await page.getByRole('button', { name: 'Play' }).click();
-  await expect.poll(async () => Number(await root.getAttribute('data-showreel-time')), { timeout: 30000 }).toBeGreaterThan(30.2);
+  await expect.poll(async () => Number(await root.getAttribute('data-showreel-time')), { timeout: 30000 }).toBeGreaterThan(45.1);
 
   // Exact frames through the export engine include the overlay.
   const frame = await page.evaluate(async () => {

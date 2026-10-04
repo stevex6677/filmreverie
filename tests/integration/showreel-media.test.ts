@@ -93,8 +93,8 @@ describe('Showreel soundtrack', () => {
       expect(track.source.sha256).toMatch(/^[0-9a-f]{64}$/);
       const file = path.join(root, 'public', track.src);
       expect(fs.existsSync(file), file).toBe(true);
-      // Published excerpts are 70 s, 192 kbps: they cover the film after the offset.
-      expect(trackOffset(track, timeline.cue) + d).toBeLessThan(70);
+      // Published excerpts are 110 s, 192 kbps: they cover the film after the offset.
+      expect(trackOffset(track, timeline.cue) + d).toBeLessThan(110);
       expect(fs.statSync(file).size).toBeGreaterThan(1e6);
     }
     expect(SHOWREEL_TRACKS.some(track => track.id === music.default)).toBe(true);

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
+import { filmType } from '../data/filmFormats';
 import { applyScreeningPose } from '../screening/camera';
-import { SHOWREEL_GITHUB, SHOWREEL_SITE, type ShowreelSample, type ShowreelTimeline } from './timeline';
+import { NEW_ROLL_PACE, SHOWREEL_GITHUB, SHOWREEL_SITE, type ShowreelSample, type ShowreelTimeline } from './timeline';
 import { DEFAULT_SETTINGS, type ShowreelLook } from './settings';
 
 // Everything here is drawn into a 2D canvas from the timeline alone, so the
@@ -192,6 +193,49 @@ function drawExhibits(ctx: CanvasRenderingContext2D, width: number, height: numb
   }
 }
 
+const corner = new THREE.Vector3();
+const toScreen = (vector: THREE.Vector3, width: number, height: number) => ({ x: (vector.x + 1) / 2 * width, y: (1 - vector.y) / 2 * height });
+/** Each format named above its rolls, with a rule spanning their real width on the table. */
+function drawFormats(ctx: CanvasRenderingContext2D, width: number, height: number, sample: ShowreelSample, timeline: ShowreelTimeline) {
+  const visible = timeline.formats.filter(item => sample.time > item.start && sample.time < item.end);
+  if (!visible.length) return;
+  const u = height / 720;
+  projector.aspect = width / height;
+  applyScreeningPose(projector, sample.camera);
+  for (const item of visible) {
+    point.set(item.position[0] - item.width / 2, item.position[1], item.position[2]).project(projector);
+    corner.set(item.position[0] + item.width / 2, item.position[1], item.position[2]).project(projector);
+    if (point.z > 1 || corner.z > 1) continue;
+    const a = toScreen(point, width, height), b = toScreen(corner, width, height);
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const alpha = shown(sample.time, item.start, item.end, .45, .3) * smooth((width * 1.02 - Math.abs(mid.x - width / 2) * 2) / (width * .12));
+    if (alpha <= 0) continue;
+    const p = (sample.time - item.start) / .8, grow = outCubic(p), lift = 12 * u;
+    ctx.save(); ctx.globalAlpha = alpha;
+    // The rule along the far edge of the film, drawn out from its middle, with end ticks.
+    const from = { x: mid.x + (a.x - mid.x) * grow, y: mid.y + (a.y - mid.y) * grow - lift }, to = { x: mid.x + (b.x - mid.x) * grow, y: mid.y + (b.y - mid.y) * grow - lift };
+    ctx.strokeStyle = 'rgba(233,184,103,.9)'; ctx.lineWidth = Math.max(1, 1.3 * u); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(to.x, to.y);
+    for (const end of [from, to]) { ctx.moveTo(end.x, end.y - 5 * u * grow); ctx.lineTo(end.x, end.y + 5 * u * grow); }
+    ctx.stroke();
+    // A dark card over the glowing table, rising into place.
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    const detail = item.detail.toUpperCase();
+    fit(ctx, '600', 9.5 * u, SANS, 240 * u, 1.8 * u);
+    const detailWidth = ctx.measureText(detail).width;
+    fit(ctx, '400', 24 * u, SERIF, 240 * u);
+    const cardWidth = Math.max(ctx.measureText(item.title).width, detailWidth) + 26 * u, cardHeight = 50 * u;
+    const top = mid.y - lift - 8 * u - cardHeight + (1 - outCubic(p - .1)) * 10 * u;
+    ctx.globalAlpha = alpha * smooth((p - .1) * 1.6);
+    ctx.fillStyle = 'rgba(14,12,10,.8)'; ctx.strokeStyle = 'rgba(233,184,103,.55)'; ctx.lineWidth = Math.max(1, u);
+    ctx.beginPath(); ctx.roundRect(mid.x - cardWidth / 2, top, cardWidth, cardHeight, 5 * u); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = CREAM; ctx.fillText(item.title, mid.x, top + 25 * u);
+    fit(ctx, '600', 9.5 * u, SANS, 240 * u, 1.8 * u);
+    ctx.fillStyle = AMBER; ctx.fillText(detail, mid.x, top + 41 * u);
+    ctx.restore();
+  }
+}
+
 // The New roll editor, after the app's own (RollEditor and roll-editor.css),
 // simplified and drawn in a 1000 × 700 space beside the chapter text.
 const EDITOR = { ink: '#252820', text: '#3d4137', muted: '#686c5f', line: '#cfc8ba', panel: '#f4f1ea', well: '#e7e2d8', paper: '#eeeae2',
@@ -201,7 +245,7 @@ const EDITOR_SIZE = { width: 1000, height: 700 };
 // Photographs drawn into the editor; loaded before the pre-roll so every frame, and the export, has them.
 const photos = new Map<string, HTMLImageElement>();
 const editorPhotos = (timeline: ShowreelTimeline) => {
-  const frames = timeline.rolls[0].definition.frames;
+  const frames = timeline.rolls[timeline.editorRoll].definition.frames;
   return { thumbs: frames.map(frame => frame.thumbnailSrc ?? frame.src), stage: frames[0].src, frames };
 };
 export function loadShowreelPhotos(timeline: ShowreelTimeline) {
@@ -258,15 +302,18 @@ function picture(ctx: CanvasRenderingContext2D, url: string, x: number, y: numbe
   if (image) ctx.drawImage(image, x, y, w, h); else { ctx.fillStyle = '#8d8a80'; ctx.fillRect(x, y, w, h); }
 }
 
+/** Seconds between processed photographs; a long roll is processed faster, so it is finished before Save. */
+const processEach = (count: number) => Math.min(.13, 1.9 / Math.max(1, count));
+
 /**
  * The editor at `t` seconds into its shot: photographs dragged in and
  * processed onto the frame strip, the roll named, then Save and open.
  */
 function drawEditor(ctx: CanvasRenderingContext2D, t: number, timeline: ShowreelTimeline) {
   const { thumbs, stage, frames } = editorPhotos(timeline);
-  const roll = timeline.rolls[0], name = roll.name, count = frames.length;
+  const roll = timeline.rolls[timeline.editorRoll], name = roll.name, count = frames.length, small = filmType(roll.format) === '135';
   const step = (start: number, length: number) => smooth((t - start) / length);
-  const DROP = 1.8, EACH = .13, TYPE = 2.3;
+  const DROP = 1.8, EACH = processEach(count), TYPE = 2.3;
   const arrived = Math.max(0, Math.min(count, Math.floor((t - DROP - .15) / EACH) + 1));
   const typed = name.slice(0, Math.max(0, Math.min(name.length, Math.floor((t - TYPE) / .07))));
   const named = typed.length === name.length, pressed = t > 5 && t < 5.18, saving = t >= 5;
@@ -276,7 +323,7 @@ function drawEditor(ctx: CanvasRenderingContext2D, t: number, timeline: Showreel
   box(ctx, 0, 0, EDITOR_SIZE.width, EDITOR_SIZE.height, 12, EDITOR.paper, '#bdb6a8');
   text(ctx, 'YOUR DARKROOM', 28, 42, EDITOR.brass, '500', 11, SANS, 'left', 2);
   text(ctx, 'New roll', 28, 82, EDITOR.ink, '400', 34, SERIF);
-  text(ctx, `${typed || 'Untitled roll'}  ·  35mm  ·  ${roll.stockName}  ·  ${arrived} ${arrived === 1 ? 'photograph' : 'photographs'}`, 28, 107, EDITOR.muted, '400', 14);
+  text(ctx, `${typed || 'Untitled roll'}  ·  ${small ? '35mm' : '120'}  ·  ${roll.stockName}  ·  ${arrived} ${arrived === 1 ? 'photograph' : 'photographs'}`, 28, 107, EDITOR.muted, '400', 14);
   box(ctx, 906, 56, 66, 36, 6, undefined, '#bfb7a7'); text(ctx, 'Close', 939, 79, EDITOR.text, '500', 14, SANS, 'center');
   ctx.fillStyle = EDITOR.line; ctx.fillRect(28, 124, 944, 1); ctx.fillRect(288, 140, 1, 470);
 
@@ -289,9 +336,9 @@ function drawEditor(ctx: CanvasRenderingContext2D, t: number, timeline: Showreel
   if (typing && Math.floor(t * 2.4) % 2 === 0) { font(ctx, '400', 16, SANS); ctx.fillStyle = EDITOR.ink; ctx.fillRect(41 + (typed ? ctx.measureText(typed).width : 0), 206, 1.5, 19); }
 
   text(ctx, 'Film type', 28, 264, EDITOR.text, '600', 13);
-  box(ctx, 28, 273, 120, 36, [7, 0, 0, 7], EDITOR.accent);
-  box(ctx, 148, 273, 120, 36, [0, 7, 7, 0], EDITOR.field, '#c3bcad');
-  text(ctx, '35mm', 88, 296, '#fffaf0', '600', 14, SANS, 'center'); text(ctx, '120', 208, 296, EDITOR.text, '500', 14, SANS, 'center');
+  box(ctx, 28, 273, 120, 36, [7, 0, 0, 7], small ? EDITOR.accent : EDITOR.field, small ? undefined : '#c3bcad');
+  box(ctx, 148, 273, 120, 36, [0, 7, 7, 0], small ? EDITOR.field : EDITOR.accent, small ? '#c3bcad' : undefined);
+  text(ctx, '35mm', 88, 296, small ? '#fffaf0' : EDITOR.text, small ? '600' : '500', 14, SANS, 'center'); text(ctx, '120', 208, 296, small ? EDITOR.text : '#fffaf0', small ? '500' : '600', 14, SANS, 'center');
 
   text(ctx, 'Film stock', 28, 338, EDITOR.text, '600', 13);
   box(ctx, 28, 347, 240, 40, 6, EDITOR.field, EDITOR.fieldLine);
@@ -329,7 +376,7 @@ function drawEditor(ctx: CanvasRenderingContext2D, t: number, timeline: Showreel
     box(ctx, 574, 254, 132, 60, 4, '#4a4538');
     for (let i = 0; i < 11; i++) { box(ctx, 579 + i * 11.6, 258, 6, 5, 1, EDITOR.panel); box(ctx, 579 + i * 11.6, 305, 6, 5, 1, EDITOR.panel); }
     for (let i = 0; i < 3; i++) box(ctx, 579 + i * 41.3, 268, 39, 32, 1.5, '#ebe7dd');
-    text(ctx, hover > .5 ? 'Drop to add 12 photographs' : 'Bring your scans into the darkroom', 640, 356, EDITOR.ink, '400', 25, SERIF, 'center');
+    text(ctx, hover > .5 ? `Drop to add ${count} photographs` : 'Bring your scans into the darkroom', 640, 356, EDITOR.ink, '400', 25, SERIF, 'center');
     text(ctx, 'Drop JPEG or PNG scans here, or choose them from this device.', 640, 386, EDITOR.muted, '400', 14.5, SANS, 'center');
     box(ctx, 556, 408, 168, 42, 7, EDITOR.accent); text(ctx, 'Choose photographs', 640, 434, '#fffaf0', '600', 14.5, SANS, 'center');
     ctx.restore();
@@ -360,7 +407,7 @@ function drawEditor(ctx: CanvasRenderingContext2D, t: number, timeline: Showreel
       if (i === 0) { box(ctx, x + 9, 180, 18, 16, 8, 'rgba(29,31,27,.82)'); text(ctx, '★', x + 18, 193, '#e9c46f', '600', 10, SANS, 'center'); }
       text(ctx, i === 0 ? '1 · Cover' : String(i + 1), x + w / 2, 249, EDITOR.ink, '700', 11, SANS, 'center');
       font(ctx, '400', 10, SANS);
-      const file = `${frame.id}.jpg`, label = ctx.measureText(file).width > w - 4 ? `${file.slice(0, Math.max(6, Math.floor(file.length * (w - 14) / ctx.measureText(file).width)))}…` : file;
+      const file = frame.src.split('/').pop() ?? `${frame.id}.jpg`, label = ctx.measureText(file).width > w - 4 ? `${file.slice(0, Math.max(6, Math.floor(file.length * (w - 14) / ctx.measureText(file).width)))}…` : file;
       text(ctx, label, x + w / 2, 262, EDITOR.muted, '400', 10, SANS, 'center');
       ctx.restore();
     });
@@ -428,7 +475,8 @@ function drawPointer(ctx: CanvasRenderingContext2D, t: number, timeline: Showree
 
 /** The New roll shot: the editor beside its chapter text, over the dimmed room. */
 function drawNewRoll(ctx: CanvasRenderingContext2D, width: number, height: number, time: number, moment: { start: number; end: number }, timeline: ShowreelTimeline, titles: boolean) {
-  const t = time - moment.start, u = height / 720;
+  // The editor animation is authored over 6.8 s and slowed to fill the shot.
+  const t = (time - moment.start) * NEW_ROLL_PACE, u = height / 720;
   const enter = smooth(t / .55), exit = smooth((t - 5.45) / .65);
   ctx.save();
   // The room dims behind the dialog, as it does in the app, and returns as it closes.
@@ -538,6 +586,7 @@ export function drawShowreelOverlay(ctx: CanvasRenderingContext2D, width: number
   drawVignette(ctx, width, height, look.vignette);
   if (look.titles) {
     drawExhibits(ctx, width, height, sample, timeline);
+    drawFormats(ctx, width, height, sample, timeline);
     for (const caption of timeline.captions) if (time > caption.start - .05 && time < caption.end + .05) drawCaption(ctx, width, height, time, caption);
     for (const slate of timeline.slates) if (time > slate.start && time < slate.end) drawSlate(ctx, width, height, time, slate, timeline);
   }
