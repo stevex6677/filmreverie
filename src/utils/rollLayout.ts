@@ -4,6 +4,7 @@ import localRoll from "../data/localRoll.json" with { type: "json" };
 import { RollFrame, ROLL_FRAMES } from "../data/rollManifest";
 import { DEFAULT_LAYOUT, FilmStripLayout, getFrameWidth, getFrameCenter, getStripDimensions, mapWorldPointToFrame } from "./loupeMapping";
 import { TABLE_CENTER_Z } from "./cameraBounds";
+import { isVertical, uprightYaw } from "./frameOrientation";
 
 export interface RollDefinition { frameWidths?: readonly number[]; stripLength?: number; retainResources?: () => () => void; format?: import("../data/filmFormats").FilmFormat; layout?: Omit<FilmStripLayout, "frameCount">; imported?: boolean; rollId: string; label: string; frames: readonly RollFrame[]; framesPerStrip: number; scale: number; fixture: boolean }
 export const BASELINE_ROLL: RollDefinition = { rollId: "roll-01", label: "Roll 01 · five photographs", frames: ROLL_FRAMES, framesPerStrip: 5, scale: FILM_RENDER_SCALE, layout: formatLayout('135'), fixture: false };
@@ -73,12 +74,15 @@ export function fitRollView(roll: RollDefinition, level: InspectionLevel, index:
   const strips = createRollLayout(roll);
   const dimensions = getStripDimensions(frame.strip.layout);
   if (level === "frame") {
-    const outer = getStripDimensions(focusFrameLayout(roll, index));
+    const outer = getStripDimensions(focusFrameLayout(roll, index)), width = focusFrameLayout(roll, index).frameWidth;
     // Reserve visible surround outside the film, as well as space for controls.
     // This is comfortable framing, not viewport-filling photographic fitting.
     // Frame the image with its surrounding rebate; strip-end margins must not
     // make a middle photograph unnecessarily small on a portrait screen.
-    const height = Math.max(outer.height * 1.16, focusFrameLayout(roll, index).frameWidth * 1.2 / Math.max(.2, aspect)) * roll.scale;
+    // A vertical shot is seen upright (see focusTableAngle), the film running up the screen.
+    const height = (isVertical(roll.frames[frame.globalIndex])
+      ? Math.max(width * 1.2, outer.height * 1.16 / Math.max(.2, aspect))
+      : Math.max(outer.height * 1.16, width * 1.2 / Math.max(.2, aspect))) * roll.scale;
     return { zoom: height / (2 * Math.tan(Math.PI / 8)), pan: { x: frame.x, z: TABLE_CENTER_Z - frame.y } };
   }
   const width = (level === "roll" ? Math.max(...strips.map(s => getStripDimensions(s.layout).width)) : dimensions.width) * 1.12 * roll.scale;
@@ -86,11 +90,17 @@ export function fitRollView(roll: RollDefinition, level: InspectionLevel, index:
   const height = level === "roll" ? (strips[0].y - strips[strips.length - 1].y + dimensions.height * roll.scale) * 1.4 : dimensions.height * 1.3 * roll.scale;
   return { zoom: Math.max(height, width / Math.max(0.2, aspect)) / (2 * Math.tan(Math.PI / 8)), pan: { x: 0, z: TABLE_CENTER_Z - (level === "roll" ? 0 : frame.y) } };
 }
+/** Focus looks straight down, turned so a vertical shot stands upright. */
+export function focusTableAngle(roll: RollDefinition, index: number) {
+  return { tilt: 0, yaw: uprightYaw(roll.frames[locateFrame(roll, index).globalIndex]) };
+}
 export function clampFocusPan(roll: RollDefinition, index: number, zoom: number, aspect: number, x: number, z: number) {
   const frame = locateFrame(roll, index), outer = getStripDimensions(focusFrameLayout(roll, index));
   const visibleHeight = 2 * zoom * Math.tan(Math.PI / 8);
-  const dx = Math.max(0, (outer.width * roll.scale - visibleHeight * aspect) / 2);
-  const dz = Math.max(0, (outer.height * roll.scale - visibleHeight) / 2);
+  // The film runs up the screen for a vertical shot.
+  const [alongX, alongZ] = isVertical(roll.frames[frame.globalIndex]) ? [visibleHeight, visibleHeight * aspect] : [visibleHeight * aspect, visibleHeight];
+  const dx = Math.max(0, (outer.width * roll.scale - alongX) / 2);
+  const dz = Math.max(0, (outer.height * roll.scale - alongZ) / 2);
   const centerZ = TABLE_CENTER_Z - frame.y;
   return { x: Math.max(frame.x - dx, Math.min(frame.x + dx, x)), z: Math.max(centerZ - dz, Math.min(centerZ + dz, z)) };
 }

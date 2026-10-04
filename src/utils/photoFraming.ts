@@ -1,3 +1,5 @@
+import { uprightPlacement, type Orientation } from './frameOrientation';
+
 // Center-crop in the oriented image's coordinates. Every gate pixel samples
 // inside the original image; dimensions remain proportional, with no padding.
 export function photoCropScale(aspect: number, gateAspect: number, rotation = 0) {
@@ -27,4 +29,16 @@ export function photoCropPreview(aspect: number, gateAspect: number, rotation = 
 export function photoSourceDemand(gatePixels: number, aspect: number, gateAspect: number, rotation = 0) {
   const crop=photoCropScale(aspect,gateAspect,rotation);
   return Math.max(gatePixels/crop.x,gatePixels/gateAspect/crop.y);
+}
+
+/**
+ * An upright thumbnail of a film frame for a grid of frames: the box (as tall
+ * as the film's frames, narrower for a vertical shot) and the image within it.
+ */
+export function uprightThumbnail(photo: Orientation & { aspectRatio: number }, filmGate: number) {
+  const { gate, rotation, cropPosition } = uprightPlacement(photo, filmGate);
+  return {
+    box: { aspectRatio: gate, width: `${Math.min(100, 100 * gate / filmGate)}%`, marginInline: 'auto' },
+    image: photoCropPreview(photo.aspectRatio, gate, rotation, cropPosition),
+  };
 }

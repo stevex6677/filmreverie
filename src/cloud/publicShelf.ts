@@ -17,7 +17,7 @@ function shelfRoll(roll: GalleryRoll): StoredRoll {
 // The owner's cubbies; rolls published since the last arrangement fill free cubbies.
 const shelfRolls = (catalog: GalleryRoll[]) => reconcileShelfSlots(catalog.map(shelfRoll));
 
-export type PublicCoverFrame = Pick<StoredFrame, 'id' | 'width' | 'height' | 'rotation' | 'cropPosition'>;
+export type PublicCoverFrame = Pick<StoredFrame, 'id' | 'width' | 'height' | 'rotation' | 'uprightRotation' | 'cropPosition'>;
 export type PublicCover = { blob: Blob; frame: PublicCoverFrame; rotation: number };
 
 export interface PublishedShelf {
@@ -99,7 +99,7 @@ export function usePublishedShelf(visible: boolean): PublishedShelf {
     const { bytes, mime } = await downloadGalleryImage(frame.thumbnail);
     return { blob: new Blob([bytes], { type: mime }), frame: {
       id: frame.id, width: frame.width, height: frame.height,
-      rotation: frame.rotation, cropPosition: frame.cropPosition,
+      rotation: frame.rotation, uprightRotation: frame.uprightRotation, cropPosition: frame.cropPosition,
     }, rotation: frame.rotation };
   }, [catalog]);
   const shelf: FilmShelfState = {

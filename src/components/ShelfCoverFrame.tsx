@@ -6,10 +6,11 @@ import { getPackaging } from '../data/filmPackaging';
 import { frameAspect } from '../data/filmFormats';
 import { rollRepository, type StoredFrame, type StoredRoll } from '../storage/rollRepository';
 import { photoCropOffset, photoCropScale } from '../utils/photoFraming';
+import { uprightPlacement } from '../utils/frameOrientation';
 
 export type ShelfCoverSource = (id: string, frameId: string) => Promise<{
   blob: Blob;
-  frame: Pick<StoredFrame, 'id' | 'width' | 'height' | 'rotation' | 'cropPosition'>;
+  frame: Pick<StoredFrame, 'id' | 'width' | 'height' | 'rotation' | 'uprightRotation' | 'cropPosition'>;
   rotation: number;
 }>;
 const localCoverSource: ShelfCoverSource = (id, frameId) => rollRepository.thumbnail(id, frameId);
@@ -59,17 +60,18 @@ function useCover(roll: StoredRoll, coverSource: ShelfCoverSource) {
       try {
         const image = new Image(); image.src = url; await image.decode();
         if (cancelled) return;
-        const aspect = frameAspect(roll.format, roll.sizing, frame);
+        // A cover is shown upright, like a framed print, cropped as on the film.
+        const { gate: aspect, rotation, cropPosition } = uprightPlacement(frame, frameAspect(roll.format, roll.sizing, frame));
         const canvas = document.createElement('canvas');
         canvas.width = Math.max(1, Math.round(512 * Math.min(1, aspect)));
         canvas.height = Math.max(1, Math.round(512 / Math.max(1, aspect)));
         const context = canvas.getContext('2d'); if (!context) return;
-        const rotated = frame.rotation % 180 !== 0;
+        const rotated = rotation % 180 !== 0;
         const scale = Math.max(canvas.width / (rotated ? image.height : image.width), canvas.height / (rotated ? image.width : image.height));
-        const crop = photoCropScale(frame.width / frame.height, aspect, frame.rotation);
-        const offset = photoCropOffset(frame.width / frame.height, aspect, frame.rotation, frame.cropPosition);
+        const crop = photoCropScale(frame.width / frame.height, aspect, rotation);
+        const offset = photoCropOffset(frame.width / frame.height, aspect, rotation, cropPosition);
         context.translate(canvas.width / 2 - offset.x * canvas.width / crop.x, canvas.height / 2 - offset.y * canvas.height / crop.y);
-        context.rotate(frame.rotation * Math.PI / 180);
+        context.rotate(rotation * Math.PI / 180);
         context.drawImage(image, -image.width * scale / 2, -image.height * scale / 2, image.width * scale, image.height * scale);
         texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
         setCover({ texture, aspect, revision });

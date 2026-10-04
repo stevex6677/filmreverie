@@ -12,6 +12,12 @@ export function clampTableAngle(angle: TableAngle): TableAngle {
   };
 }
 
+/** A move across the screen (right, up) as a move on the table (x, film y) for a camera heading. */
+export function screenToTable(yaw: number, right: number, up: number) {
+  const cos = Math.cos(yaw), sin = Math.sin(yaw);
+  return { x: right * cos - up * sin, y: right * sin + up * cos };
+}
+
 /** Orbit the viewed point, with a continuous orientation even at the zenith. */
 export function tableCameraPose(distance: number, pan: { x: number; z: number }, angle: TableAngle) {
   const { tilt, yaw } = angle;

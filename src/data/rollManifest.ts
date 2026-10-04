@@ -8,6 +8,8 @@ export interface RollFrame {
   aspectRatio: number;
   thumbnailSrc?: string;
   rotation?: number;
+  /** Turns the image upright; see utils/frameOrientation. */
+  uprightRotation?: number;
   cropPosition?: import('../utils/photoFraming').CropPosition;
   /** Overrides the roll's film effect strength for this frame. */
   filmStrength?: number;

@@ -17,11 +17,15 @@ const printFragment = `
   uniform sampler2D uTexture;
   uniform vec2 uPhotoCrop;
   uniform vec2 uPhotoOffset;
+  uniform float uPhotoRotation;
   uniform float uExposure;
   varying vec2 vUv;
   ${FILM_LOOK_GLSL}
   void main() {
-    vec2 photoUV = (vUv - 0.5) * uPhotoCrop + uPhotoOffset + 0.5;
+    // As on the film (see filmShader): crop, then turn the image upright.
+    vec2 p = (vUv - 0.5) * uPhotoCrop + uPhotoOffset;
+    float c = cos(uPhotoRotation), s = sin(uPhotoRotation);
+    vec2 photoUV = vec2(c * p.x - s * p.y, s * p.x + c * p.y) + 0.5;
     vec3 source = texture2D(uTexture, clamp(photoUV, vec2(0.0), vec2(1.0))).rgb;
     gl_FragColor = vec4(applyFilmLook(source, vUv) * uExposure, 1.0);
     ${DISPLAY_FRAGMENT}
@@ -36,7 +40,7 @@ export function DarkroomPrints({ roll, textures, stockId, filmStrength, session 
   const materials = useMemo(() => layout.prints.map(print => {
     const material = new THREE.ShaderMaterial({ vertexShader: printVertex, fragmentShader: printFragment, uniforms: {
       ...filmLookUniforms(), uTexture: { value: null }, uExposure: { value: .95 },
-      uPhotoCrop: { value: new THREE.Vector2(print.crop.x, print.crop.y) }, uPhotoOffset: { value: new THREE.Vector2(print.offset.x, -print.offset.y) },
+      uPhotoCrop: { value: new THREE.Vector2(print.crop.x, print.crop.y) }, uPhotoOffset: { value: new THREE.Vector2(print.offset.x, -print.offset.y) }, uPhotoRotation: { value: print.rotation },
     } });
     return material;
   }), [layout]);

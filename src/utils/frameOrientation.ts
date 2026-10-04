@@ -7,6 +7,8 @@ import type { CropPosition } from './photoFraming';
 // whose top edge faces the end (90) or the start (270) of the film.
 export interface OrientedFrame { width: number; height: number; rotation: number; uprightRotation?: number; cropPosition?: CropPosition }
 export interface FrameSize { format: FilmFormat; sizing: FrameSizing }
+/** Orientation as runtime roll frames carry it; a missing rotation is unturned. */
+export type Orientation = Pick<OrientedFrame, 'uprightRotation' | 'cropPosition'> & { rotation?: number };
 
 const quarter = (degrees: number) => ((Math.round(degrees / 90) * 90) % 360 + 360) % 360;
 /** A crop position after its frame turns clockwise by `degrees`. */
@@ -21,9 +23,18 @@ const withRotation = <T extends OrientedFrame>(frame: T, rotation: number, uprig
 });
 
 /** Earlier frames recorded only placement; one turned upside down was an upside-down scan. */
-export const uprightRotation = (frame: OrientedFrame) => quarter(frame.uprightRotation ?? (frame.rotation === 180 ? 180 : 0));
-export const cameraTurn = (frame: OrientedFrame) => quarter(frame.rotation - uprightRotation(frame));
-export const isVertical = (frame: OrientedFrame) => cameraTurn(frame) % 180 !== 0;
+export const uprightRotation = (frame: Orientation) => quarter(frame.uprightRotation ?? (frame.rotation === 180 ? 180 : 0));
+export const cameraTurn = (frame: Orientation) => quarter((frame.rotation ?? 0) - uprightRotation(frame));
+export const isVertical = (frame: Orientation) => cameraTurn(frame) % 180 !== 0;
+/**
+ * The camera heading (CameraPose yaw) that shows a frame upright on the table.
+ * The film shows the upright photograph turned clockwise by the camera turn,
+ * so its top faces film +x at 90° and −x at 270°.
+ */
+export function uprightYaw(frame: Orientation) {
+  const turn = cameraTurn(frame);
+  return turn === 90 ? -Math.PI / 2 : turn === 270 ? Math.PI / 2 : turn === 180 ? Math.PI : 0;
+}
 
 /** Whether the image fits this frame size better turned across the film. */
 export function prefersTurned(frame: Pick<OrientedFrame, 'width' | 'height'>, { format, sizing }: FrameSize) {
@@ -56,5 +67,12 @@ export function turnImage<T extends OrientedFrame>(frame: T): T {
 }
 
 /** Crop positions in the upright view, whose axes turn with the camera. */
-export const uprightCropPosition = (frame: OrientedFrame, position = frame.cropPosition ?? { x: 0, y: 0 }) => turnCropPosition(position, -cameraTurn(frame));
+export const uprightCropPosition = (frame: Orientation, position = frame.cropPosition ?? { x: 0, y: 0 }) => turnCropPosition(position, -cameraTurn(frame));
 export const filmCropPosition = (frame: OrientedFrame, position: CropPosition) => turnCropPosition(position, cameraTurn(frame));
+/**
+ * Drawing a frame upright, cropped exactly as on the film (`filmGate` is the
+ * film gate's width / height): the turned gate, the image rotation and the crop.
+ */
+export function uprightPlacement(frame: Orientation, filmGate: number) {
+  return { gate: isVertical(frame) ? 1 / filmGate : filmGate, rotation: uprightRotation(frame), cropPosition: uprightCropPosition(frame) };
+}

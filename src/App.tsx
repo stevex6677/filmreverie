@@ -3,7 +3,8 @@ import { RollEditor } from "./components/RollEditor";
 import { UpdateNotice } from "./components/UpdateNotice";
 import { createRuntimeRoll } from "./storage/rollRuntime";
 import { SavedView, StoredRoll, storageMessage } from "./storage/rollRepository";
-import { BASELINE_ROLL, FULL_ROLL_FIXTURE, LOCAL_ROLL, validateRoll } from "./utils/rollLayout";
+import { BASELINE_ROLL, FULL_ROLL_FIXTURE, LOCAL_ROLL, focusTableAngle, validateRoll } from "./utils/rollLayout";
+import { screenToTable } from "./utils/tableCamera";
 import { useReducer, useEffect, useMemo, useState, useRef, useCallback, useSyncExternalStore, Suspense, lazy } from "react";
 import * as THREE from "three";
 import { DISPLAY_EXPOSURE } from "./shaders/tableIllumination";
@@ -441,7 +442,10 @@ export function App() {
         if (state.loupe.isActive && e.key.startsWith('Arrow')) {
           e.preventDefault();
           const step = state.loupe.scale * (e.shiftKey ? .04 : .01) / (state.loupe.inspecting ? state.loupe.magnification : 1);
-          dispatch({type:'MOVE_LOUPE',dx:e.key==='ArrowRight'?step:e.key==='ArrowLeft'?-step:0,dy:e.key==='ArrowUp'?step:e.key==='ArrowDown'?-step:0});return;
+          const x = e.key==='ArrowRight'?step:e.key==='ArrowLeft'?-step:0, y = e.key==='ArrowUp'?step:e.key==='ArrowDown'?-step:0;
+          // Arrows move the loupe across the screen, which Focus turns for a vertical shot.
+          const move = screenToTable(state.focusMode ? focusTableAngle(state.roll, state.activeFrameIndex).yaw : 0, x, y);
+          dispatch({type:'MOVE_LOUPE',dx:move.x,dy:move.y});return;
         }
         const directions = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" } as const;
         if (e.key in directions) { e.preventDefault(); dispatch({ type: "NAVIGATE", direction: directions[e.key as keyof typeof directions] }); return; }

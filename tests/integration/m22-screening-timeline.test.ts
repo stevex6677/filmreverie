@@ -435,10 +435,12 @@ describe('M22 Darkroom Prints and Documentary', () => {
   });
 
   it('turns the camera so rotated photographs stand upright', () => {
-    const rotated = { ...BASELINE_ROLL, rollId: 'rot', frames: BASELINE_ROLL.frames.map((frame, i) => ({ ...frame, rotation: [0, 90, 180, 270, 0][i] })) };
+    // Vertical shots lie across the film (1, 3). An upside-down scan (2, as earlier frames
+    // recorded it) and a sideways scan shot horizontally (4) are already upright on the film.
+    const rotated = { ...BASELINE_ROLL, rollId: 'rot', frames: BASELINE_ROLL.frames.map((frame, i) => ({ ...frame, rotation: [0, 90, 180, 270, 90][i], uprightRotation: i === 4 ? 90 : undefined })) };
     const timeline = createScreeningTimeline(rotated, options('documentary'));
-    const yaws = [0, 1, 2, 3].map(i => timeline.segments.find(s => s.kind === 'frame' && s.frameIndex === i)!.camera[1].yaw);
-    expect(yaws).toEqual([0, -Math.PI / 2, Math.PI, Math.PI / 2]);
+    const yaws = [0, 1, 2, 3, 4].map(i => timeline.segments.find(s => s.kind === 'frame' && s.frameIndex === i)!.camera[1].yaw);
+    expect(yaws).toEqual([0, -Math.PI / 2, 0, Math.PI / 2, 0]);
     // Upright photographs in landscape video are shown whole, pillarboxed in black.
     const mattes = [0, 1, 2, 3].map(i => timeline.segments.find(s => s.kind === 'frame' && s.frameIndex === i)!.matte);
     expect(mattes[0]).toBeNull(); expect(mattes[2]).toBeNull();
@@ -448,6 +450,62 @@ describe('M22 Darkroom Prints and Documentary', () => {
     expect(tall.segments.filter(s => s.kind === 'frame').every(s => s.matte && s.matte.width > s.matte.height)).toBe(true);
     expect(tall.segments.find(s => s.kind === 'push-in')!.matte!.alpha).toEqual([0, 1]);
     expect(tall.segments.find(s => s.act === 'return')!.matte!.alpha).toEqual([1, 0]);
+  });
+});
+
+describe('M22 vertical shots (2026-10-03 feedback)', () => {
+  // Frames 1 and 3 were shot with the camera held vertically, turned opposite ways.
+  const vertical = (roll: RollDefinition): RollDefinition => ({ ...roll, rollId: `${roll.rollId}-vertical`, frames: roll.frames.map((frame, i) => ({ ...frame, rotation: [0, 90, 0, 270][i % 4], uprightRotation: 0 })) });
+  const frameSegment = (timeline: ScreeningTimeline, index: number) => timeline.segments.find(s => s.kind === 'frame' && s.frameIndex === index)!;
+
+  it('turns every table reel onto a vertical shot so it stands upright', () => {
+    for (const reel of ['tracking', 'develop', 'darkroom', 'orbit', 'projector', 'documentary'] as const) for (const aspect of [16 / 9, 9 / 16]) {
+      const plain = createScreeningTimeline(BASELINE_ROLL, options(reel, { aspect })), turned = createScreeningTimeline(vertical(BASELINE_ROLL), options(reel, { aspect }));
+      const turn = [0, -Math.PI / 2, 0, Math.PI / 2, 0];
+      for (let i = 0; i < 5; i++) for (const end of [0, 1])
+        expect(frameSegment(turned, i).camera[end].yaw - frameSegment(plain, i).camera[end].yaw, `${reel} ${aspect} ${i}`).toBeCloseTo(turn[i], 9);
+    }
+  });
+
+  it('fits the whole vertical frame on screen, the film running up it', () => {
+    for (const reel of ['develop', 'orbit', 'projector'] as const) for (const aspect of [16 / 9, 1, 9 / 16]) {
+      const roll = vertical(BASELINE_ROLL), timeline = createScreeningTimeline(roll, options(reel, { aspect }));
+      for (const i of [1, 3]) {
+        const pose = frameSegment(timeline, i).camera[1], frame = locateFrame(roll, i), visible = 2 * pose.zoom * Math.tan(Math.PI / 8);
+        // The frame's length along the film now spans the screen's height; across the film, its width.
+        expect(visible, `${reel} ${aspect} ${i}`).toBeGreaterThan(frame.strip.layout.frameWidth * roll.scale * .9);
+        expect(visible * aspect, `${reel} ${aspect} ${i}`).toBeGreaterThan(frame.strip.layout.frameHeight * roll.scale * .9);
+      }
+    }
+  });
+
+  it('turns the projector gate with the shot, only while the shutter hides it, on the beat grid', () => {
+    const roll = vertical(FULL_ROLL_FIXTURE), projector = createScreeningTimeline(roll, options('projector'));
+    for (let i = 0; i < 8; i++) {
+      const aperture = frameSegment(projector, i).aperture!;
+      expect(aperture.height > aperture.width, `${i}`).toBe(i % 2 === 1);
+    }
+    for (const segment of projector.segments.filter(s => s.act === 'tour')) expect(segment.camera[1].yaw, `${segment.kind} ${segment.frameIndex}`).toBeCloseTo(segment.camera[0].yaw, 9);
+    for (const beat of projector.beats) expect(Math.abs((beat - projector.beats[0]) / .3 - Math.round((beat - projector.beats[0]) / .3))).toBeLessThan(1e-6);
+  });
+
+  it('prints vertical shots upright on upright paper without turning the camera', async () => {
+    const { printLayout } = await import('../../src/screening/prints');
+    // A 9:16 phone photograph shot vertically and recomposed toward its top (film +x),
+    // a sideways scan shot horizontally, and one shot vertically.
+    const phone = { ...ROLL_FRAMES[0], aspectRatio: 9 / 16, rotation: 90, uprightRotation: 0, cropPosition: { x: .5, y: 0 } };
+    const roll: RollDefinition = { ...BASELINE_ROLL, rollId: 'prints', frames: [
+      { ...BASELINE_ROLL.frames[0] }, phone,
+      { ...ROLL_FRAMES[2], aspectRatio: 2 / 3, rotation: 90, uprightRotation: 90 },
+      { ...ROLL_FRAMES[3], aspectRatio: 3 / 2, rotation: 0, uprightRotation: 270 },
+    ] };
+    const { prints } = printLayout(roll);
+    expect(prints.map(p => p.paper.height > p.paper.width)).toEqual([false, true, false, true]);
+    expect(prints.map(p => p.rotation)).toEqual([0, 0, Math.PI / 2, 3 * Math.PI / 2]);
+    // The film's recomposition carries over: the print keeps the top of the photograph.
+    expect(prints[1].crop.y).toBeLessThan(1); expect(prints[1].offset.x).toBe(0); expect(prints[1].offset.y).toBeLessThan(0);
+    // The print reel's camera never rolls or turns the picture; it only walks the wall.
+    for (const sample of samples(createScreeningTimeline(roll, options('darkroom-prints')), .25)) expect(sample.camera.roll ?? 0).toBe(0);
   });
 });
 

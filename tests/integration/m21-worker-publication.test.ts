@@ -244,12 +244,12 @@ it('publishes crop and title edits without copying unchanged images, then withdr
   publicBucket.beforePut = async key => { if(key.startsWith('rolls/'))writes.push(key); };
   const saved = await saveDraft(env, draft.roll.id, { ...draft, roll: { ...draft.roll, name: 'New title' },
     frames: [{ ...draft.frames[0], rotation: 90, uprightRotation: 180, cropPosition: { x: .5, y: 0 }, filmStrength: 20 }] });
-  // Which way is up only matters to the editor; the private draft keeps it.
+  // Which way is up is kept privately and published, so viewers can stand vertical shots upright.
   expect(saved.frames[0]).toMatchObject({ rotation: 90, uprightRotation: 180 });
   const edited = await finish(env, saved.roll.id, saved.roll.updatedAt);
   expect(writes).toEqual([]);
   expect(edited.name).toBe('New title');
-  expect(edited.frames[0]).toMatchObject({ rotation: 90, cropPosition: { x: .5, y: 0 }, filmStrength: 20,
+  expect(edited.frames[0]).toMatchObject({ rotation: 90, uprightRotation: 180, cropPosition: { x: .5, y: 0 }, filmStrength: 20,
     viewing: first.frames[0].viewing, thumbnail: first.frames[0].thumbnail });
   while (!(await withdrawPublication(env, saved.roll.id)).withdrawn) { /* bounded cleanup */ }
   expect([...publicBucket.objects.keys()].filter(key => key.startsWith('rolls/'))).toEqual([]);

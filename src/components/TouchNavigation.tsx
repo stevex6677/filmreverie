@@ -3,8 +3,8 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ViewerAction, ViewerState, viewerReducer } from '../state/viewerState';
 import { TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../utils/cameraBounds';
-import { anchoredZoom, fitRollView, lightTableSize, mapRollPoint } from '../utils/rollLayout';
-import { tableInputCamera, tablePointAt, TOP_DOWN } from '../utils/tableCamera';
+import { anchoredZoom, fitRollView, focusTableAngle, lightTableSize, mapRollPoint } from '../utils/rollLayout';
+import { tableInputCamera, tablePointAt } from '../utils/tableCamera';
 import { GestureIntent, TouchGestures } from '../utils/touchGestures';
 import { roomHitTarget } from '../utils/roomHitTarget';
 
@@ -63,7 +63,7 @@ export function TouchNavigation({
       // Touch starts from the current rendered pose, including during a flight.
       const zoom = s.isTransitioning ? renderedZoom : s.inspectZoom;
       const pan = s.isTransitioning ? renderedPan : s.inspectPan;
-      const inputCamera = s.isTransitioning ? camera : tableInputCamera(zoom, pan, s.focusMode ? TOP_DOWN : s.tableAngle, s.viewportAspect);
+      const inputCamera = s.isTransitioning ? camera : tableInputCamera(zoom, pan, s.focusMode ? focusTableAngle(s.roll, s.activeFrameIndex) : s.tableAngle, s.viewportAspect);
       const tableAt = (x: number, y: number) => tablePointAt(inputCamera, canvas, x, y);
       const view = (z: number, p: {x:number;z:number}) => {
         const max = s.focusMode ? fitRollView(s.roll,'frame',s.activeFrameIndex,s.viewportAspect).zoom : Math.max(3.6, fitRollView(s.roll,'roll',0,s.viewportAspect).zoom);

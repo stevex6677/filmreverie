@@ -5,7 +5,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { ViewerAction, ViewerState } from '../state/viewerState';
 import { getFilmStock } from '../data/filmStocks';
 import { focusFrameLayout } from '../utils/rollLayout';
-import { photoCropPreview } from '../utils/photoFraming';
+import { uprightThumbnail } from '../utils/photoFraming';
 import { FilmStripHeader } from './FilmStripHeader';
 export type MobileSheet = 'tools' | 'frames' | 'loupe' | null;
 export function MobileControls({state,dispatch,onOpenLibrary,onOpenRoom,onOpenTable,onOpenCameras,sheet,setSheet,emptyRollMessage,ownerActions,createAction,roomNavigation=false,roomOnly=false}:{state:ViewerState;dispatch:React.Dispatch<ViewerAction>;onOpenLibrary:()=>void;onOpenRoom:()=>void;onOpenTable:()=>void;onOpenCameras?:()=>void;sheet:MobileSheet;setSheet:(s:MobileSheet)=>void;emptyRollMessage?:string;createAction?:ReactNode;ownerActions?:ReactNode;roomNavigation?:boolean;roomOnly?:boolean}) {
@@ -47,7 +47,7 @@ export function MobileControls({state,dispatch,onOpenLibrary,onOpenRoom,onOpenTa
       </div>
     )}
     {sheet&&<dialog tabIndex={-1} ref={dialog} className={`film-panel mobile-sheet ${sheet==='frames'?'frame-sheet':''}`} aria-label={sheet==='tools'?'Viewing tools':'Choose frame'} onCancel={e=>{e.preventDefault();setSheet(null);}} onKeyDown={e=>e.stopPropagation()}>
-      {sheet==='frames'?<FilmPanelFrames stockId={state.filmStockId}><div className="mobile-frame-grid">{state.roll.frames.map((frame,i)=>{const layout=focusFrameLayout(state.roll,i);return <button key={frame.id} aria-label={`Open frame ${i+1}`} aria-current={i===state.activeFrameIndex?'true':undefined} onClick={()=>{dispatch({type:'OPEN_FRAME',frameIndex:i});setSheet(null);}}><div style={{aspectRatio:layout.frameWidth/layout.frameHeight}}><img loading="lazy" src={frame.thumbnailSrc??frame.src} alt={frame.alt} style={photoCropPreview(frame.aspectRatio,layout.frameWidth/layout.frameHeight,frame.rotation??0,frame.cropPosition)}/></div><span>Frame {i+1}</span></button>;})}</div></FilmPanelFrames>:<FilmPanelFrames stockId={state.filmStockId} className="mobile-tool-content">
+      {sheet==='frames'?<FilmPanelFrames stockId={state.filmStockId}><div className="mobile-frame-grid">{state.roll.frames.map((frame,i)=>{const layout=focusFrameLayout(state.roll,i),thumbnail=uprightThumbnail(frame,layout.frameWidth/layout.frameHeight);return <button key={frame.id} aria-label={`Open frame ${i+1}`} aria-current={i===state.activeFrameIndex?'true':undefined} onClick={()=>{dispatch({type:'OPEN_FRAME',frameIndex:i});setSheet(null);}}><div style={thumbnail.box}><img loading="lazy" src={frame.thumbnailSrc??frame.src} alt={frame.alt} style={thumbnail.image}/></div><span>Frame {i+1}</span></button>;})}</div></FilmPanelFrames>:<FilmPanelFrames stockId={state.filmStockId} className="mobile-tool-content">
         {!room&&<>
           <fieldset><legend>View</legend><div className="mobile-sequence">{(['roll','strip','frame'] as const).map(level=><button key={level} aria-pressed={state.inspectionLevel===level} onClick={()=>dispatch({type:'VIEW_LEVEL',level})}>{level[0].toUpperCase()+level.slice(1)}</button>)}</div></fieldset>
           <FilmStockInfo stockId={state.filmStockId}/>

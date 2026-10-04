@@ -4,6 +4,7 @@ import { finishTimeline, lerpCamera, lookAtPose, PACE_SCALE, tablePan, TimelineB
 import { ROOM_CAMERA_FOV, ROOM_ENVELOPE, ROOM_EYE, TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../utils/cameraBounds';
 import { SHELF_ORIGIN } from '../data/physicalScale';
 import { printLayout, PRINT_WALL_X } from './prints';
+import { isVertical, uprightYaw } from '../utils/frameOrientation';
 
 export interface ReelOptions {
   reel: ReelId; pace: Pace; aspect: number; reducedMotion?: boolean;
@@ -59,7 +60,8 @@ export function framing(roll: RollDefinition, aspect: number) {
   const stripHeight = getStripDimensions(strips[0].layout).height * roll.scale;
   const span = strips[0].y - strips[strips.length - 1].y + stripHeight;
   const fit = (width: number, height: number, x = 0, y = 0): CameraPose => ({ zoom: Math.max(height, width / Math.max(.2, aspect)) / (2 * TAN), pan: tablePan(x, y), tilt: 0, yaw: 0 });
-  const frame = (index: number): CameraPose => { const view = fitRollView(roll, 'frame', index, aspect); return { zoom: view.zoom, pan: view.pan, tilt: 0, yaw: 0 }; };
+  // Close on one frame, turned so a vertical shot stands upright.
+  const frame = (index: number): CameraPose => { const view = fitRollView(roll, 'frame', index, aspect); return { zoom: view.zoom, pan: view.pan, tilt: 0, yaw: uprightYaw(roll.frames[index]) }; };
   // Portrait video turns whole-roll shots 90° so the strips run down the frame;
   // close shots keep photographs upright.
   const whole = (length: number, across: number): CameraPose => aspect < .8 ? { ...fit(across, length), yaw: Math.PI / 2 } : fit(length, across);
@@ -135,6 +137,8 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
   const [first, second] = reelTuning(options.reel, options.tuning);
 
   const rhythm = tourRhythm(roll, reduced);
+  /** The heading that shows frame `index` upright; reels add their own angle to it. */
+  const turn = (index: number) => uprightYaw(roll.frames[index]);
   // Frame geometry shared by the travelling reels, in world units.
   const frameAt = (index: number) => { const frame = locateFrame(roll, index); return { ...frame, width: (frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) * frame.strip.scale, gap: frame.strip.layout.gap * frame.strip.scale }; };
   const pitch = (index: number) => frameAt(index).width + frameAt(index).gap;
@@ -150,14 +154,14 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     // A low, angled camera tracks along each strip; every few frames it pushes
     // in close and drifts across a detail of the photograph.
     const distance = 1.85 * around(first, 1.5);
-    const track = (index: number): CameraPose => { const frame = locateFrame(roll, index); return { zoom: f.frame(index).zoom * distance, pan: tablePan(frame.x, frame.y), tilt: degrees(32), yaw: degrees(-8) }; };
+    const track = (index: number): CameraPose => { const frame = locateFrame(roll, index); return { zoom: f.frame(index).zoom * distance, pan: tablePan(frame.x, frame.y), tilt: degrees(32), yaw: turn(index) + degrees(-8) }; };
     const close = (index: number, u: number, v: number): CameraPose => {
       const frame = locateFrame(roll, index), width = (frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) * frame.strip.scale;
-      return { zoom: f.frame(index).zoom * .55, pan: tablePan(frame.x + u * width, frame.y + v * frame.strip.layout.frameHeight * frame.strip.scale), tilt: degrees(18), yaw: degrees(-8) };
+      return { zoom: f.frame(index).zoom * .55, pan: tablePan(frame.x + u * width, frame.y + v * frame.strip.layout.frameHeight * frame.strip.scale), tilt: degrees(18), yaw: turn(index) + degrees(-8) };
     };
     // Strip change: the dolly runs on past the last frame, cranes up and round
     // to look down the next strip from its start, then swings down onto it.
-    const runOut = (index: number): CameraPose => { const frame = frameAt(index), pose = track(index); return { ...pose, zoom: pose.zoom * 1.3, tilt: degrees(44), pan: tablePan(Math.min(f.halfWidth, frame.x + frame.width * .8), frame.y) }; };
+    const runOut = (index: number): CameraPose => { const frame = frameAt(index), pose = track(index); return { ...pose, zoom: pose.zoom * 1.3, tilt: degrees(44), yaw: degrees(-8), pan: tablePan(Math.min(f.halfWidth, frame.x + frame.width * .8), frame.y) }; };
     // Low beside the strip's first frame, focused just past it, so the rest of the strip recedes out of focus.
     const raking = (index: number): CameraPose => { const frame = frameAt(index); return { zoom: f.frame(index).zoom * 1.6, pan: tablePan(frame.x + pitch(index) * .5, frame.y), tilt: degrees(50), yaw: degrees(-70) }; };
     const b = new TimelineBuilder(f.overview, scale, reduced);
@@ -243,11 +247,12 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     const toward = lookAtPose(ROOM_EYE, [0, TABLE_SURFACE_Y, TABLE_CENTER_Z], fov);
     const above: CameraPose = { ...f.overview, zoom: f.overview.zoom * 1.35, tilt: degrees(30) };
     const distance = around(first, 1.5), height = second - .5;
-    const dolly = (index: number): CameraPose => { const frame = frameAt(index); return { zoom: f.frame(index).zoom * 1.5 * distance, pan: tablePan(frame.x, frame.y), tilt: degrees(24 - 32 * height), yaw: 0 }; };
+    // A vertical shot is approached from its foot, so it stands upright as the camera leans in.
+    const dolly = (index: number): CameraPose => { const frame = frameAt(index); return { zoom: f.frame(index).zoom * 1.5 * distance, pan: tablePan(frame.x, frame.y), tilt: degrees(24 - 32 * height), yaw: turn(index) }; };
     const drop = (index: number): CameraPose => ({ ...dolly(index), zoom: f.frame(index).zoom * 1.05 * distance, tilt: degrees(12 - 20 * height) });
     // Strip change: the dolly runs off the end of the film into the dark as the
     // table dims, then makes a higher pass back over the next strip as it glows up.
-    const dark = (index: number): CameraPose => { const frame = frameAt(index); return { ...dolly(index), pan: tablePan(Math.min(f.halfWidth, frame.x + frame.width * .9), frame.y) }; };
+    const dark = (index: number): CameraPose => { const frame = frameAt(index); return { ...dolly(index), yaw: 0, pan: tablePan(Math.min(f.halfWidth, frame.x + frame.width * .9), frame.y) }; };
     const higher = (index: number): CameraPose => { const pose = dolly(index); return { ...pose, zoom: pose.zoom * 1.8, pan: tablePan(0, frameAt(index).y), tilt: degrees(38), yaw: degrees(16) }; };
     const b = new TimelineBuilder(cabinet, scale, reduced);
     b.light = 0; b.ambient = 1;
@@ -285,7 +290,7 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     const base = f.overview.yaw;
     const arc = first - .5;
     // A lingering look swings wider and slower; a quick one barely turns.
-    const start = (index: number, swing = 1): CameraPose => { const frame = f.frame(index); return { ...frame, zoom: frame.zoom * 1.4, tilt: degrees(50 + 40 * arc), yaw: (index % 2 ? 1 : -1) * swing * degrees(35 + 50 * arc) }; };
+    const start = (index: number, swing = 1): CameraPose => { const frame = f.frame(index); return { ...frame, zoom: frame.zoom * 1.4, tilt: degrees(50 + 40 * arc), yaw: frame.yaw + (index % 2 ? 1 : -1) * swing * degrees(35 + 50 * arc) }; };
     // Strip change: a low arc around the boundary, the two strips sweeping past.
     const ring = (index: number, yaw: number, tilt: number): CameraPose => ({ ...pair(index), zoom: pair(index).zoom * .75, tilt: degrees(tilt), yaw: base + degrees(yaw) });
     // Low and edge-on along the strips, but never closer than ~5 cm above a short roll.
@@ -385,12 +390,11 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     // ~10% and panning toward its longer side) and dissolves into the next.
     const push = first <= .5 ? .2 * first : .1 + .2 * (first - .5), pan = .8 * Math.min(1, 2 * first);
     const kenBurns = (index: number, travel = 1) => {
-      const frame = frameAt(index), photo = roll.frames[index], rotation = ((photo.rotation ?? 0) % 360 + 360) % 360;
+      const frame = frameAt(index), photo = roll.frames[index];
       const height = frame.strip.layout.frameHeight * frame.strip.scale;
-      // Turn the camera so the photograph stands upright. The film shader rotates
-      // the image clockwise by \`rotation\`, so its top faces film +x at 90°.
-      const yaw = rotation === 90 ? -Math.PI / 2 : rotation === 270 ? Math.PI / 2 : rotation === 180 ? Math.PI : 0;
-      const [w, h] = rotation % 180 ? [height, frame.width] : [frame.width, height];
+      // Turn the camera so the photograph stands upright.
+      const yaw = turn(index);
+      const [w, h] = isVertical(photo) ? [height, frame.width] : [frame.width, height];
       const photoAspect = w / h, mismatch = Math.max(photoAspect / aspect, aspect / photoAspect);
       // Fill the screen unless the shapes differ a lot; then show the whole photograph.
       const visible = mismatch < 1.35 ? Math.min(h, w / aspect) * .97 : Math.max(h, w / aspect) * 1.04;
@@ -462,13 +466,19 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     const pose = gate(index), pitch = width(index) + locateFrame(roll, index).strip.layout.gap * roll.scale;
     return { ...pose, pan: { ...pose.pan, x: pose.pan.x + frames * pitch } };
   };
-  const aperture = (index: number) => { const frame = locateFrame(roll, index); return { width: width(index), height: frame.strip.layout.frameHeight * frame.strip.scale }; };
+  // The gate turns with the camera for a vertical shot; the aperture is in screen terms.
+  const aperture = (index: number) => {
+    const frame = locateFrame(roll, index), across = frame.strip.layout.frameHeight * frame.strip.scale;
+    return isVertical(roll.frames[index]) ? { width: across, height: width(index) } : { width: width(index), height: across };
+  };
+  // A new strip, or a turn to or from a vertical shot, happens behind the closed shutter.
+  const hidden = (index: number) => index > 0 && (locateFrame(roll, index).localIndex === 0 || turn(index) !== turn(index - 1));
   const jump = medium ? .42 : .18;
   const period = (i: number) => {
     if (medium || n < 10) return medium ? 2.5 : 2;
     const phase = i % 9;
     // A change of strip needs a full beat for its hidden jump, even in a speed-up.
-    return phase >= 5 && phase <= 7 ? (locateFrame(roll, i).localIndex === 0 ? 1 : .5) : phase === 8 ? 3 : 2;
+    return phase >= 5 && phase <= 7 ? (hidden(i) ? 1 : .5) : phase === 8 ? 3 : 2;
   };
   const advance = { blur: medium ? .6 : 1, beat: true };
   const b = new TimelineBuilder(f.overview, scale, reduced);
@@ -490,8 +500,8 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
   for (let i = 0; i < n; i++) {
     let hold = period(i) * beat - (i === 0 ? jump : 0);
     if (i > 0) {
-      if (locateFrame(roll, i).localIndex === 0 && !reduced) {
-        // Carry on leftward past the strip's end, then enter the next strip from its right.
+      if (hidden(i) && !reduced) {
+        // Carry on along the film past the frame (or the strip's end), then enter the next from its far side.
         const half = jump * (medium ? .5 : .7);
         b.step('tour', 'advance', i, half, { ...advance, camera: shifted(i - 1, 1), shutter: 'close', ease: 'in' });
         b.camera = shifted(i, -1); b.aperture = aperture(i);
