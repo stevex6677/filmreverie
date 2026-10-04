@@ -118,7 +118,7 @@ function drawTitle(ctx: CanvasRenderingContext2D, width: number, height: number,
   if (alpha <= 0) return;
   const cx = width / 2, cy = height * .47;
   ctx.save(); ctx.globalAlpha = alpha;
-  scrim(ctx, cx, cy, 560 * u, 210 * u, .62);
+  scrim(ctx, cx, cy + 16 * u, 580 * u, 250 * u, .62);
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = AMBER; fit(ctx, '600', 14 * u, SANS, width * .8, 5 * u);
   rise(ctx, 'AN IMMERSIVE 3D DARKROOM', cx, cy - 74 * u, p, u);
@@ -128,6 +128,17 @@ function drawTitle(ctx: CanvasRenderingContext2D, width: number, height: number,
   ctx.fillStyle = 'rgba(233,184,103,.85)'; ctx.fillRect(cx - line, cy + 46 * u, line * 2, Math.max(1, 1.4 * u));
   ctx.fillStyle = MUTED; fit(ctx, '400', 21 * u, SANS, width * .8);
   rise(ctx, 'A simulation of the traditional film-viewing experience.', cx, cy + 88 * u, p - .35, u);
+  // The address, from the start, in a small outlined pill like the end card's.
+  const q = p - .55;
+  if (q > 0) {
+    ctx.save(); ctx.globalAlpha *= smooth(q * 1.4);
+    fit(ctx, '600', 18 * u, SANS, width * .6, 1.2 * u);
+    const pill = ctx.measureText(SHOWREEL_SITE).width + 36 * u, top = cy + 108 * u + (1 - outCubic(q)) * 12 * u;
+    ctx.fillStyle = 'rgba(10,8,6,.62)'; ctx.strokeStyle = AMBER; ctx.lineWidth = Math.max(1, 1.2 * u);
+    ctx.beginPath(); ctx.roundRect(cx - pill / 2, top, pill, 36 * u, 18 * u); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = AMBER; ctx.fillText(SHOWREEL_SITE, cx, top + 24.5 * u);
+    ctx.restore();
+  }
   ctx.restore();
 }
 

@@ -21,6 +21,14 @@ export interface ShowreelRoll {
   width: number; height: number;
 }
 
+/**
+ * Frames per strip on the showreel's table: 35mm in fives, panoramic frames in
+ * pairs, and a half-frame roll in strips of equal length (as near as its frame
+ * count allows). Other formats are cut as in the roll editor.
+ */
+const framesPerStrip = (format: FilmFormat, sizing: FrameSizing, count: number) => sizing === 'free' ? 2 : format === '135' ? 5
+  : format === '135-half' ? Math.ceil(count / Math.ceil(count / FILM_FORMATS[format].perStrip)) : FILM_FORMATS[format].perStrip;
+
 const rolls = data.rolls.map(roll => {
   if (!isFilmFormat(roll.format) || !isFilmStockId(roll.stockId) || !supportsFilmFormat(roll.stockId, roll.format) || (roll.sizing !== 'fixed' && roll.sizing !== 'free')) throw new Error(`Unsupported showreel roll ${roll.id}`);
   const format = roll.format, stockId = roll.stockId, sizing: FrameSizing = roll.sizing;
@@ -28,10 +36,9 @@ const rolls = data.rolls.map(roll => {
   const layout = { ...formatLayout(format), gap: frameGapMm(format, sizing) * FILM_UNIT };
   const frames = roll.frames.map((frame, i) => ({ id: frame.id, order: i + 1, src: frame.src, title: `${roll.name} · ${i + 1}`, alt: `${roll.name}, frame ${i + 1}`,
     aspectRatio: frame.width / frame.height, rotation: frame.rotation, uprightRotation: 0, sourceWidth: frame.width, sourceHeight: frame.height }));
-  const definition: RollDefinition = { rollId: roll.id, label: `${roll.name} · ${rollFormatLabel(format, sizing)}`, frames, framesPerStrip: FILM_FORMATS[format].perStrip,
+  const definition: RollDefinition = { rollId: roll.id, label: `${roll.name} · ${rollFormatLabel(format, sizing)}`, frames, framesPerStrip: framesPerStrip(format, sizing, frames.length),
     scale: FILM_RENDER_SCALE, fixture: false, format, layout,
-    frameWidths: sizing === 'free' ? roll.frames.map(frame => layout.frameHeight * frameAspect(format, 'free', frame)) : undefined,
-    stripLength: sizing === 'free' ? 230 * FILM_UNIT : undefined };
+    frameWidths: sizing === 'free' ? roll.frames.map(frame => layout.frameHeight * frameAspect(format, 'free', frame)) : undefined };
   const strips = createRollLayout(definition), across = getStripDimensions(strips[0].layout).height * definition.scale;
   return { definition, stockId, format, sizing, name: roll.name, stockName: getFilmStock(stockId).displayName,
     formatLabel: sizing === 'free' ? '35mm · Panoramic' : FILM_FORMATS[format].label,
