@@ -42,8 +42,26 @@ describe('Showreel', () => {
     expect(roll('hook').stockId).toBe('portra-160');
     // Five existing reels appear as excerpts, each moved to where its roll lies.
     expect(timeline.shots.filter(shot => shot.source.reel !== 'darkroom').map(shot => [shot.source.reel, shot.shift])).toEqual([['tracking', true], ['develop', true], ['darkroom-prints', false], ['projector', true]]);
-    // The corner slate names the roll in view on every single-roll light table and screening shot.
-    for (const shot of timeline.shots.slice(5, 15)) expect(timeline.slates.find(slate => slate.start <= shot.start + .5 && slate.end >= shot.start + .5)?.roll).toBe(shot.roll);
+    // The corner slate names a photograph of the roll in view on every single-roll light table and screening shot.
+    for (const shot of timeline.shots.slice(5, 15)) {
+      const middle = shot.start + shot.duration / 2;
+      expect(timeline.slates.find(slate => slate.start <= middle && slate.end >= middle)?.roll).toBe(shot.roll);
+    }
+  });
+
+  it('names each featured photograph in turn, with the camera that took it', () => {
+    const named = timeline.slates.map(slate => [SHOWREEL_ROLLS[slate.roll].titles[slate.frame], SHOWREEL_ROLLS[slate.roll].camera]);
+    expect(named).toEqual([
+      ['Harbor House Inn', 'Olympus OM-1'], ['Tokyo Tower', 'Olympus OM-1'], ['Catalina Island', 'Olympus OM-1'],
+      ['Market Days', 'Canon Demi EE17'], ['Shoreline Park', 'Mamiya Universal Press'], ['Mori Point', 'Minolta Autocord'],
+      ['Picture Lake', 'Mamiya Universal Press'], ['Mount Shasta', 'Mamiya Universal Press'], ['Half Moon Bay', 'Mamiya Universal Press'],
+      ['Los Vaqueros', 'Mamiya Universal Press'], ['Del Valle Regional Park', 'Mamiya Universal Press'],
+      ['Alviso Marina County Park', 'Minolta Autocord'], ['Death Valley', 'Minolta Autocord']]);
+    // In order, without overlaps, each long enough to read.
+    timeline.slates.forEach((slate, i) => {
+      expect(slate.end - slate.start).toBeGreaterThan(1.2);
+      if (i) expect(slate.start).toBeGreaterThan(timeline.slates[i - 1].end);
+    });
   });
 
   it('lays every roll on one light table, in columns from the smallest format to the largest, without overlaps', () => {

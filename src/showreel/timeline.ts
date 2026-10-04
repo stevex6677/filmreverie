@@ -1,5 +1,5 @@
 import { createScreeningTimeline, framing } from '../screening/reels';
-import { DEFAULT_LOOK, finishTimeline, lerpCamera, lookAtPose, tablePan, TimelineBuilder, type CameraPose, type ReelId, type ScreeningLook, type ScreeningSample, type ScreeningTimeline } from '../screening/timeline';
+import { DEFAULT_LOOK, finishTimeline, lerpCamera, lookAtPose, tablePan, TimelineBuilder, type CameraPose, type ReelId, type ScreeningLook, type ScreeningSample, type ScreeningTimeline, type Segment } from '../screening/timeline';
 import { fitRollView, focusTableAngle, locateFrame } from '../utils/rollLayout';
 import { CAMERA_SHELF_MM, CAMERA_SHELF_ORIGIN, cameraShelfSlot, mm, SHELF_CELL_MM, SHELF_ORIGIN } from '../data/physicalScale';
 import { TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../utils/cameraBounds';
@@ -32,8 +32,8 @@ export interface Shot { name: string; start: number; duration: number; roll: num
 
 /** Lower-left chapter caption. */
 export interface Caption { start: number; end: number; chapter?: string; title: string; line?: string; top?: boolean }
-/** Slate in the lower right naming the roll on the table. */
-export interface Slate { start: number; end: number; roll: number }
+/** Slate in the lower right naming the photograph in view (a frame of a roll) and its camera. */
+export interface Slate { start: number; end: number; roll: number; frame: number }
 /** A camera in the cabinet, labelled while it is in view. */
 export interface Exhibit { start: number; end: number; name: string; year: string; position: [number, number, number] }
 /** A film format on the light table, labelled above its rolls (world position of their far edge). */
@@ -217,7 +217,7 @@ export function createShowreelTimeline(rolls: readonly ShowreelRoll[], requested
   const approachShot = add('approach', role.tracking, approach);
   const detail = trackSegment('detail');
   const trackTo = detail ? detail.start + Math.min(detail.duration, 2.4) : trackFrom + 5;
-  add('tracking', role.tracking, tracking, trackFrom, trackTo, true);
+  const trackingShot = add('tracking', role.tracking, tracking, trackFrom, trackTo, true);
   /**
    * Looking at one photograph from `back` frames before it along its strip; a
    * vertical shot is seen upright, as in the viewer's focus.
@@ -368,13 +368,31 @@ export function createShowreelTimeline(rolls: readonly ShowreelRoll[], requested
     { start: countdownEnd + .25, end: projectorShot.start + projectorShot.duration - .2, chapter: '05  ·  Screenings', title: 'Screen any roll.', line: 'Seven cinematic reels, exported as video.' },
     { start: cabinetShot.start + .4, end: end - .3, chapter: '06  ·  The camera cabinet', title: 'Five classic cameras.', line: 'Modeled in 3D, to turn over in your hands.', top: true },
   ];
-  // The roll in view is named in the corner, from the first single-roll light table shot to the last screening.
+  // The photograph in view is named in the corner, from the first single-roll light table shot to the last
+  // screening: from its shot's start, or halfway through the move onto it, until the camera leaves it; not
+  // over the projector's leader. Consecutive views of one photograph, or of one title on a roll, share a slate.
+  const featuring: [Shot, number[]][] = [[approachShot, [trackFrame]], [trackingShot, [trackFrame]],
+    [portraShot, [uprightFrame, heldFrame]], [halfShot, [halfFrame]], [loupeShot, [target]], [mediumShot, [heroIndex]],
+    [sixByNineShot, [nineFirst, nineLast]], [slidesShot, [slideFrame]], [printsShot, FEATURED.prints.map(index => featured(role.prints, index))],
+    [projectorShot, FEATURED.projector.map(index => featured(role.projector, index))]];
   const slates: Slate[] = [];
-  for (const shot of shots.slice(shots.indexOf(approachShot), shots.indexOf(projectorShot) + 1)) {
-    const last = slates.at(-1);
-    if (last && last.roll === shot.roll && Math.abs(last.end + .15 - shot.start) < 1e-6) last.end = shot.start + shot.duration - .15;
-    else slates.push({ start: shot.start + .4, end: shot.start + shot.duration - .15, roll: shot.roll });
-  }
+  let previous = -1;
+  for (const [shot, frames] of featuring) frames.forEach((frame, i) => {
+    const held = shot.source.segments.filter(segment => segment.frameIndex === frame && segment.kind !== 'open');
+    if (!held.length) return;
+    const at = (segment: Segment) => shot.start + segment.start - shot.from, last = held.at(-1)!;
+    const from = Math.max(shot.start, at(held[0])), to = Math.min(shot.start + shot.duration, at(last) + last.duration);
+    const previousSlate = slates.at(-1), titles = rolls[shot.roll].titles;
+    const same = previousSlate && previousSlate.roll === shot.roll && (previousSlate.frame === frame || (titles[frame] && titles[previousSlate.frame] === titles[frame]));
+    if (previousSlate && same && from - previous < 1e-6) previousSlate.end = to - .15;
+    else if (previousSlate && i > 0 && from - previous < 1e-6) {
+      // Within a shot the slates change over halfway through the move.
+      const handover = from + (held[0].kind === 'frame' ? 0 : held[0].duration / 2);
+      previousSlate.end = handover - .05;
+      slates.push({ start: handover + .05, end: to - .15, roll: shot.roll, frame });
+    } else slates.push({ start: from + .4, end: to - .15, roll: shot.roll, frame });
+    previous = to;
+  });
   // Each format is named above its rolls in turn, smallest first, as the camera rises.
   const formatLabels: FormatLabel[] = formats.map((format, index) => ({ title: format.title, detail: format.detail,
     position: [format.x, TABLE_SURFACE_Y + .004, TABLE_CENTER_Z - format.top - mm(5)], width: format.width,

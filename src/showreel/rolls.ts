@@ -15,6 +15,10 @@ import { DEFAULT_TABLE_BRIGHTNESS } from '../utils/cameraBounds';
 export interface ShowreelRoll {
   definition: RollDefinition; stockId: FilmStockId; format: FilmFormat; sizing: FrameSizing;
   name: string; stockName: string; formatLabel: string;
+  /** The camera that took the roll, if known. */
+  camera?: string;
+  /** Each photograph's title, if it has one. */
+  titles: readonly (string | undefined)[];
   /** Where the roll lies on the light table (table-local, world units); its strips are centred on it. */
   offset: { x: number; y: number };
   /** The roll's extent on the table (world units). */
@@ -41,6 +45,7 @@ const rolls = data.rolls.map(roll => {
     frameWidths: sizing === 'free' ? roll.frames.map(frame => layout.frameHeight * frameAspect(format, 'free', frame)) : undefined };
   const strips = createRollLayout(definition), across = getStripDimensions(strips[0].layout).height * definition.scale;
   return { definition, stockId, format, sizing, name: roll.name, stockName: getFilmStock(stockId).displayName,
+    camera: 'camera' in roll ? roll.camera : undefined, titles: roll.frames.map(frame => 'title' in frame ? frame.title : undefined),
     formatLabel: sizing === 'free' ? '35mm · Panoramic' : FILM_FORMATS[format].label,
     width: Math.max(...strips.map(strip => getStripDimensions(strip.layout).width * strip.scale)),
     height: strips[0].y - strips[strips.length - 1].y + across };
