@@ -65,7 +65,7 @@ it('sends cover and title edits as one small patch, with no image uploads or dra
   const publish = vi.spyOn(ownerClient, 'publish');
   edited.roll = { ...edited.roll, coverId: 'second', name: 'New title' };
   await repository.save(edited);
-  expect(patch).toHaveBeenCalledExactlyOnceWith('roll', 10, { coverId: 'second', name: 'New title' }, expect.any(AbortSignal));
+  expect(patch).toHaveBeenCalledExactlyOnceWith('roll', 10, { coverId: 'second', name: 'New title' }, expect.any(AbortSignal), undefined);
   expect(upload).not.toHaveBeenCalled(); expect(save).not.toHaveBeenCalled(); expect(publish).not.toHaveBeenCalled();
 });
 

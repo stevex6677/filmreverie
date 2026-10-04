@@ -1,4 +1,5 @@
 import type { StoredRoll, StoredFrame } from '../storage/rollRepository';
+import type { OperationProgress } from '../utils/operationProgress';
 
 // Public records deliberately omit source names, hashes, original keys and saved private views.
 export interface GalleryImage { url: string; bytes: number; sha256: string }
@@ -32,6 +33,7 @@ export interface PatchRollRequest {
   mutationId: string; updatedAt: number; changes: Partial<StoredRoll>; continuation?: string;
 }
 export interface RollMutationResult { draft: CloudDraft; pending?: true; continuation?: string }
+export type RollMutationEvent = { progress: OperationProgress } | { result: RollMutationResult } | { error: string };
 export type UploadKind = 'viewing' | 'thumbnail';
 export type UploadRequest = Record<UploadKind, { bytes: number; mime: 'image/jpeg'; sha256: string }>;
 export interface UploadGrant {

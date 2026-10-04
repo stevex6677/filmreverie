@@ -5,6 +5,7 @@ import worker from '../../cloudflare/worker';
 import { mutateRoll, publicCatalog, readDraft } from '../../cloudflare/storage';
 import { ownerClient } from '../../src/cloud/ownerClient';
 import type { CloudDraft, SaveRollRequest } from '../../src/cloud/contracts';
+import type { OperationProgress } from '../../src/utils/operationProgress';
 import { draftFixture, environment } from './m21-worker-fixtures';
 
 // Exercise the real HTTP routes and client. Authentication itself has a separate
@@ -70,6 +71,60 @@ it('publishes a normal 36-frame roll in one request after uploads', async () => 
   expect(f.published.frames).toHaveLength(36);
 });
 
+it('streams measured publication progress before completion and bounds concurrent copies to three photographs', async () => {
+  const f = await fixture(6);
+  const frames = f.saved.frames.map(frame => ({ ...frame, id: webcrypto.randomUUID() }));
+  const input = { roll: { ...f.saved.roll, frameIds: frames.map(frame => frame.id), coverId: frames[0].id }, frames };
+  const release: Array<() => void> = [];
+  let active = 0, peak = 0;
+  f.publicBucket.beforePut = async key => {
+    if (!key.endsWith('/viewing.jpg')) return;
+    active++; peak = Math.max(peak, active);
+    await new Promise<void>(resolve => release.push(resolve));
+    active--;
+  };
+  const progress: OperationProgress[] = [];
+  const saving = ownerClient.saveRoll(input, undefined, value => progress.push(value));
+  await vi.waitFor(() => expect(release).toHaveLength(3));
+  expect(progress.at(-1)).toMatchObject({ label: 'Publishing photographs…', completed: 0, total: 6 });
+  expect((await publicCatalog(f.env)).rolls[0]).toEqual(f.published);
+  release[1]();
+  await vi.waitFor(() => expect(progress.at(-1)).toMatchObject({ completed: 1, total: 6 }));
+  release[0](); release[2]();
+  await vi.waitFor(() => expect(release).toHaveLength(6));
+  release.slice(3).forEach(resolve => resolve());
+  const saved = await saving;
+  expect(peak).toBe(3);
+  expect(progress.filter(value => value.total === 6).map(value => value.completed)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  expect(progress.at(-1)?.label).toBe('Updating gallery…');
+  expect((await publicCatalog(f.env)).rolls[0].frames.map(frame => frame.id)).toEqual(saved.roll.frameIds);
+  expect(f.requests).toHaveLength(1);
+});
+
+it('drains in-flight copies before cleaning up a failed streamed publication and preserves the previous roll', async () => {
+  const f = await fixture(3);
+  const frames = f.saved.frames.map(frame => ({ ...frame, id: webcrypto.randomUUID() }));
+  const input = { roll: { ...f.saved.roll, frameIds: frames.map(frame => frame.id), coverId: frames[0].id }, frames };
+  const release: Array<() => void> = [];
+  const originalKeys = [...f.publicBucket.objects.keys()].sort();
+  f.publicBucket.beforePut = async key => {
+    if (!key.endsWith('/viewing.jpg')) return;
+    await new Promise<void>(resolve => release.push(resolve));
+    if (key.includes(frames[0].id)) throw new Error('Private failure details');
+  };
+  const progress: OperationProgress[] = [];
+  const saving = ownerClient.saveRoll(input, undefined, value => progress.push(value));
+  const failed = expect(saving).rejects.toThrow('Cloud storage is unavailable');
+  await vi.waitFor(() => expect(release).toHaveLength(3));
+  release[0](); release[1](); release[2]();
+  await failed;
+  expect([...f.publicBucket.objects.keys()].sort()).toEqual(originalKeys);
+  expect((await publicCatalog(f.env)).rolls[0]).toEqual(f.published);
+  f.publicBucket.beforePut = undefined;
+  await ownerClient.saveRoll(input, undefined, value => progress.push(value));
+  expect((await publicCatalog(f.env)).rolls[0].frames.map(frame => frame.id)).toEqual(input.roll.frameIds);
+});
+
 it('bounds unusually large new image copies but edits the resulting roll in one request', async () => {
   const f = await fixture(70);
   expect(f.fetch).toHaveBeenCalledTimes(2);
@@ -126,6 +181,28 @@ it('retries a lost success response without creating a second revision', async (
   const result = await ownerClient.saveRoll(input);
   expect(result).toEqual(saved);
   expect(await publicCatalog(f.env)).toEqual(published);
+});
+
+it('handles split UTF-8 progress events and retries a truncated stream with the same mutation ID', async () => {
+  const f = await fixture(), input = { ...f.saved, roll: { ...f.saved.roll, name: 'Stream retry' } };
+  const send = globalThis.fetch;
+  let truncate = true;
+  vi.stubGlobal('fetch', async (...args: Parameters<typeof fetch>) => {
+    const response = await send(...args);
+    const text = await response.text();
+    const bytes = new TextEncoder().encode(truncate ? text.slice(0, text.indexOf('{"result":')) : text);
+    truncate = false;
+    return new Response(new ReadableStream<Uint8Array>({ start(controller) {
+      for (let i = 0; i < bytes.length; i += 3) controller.enqueue(bytes.slice(i, i + 3));
+      controller.close();
+    } }), { headers: response.headers });
+  });
+  const progress: OperationProgress[] = [];
+  await expect(ownerClient.saveRoll(input, undefined, value => progress.push(value))).rejects.toThrow('before confirmation');
+  expect(progress.some(value => value.label === 'Publishing photographs…')).toBe(true);
+  const saved = await readDraft(f.env, input.roll.id);
+  expect(await ownerClient.saveRoll(input, undefined, value => progress.push(value))).toEqual(saved);
+  expect(f.requests[0].body.mutationId).toBe(f.requests[1].body.mutationId);
 });
 
 it('rejects stale edits and mutation ID reuse with different contents', async () => {

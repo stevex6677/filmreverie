@@ -4,6 +4,7 @@ import { validateBundle, validatePreferences, type DarkroomPreferences } from '.
 import { applyShelfArrangement, validShelfArrangement, type ShelfArrangement } from '../src/utils/shelfLayout';
 import { CatalogState, CompletedUpload, DraftHead, DraftSnapshot, Env, HttpError, ImageRecord, Kind, PendingPublication, PendingUpload, kinds, requireValue, validId, hash } from './types';
 import { signUpload, stagingKey, UPLOAD_LIFETIME_MS } from './signing';
+import type { ProgressReporter } from '../src/utils/operationProgress';
 
 const imageLimits = { viewing: 5 * 1024 * 1024, thumbnail: 512 * 1024 } as const;
 const privateMetadata = { contentType: 'application/json', cacheControl: 'private, no-store' };
@@ -260,7 +261,8 @@ const rollChangeKeys = new Set(['name', 'camera', 'stockId', 'format', 'sizing',
 
 /** One user action, one request for ordinary rolls; preserve old draft routes
  * for installed clients and the explicit private-draft publishing workspace. */
-export async function mutateRoll(env: Env, id: string, input: SaveRollRequest | PatchRollRequest): Promise<RollMutationResult> {
+export async function mutateRoll(env: Env, id: string, input: SaveRollRequest | PatchRollRequest, onProgress?: ProgressReporter): Promise<RollMutationResult> {
+  onProgress?.({ label: 'Saving roll details…' });
   requireValue(input && validId(input.mutationId)
     && (input.continuation === undefined || validId(input.continuation)), 'Invalid roll mutation.');
   const { continuation, ...request } = input;
@@ -286,12 +288,12 @@ export async function mutateRoll(env: Env, id: string, input: SaveRollRequest | 
   // At most 240 image read/writes plus <=585 first-save upload-record reads,
   // leaving room below the 1,000 internal-service subrequest limit. Metadata
   // edits copy zero images, regardless of frame count. No image bytes enter JSON.
-  const result = await publishDraft(env, id, draft.roll.updatedAt, continuation, 120);
+  const result = await publishDraft(env, id, draft.roll.updatedAt, continuation, 120, onProgress);
   return 'pending' in result ? { draft, pending: true, continuation: result.continuation } : { draft };
 }
 
 const publicationBatch = 6;
-export async function publishDraft(env: Env, id: string, updatedAt: number, continuation?: string, imageBudget?: number): Promise<PublishResult> {
+export async function publishDraft(env: Env, id: string, updatedAt: number, continuation?: string, imageBudget?: number, onProgress?: ProgressReporter): Promise<PublishResult> {
   const state = await catalog(env);
   if (state.value.withdrawals[id]) throw new HttpError(409, 'Withdrawal is still in progress. Finish withdrawal before publishing.');
   const head = await draftHead(env, id);
@@ -363,41 +365,51 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
   const previousFrames = new Map(old.rolls.find(roll => roll.id === id)?.frames.map(frame => [frame.id, frame]));
   const publication: GalleryRoll = { ...pending.publication, frames: [...pending.publication.frames] };
   const draftFrames = new Map(draft.frames.map(frame => [frame.id, frame]));
-  let copiedImages = 0;
+  let copiedImages = 0, completedFrames = publication.frames.length;
+  const report = () => onProgress?.({ label: 'Publishing photographs…', detail: `${completedFrames} / ${draft.roll.frameIds.length} photographs`, completed: completedFrames, total: draft.roll.frameIds.length });
+  report();
   try {
     const end = imageBudget === undefined ? Math.min(draft.roll.frameIds.length, pending.nextFrame + publicationBatch) : draft.roll.frameIds.length;
-    for (let index = pending.nextFrame; index < end; index++) {
-      // Reserve both derivatives before starting a frame, so a continuation
-      // never has to recreate a partially processed frame.
-      if (imageBudget !== undefined && copiedImages + 2 > imageBudget) break;
-      const frame = draftFrames.get(draft.roll.frameIds[index]);
-      if (!frame) throw new HttpError(409, 'Saved draft frame is missing.');
-      const upload = snapshot.value.uploads?.[frame.uploadId] ?? await completedUpload(env, frame.uploadId);
-      const publicFrame: GalleryRoll['frames'][number] = { id: frame.id, width: frame.width, height: frame.height, rotation: frame.rotation,
-        ...(frame.uprightRotation !== undefined ? { uprightRotation: frame.uprightRotation } : {}),
-        ...(frame.cropPosition ? { cropPosition: { x: frame.cropPosition.x, y: frame.cropPosition.y } } : {}),
-        ...(frame.filmStrength !== undefined ? { filmStrength: frame.filmStrength } : {}),
-        viewing: null!, thumbnail: null! };
-      for (const kind of kinds) {
-        const image = upload.images[kind], prior = previousFrames.get(frame.id)?.[kind];
-        // Only reuse trusted committed URLs in this roll's active generation.
-        // Crops, rotation and film effects are metadata; their JPEG bytes are unchanged.
-        if (prior && prior.sha256 === image.sha256 && prior.bytes === image.bytes
-          && prior.url.startsWith(`${env.PHOTO_ORIGIN}/rolls/${id}/${pending.generation}/`)) {
-          publicFrame[kind] = prior;
-          continue;
+    for (let index = pending.nextFrame; index < end;) {
+      // Reserve both derivatives for each concurrent frame. Drain every copy
+      // before cleanup on failure, so no late write can recreate deleted images.
+      const count = Math.min(3, end - index, imageBudget === undefined ? 3 : Math.floor((imageBudget - copiedImages) / 2));
+      if (!count) break;
+      const batch = await Promise.allSettled(draft.roll.frameIds.slice(index, index + count).map(async frameId => {
+        const frame = draftFrames.get(frameId);
+        if (!frame) throw new HttpError(409, 'Saved draft frame is missing.');
+        const upload = snapshot.value.uploads?.[frame.uploadId] ?? await completedUpload(env, frame.uploadId);
+        const publicFrame: GalleryRoll['frames'][number] = { id: frame.id, width: frame.width, height: frame.height, rotation: frame.rotation,
+          ...(frame.uprightRotation !== undefined ? { uprightRotation: frame.uprightRotation } : {}),
+          ...(frame.cropPosition ? { cropPosition: { x: frame.cropPosition.x, y: frame.cropPosition.y } } : {}),
+          ...(frame.filmStrength !== undefined ? { filmStrength: frame.filmStrength } : {}),
+          viewing: null!, thumbnail: null! };
+        for (const kind of kinds) {
+          const image = upload.images[kind], prior = previousFrames.get(frame.id)?.[kind];
+          // Only reuse trusted committed URLs in this roll's active generation.
+          // Crops, rotation and film effects are metadata; their JPEG bytes are unchanged.
+          if (prior && prior.sha256 === image.sha256 && prior.bytes === image.bytes
+            && prior.url.startsWith(`${env.PHOTO_ORIGIN}/rolls/${id}/${pending.generation}/`)) {
+            publicFrame[kind] = prior;
+            continue;
+          }
+          const source = await env.PRIVATE_BUCKET.get(image.key);
+          if (!source || source.size !== image.bytes || source.httpMetadata?.contentType !== 'image/jpeg')
+            throw new HttpError(409, 'A sealed derivative is unavailable or has changed. The previous publication is unchanged.');
+          const key = `${prefix}${frame.id}/${kind}.jpg`;
+          const written = await env.PUBLIC_BUCKET.put(key, source.body, { onlyIf: { etagDoesNotMatch: '*' },
+            httpMetadata: { contentType: 'image/jpeg', cacheControl: 'public, max-age=0, must-revalidate' } });
+          if (!written) throw new HttpError(409, 'Public image version conflicted. The previous publication is unchanged.');
+          copiedImages++;
+          publicFrame[kind] = { url: `${env.PHOTO_ORIGIN}/${key}`, bytes: image.bytes, sha256: image.sha256 };
         }
-        const source = await env.PRIVATE_BUCKET.get(image.key);
-        if (!source || source.size !== image.bytes || source.httpMetadata?.contentType !== 'image/jpeg')
-          throw new HttpError(409, 'A sealed derivative is unavailable or has changed. The previous publication is unchanged.');
-        const key = `${prefix}${frame.id}/${kind}.jpg`;
-        const written = await env.PUBLIC_BUCKET.put(key, source.body, { onlyIf: { etagDoesNotMatch: '*' },
-          httpMetadata: { contentType: 'image/jpeg', cacheControl: 'public, max-age=0, must-revalidate' } });
-        if (!written) throw new HttpError(409, 'Public image version conflicted. The previous publication is unchanged.');
-        copiedImages++;
-        publicFrame[kind] = { url: `${env.PHOTO_ORIGIN}/${key}`, bytes: image.bytes, sha256: image.sha256 };
-      }
-      publication.frames.push(publicFrame);
+        completedFrames++; report();
+        return publicFrame;
+      }));
+      const failed = batch.find(result => result.status === 'rejected');
+      if (failed?.status === 'rejected') throw failed.reason;
+      for (const result of batch) if (result.status === 'fulfilled') publication.frames.push(result.value);
+      index += count;
     }
     const next: PendingPublication = { ...pending, nextFrame: publication.frames.length, publication };
     const advanced = await env.PRIVATE_BUCKET.put(pendingKey, JSON.stringify(next),
@@ -406,6 +418,7 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
     pending = next; pendingEtag = advanced.etag;
     if (next.nextFrame < draft.roll.frameIds.length) return { pending: true, continuation: pending.revision };
     const key = `catalog/versions/${crypto.randomUUID()}.json`;
+    onProgress?.({ label: 'Updating gallery…' });
     const slots = await readArrangement(env);
     const version: GalleryCatalog = { version: 1, rolls: [...old.rolls.filter(roll => roll.id !== id), publication].map(roll => placeRoll(roll, slots)) };
     const written = await env.PUBLIC_BUCKET.put(key, JSON.stringify(version),

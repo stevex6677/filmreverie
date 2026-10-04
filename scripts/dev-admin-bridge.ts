@@ -60,6 +60,19 @@ export function devAdminBridge(options: Options): Plugin {
   const send = async (response: ServerResponse, upstream: Response) => {
     response.statusCode = upstream.status;
     for (const name of ['content-type', 'content-length']) if (upstream.headers.has(name)) response.setHeader(name, upstream.headers.get(name)!);
+    if (upstream.headers.get('content-type')?.includes('application/x-ndjson') && upstream.body) {
+      response.flushHeaders();
+      const reader = upstream.body.getReader();
+      try {
+        for (;;) {
+          const chunk = await reader.read();
+          if (chunk.done) break;
+          if (!response.destroyed) response.write(chunk.value);
+        }
+      } finally { reader.releaseLock(); }
+      response.end();
+      return;
+    }
     response.end(Buffer.from(await upstream.arrayBuffer()));
   };
   async function handle(request: IncomingMessage, response: ServerResponse) {
