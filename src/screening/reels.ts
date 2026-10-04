@@ -18,14 +18,14 @@ export interface ReelOptions {
 
 /** A setting special to one reel, shown as a slider between two described ends. */
 export interface ReelSetting { label: string; low: string; high: string; initial: number }
-// Two at most per reel. The initial values reproduce the reviewed reels, except
-// Darkroom Prints, which now looks slightly along the line so its depth of field shows.
+// Two at most per reel. Tracking starts closer to the photograph and Orbit
+// uses a gentler arc; the sliders retain their full adjustment range.
 export const REEL_SETTINGS: Record<ReelId, readonly ReelSetting[]> = {
-  tracking: [{ label: 'Distance', low: 'Close', high: 'Far', initial: .5 }, { label: 'Depth of field', low: 'Deep', high: 'Shallow', initial: .5 }],
+  tracking: [{ label: 'Distance', low: 'Close', high: 'Far', initial: .3 }, { label: 'Depth of field', low: 'Deep', high: 'Shallow', initial: .4 }],
   develop: [{ label: 'Push-in', low: 'None', high: 'Close', initial: .5 }, { label: 'Light band', low: 'Sharp', high: 'Soft', initial: .5 }],
   projector: [{ label: 'Gate weave', low: 'Steady', high: 'Loose', initial: .5 }, { label: 'Lamp flicker', low: 'None', high: 'Strong', initial: .5 }],
   darkroom: [{ label: 'Distance', low: 'Close', high: 'Far', initial: .5 }, { label: 'Camera height', low: 'Low', high: 'High', initial: .5 }],
-  orbit: [{ label: 'Arc', low: 'Narrow', high: 'Wide', initial: .5 }, { label: 'Depth of field', low: 'Deep', high: 'Shallow', initial: .5 }],
+  orbit: [{ label: 'Arc', low: 'Narrow', high: 'Wide', initial: .35 }, { label: 'Depth of field', low: 'Deep', high: 'Shallow', initial: .5 }],
   'darkroom-prints': [{ label: 'Distance', low: 'Close', high: 'Far', initial: .5 }, { label: 'Angle', low: 'Face on', high: 'Along the line', initial: .4 }],
   documentary: [{ label: 'Drift', low: 'Still', high: 'Strong', initial: .5 }, { label: 'Dissolve', low: 'Quick', high: 'Long', initial: .5 }],
   'film-journey': [{ label: 'Movement', low: 'Minimal', high: 'Expressive', initial: .65 }, { label: 'Variety', low: 'Subtle', high: 'Varied', initial: .5 }],
@@ -78,14 +78,9 @@ function drift(pose: CameraPose, amount = 1): CameraPose {
   return { ...pose, zoom: pose.zoom * (1 - .035 * amount), yaw: pose.yaw + degrees(pose.tilt ? 1.6 : .5) * amount };
 }
 
-/** Breaks are pauses at strip boundaries, each reel's own. Short rolls get fewer; medium format fewer still. */
+/** Every strip change gets its reel's own break, including short and medium-format rolls. Projector keeps its shutter transition. */
 export function breakBoundaries(roll: RollDefinition) {
-  const strips = createRollLayout(roll);
-  const boundaries = strips.slice(1).map(strip => strip.offset);
-  if (roll.frames.length < 8) return new Set<number>();
-  const medium = roll.format !== undefined && filmType(roll.format) !== '135';
-  const every = medium || roll.frames.length < 16 ? 2 : 1;
-  return new Set(boundaries.filter((_, index) => (index + 1) % every === 0 || boundaries.length === 1));
+  return new Set(createRollLayout(roll).slice(1).map(strip => strip.offset));
 }
 
 export function isMediumFormat(roll: RollDefinition) { return roll.format !== undefined && filmType(roll.format) !== '135'; }
@@ -308,15 +303,15 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
     b.card('title', b.seconds(.6), b.seconds(3.8));
     for (let i = 0; i < n; i++) {
       if (i > 0 && frameAt(i).localIndex === 0 && breaks.has(i)) {
-        b.step('break', 'pull-back', i, 1.4, { camera: ring(i, -40, 50) });
-        b.step('break', 'overview', i, 2.6, { camera: ring(i, 40, 42), ease: 'inOut' });
+        b.step('break', 'pull-back', i, 1.4, { camera: ring(i, -30, 44) });
+        b.step('break', 'overview', i, 2.6, { camera: ring(i, 30, 38), ease: 'inOut' });
       }
       const beat = rhythm[i], hold = beat === 'linger' ? 1.4 : beat === 'quick' ? .5 : 1;
       b.step('tour', 'push', i, i === 0 ? 1.6 : beat === 'quick' ? .8 : 1, { camera: start(i, beat === 'linger' ? 1.35 : beat === 'quick' ? .45 : 1), beat: true });
       b.step('tour', 'orbit', i, 2 * hold * holdScale, { camera: f.frame(i), ease: 'inOut' });
       b.step('tour', 'frame', i, .7 * hold * holdScale, { camera: drift(f.frame(i), .3), drift: true });
     }
-    b.step('return', 'pull-back', n - 1, 1.6, { camera: { ...f.overview, zoom: f.overview.zoom * 1.2, tilt: degrees(60), yaw: base - Math.PI } });
+    b.step('return', 'pull-back', n - 1, 1.6, { camera: { ...f.overview, zoom: f.overview.zoom * 1.2, tilt: degrees(45), yaw: base - degrees(45) } });
     const end = b.time;
     b.step('return', 'close', n - 1, 3.6, { camera: f.overview, ease: 'inOut' });
     b.card('end', end + b.seconds(.6), b.time);
