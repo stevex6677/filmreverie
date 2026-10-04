@@ -125,6 +125,18 @@ focused on the camera's subject. Preview supports
 play/pause, previous/next frame, tap to pause and exit; exiting restores the table
 exactly, and screening never writes rolls or saved views.
 
+**Film Journey** combines documentary framing, oblique tracking, alternating
+left/right arcs and negative-only Develop passages in one continuous camera path. It has
+no dissolves, cuts, blackouts, projector effects or print-wall visits. **Movement**
+(Minimal → Expressive, default 65%) controls drift and angles; **Variety** (Subtle →
+Varied, default 50%) changes the grouping and frequency of treatments. Pace
+primarily adjusts viewing time: Normal spends 2.2–2.7 seconds on each positive
+photograph, with shorter introductions and transitions. Reveals progress forward, with occasional
+featured negatives and ordinary frames developing ahead of the camera; reversal
+stocks stay positive throughout. Strip changes follow a shallow diagonal return.
+Reduced motion keeps the continuous path with flat views, minimal drift and
+slower travel. The same path drives preview, seeking and all three export formats.
+
 The settings include the same five CC0 music tracks as `/showreel`, with tap-to-preview selection,
 volume and No music controls. Music plays with the preview and is included in
 exports, looping for long rolls and fading at the start and end. The five tracks

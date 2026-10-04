@@ -10,8 +10,7 @@
 .mobile-header .owner-nav-actions a { min-height:44px; }
 .empty-table-controls:has(.owner-nav-actions) { flex-wrap:wrap; }
 .empty-table-controls .owner-nav-actions { margin-left:auto; }
-.cloud-viewing-label { position:absolute; bottom:12px; right:12px; max-width:calc(100% - 32px); z-index:11; pointer-events:none; text-align:center; padding:3px 9px; border-radius:5px; background:#171a1ee8; color:#dfceb0; font-size:11px; }
-@media(max-width:600px) { .owner-nav-actions button, .owner-nav-actions a { padding:6px 9px; font-size:12px; } .cloud-viewing-label { bottom:calc(110px + env(safe-area-inset-bottom)); font-size:10px; } }
+@media(max-width:600px) { .owner-nav-actions button, .owner-nav-actions a { padding:6px 9px; font-size:12px; } }
 .darkroom-app-container .library-dialog.guest-welcome {
   width:min(540px,calc(100vw - 32px));
   max-width:calc(100vw - 32px);
