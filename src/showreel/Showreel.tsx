@@ -14,7 +14,7 @@ import './showreel.css';
 const format = (seconds: number) => `${Math.floor(seconds / 60)}:${(seconds % 60).toFixed(1).padStart(4, '0')}`;
 
 /**
- * /showreel: a one-minute promotional film of the darkroom, rendered live
+ * /showreel: a 90-second promotional film of the darkroom, rendered live
  * from code at 16:9, with a soundtrack. Not linked from the app. It opens on
  * its settings (music, grain and other looks), then previews or exports MP4.
  *
@@ -93,8 +93,9 @@ export default function Showreel() {
   // Settings come first, unless the URL asks for a recording or a held moment.
   const [exporting, setExporting] = useState(false);
   const start = Number(params.get('t')) || 0;
-  // The settings show their effect on a light-table frame, clear of the sheet.
-  const settingsFrame = (session.timeline.shots.find(shot => shot.name === 'tracking')?.start ?? 0) + 1.2;
+  // The settings show their effect on the light table with every roll, clear of the sheet.
+  const formatsShot = session.timeline.shots.find(shot => shot.name === 'formats');
+  const settingsFrame = formatsShot ? formatsShot.start + formatsShot.duration - .4 : 0;
   useEffect(() => {
     if (!loaded) return;
     const abort = new AbortController();
@@ -147,7 +148,7 @@ export default function Showreel() {
       <canvas ref={overlay} className="showreel-overlay" aria-hidden="true" />
       {!ready && <div className="showreel-loading" role="status">
         <p>Developing the showreel…</p>
-        {progress && !loaded && <span>Photographs {progress.photos}/{progress.photoTotal}  ·  Cameras {progress.cameras}/{progress.cameraTotal}</span>}
+        {progress && !loaded && <span>Photographs {progress.photos}/{progress.photoTotal}  ·  Cameras {progress.cameras}/{progress.cameraTotal}  ·  Film shelf {progress.shelf ? 'ready' : 'loading'}</span>}
         {loaded && <span>Preparing scenes {Math.round(preroll * 100)}%</span>}
       </div>}
       {panel && !exporting && <ShowreelSettingsPanel settings={settings} onChange={changeSettings} player={player} ready={ready} duration={snapshot.duration}

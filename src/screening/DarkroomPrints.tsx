@@ -5,13 +5,16 @@ import type { RollDefinition } from '../utils/rollLayout';
 import type { FilmStockId } from '../data/filmStocks';
 import { FILM_LOOK_GLSL, filmLookUniforms, updateFilmLook } from '../shaders/filmLook';
 import { DISPLAY_FRAGMENT } from '../shaders/tableIllumination';
+import { PHOTO_RADIANCE_GLSL, PHOTO_REFERENCE_OUTPUT } from '../shaders/photoRadiance';
 import { filmGrainSeed } from '../data/filmLooks';
 import { FILM_UNIT } from '../data/filmFormats';
 import { printLayout, PRINT_WALL_X } from './prints';
 import type { ScreeningSession } from './session';
 
 // A print shows the positive photograph upright, cropped to the paper, with
-// the roll's film look. It is lit evenly, like a print under a viewing lamp.
+// the roll's film look. It is lit evenly, like a print under a viewing lamp,
+// and reaches the screen as the photograph's own colors: like film on the
+// table, it is encoded for the renderer's ACES tone mapping rather than graded by it.
 const printVertex = `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 const printFragment = `
   uniform sampler2D uTexture;
@@ -21,13 +24,14 @@ const printFragment = `
   uniform float uExposure;
   varying vec2 vUv;
   ${FILM_LOOK_GLSL}
+  ${PHOTO_RADIANCE_GLSL}
   void main() {
     // As on the film (see filmShader): crop, then turn the image upright.
     vec2 p = (vUv - 0.5) * uPhotoCrop + uPhotoOffset;
     float c = cos(uPhotoRotation), s = sin(uPhotoRotation);
     vec2 photoUV = vec2(c * p.x - s * p.y, s * p.x + c * p.y) + 0.5;
     vec3 source = texture2D(uTexture, clamp(photoUV, vec2(0.0), vec2(1.0))).rgb;
-    gl_FragColor = vec4(applyFilmLook(source, vUv) * uExposure, 1.0);
+    gl_FragColor = vec4(photoRadiance(applyFilmLook(source, vUv), uExposure * ${PHOTO_REFERENCE_OUTPUT.toFixed(10)}), 1.0);
     ${DISPLAY_FRAGMENT}
   }
 `;

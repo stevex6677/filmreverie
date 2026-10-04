@@ -35,12 +35,13 @@ function applySample(table: THREE.Object3D, scene: THREE.Scene, roll: RollDefini
     if (uniforms?.uAmbient) uniforms.uAmbient.value = ambient;
   });
   for (const spill of spillLights(scene)) spill.intensity = light.spillIntensity * scale;
-  const reveal = sample?.reveal;
   for (const strip of table.children) {
     const index = strip.userData.stripIndex;
     if (typeof index !== 'number') continue;
-    // A strip may name its own roll when several share the table (showreel).
+    // A strip may name its own roll when several share the table (showreel);
+    // only the roll the moment features is developed.
     const owner = (strip.userData.roll as RollDefinition | undefined) ?? roll;
+    const reveal = strip.userData.screeningActive === false ? null : sample?.reveal;
     const edge = reveal ? revealEdge(owner, index, reveal.position) : 0;
     const width = strip.userData.frameWidth as number;
     const glow = reveal && reveal.position < owner.frames.length ? sample!.kind === 'develop' ? .9 : .3 : 0;

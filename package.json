@@ -31,7 +31,6 @@
     "validate:m16": "npm run build && npm run test:integration && npm run test:e2e",
     "validate:m13": "npm run build && npm run test:integration && npm run test:e2e",
     "fetch:packaging": "node scripts/fetch-packaging.js",
-    "fetch:showreel": "node scripts/fetch-showreel-photos.js",
     "fetch:showreel-music": "node scripts/fetch-showreel-music.js",
     "validate:m19": "npm run build && npm run test:integration && npm run test:e2e",
     "validate:m20": "npm run build && npm run test:integration && npm run test:e2e && npm --prefix standalone/model-viewer test && npm --prefix standalone/model-viewer run test:reuse && npm --prefix standalone/model-viewer run test:browser",
@@ -43,7 +42,8 @@
     "check:cloud:production": "tsc --noEmit -p cloudflare/tsconfig.json && node scripts/cloudflare-deploy.ts check",
     "deploy:worker": "node scripts/cloudflare-deploy.ts worker",
     "deploy:pages": "node scripts/cloudflare-deploy.ts pages",
-    "verify:cloud": "node scripts/cloudflare-deploy.ts verify"
+    "verify:cloud": "node scripts/cloudflare-deploy.ts verify",
+    "showreel:manifest": "node scripts/showreel-manifest.ts"
   },
   "keywords": [],
   "author": "",

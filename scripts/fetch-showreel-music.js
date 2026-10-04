@@ -8,12 +8,12 @@ import { assetPath } from './shared-assets.js';
 
 // Optional authoring command for the /showreel soundtracks. Each track is
 // extracted from its pinned CC0 archive into shared ignored_assets (read-only);
-// --publish writes the tracked runtime excerpt (the first minute, 192 kbps MP3)
+// --publish writes the tracked runtime excerpt (the first 110 seconds, 192 kbps MP3)
 // with local ffmpeg. Development and build never run this.
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'src/data/showreelMusic.json'), 'utf8'));
 const publish = process.argv.includes('--publish');
-const EXCERPT_SECONDS = 70;
+const EXCERPT_SECONDS = 110;
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const archives = new Map();
 
