@@ -167,11 +167,12 @@ function drawSlate(ctx: CanvasRenderingContext2D, width: number, height: number,
   const alpha = shown(time, slate.start, slate.end, .5, .35);
   if (alpha <= 0) return;
   const roll = timeline.rolls[slate.roll], u = height / 720, right = width * .945, base = height * .86;
-  const detail = `${roll.stockName}  ·  ${roll.formatLabel}  ·  ${roll.definition.frames.length} frames`.toUpperCase();
+  const detail = `${roll.stockName}  ·  ${roll.formatLabel}`.toUpperCase(), lift = roll.camera ? 22 * u : 0;
   ctx.save(); ctx.globalAlpha = alpha; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
-  scrim(ctx, right - 120 * u, base - 14 * u, 260 * u, 60 * u, .45);
+  scrim(ctx, right - 120 * u, base - 14 * u - lift / 2, 260 * u, 60 * u + lift / 2, .45);
   ctx.fillStyle = CREAM; fit(ctx, 'italic 400', 26 * u, SERIF, width * .35);
-  ctx.fillText(roll.name, right, base - 24 * u);
+  ctx.fillText(roll.titles[slate.frame] ?? roll.name, right, base - 24 * u - lift);
+  if (roll.camera) { ctx.fillStyle = MUTED; fit(ctx, '400', 14 * u, SANS, width * .35); ctx.fillText(`Shot on ${roll.camera}`, right, base - 20 * u); }
   ctx.fillStyle = AMBER; fit(ctx, '600', 11.5 * u, SANS, width * .35, 2.6 * u);
   ctx.fillText(detail, right, base);
   ctx.restore();
