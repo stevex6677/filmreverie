@@ -71,4 +71,28 @@ test('roll details separate selection from edit, delete, undo and opening photog
   await expect(page.locator('main')).toHaveAttribute('data-room-mode', 'inspect');
   await expect(page.locator('main')).toHaveAttribute('data-roll-id', 'roll-01');
   await expect(card).toHaveCount(0);
+  const edit = page.getByRole('button', { name: 'Edit roll', exact: true });
+  const screen = page.getByRole('button', { name: 'Screen roll', exact: true });
+  // Both overview and focus keep the editor immediately to the right of Screening.
+  for (const focus of [false, true]) {
+    if (focus) {
+      await page.locator('.canvas-wrapper').focus(); await page.keyboard.press('Enter');
+      await ready(page);
+      await expect(page.locator('main')).toHaveAttribute('data-focus-mode', 'true');
+    }
+    await expect(edit).toBeVisible();
+    const a = (await screen.boundingBox())!, b = (await edit.boundingBox())!;
+    expect(b.x).toBeGreaterThanOrEqual(a.x + a.width);
+    expect(Math.abs(a.y - b.y)).toBeLessThan(1);
+    expect(b.x + b.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+  }
+  await page.screenshot({ path: info.outputPath('table-edit-roll.png') });
+  await edit.click();
+  await expect(editor.getByLabel('Roll name', { exact: true })).toHaveValue('Roll 01');
+  await editor.getByLabel('Roll name', { exact: true }).fill('Edited from light table');
+  await editor.getByRole('button', { name: 'Save and open', exact: true }).click();
+  await expect(editor).not.toBeVisible(); await ready(page);
+  await expect(page.locator('main')).toHaveAttribute('data-roll-id', 'roll-01');
+  await edit.click();
+  await expect(editor.getByLabel('Roll name', { exact: true })).toHaveValue('Edited from light table');
 });

@@ -252,6 +252,7 @@ export function App() {
   const tableRollAvailable = canManageRolls
     ? ((isGuest && roll.fixture) || !managedShelf.loaded || managedShelf.allRolls.some(saved => saved.id === roll.rollId && saved.trashedAt === null))
     : cloudSource !== null;
+  const canEditCurrentRoll = canManageRolls && managedShelf.allRolls.some(saved => saved.id === roll.rollId && saved.trashedAt === null);
   const emptyRollMessage = tableRollAvailable ? undefined
     : isGuest ? 'No roll on the light table'
       : published.loading ? 'Loading published photographs…' : published.error || 'No published roll on the light table';
@@ -698,7 +699,7 @@ export function App() {
             </div>
           : screening
             ? <ScreeningPlayer session={screening} onExit={exitScreening} onExport={() => { screening.pause(); setScreeningExport('preview'); }} />
-            : <TableControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenRoom={openRoom} onOpenTable={openTable} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} ownerActions={ownerActions} createAction={createAction} onScreen={() => setScreeningPicker(true)} />)}
+            : <TableControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenRoom={openRoom} onOpenTable={openTable} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} ownerActions={ownerActions} createAction={createAction} onScreen={() => setScreeningPicker(true)} onEditRoll={canEditCurrentRoll ? () => openEditor(roll.rollId) : undefined} />)}
       {screeningPicker && !screening && <ScreeningPicker choice={screeningChoice} onChange={setScreeningChoice} frames={roll.frames.length} reducedMotion={isReducedMotion}
         durationFor={choice => createScreeningTimeline(roll, { ...screeningOptions(), reel: choice.reel, pace: choice.pace, tuning: choice.tuning[choice.reel], aspect: 16 / 9 }).duration}
         onClose={() => setScreeningPicker(false)} onPreview={() => startScreening('preview')} onExport={() => startScreening('export')} />}

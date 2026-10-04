@@ -206,6 +206,7 @@ test('public home displays only published rolls in the physical cabinet and open
     await page.screenshot({ path: info.outputPath('opening-roll-progress.png') });
     finishDownload();
     await expect(page.locator('main')).toHaveAttribute('data-roll-id', 'gallery:published-roll:revision-one');
+    await expect(page.getByRole('button', { name: 'Edit roll', exact: true })).toHaveCount(0);
     await expect.poll(() => requests.filter(url => url === '/view.png').length).toBe(2);
     expect(await databases(page)).not.toContain('darkroom-rolls');
     await ready(page);

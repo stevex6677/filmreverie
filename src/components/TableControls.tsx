@@ -11,7 +11,7 @@ import { FilmStockInfo } from './FilmStockInfo';
 import { FilmStripHeader } from './FilmStripHeader';
 import { ScreenRollButton } from '../screening/ScreeningUI';
 
-export function TableControls({state,dispatch,onOpenLibrary,onOpenRoom,onOpenTable,onOpenCameras,sheet,setSheet,ownerActions,createAction,onScreen}:{state:ViewerState;dispatch:Dispatch<ViewerAction>;onOpenLibrary:()=>void;onOpenRoom:()=>void;onOpenTable:()=>void;onOpenCameras:()=>void;sheet:MobileSheet;setSheet:(sheet:MobileSheet)=>void;createAction?:ReactNode;ownerActions?:ReactNode;onScreen?:()=>void}) {
+export function TableControls({state,dispatch,onOpenLibrary,onOpenRoom,onOpenTable,onOpenCameras,sheet,setSheet,ownerActions,createAction,onScreen,onEditRoll}:{state:ViewerState;dispatch:Dispatch<ViewerAction>;onOpenLibrary:()=>void;onOpenRoom:()=>void;onOpenTable:()=>void;onOpenCameras:()=>void;sheet:MobileSheet;setSheet:(sheet:MobileSheet)=>void;createAction?:ReactNode;ownerActions?:ReactNode;onScreen?:()=>void;onEditRoll?:()=>void}) {
   const root=useRef<HTMLDivElement>(null), panel=useRef<HTMLDialogElement>(null);
   const [quiet,setQuiet]=useState(false);
   const stock=getFilmStock(state.filmStockId);
@@ -52,14 +52,21 @@ export function TableControls({state,dispatch,onOpenLibrary,onOpenRoom,onOpenTab
   // Screening starts from a settled table with the loupe put away.
   const screen=onScreen&&!state.loupe.isActive&&!state.adjustingView?()=>{setSheet(null);onScreen();}:undefined;
   const screenBlocked=state.isTransitioning||state.assetsLoading;
+  const rollActions=screen&&<div className={`table-roll-actions${focus?'':' is-launch'}`}>
+    <ScreenRollButton disabled={screenBlocked} onClick={screen}/>
+    {onEditRoll&&<button type="button" className="edit-roll-button" aria-label="Edit roll" title="Edit roll" aria-haspopup="dialog" disabled={screenBlocked} onClick={onEditRoll}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="m16 3 5 5L8 21H3v-5L16 3Z M13 6l5 5"/></svg>
+      <span>Edit roll</span>
+    </button>}
+  </div>;
   return <div ref={root} className={`table-controls ${focus?'is-focus':''} ${inspecting?'is-loupe-inspection':''} ${state.loupe.isActive?'has-loupe':''}`} data-quiet={quiet} data-testid="controls-panel">
     {!focus && !inspecting && <FilmStripHeader state={state} onOpenRoom={onOpenRoom} onOpenLibrary={onOpenLibrary} onOpenTable={onOpenTable} onOpenCameras={onOpenCameras} onOpenSettings={()=>setSheet(sheet==='tools'?null:'tools')} settingsOpen={sheet==='tools'} onToggleLoupe={()=>{setSheet(null);dispatch({type:'TOGGLE_LOUPE'});}} ownerActions={ownerActions} createAction={createAction} />}
     {focus&&!inspecting&&<header className="table-header">
       <button className="table-back" onClick={()=>dispatch({type:'SHOW_OVERVIEW'})}>← Overview</button>
-      <div className="table-actions">{screen&&<ScreenRollButton disabled={screenBlocked} onClick={screen}/>}{!state.loupe.isActive&&<button data-testid="loupe-activate" onClick={()=>dispatch({type:'SET_LOUPE_ACTIVE',active:true})}>Loupe</button>}<button data-panel-toggle className="table-adjust" aria-haspopup="dialog" onClick={()=>setSheet('tools')}>Settings</button>{ownerActions}</div>
+      <div className="table-actions">{rollActions}{!state.loupe.isActive&&<button data-testid="loupe-activate" onClick={()=>dispatch({type:'SET_LOUPE_ACTIVE',active:true})}>Loupe</button>}<button data-panel-toggle className="table-adjust" aria-haspopup="dialog" onClick={()=>setSheet('tools')}>Settings</button>{ownerActions}</div>
     </header>}
 
-    {!focus&&!inspecting&&screen&&!sheet&&<ScreenRollButton launch disabled={screenBlocked} onClick={screen}/>}
+    {!focus&&!inspecting&&!sheet&&rollActions}
     {state.adjustingView && <nav className="table-navigation table-angle-controls" aria-label="View angle">
       <button onClick={()=>dispatch({type:'SET_ADJUSTING_VIEW',active:false})}>Done</button>
       <output aria-label="Current view angle">Tilt {Math.round(state.tableAngle.tilt*180/Math.PI)}° · Yaw {Math.round(state.tableAngle.yaw*180/Math.PI)}°</output>
