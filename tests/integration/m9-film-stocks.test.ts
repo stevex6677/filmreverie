@@ -10,6 +10,8 @@ import { createInitialViewerState, viewerReducer } from "../../src/state/viewerS
 import { TableControls } from "../../src/components/TableControls";
 import { createFilmRebateCanvas } from "../../src/utils/filmRebateCanvas";
 import { createFilmShaderMaterial } from "../../src/shaders/filmShader";
+import { FILM_MODEL_UNIT } from '../../src/data/physicalScale';
+import { edgePrintProfile } from '../../src/data/filmEdgePrinting';
 import { DEFAULT_LAYOUT, getFrameCenter, getStripDimensions } from "../../src/utils/loupeMapping";
 
 function raster(id: FilmStockId) {
@@ -87,7 +89,7 @@ describe("M9 — whole-strip stock profiles, state, material and real rebate ras
     expect(viewerReducer(state, {type: "RESET"}).filmStockId).toBe(DEFAULT_FILM_STOCK_ID);
   });
 
-  it("renders distinct stock identities with clear photo apertures and contrasting ink on all five frames", () => {
+  it("renders distinct stock identities at factory intervals with clear photo apertures", () => {
     const signatures = new Set<string>();
     const {width} = getStripDimensions(DEFAULT_LAYOUT);
     for (const stock of FILM_STOCKS) {
@@ -97,16 +99,22 @@ describe("M9 — whole-strip stock profiles, state, material and real rebate ras
       for (let i = 0; i < 5; i++) {
         const x = (getFrameCenter(i, DEFAULT_LAYOUT).x + width / 2) / width * 3072;
         expect(pixel(canvas, x, 234)[3]).toBe(0);
-        const left = x - DEFAULT_LAYOUT.frameWidth / width * 3072 / 2;
-        const rail = ctx.getImageData(Math.round(left + 95), 3, 240, 20).data;
+        const base = pixel(canvas, x, 25);
+        if (stock.type === "negative") expect(base[0]).toBeGreaterThan(base[2] + 70);
+        else expect(Math.max(...base.slice(0, 3))).toBeLessThan(40);
+      }
+      // Inspect the factory legend cells, which no longer align one-to-one
+      // with photographs. A frame-sized crop can legitimately contain no label.
+      const pitch = edgePrintProfile(stock.id).label135PitchMm;
+      for (let mm = 7; mm < (width - DEFAULT_LAYOUT.marginX) / FILM_MODEL_UNIT - 20; mm += pitch) {
+        const x = (DEFAULT_LAYOUT.marginX + mm * FILM_MODEL_UNIT) / width * 3072;
+        const rail = ctx.getImageData(Math.round(x), 3, 240, 20).data;
         const base = pixel(canvas, x, 25);
         let inkPixels = 0;
         for (let p = 0; p < rail.length; p += 4) {
           if (Math.abs(rail[p] - base[0]) > 30) inkPixels++;
         }
-        expect(inkPixels, `${stock.id} frame ${i + 1} ink`).toBeGreaterThan(200);
-        if (stock.type === "negative") expect(base[0]).toBeGreaterThan(base[2] + 70);
-        else expect(Math.max(...base.slice(0, 3))).toBeLessThan(40);
+        expect(inkPixels, `${stock.id} legend at ${mm} mm`).toBeGreaterThan(200);
       }
     }
     expect(signatures.size).toBe(12);

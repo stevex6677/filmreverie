@@ -33,7 +33,7 @@
     "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/6/61/Color_print_film_strip_01_-_negative.jpg",
     "accessed": "2026-09-09",
     "license": "Linked for study only; reference photograph not redistributed. Runtime lettering and geometry are original project artwork (ISC).",
-    "limitations": "Lettering and numbered outer rails reconstructed from developed 135 still-film references. Placement normalized to this five-frame strip; font is an approximation. Exact optical edge-code bits, batch IDs, and production tolerances are not verified and are omitted. Base color is an artistic approximation under the existing viewer lighting, not a calibrated stock measurement."
+    "limitations": "Lettering and numbered outer rails reconstructed from developed 135 still-film references. Placement follows physical film distance (see docs/FILM_EDGE_PRINTING.md); font is an approximation. Exact optical edge-code bits, batch IDs, and production tolerances are not verified and are omitted. Base color is an artistic approximation under the existing viewer lighting, not a calibrated stock measurement."
   },
   "formats": [
     "135",

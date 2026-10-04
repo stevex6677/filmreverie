@@ -32,7 +32,7 @@
     "imageUrl": "https://images.squarespace-cdn.com/content/v1/59a0512d6b8f5bda92053148/1624367147382-99GLHOEI4OBUUVH4IU3L/diapositive-table-lumineuse.JPG",
     "accessed": "2026-09-09",
     "license": "Linked for study only; reference photograph not redistributed. Runtime lettering and geometry are original project artwork (ISC).",
-    "limitations": "Lettering, frame and half-frame numbers reconstructed from the developed 135 reference. No optical code track is discernible in this reference and one is omitted. Placement normalized to five frames; font and base color are approximations, not a calibrated measurement."
+    "limitations": "Lettering, frame and half-frame numbers reconstructed from the developed 135 reference. No optical code track is discernible in this reference and one is omitted. Placement follows physical film distance (see docs/FILM_EDGE_PRINTING.md); font and base color are approximations, not a calibrated measurement."
   },
   "formats": [
     "135",

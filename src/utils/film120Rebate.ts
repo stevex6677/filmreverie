@@ -1,32 +1,34 @@
 import { FilmStockProfile } from '../data/filmStocks';
+import { FILM_MODEL_UNIT } from '../data/physicalScale';
+import { edgePrintProfile } from '../data/filmEdgePrinting';
+import { filmEdgeRepeats } from './filmEdgeMarks';
 import { FilmStripLayout, getStripDimensions } from './loupeMapping';
 
-// Developed-film references and provenance: artifacts/m12-border-review/REFERENCES.md.
-// Two independent factory index tracks, not the camera's selected frame format.
-// The 728mm exposed span and font are approximations of the photographed rails.
+// Developed-film factory indices, not camera counters or backing-paper numbers.
+// Pitches and evidence limits are recorded in docs/FILM_EDGE_PRINTING.md.
 export function film120Marks(layout: FilmStripLayout, stock: FilmStockProfile) {
-  const unit = .55 / 36;
-  const length = getStripDimensions(layout).width / unit;
-  const offset = (layout.filmLengthOffset ?? (layout.frameNumberOffset ?? 0) * (layout.frameWidth + layout.gap)) / unit;
-  const marks: { x: number; rail: 'top' | 'bottom'; text?: string; arrow?: boolean }[] = [];
-  const label = stock.id === 'ektachrome-e100' ? 'KODAK E100' : stock.rebate.label;
-  for (let n = Math.floor(offset / 45.5) - 1; n * 45.5 < offset + length; n++) {
-    if (n < 0) continue;
-    const x = n * 45.5 + 5 - offset;
-    marks.push({ x, rail: 'top', text: String(41 + n % 16) });
-    marks.push({ x: x + 11, rail: 'top', text: label });
+  const profile = edgePrintProfile(stock.id);
+  const marks: { x: number; rail: 'top' | 'bottom'; text?: string; arrow?: boolean; reverse?: boolean }[] = [];
+  const label = profile.fujiCode ? `FUJI ${profile.fujiCode}` : stock.rebate.label;
+  for (const { index, x } of filmEdgeRepeats(layout, profile.number120PitchMm)) {
+    marks.push({ x, rail: 'top', text: String(profile.number120Start + index) });
+    if (profile.fujiCode) marks.push({ x: x + 4, rail: 'top', arrow: true, reverse: true });
   }
-  for (let n = Math.floor(offset / (728 / 24)) - 1; n * (728 / 24) < offset + length; n++) {
-    if (n < 0) continue;
-    const x = n * (728 / 24) + 5 - offset;
-    marks.push({ x, rail: 'bottom', arrow: true });
-    if (n % 2 === 0) marks.push({ x: x + 3, rail: 'bottom', text: String(1 + Math.floor(n / 2) % 12) });
+  for (const { x } of filmEdgeRepeats(layout, profile.label120PitchMm, 11)) {
+    marks.push({ x, rail: 'top', text: label });
   }
-  return marks.filter(mark => mark.x > 1 && mark.x < length - 1);
+  if (profile.secondary120PitchMm) {
+    for (const { index, x } of filmEdgeRepeats(layout, profile.secondary120PitchMm / 2)) {
+      marks.push({ x, rail: 'bottom', arrow: true });
+      if (index % 2 === 0) marks.push({ x: x + 3, rail: 'bottom', text: String(1 + index / 2) });
+    }
+  }
+  // Keep partial marks at cut ends; the canvas clips them at their real position.
+  return marks;
 }
 
 export function draw120Rebate(ctx: CanvasRenderingContext2D, stock: FilmStockProfile, layout: FilmStripLayout, width: number, height: number) {
-  const unit = .55 / 36, dimensions = getStripDimensions(layout);
+  const unit = FILM_MODEL_UNIT, dimensions = getStripDimensions(layout);
   const sx = width / (dimensions.width / unit), sy = height / (dimensions.height / unit);
   ctx.save();
   // Draw in millimeters so typography does not stretch when the strip changes length.
@@ -38,7 +40,7 @@ export function draw120Rebate(ctx: CanvasRenderingContext2D, stock: FilmStockPro
   for (const mark of film120Marks(layout, stock)) {
     const y = mark.rail === 'top' ? rail * .48 : dimensions.height / unit - rail * .48;
     if (mark.arrow) {
-      ctx.beginPath(); ctx.moveTo(mark.x, y - .55); ctx.lineTo(mark.x + 1.8, y); ctx.lineTo(mark.x, y + .55); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(mark.x + (mark.reverse ? 1.8 : 0), y - .55); ctx.lineTo(mark.x + (mark.reverse ? 0 : 1.8), y); ctx.lineTo(mark.x + (mark.reverse ? 1.8 : 0), y + .55); ctx.closePath(); ctx.fill();
     } else if (mark.text) ctx.fillText(mark.text, mark.x, y);
   }
   ctx.restore();
