@@ -1118,7 +1118,8 @@ button:disabled { opacity: .4; cursor: default; }
   background:#eeeae0;
   box-shadow:0 18px 64px #0008;
 }
-.shelf-toolbar-summary { display:flex; align-items:center; gap:12px; }
+#shelf-toolbar-content:not([hidden]) { display:contents; }
+.shelf-toolbar-summary { display:flex; align-items:center; gap:12px; width:100%; padding-right:72px; }
 .shelf-archive-icon { flex:none; color:#787969; }
 .shelf-toolbar-identity { display:grid; gap:6px; }
 .shelf-toolbar-identity h2 { margin:0; font:500 28px/1.2 Georgia,serif; }
@@ -1153,6 +1154,9 @@ button:disabled { opacity: .4; cursor: default; }
   .shelf-toolbar { bottom:10px; padding-top:10px; padding-bottom:10px; gap:8px 18px; }
   .shelf-toolbar-hint { display:none; }
 }
+.shelf-toolbar .shelf-toolbar-toggle { position:absolute; top:12px; right:12px; }
+.shelf-toolbar.is-collapsed { width:auto; padding:4px; border-radius:12px; bottom:max(10px,env(safe-area-inset-bottom)); }
+.shelf-toolbar.is-collapsed .shelf-toolbar-toggle { position:static; }
 .shelf-roll-card { position:fixed; z-index:60; width:288px; max-width:calc(100vw - 24px); max-height:calc(100dvh - 24px); overflow:auto; padding:16px; border-radius:9px; border:1px solid #cdc4ae; background:#eeeae0; box-shadow:0 12px 48px #0009; color:#292d28; user-select:text; outline:none; animation:shelf-card-appear .16s ease-out; }
 .shelf-card-heading { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; color:#787969; font-size:9px; letter-spacing:2px; }
 .shelf-card-heading button { border:0; padding:0; width:32px; height:30px; background:transparent; color:#64675c; font-size:24px; cursor:pointer; }

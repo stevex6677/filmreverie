@@ -235,6 +235,7 @@ export function App() {
   const [editorOpen, setEditorOpen] = useState(false), [libraryError, setLibraryError] = useState("");
   const [editingRollId, setEditingRollId] = useState<string | undefined>();
   const [deletedRoll, setDeletedRoll] = useState<StoredRoll | null>(null);
+  const [shelfToolbarHidden, setShelfToolbarHidden] = useState(false);
   const shelfPortal = useRef<HTMLDivElement>(null);
   const shelfVisible = state.roomMode === 'room' && !state.cameraDisplay && !editorOpen && !cloudDialogOpen && !sheet && !hidden && !contextLost;
   const managedShelf = useFilmShelf(repository, shelfVisible && canManageRolls, canManageRolls, isGuest);
@@ -632,7 +633,12 @@ export function App() {
       {contextLost&&<div className="context-recovery" role="alert"><p>The graphics view was interrupted. Your rolls are saved.</p><button onClick={()=>{setContextLost(false);setCanvasVersion(v=>v+1);}}>Restore view</button></div>}
       <div ref={shelfPortal} className="shelf-overlay" aria-label="Saved-roll shelf" style={{ display: shelfVisible ? undefined : 'none' }} />
       {shelfVisible && state.shelfFocused && state.shelfId === 'film' && !shelf.selection?.pinned && <>
-        <section className="shelf-toolbar" aria-label="Film shelf actions">
+        <section className={`shelf-toolbar${shelfToolbarHidden ? ' is-collapsed' : ''}`} aria-label="Film shelf actions">
+          <button className="shelf-toolbar-toggle" aria-expanded={!shelfToolbarHidden} aria-controls="shelf-toolbar-content" onClick={() => setShelfToolbarHidden(value => !value)}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d={shelfToolbarHidden ? 'M4 10l4-4 4 4' : 'M4 6l4 4 4-4'}/></svg>
+            {shelfToolbarHidden ? 'Show panel' : 'Hide'}
+          </button>
+          <div id="shelf-toolbar-content" hidden={shelfToolbarHidden}>
           <div className="shelf-toolbar-summary">
             <svg className="shelf-archive-icon" width="30" height="36" viewBox="0 0 30 36" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true"><rect x="4" y="3" width="22" height="30" rx="2"/><path d="M10 3v30M20 3v30M10 13h10M10 23h10"/><path d="M6.5 7h1M6.5 12h1M6.5 17h1M6.5 22h1M6.5 27h1M22.5 7h1M22.5 12h1M22.5 17h1M22.5 22h1M22.5 27h1" strokeWidth="2"/></svg>
             <div className="shelf-toolbar-identity">
@@ -659,6 +665,7 @@ export function App() {
             <button aria-label="Next shelf page" data-shelf-page="1" disabled={shelf.page + 1 === shelf.pages} onClick={() => shelf.changePage(shelf.page + 1)}>›</button>
           </nav>}
           {arranger ? <p className="shelf-toolbar-hint" role="status">{arranger.status}</p> : <p className="shelf-toolbar-hint">{shelf.trash ? 'Select a roll to restore it.' : canManageRolls ? 'Select a roll to open, edit or delete it.' : 'Select a roll to view its photographs.'}</p>}
+          </div>
         </section>
         {canManageRolls && !deletedRoll && shelf.arranger?.lastMove && <div className="library-notice"><span>Moved {shelf.arranger.lastMove.name}</span><button onClick={shelf.arranger.undo}>Undo</button><button aria-label="Dismiss move notice" onClick={shelf.arranger.dismiss}>×</button></div>}
         {canManageRolls && deletedRoll && <div className="library-notice" role="status"><span>{deletedRoll.name} moved to Trash</span><button onClick={() => { void restoreRoll(deletedRoll.id).catch(error => setLibraryError(storageMessage(error))); }}>Undo</button><button aria-label="Dismiss deletion notice" onClick={() => setDeletedRoll(null)}>×</button></div>}
