@@ -118,14 +118,14 @@ room to the light table and back), **Orbit** (slow arcs around each photograph),
 an establishing shot, a frame-by-frame tour with overview breaks at strip
 boundaries, and a closing shot, at Relaxed, Normal or Brisk pace; reduced motion
 uses slow cuts instead of fast moves, blur and flicker. Each reel also has two
-settings of its own (for example Distance and Depth of field for Tracking Shot,
+settings of its own, folded under **Adjust** in the picker (for example Distance and Depth of field for Tracking Shot,
 Gate weave and Lamp flicker for Projector, Drift and Dissolve for Documentary).
 Tracking Shot, Darkroom, Orbit and Darkroom Prints render with depth of field,
 focused on the camera's subject. Preview supports
 play/pause, previous/next frame, tap to pause and exit; exiting restores the table
 exactly, and screening never writes rolls or saved views.
 
-**Film Journey** combines documentary framing, oblique tracking, alternating
+**Film Journey**, the default and first reel in the picker, combines documentary framing, oblique tracking, alternating
 left/right arcs and negative-only Develop passages in one continuous camera path. It has
 no dissolves, cuts, blackouts, projector effects or print-wall visits. **Movement**
 (Minimal → Expressive, default 65%) controls drift and angles; **Variety** (Subtle →

@@ -201,7 +201,7 @@ export function App() {
   const roll = state.roll;
   // Screening overrides rendering only. It never dispatches viewer actions,
   // so the table, loupe, film mode, brightness and saved views are unchanged.
-  const [screeningChoice, setScreeningChoice] = useState<ScreeningChoice>({ reel: 'tracking', pace: 'normal', tuning: {}, music: 'none', volume: .8 });
+  const [screeningChoice, setScreeningChoice] = useState<ScreeningChoice>({ reel: 'film-journey', pace: 'normal', tuning: {}, music: 'none', volume: .8 });
   const [screeningFormat, setScreeningFormat] = useState<ExportFormat>('16:9');
   const [screeningPicker, setScreeningPicker] = useState(false);
   const [screening, setScreening] = useState<ScreeningSession | null>(null);
@@ -707,7 +707,7 @@ export function App() {
           : screening
             ? <ScreeningPlayer session={screening} onExit={exitScreening} onExport={() => { screening.pause(); setScreeningExport('preview'); }} />
             : <TableControls state={state} dispatch={dispatch} onOpenLibrary={openShelf} onOpenRoom={openRoom} onOpenTable={openTable} onOpenCameras={openCameras} sheet={sheet} setSheet={setSheet} ownerActions={ownerActions} createAction={createAction} onScreen={() => setScreeningPicker(true)} onEditRoll={canEditCurrentRoll ? () => openEditor(roll.rollId) : undefined} />)}
-      {screeningPicker && !screening && <ScreeningPicker choice={screeningChoice} onChange={setScreeningChoice} frames={roll.frames.length} reducedMotion={isReducedMotion}
+      {screeningPicker && !screening && <ScreeningPicker choice={screeningChoice} onChange={setScreeningChoice} stockId={state.filmStockId} frames={roll.frames.length} reducedMotion={isReducedMotion}
         durationFor={choice => createScreeningTimeline(roll, { ...screeningOptions(), reel: choice.reel, pace: choice.pace, tuning: choice.tuning[choice.reel], aspect: 16 / 9 }).duration}
         onClose={() => setScreeningPicker(false)} onPreview={() => startScreening('preview')} onExport={() => startScreening('export')} />}
       {screening && screeningExport && <Suspense fallback={<div className="screening-export" role="status">Preparing video export…</div>}>

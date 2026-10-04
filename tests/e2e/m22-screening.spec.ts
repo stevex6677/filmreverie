@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import { PNG } from 'pngjs';
 import fs from 'node:fs/promises';
 import { createServer, request as httpRequest, type Server, type IncomingMessage, type ServerResponse } from 'node:http';
@@ -58,6 +58,12 @@ async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Project
   await picker.locator('label.screening-choice').filter({ has: page.locator('strong', { hasText: new RegExp(`^${reel}$`) }) }).getByRole('radio').check();
   await picker.getByRole('radio', { name: pace, exact: true }).check();
   return picker;
+}
+/** Each reel's own settings are folded away until asked for. */
+async function adjust(picker: Locator) {
+  const toggle = picker.getByRole('button', { name: /^Adjust / });
+  if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
+  await expect(picker.getByTestId('screening-tuning')).toBeVisible();
 }
 /** The export's first step chooses the video format. */
 async function startExport(page: Page, format = '16:9') {
@@ -233,7 +239,11 @@ test('Darkroom, Orbit, Darkroom Prints and Documentary preview in the actual sce
   const overview = PNG.sync.read(await captureCanvas(page));
   await page.getByTestId('screen-roll').click();
   // Reels and paces; the video format is chosen when exporting.
-  await expect(page.getByRole('dialog', { name: 'Screen roll' }).locator('.screening-reels').getByRole('radio')).toHaveCount(REEL_IDS.length);
+  const reels = page.getByRole('dialog', { name: 'Screen roll' }).locator('.screening-reels').getByRole('radio');
+  await expect(reels).toHaveCount(REEL_IDS.length);
+  // Film Journey leads the list and is chosen by default.
+  await expect(reels.first()).toHaveAccessibleName('Film Journey');
+  await expect(reels.first()).toBeChecked();
   await page.getByRole('button', { name: 'Close', exact: true }).click();
   for (const [reel, id] of [['Darkroom', 'darkroom'], ['Orbit', 'orbit'], ['Darkroom Prints', 'darkroom-prints'], ['Documentary', 'documentary']] as const) {
     await (await pickReel(page, reel, 'Brisk')).getByTestId('screening-preview').click();
@@ -277,6 +287,8 @@ test('each reel has its own settings, the format is chosen on export, and depth 
   await page.goto('/guest?mode=inspect&deterministic=true'); await ready(page);
   const before = await table(page);
   let picker = await pickReel(page, 'Documentary');
+  await expect(picker.getByTestId('screening-tuning')).toHaveCount(0);
+  await adjust(picker);
   await expect(picker.getByRole('slider')).toHaveCount(2);
   await expect(picker.getByTestId('screening-tuning')).toContainText('Drift');
   await expect(picker.getByTestId('screening-reset')).toBeDisabled();
@@ -308,6 +320,7 @@ test('each reel has its own settings, the format is chosen on export, and depth 
   // The same Tracking Shot moment, all sharp and with a shallow depth of field.
   const shot = async (focus: string, name: string) => {
     const reel = await pickReel(page, 'Tracking Shot');
+    await adjust(reel);
     await reel.getByTestId('screening-setting-1').fill(focus);
     await reel.getByTestId('screening-preview').click();
     await page.getByTestId('screening-toggle').click();
@@ -332,6 +345,7 @@ test('Film Journey keeps its settings and previews negative and reversal film wi
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/guest?mode=inspect&deterministic=true'); await ready(page);
   let picker = await pickReel(page, 'Film Journey');
+  await adjust(picker);
   await expect(picker.getByRole('slider', { name: 'Movement', exact: true })).toHaveValue('65');
   await expect(picker.getByRole('slider', { name: 'Variety', exact: true })).toHaveValue('50');
   await picker.getByTestId('screening-setting-0').fill('10');

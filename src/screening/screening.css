@@ -10,38 +10,60 @@
   .table-header :is(.screen-roll-button,.edit-roll-button) span { display:none; }
 }
 
-.screening-picker { position:fixed; inset:0; margin:auto; height:fit-content; width:min(560px,calc(100vw - 24px)); max-height:calc(var(--visible-height,100dvh) - 24px); padding:0; border:1px solid #4b4e53; border-radius:18px; background:#1a1d21; color:#ebe7dc; box-shadow:0 24px 80px #000a; }
-.screening-picker::backdrop { background:#050607b0; }
-.screening-picker-body { max-height:calc(var(--visible-height,100dvh) - 24px); box-sizing:border-box; overflow-y:auto; overscroll-behavior:contain; padding:18px 20px max(18px,env(safe-area-inset-bottom)); }
-.screening-picker header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-.screening-picker h2 { margin:0; font:400 1.35rem Georgia,serif; }
-dialog.screening-picker button { min-width:44px; min-height:44px; padding:10px 16px; border:1px solid #4a4d51; border-radius:10px; background:#25282d; color:inherit; font:inherit; cursor:pointer; }
-dialog.screening-picker header button { border-color:transparent; background:transparent; font-size:1.4rem; padding:0; }
-.screening-picker fieldset { margin:0 0 14px; padding:0; border:0; min-width:0; }
-.screening-picker legend { margin-bottom:8px; font-size:.75rem; color:#bdb8aa; letter-spacing:.04em; text-transform:uppercase; }
-.screening-reels { display:grid; gap:8px; }
-@media(min-width:620px) { .screening-picker { width:min(680px,calc(100vw - 24px)); } .screening-reels { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+/* The picker shares the Viewing tools film panel: brass on dark film, numbered frames. */
+dialog.screening-picker { position:fixed; inset:0; margin:auto; height:fit-content; width:min(480px,calc(100vw - 24px)); max-height:calc(var(--visible-height,100dvh) - 24px); padding:0; overflow:hidden; }
+.screening-picker::backdrop { background:#050403b8; backdrop-filter:blur(3px); }
+.screening-picker-body { max-height:calc(var(--visible-height,100dvh) - 24px); box-sizing:border-box; overflow-y:auto; overscroll-behavior:contain; padding-top:14px; }
+.screening-picker header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:0 8px 12px 32px; }
+.screening-picker h2 { margin:0; font:400 22px/1.2 Georgia,'Times New Roman',serif; }
+.screening-estimate { margin:6px 0 0; font:11px/1.4 monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--panel-brass); font-variant-numeric:tabular-nums; }
+.screening-picker .film-panel-content { min-height:0; padding:14px 16px 16px; justify-content:flex-start; }
+.screening-picker fieldset { margin:0; padding:0; border:0; min-width:0; }
+.screening-picker legend { padding:0; margin-bottom:10px; }
+.screening-reels { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
 .screening-segmented { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+.screening-playback { display:grid; gap:18px; }
+.screening-music { display:flex; flex-wrap:wrap; gap:6px; }
+.screening-description { margin:10px 0 0; color:var(--panel-muted); font-size:12.5px; line-height:1.45; }
+/* Shared with the export format step. */
 .screening-choice { position:relative; cursor:pointer; }
 .screening-choice input { position:absolute; opacity:0; width:1px; height:1px; }
 .screening-choice-card { display:flex; flex-direction:column; justify-content:center; gap:3px; min-height:44px; padding:9px 12px; border:1px solid #43464a; border-radius:11px; background:#ffffff04; }
-.screening-segmented .screening-choice-card { align-items:center; text-align:center; padding:7px 4px; }
 .screening-choice-card strong { font-weight:500; font-size:.92rem; }
 .screening-choice-card small { color:#aaa9a0; font-size:.74rem; }
 .screening-choice input:checked + .screening-choice-card { border-color:#d9bc86; background:#d9bc8614; color:#f3dbac; }
 .screening-choice input:focus-visible + .screening-choice-card { outline:2px solid #f1d6a4; outline-offset:2px; }
-/* Each reel's own two settings: sliders with described ends. */
-.screening-tuning { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)) auto; align-items:end; gap:6px 18px; }
-.screening-slider { display:grid; gap:2px; min-width:0; font-size:.88rem; }
-.screening-slider input { width:100%; min-height:32px; margin:0; accent-color:#d9bc86; cursor:pointer; }
-.screening-slider small { display:flex; justify-content:space-between; gap:8px; color:#9fa19b; font-size:.72rem; }
-dialog.screening-picker .screening-reset { align-self:center; padding:8px 12px; font-size:.82rem; color:#d8cfb8; }
-dialog.screening-picker .screening-reset:disabled { opacity:.35; cursor:default; }
-@media(max-width:520px) { .screening-tuning { grid-template-columns:minmax(0,1fr); } dialog.screening-picker .screening-reset { justify-self:end; } }
-.screening-estimate { margin:4px 0 2px; font-size:.9rem; }
-.screening-note { margin:4px 0 0; color:#9fa19b; font-size:.75rem; }
-.screening-picker footer { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
-dialog.screening-picker .is-primary, div.screening-export .is-primary { background:#d9bc86; border-color:#d9bc86; color:#1b1a16; font-weight:600; }
+/* In the picker, choices read as the panel's brass-edged buttons. */
+.screening-picker .screening-choice-card { box-sizing:border-box; height:100%; align-items:center; padding:6px 12px; text-align:center; border:1px solid #816345; border-radius:3px; background:linear-gradient(#403225,#2b2119); box-shadow:inset 0 1px #e9c58b17,0 2px 3px #0003; }
+.screening-picker .screening-choice-card strong { font-weight:400; font-size:13px; }
+.screening-picker .screening-choice:hover .screening-choice-card { border-color:#d5ad70; background:linear-gradient(#514030,#33261c); }
+.screening-picker .screening-choice input:checked + .screening-choice-card { border-color:#dfb76a; color:#ffe6b4; background:#624627; box-shadow:inset 0 0 0 1px #d5ad7029; }
+.screening-picker .screening-choice input:focus-visible + .screening-choice-card { outline:2px solid #ffe0a1; outline-offset:3px; }
+/* Each reel's own two settings, folded away until asked for. */
+dialog.screening-picker.film-panel.film-panel .screening-adjust { display:inline-flex; align-items:center; gap:6px; margin:6px 0 0 -2px; padding:0 2px; border:0; background:none; box-shadow:none; color:var(--panel-brass); }
+dialog.screening-picker.film-panel.film-panel .screening-adjust:hover { background:none; color:#ffe0a1; }
+.screening-tuning { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px 18px; padding-top:4px; }
+.screening-slider { display:grid; min-width:0; font-size:13px; }
+.screening-slider small { display:flex; justify-content:space-between; gap:8px; margin-top:-6px; color:var(--panel-muted); font-size:11px; }
+dialog.screening-picker.film-panel.film-panel .screening-reset { grid-column:1 / -1; justify-self:end; min-height:36px; padding:0 14px; margin-top:6px; }
+.screening-volume { display:grid; margin-top:8px; font-size:13px; }
+.screening-volume > span { display:flex; justify-content:space-between; }
+.screening-picker footer { position:sticky; bottom:0; display:flex; align-items:center; gap:8px; margin-top:12px; padding:12px 16px max(14px,env(safe-area-inset-bottom)) 32px; border-top:1px solid #3d3020; background:#201913; }
+.screening-note { flex:1; margin:0; color:var(--panel-muted); font-size:12px; }
+dialog.screening-picker.film-panel.film-panel footer button { padding:0 18px; }
+dialog.screening-picker.film-panel.film-panel .is-primary { border-color:#e1be83; background:linear-gradient(#e2bf83,#c99d5e); color:#1f170f; font-weight:600; }
+dialog.screening-picker.film-panel.film-panel .is-primary:hover:not(:disabled) { border-color:#ffe0a1; background:linear-gradient(#ecca8f,#d5ab6c); }
+dialog.screening-picker.film-panel.film-panel .screening-close { width:44px; padding:0; border-color:transparent; background:none; box-shadow:none; font-size:24px; line-height:1; color:var(--panel-muted); }
+dialog.screening-picker.film-panel.film-panel .screening-close:hover { border-color:transparent; background:none; color:var(--panel-ink); }
+div.screening-export .is-primary { background:#d9bc86; border-color:#d9bc86; color:#1b1a16; font-weight:600; }
+/* Phones: a bottom sheet, like the Viewing tools. */
+@media(max-width:520px) {
+  dialog.screening-picker { inset:auto 0 0; width:100%; max-width:100%; border-width:1px 0 0; border-radius:14px 14px 0 0; }
+  .screening-picker-body { max-height:calc(var(--visible-height,100dvh) - 12px); }
+  .screening-picker header { padding-left:32px; }
+  .screening-note { display:none; }
+  .screening-picker footer > button { flex:1; }
+}
 
 .screening-player { position:absolute; inset:0; z-index:40; color:#efe9da; }
 .screening-overlay { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
@@ -83,5 +105,4 @@ div.screening-export button { min-width:44px; min-height:44px; padding:10px 18px
 .screening-format-shape { display:block; height:44px; max-width:78px; border:1.5px solid currentColor; border-radius:4px; opacity:.7; }
 .screening-export-summary { color:#cfc7b2; }
 
-.screening-music { display:grid; gap:8px; }
 .screening-music-error { position:absolute; top:70px; left:16px; right:16px; padding:12px; background:#16181bf0; font-size:.85rem; }
