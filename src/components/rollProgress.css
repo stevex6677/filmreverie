@@ -1,0 +1,6 @@
+.roll-operation-progress { width: 100%; min-width: 0; margin: 12px 0; color: inherit; }
+.roll-operation-progress [role="status"] { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; font-size: 12px; line-height: 1.5; }
+.roll-operation-progress strong { font-weight: 600; }
+.roll-operation-progress span { opacity: .75; font-variant-numeric: tabular-nums; }
+.roll-operation-progress progress { display: block; width: 100%; height: 6px; margin-top: 7px; accent-color: #ac793e; }
+.roll-editor-dialog .import-footer > .roll-operation-progress { display: block; margin: 0 0 12px; }

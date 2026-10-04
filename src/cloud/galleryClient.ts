@@ -1,3 +1,4 @@
+import type { GalleryImageCache } from './galleryImageCache';
 import { FILM_FORMATS, FILM_UNIT, FRAME_GAP_MM, filmLengthUsage, formatLayout, frameAspect, isFilmFormat, rollFormatLabel } from '../data/filmFormats';
 import { isFilmStockId, supportsFilmFormat } from '../data/filmStocks';
 import { FILM_RENDER_SCALE } from '../data/physicalScale';
@@ -20,6 +21,7 @@ export interface GalleryProgress {
   phase: 'downloading' | 'verifying' | 'saving';
 }
 export interface GalleryDownloadOptions {
+  imageCache?: GalleryImageCache;
   signal?: AbortSignal;
   fetcher?: typeof fetch;
   onProgress?: (progress: GalleryProgress) => void;
@@ -109,21 +111,53 @@ export async function downloadGalleryImage(image: GalleryImage, options: { signa
 
 export async function downloadGalleryRoll(roll: GalleryRoll, kinds: readonly GalleryImageBytes['kind'][], options: GalleryDownloadOptions = {}): Promise<GalleryImageBytes[]> {
   validateGalleryRoll(roll);
-  const totalBytes = roll.frames.reduce((sum, frame) => sum + kinds.reduce((n, kind) => n + frame[kind].bytes, 0), 0);
-  const progress: GalleryProgress = { receivedBytes: 0, totalBytes, completedImages: 0, totalImages: roll.frames.length * kinds.length, phase: 'downloading' };
-  const images: GalleryImageBytes[] = [];
-  options.onProgress?.({ ...progress });
-  for (const frame of roll.frames) for (const kind of kinds) {
-    const before = progress.receivedBytes;
-    progress.phase = 'downloading';
-    const image = await downloadGalleryImage(frame[kind], { signal: options.signal, fetcher: options.fetcher,
-      onBytes: bytes => { progress.receivedBytes = before + bytes; options.onProgress?.({ ...progress }); },
-      onVerifying: () => { progress.phase = 'verifying'; options.onProgress?.({ ...progress }); } });
-    images.push({ frameId: frame.id, kind, ...image });
-    progress.completedImages++;
+  // Hold references for this open before new downloads evict older cache entries.
+  const jobs = roll.frames.flatMap(frame => kinds.map(kind => ({ frame, kind, cached: options.imageCache?.get(frame[kind]) })));
+  const totalBytes = jobs.reduce((sum, { frame, kind }) => sum + frame[kind].bytes, 0);
+  const progress: GalleryProgress = { receivedBytes: 0, totalBytes, completedImages: 0, totalImages: jobs.length, phase: 'downloading' };
+  const images = new Array<GalleryImageBytes>(jobs.length), received = new Array<number>(jobs.length).fill(0);
+  const controller = new AbortController(), signal = controller.signal;
+  const cancel = () => controller.abort(options.signal?.reason);
+  if (options.signal?.aborted) cancel();
+  options.signal?.addEventListener('abort', cancel, { once: true });
+  let next = 0;
+  const report = () => {
+    if (signal.aborted) return;
+    // Verification overlaps other downloads; the overall stage never flips
+    // back and forth as individual images finish.
+    progress.phase = progress.receivedBytes === totalBytes ? 'verifying' : 'downloading';
     options.onProgress?.({ ...progress });
+  };
+  async function worker() {
+    while (!signal.aborted && next < jobs.length) {
+      const index = next++, { frame, kind, cached } = jobs[index];
+      try {
+        if (cached) { progress.receivedBytes += cached.bytes.byteLength; received[index] = cached.bytes.byteLength; }
+        const image = cached ?? await downloadGalleryImage(frame[kind], { signal, fetcher: options.fetcher,
+          onBytes: bytes => {
+            progress.receivedBytes += bytes - received[index];
+            received[index] = bytes;
+            report();
+          } });
+        signal.throwIfAborted();
+        if (!cached) options.imageCache?.put(frame[kind], image);
+        images[index] = { frameId: frame.id, kind, ...image };
+        progress.completedImages++;
+        report();
+      } catch (error) {
+        // Stop queued work and cancel active streams on the first failure.
+        // Keep its reason, then drain workers before allowing a retry.
+        controller.abort(error);
+      }
+    }
   }
-  return images;
+  try {
+    signal.throwIfAborted();
+    report();
+    await Promise.all(Array.from({ length: Math.min(6, jobs.length) }, () => worker()));
+    signal.throwIfAborted();
+    return images;
+  } finally { options.signal?.removeEventListener('abort', cancel); }
 }
 
 export function createGalleryRuntime(roll: GalleryRoll, images: readonly GalleryImageBytes[]): GalleryRuntime {

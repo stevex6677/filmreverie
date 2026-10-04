@@ -1,6 +1,9 @@
+import type { ProgressReporter } from '../utils/operationProgress';
 import { FilmStockId, isFilmStockId, supportsFilmFormat } from '../data/filmStocks';
 import { FilmFormat, FrameSizing, filmLengthUsage, isFilmFormat } from '../data/filmFormats';
 import { applyShelfArrangement, reconcileShelfSlots, validShelfArrangement, type ShelfArrangement } from '../utils/shelfLayout';
+export interface RollSaveOptions { insertFirstIfMissing?: boolean; onProgress?: ProgressReporter }
+
 export interface SavedView {
   filmScale?: number;
   frameId: string; level: 'roll' | 'strip' | 'frame'; mode: 'negative' | 'positive'; brightness: number; magnification: number;
@@ -98,7 +101,8 @@ export class RollRepository {
     } finally { db.close(); }
   }
   async list(): Promise<StoredRoll[]> { const db = await openRollDatabase(this.factory, this.name); try { return await result(db.transaction('rolls').objectStore('rolls').getAll()); } finally { db.close(); } }
-  async read(id: string, includeOriginals = false): Promise<RollBundle> {
+  async read(id: string, includeOriginals = false, onProgress?: ProgressReporter): Promise<RollBundle> {
+    onProgress?.({ label: 'Opening photographs…' });
     const db = await openRollDatabase(this.factory, this.name);
     try {
       const tx = db.transaction([...STORES]);
@@ -130,7 +134,7 @@ export class RollRepository {
   /** Cloud editors may stage private derivatives before the explicit save. */
   async prepareImages(_bundle: Pick<RollBundle, 'frames' | 'blobs'>, _signal: AbortSignal): Promise<void> {}
   releaseEditorResources(_rollId?: string): void {}
-  async save(bundle: RollBundle, signal?: AbortSignal, options: { insertFirstIfMissing?: boolean } = {}) {
+  async save(bundle: RollBundle, signal?: AbortSignal, options: RollSaveOptions = {}) {
     validateBundle(bundle); signal?.throwIfAborted();
     // WebKit's Blob serialization can fail and leave the transaction unsettled.
     // Plain binary records avoid that path in every browser. Existing Blob
@@ -138,8 +142,11 @@ export class RollRepository {
     // Prepare serially before opening the atomic transaction (never await a file
     // read inside it). Peak temporary binary storage is bounded by draft bytes.
     const images:StoredImageRecord[]=[];
-    for(const record of bundle.blobs){signal?.throwIfAborted();images.push({key:record.key,bytes:await record.blob.arrayBuffer(),mime:record.blob.type});}
+    const reportPreparation = () => options.onProgress?.({ label: 'Preparing photographs to save…', detail: `${images.length} / ${bundle.blobs.length} images`, completed: images.length, total: bundle.blobs.length });
+    reportPreparation();
+    for(const record of bundle.blobs){signal?.throwIfAborted();images.push({key:record.key,bytes:await record.blob.arrayBuffer(),mime:record.blob.type});reportPreparation();}
     signal?.throwIfAborted();
+    options.onProgress?.({ label: 'Saving roll on this device…' });
     const db = await openRollDatabase(this.factory, this.name);
     try {
       signal?.throwIfAborted();

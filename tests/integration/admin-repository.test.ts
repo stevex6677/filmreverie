@@ -3,6 +3,7 @@ import { AdminRollRepository } from '../../src/cloud/adminRepository';
 import { ownerClient } from '../../src/cloud/ownerClient';
 import * as ownerUploads from '../../src/cloud/ownerClient';
 import type { CloudDraft } from '../../src/cloud/contracts';
+import type { OperationProgress } from '../../src/utils/operationProgress';
 import type { RollBundle } from '../../src/storage/rollRepository';
 
 const draft = (): CloudDraft => ({ roll: { id: 'roll', name: 'Admin roll', stockId: 'portra-400', format: '135',
@@ -25,16 +26,20 @@ it('uploads six new photographs at a time and saves in roll order only after all
   }));
   const save = vi.spyOn(ownerClient, 'save').mockImplementation(async input => input);
   const publish = vi.spyOn(ownerClient, 'publish').mockResolvedValue({} as never);
-  const result = new AdminRollRepository().save(bundle(source));
+  const progress: OperationProgress[] = [];
+  const result = new AdminRollRepository().save(bundle(source), undefined, { onProgress: value => progress.push(value) });
   await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(6));
   expect(save).not.toHaveBeenCalled();
+  expect(progress.at(-1)).toMatchObject({ label: 'Uploading photographs…', completed: 0, total: 8 });
   release[5](); release[4]();
   await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(8));
+  expect(progress.at(-1)).toMatchObject({ completed: 2, total: 8 });
   expect(save).not.toHaveBeenCalled();
   for (const index of [7, 6, 3, 2, 1, 0]) release[index]();
   await result;
   expect(save.mock.calls[0][0].frames.map(frame => frame.id)).toEqual(source.roll.frameIds);
   expect(publish).toHaveBeenCalledOnce();
+  expect(progress.slice(-3)).toMatchObject([{ completed: 8, total: 8 }, { label: 'Saving roll…' }, { label: 'Publishing roll…' }]);
 });
 
 it('never saves or publishes a partial roll when an upload fails', async () => {
@@ -110,9 +115,12 @@ it('prepares private images before saving, shares in-flight uploads and uses the
   await vi.waitFor(() => expect(upload).toHaveBeenCalledOnce());
   expect(save).not.toHaveBeenCalled(); expect(publish).not.toHaveBeenCalled();
   input.frames[0] = { ...input.frames[0], rotation: 90, cropPosition: { x: .4, y: 0 } };
-  const saving = repository.save(input);
+  const progress: OperationProgress[] = [];
+  const saving = repository.save(input, undefined, { onProgress: value => progress.push(value) });
+  expect(progress.at(-1)).toMatchObject({ label: 'Finishing background uploads…', completed: 0, total: 1 });
   finish(source.frames[0]);
   await preparation; await saving;
+  expect(progress).toContainEqual(expect.objectContaining({ label: 'Finishing background uploads…', completed: 1, total: 1 }));
   expect(upload).toHaveBeenCalledOnce();
   expect(save.mock.calls[0][0].frames[0]).toMatchObject({ rotation: 90, cropPosition: { x: .4, y: 0 } });
 });

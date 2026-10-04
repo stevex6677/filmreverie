@@ -1,4 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Plugin, ViteDevServer, PreviewServer } from 'vite';
 import type { GalleryCatalog, UploadGrant } from '../src/cloud/contracts.ts';
@@ -114,7 +116,22 @@ export function devAdminBridge(options: Options): Plugin {
     if (path.startsWith('/api/dev-images/rolls/') && request.method === 'GET') {
       const destination = new URL(path.slice('/api/dev-images'.length), options.photoOrigin);
       if (destination.origin !== options.photoOrigin || !destination.pathname.startsWith('/rolls/') || url.search) throw new BridgeError(400, 'Invalid public image location.');
-      return send(response, await fetcher(destination.href, { redirect: 'error' }));
+      const controller = new AbortController();
+      const cancel = () => controller.abort();
+      response.once('close', cancel);
+      try {
+        const upstream = await fetcher(destination.href, { redirect: 'error', signal: controller.signal });
+        response.statusCode = upstream.status;
+        for (const name of ['content-type', 'content-length']) {
+          // Fetch may have decompressed the response, changing its byte length.
+          if (name === 'content-length' && upstream.headers.has('content-encoding')) continue;
+          if (upstream.headers.has(name)) response.setHeader(name, upstream.headers.get(name)!);
+        }
+        // Overlap the cloud→Mac and Mac→device transfers. Pipeline handles
+        // backpressure and cancels the upstream body when the device leaves.
+        if (upstream.body) await pipeline(Readable.fromWeb(upstream.body as Parameters<typeof Readable.fromWeb>[0]), response);
+        else response.end();
+      } finally { response.removeListener('close', cancel); }
     }
     const sessionId = cookies(request).film_dev_session, session = sessions.get(sessionId);
     if (!session || session.origin !== origin) throw new BridgeError(401, 'Admin login required. Your unsaved draft is retained.');

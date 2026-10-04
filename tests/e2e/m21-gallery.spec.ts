@@ -130,10 +130,18 @@ test('Admin Login survives a null focus change and navigates in the same tab', a
 test('public home displays only published rolls in the physical cabinet and opens selected photographs read-only', async ({ page, baseURL }, info) => {
   const bytes = photo(), sha256 = createHash('sha256').update(bytes).digest('hex');
   const requests: string[] = [];
+  let failViewing = true;
+  let finishDownload!: () => void;
+  const downloadGate = new Promise<void>(resolve => { finishDownload = resolve; });
   const images = createServer((request, response) => {
     requests.push(request.url!);
+    if (request.url === '/view.png' && failViewing) { failViewing = false; response.writeHead(503, { 'Access-Control-Allow-Origin': '*' }); response.end(); return; }
     response.writeHead(200, { 'Content-Type': 'image/png', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' });
-    response.end(bytes);
+    if (request.url === '/view.png') {
+      const split = Math.floor(bytes.length / 2);
+      response.write(bytes.subarray(0, split));
+      void downloadGate.then(() => response.end(bytes.subarray(split)));
+    } else response.end(bytes);
   });
   let roll: GalleryRoll;
   const app = createServer((request, response) => {
@@ -187,8 +195,18 @@ test('public home displays only published rolls in the physical cabinet and open
     await expect(card).toContainText('PUBLISHED ROLL');
     await expect(card.getByRole('button', { name: /Edit|Delete|Restore/ })).toHaveCount(0);
     await card.getByRole('button', { name: /Open on light table/ }).click();
+    await expect(card.getByRole('alert')).toContainText('503');
+    await expect(card.getByRole('progressbar')).toHaveCount(0);
+    await card.getByRole('button', { name: /Open on light table/ }).click();
+    const progress = card.getByRole('progressbar', { name: 'Opening photographs…' });
+    await expect(progress).toHaveAttribute('value', String(Math.floor(bytes.length / 2)));
+    await expect(progress).toHaveAttribute('max', String(bytes.length));
+    await expect(card).toContainText(`${Math.floor(Math.floor(bytes.length / 2) / bytes.length * 100)}% downloaded`);
+    await expect(card.getByRole('button', { name: /Opening/ })).toBeDisabled();
+    await page.screenshot({ path: info.outputPath('opening-roll-progress.png') });
+    finishDownload();
     await expect(page.locator('main')).toHaveAttribute('data-roll-id', 'gallery:published-roll:revision-one');
-    await expect.poll(() => requests.filter(url => url === '/view.png').length).toBe(1);
+    await expect.poll(() => requests.filter(url => url === '/view.png').length).toBe(2);
     expect(await databases(page)).not.toContain('darkroom-rolls');
     await ready(page);
     for (const width of [320, 390, 1280]) {
@@ -216,7 +234,13 @@ test('public home displays only published rolls in the physical cabinet and open
     await page.getByRole('button', { name: 'More options' }).click();
     await expect(page.getByRole('menuitem', { name: 'Admin Login' })).toBeVisible();
     await expect(page.getByRole('dialog', { name: 'Owner publishing' })).toHaveCount(0);
-  } finally { await close(images); await close(app); }
+    await page.keyboard.press('Escape');
+    await focusShelf(page);
+    await target.click();
+    await card.getByRole('button', { name: /Open on light table/ }).click();
+    await expect(card).toHaveCount(0); await ready(page);
+    expect(requests.filter(url => url === '/view.png')).toHaveLength(2);
+  } finally { finishDownload(); await close(images); await close(app); }
 });
 
 test('guest welcome, deletable example and private edits stay in guest storage without owner API access', async ({ page, browser, baseURL }) => {
@@ -332,4 +356,65 @@ test('guest leaves old on-origin rolls intact and has no backup or migration con
     };
   }));
   expect(legacy).toEqual(['previous-roll']);
+});
+
+test('opening progress stays steady through image verification at iPad dimensions', async ({ page, baseURL }, info) => {
+  await page.setViewportSize({ width: 820, height: 1180 });
+  const bytes = photo(), sha256 = createHash('sha256').update(bytes).digest('hex');
+  const image = (name: string) => ({ url: `${baseURL}/progress-images/${name}.png`, bytes: bytes.length, sha256 });
+  const roll: GalleryRoll = { id: 'progress-roll', revision: 'one', name: 'Progress review', stockId: 'portra-400', format: '135', coverId: 'one', publishedAt: 1,
+    frames: ['one', 'two'].map(id => ({ id, width: 180, height: 120, rotation: 0, viewing: image(id), thumbnail: image(`thumb-${id}`) })) };
+  await page.addInitScript(imageBytes => {
+    localStorage.setItem('film-reverie-intro-tour', 'done');
+    // Hold real checksum work after the body arrives, so both verification
+    // phases are visible instead of being batched away by a fast machine.
+    const gate = { enabled: false, checks: 0, release: () => {} };
+    Object.assign(window, { rollVerificationGate: gate });
+    const digest = crypto.subtle.digest.bind(crypto.subtle);
+    crypto.subtle.digest = async (algorithm, data) => {
+      if (gate.enabled && data.byteLength === imageBytes) {
+        gate.checks++;
+        await new Promise<void>(resolve => { gate.release = resolve; });
+      }
+      return digest(algorithm, data);
+    };
+  }, bytes.length);
+  await page.route('**/api/gallery', route => route.fulfill({ json: { version: 1, rolls: [roll] } }));
+  await page.route('**/api/owner/**', route => route.fulfill({ status: 401, json: { error: 'Owner login required.' } }));
+  let deliverSecond!: () => void;
+  const secondImage = new Promise<void>(resolve => { deliverSecond = resolve; });
+  await page.route('**/progress-images/**', async route => {
+    if (route.request().url().endsWith('/two.png')) await secondImage;
+    await route.fulfill({ contentType: 'image/png', body: bytes });
+  });
+  await page.goto('/?mode=room&reduced_motion=true'); await ready(page); await focusShelf(page);
+  await page.getByRole('button', { name: 'Show published roll Progress review' }).click();
+  const card = page.getByRole('dialog', { name: 'Progress review — roll details' });
+  await page.evaluate(() => { (window as any).rollVerificationGate.enabled = true; });
+  await card.getByRole('button', { name: /Open on light table/ }).click();
+  const progress = card.getByRole('progressbar');
+  await expect.poll(() => page.evaluate(() => (window as any).rollVerificationGate.checks)).toBe(1);
+  await expect(progress).toHaveAttribute('value', String(bytes.length));
+  await expect(progress).toHaveAttribute('max', String(bytes.length * 2));
+  await expect(progress).toHaveAccessibleName('Opening photographs…');
+  const bounds = await progress.boundingBox();
+  await page.screenshot({ path: info.outputPath('ipad-opening-first-check.png') });
+  await progress.evaluate(node => {
+    const values = [node.getAttribute('value')];
+    new MutationObserver(records => {
+      for (const record of records) values.push(record.oldValue, node.getAttribute('value'));
+    }).observe(node, { attributes: true, attributeFilter: ['value'], attributeOldValue: true });
+    Object.assign(window, { rollProgressValues: values });
+    (window as any).rollVerificationGate.release();
+  });
+  deliverSecond();
+  await expect.poll(() => page.evaluate(() => (window as any).rollVerificationGate.checks)).toBe(2);
+  await expect(progress).toHaveAttribute('value', String(bytes.length * 2));
+  await expect(progress).toHaveAccessibleName('Opening photographs…');
+  expect(await progress.boundingBox()).toEqual(bounds);
+  expect(await page.evaluate(() => (window as any).rollProgressValues)).not.toContain(null);
+  await page.screenshot({ path: info.outputPath('ipad-opening-second-check.png') });
+  await page.evaluate(() => { const gate = (window as any).rollVerificationGate; gate.enabled = false; gate.release(); });
+  await expect(page.locator('main')).toHaveAttribute('data-roll-id', 'gallery:progress-roll:one');
+  await expect(card).toHaveCount(0);
 });

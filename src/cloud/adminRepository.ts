@@ -1,4 +1,5 @@
-import { RollRepository, validateBundle, type DarkroomPreferences, type RollBundle, type StoredRoll } from '../storage/rollRepository';
+import type { ProgressReporter } from '../utils/operationProgress';
+import { RollRepository, validateBundle, type DarkroomPreferences, type RollSaveOptions, type RollBundle, type StoredRoll } from '../storage/rollRepository';
 import { reconcileShelfSlots, type ShelfArrangement } from '../utils/shelfLayout';
 import { ownerClient, uploadOwnerPhoto } from './ownerClient';
 import type { CloudDraft, DraftFrame } from './contracts';
@@ -13,7 +14,8 @@ export class AdminRollRepository extends RollRepository {
   }
   private editorDrafts = new Map<string, CloudDraft>();
   private images = new Map<string, Promise<{ viewing: Blob; thumbnail: Blob }>>();
-  private uploads = new Map<string, { rollId: string; promise: Promise<DraftFrame> }>();
+  private uploads = new Map<string, { rollId: string; promise: Promise<DraftFrame>; complete: boolean }>();
+  private uploadObservers = new Set<() => void>();
   private uploadTail: Promise<unknown> = Promise.resolve();
   private image(uploadId: string) {
     let result = this.images.get(uploadId);
@@ -29,10 +31,13 @@ export class AdminRollRepository extends RollRepository {
     let entry = this.uploads.get(frame.id);
     if (!entry) {
       const promise = uploadOwnerPhoto({ id: frame.id, filename: frame.filename, frame, blobs, duplicate: false, keepDuplicate: true }, signal, () => {});
-      entry = { rollId: frame.rollId, promise };
+      entry = { rollId: frame.rollId, promise, complete: false };
       this.uploads.set(frame.id, entry);
       void promise.then(uploaded => {
-        if (this.uploads.get(frame.id)?.promise !== promise) return;
+        const current = this.uploads.get(frame.id);
+        if (current?.promise !== promise) return;
+        current.complete = true;
+        this.uploadObservers.forEach(report => report());
         const viewing = blobs.find(b => b.key === frame.viewingKey)?.blob, thumbnail = blobs.find(b => b.key === frame.thumbnailKey)?.blob;
         if (viewing && thumbnail) this.images.set(uploaded.uploadId, Promise.resolve({ viewing, thumbnail }));
       }).catch(() => { if(this.uploads.get(frame.id)?.promise===promise)this.uploads.delete(frame.id); });
@@ -57,13 +62,18 @@ export class AdminRollRepository extends RollRepository {
   private notify() { this.observers.forEach(listener => listener()); }
   override async list() { return reconcileShelfSlots((await ownerClient.list()).map(draft => draft.roll)); }
   override async shelf() { return (await this.list()).filter(roll => roll.trashedAt === null); }
-  override async read(id: string): Promise<RollBundle> {
+  override async read(id: string, _includeOriginals = false, onProgress?: ProgressReporter): Promise<RollBundle> {
+    onProgress?.({ label: 'Loading roll details…' });
     this.useImagesFor(id);
     const draft = await ownerClient.load(id);
     this.editorDrafts.set(id, draft);
     const frames = draft.frames.map(frame => ({ ...frame, mime: 'image/jpeg', hash: '', originalKey: '' }));
+    let completed = 0;
+    const report = () => onProgress?.({ label: 'Opening photographs…', detail: `${completed} / ${draft.frames.length} photographs`, completed, total: draft.frames.length });
+    report();
     const blobs = (await Promise.all(draft.frames.map(async frame => {
       const images = await this.image(frame.uploadId);
+      completed++; report();
       return [{ key: frame.viewingKey, blob: images.viewing }, { key: frame.thumbnailKey, blob: images.thumbnail }];
     }))).flat();
     return { roll: draft.roll, frames, blobs };
@@ -74,29 +84,45 @@ export class AdminRollRepository extends RollRepository {
     return { blob: await ownerClient.image(frame.uploadId, 'thumbnail'), rotation: frame.rotation,
       frame: { ...frame, mime: 'image/jpeg', hash: '', originalKey: '' } };
   }
-  override async save(bundle: RollBundle, signal?: AbortSignal) {
+  override async save(bundle: RollBundle, signal?: AbortSignal, options: RollSaveOptions = {}) {
     validateBundle(bundle);
     this.useImagesFor(bundle.roll.id);
     const controller = new AbortController(), operationSignal = signal ?? controller.signal;
     // Existing frames retain their completed uploads; originals never leave the browser.
-    await this.uploadTail.catch(() => {});
+    const reportBackground = () => {
+      if (operationSignal.aborted) return;
+      const completed = bundle.frames.filter(frame => this.uploads.get(frame.id)?.complete).length;
+      options.onProgress?.({ label: 'Finishing background uploads…', detail: `${completed} / ${bundle.frames.length} photographs`, completed, total: bundle.frames.length });
+    };
+    this.uploadObservers.add(reportBackground);
+    reportBackground();
+    try { await this.uploadTail.catch(() => {}); }
+    finally { this.uploadObservers.delete(reportBackground); }
     operationSignal.throwIfAborted();
+    options.onProgress?.({ label: 'Checking saved roll…' });
     const existing = this.pendingPublication.has(bundle.roll.id)
       ? await ownerClient.load(bundle.roll.id, operationSignal)
       : this.editorDrafts.get(bundle.roll.id) ?? (await ownerClient.list(operationSignal)).find(draft => draft.roll.id === bundle.roll.id);
+    let completed = 0;
+    const reportUploads = () => options.onProgress?.({ label: 'Uploading photographs…', detail: `${completed} / ${bundle.frames.length} photographs`, completed, total: bundle.frames.length });
+    reportUploads();
     const frames: CloudDraft['frames'] = await runPhotoUploads(bundle.frames, operationSignal, async frame => {
       const prior = existing?.frames.find(candidate => candidate.id === frame.id);
       const uploaded = prior ?? await this.upload(frame, bundle.blobs, operationSignal);
+      if (!operationSignal.aborted) { completed++; reportUploads(); }
       return { ...uploaded, rotation: frame.rotation, uprightRotation: frame.uprightRotation, cropPosition: frame.cropPosition, filmStrength: frame.filmStrength };
     });
     const pending = this.pendingPublication.get(bundle.roll.id);
     const updatedAt = pending?.inputVersion === bundle.roll.updatedAt && pending.savedVersion === existing?.roll.updatedAt
       ? pending.savedVersion : bundle.roll.updatedAt;
+    options.onProgress?.({ label: 'Saving roll…' });
     const saved = await ownerClient.save({ roll: { ...bundle.roll, updatedAt }, frames }, operationSignal);
     this.editorDrafts.set(bundle.roll.id, saved);
     this.pendingPublication.set(bundle.roll.id, { inputVersion: bundle.roll.updatedAt, savedVersion: saved.roll.updatedAt });
     this.notify();
-    await ownerClient.publish(saved.roll.id, saved.roll.updatedAt, operationSignal);
+    let batches = 0;
+    options.onProgress?.({ label: 'Publishing roll…' });
+    await ownerClient.publish(saved.roll.id, saved.roll.updatedAt, operationSignal, () => options.onProgress?.({ label: 'Publishing roll…', detail: `${++batches} batches completed` }));
     this.pendingPublication.delete(bundle.roll.id);
   }
   override async update(id: string, change: (roll: StoredRoll) => StoredRoll) {

@@ -47,6 +47,8 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
   const { env, privateBucket, publicBucket } = environment();
   const { token, jwk } = await ownerToken(env);
   const nativeFetch = globalThis.fetch, uploads: string[] = [];
+  let saveGate: Promise<void> | undefined, publishGate: Promise<void> | undefined;
+  let finishSave = () => {}, finishPublish = () => {};
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => String(input) === `${env.ACCESS_ISSUER}/cdn-cgi/access/certs`
     ? Promise.resolve(Response.json({ keys: [jwk] })) : nativeFetch(input, init)) as typeof fetch;
   let middleware!: (request: IncomingMessage, response: ServerResponse, next: () => void) => void;
@@ -69,6 +71,8 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
       fetcher: async (input, init) => {
         const url = new URL(String(input));
         if (url.origin === edgeOrigin) {
+          if (url.pathname.startsWith('/api/owner/drafts/') && init?.method === 'PUT') await saveGate;
+          if (url.pathname.endsWith('/publish')) await publishGate;
           const headers = new Headers(init?.headers);
           if (headers.get('Cookie') === `CF_Authorization=${token}`) headers.set('Cf-Access-Jwt-Assertion', token);
           if (headers.has('Origin')) headers.set('Origin', env.APP_ORIGIN);
@@ -132,7 +136,16 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
     await expect(editor.getByText('Photographs uploaded. Ready to save.', { exact: true })).toBeVisible();
     expect(uploads).toHaveLength(2);
     expect((await (await nativeFetch(`${origin}/api/gallery`)).json()).rolls).toHaveLength(0);
+    saveGate = new Promise<void>(resolve => { finishSave = resolve; });
+    publishGate = new Promise<void>(resolve => { finishPublish = resolve; });
     await editor.getByRole('button', { name: 'Save and open' }).click();
+    await expect(editor.getByRole('progressbar', { name: 'Saving roll…' })).toBeVisible();
+    await expect(editor.getByRole('progressbar', { name: 'Saving roll…' })).not.toHaveAttribute('value');
+    await expect(editor.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+    await page.screenshot({ path: info.outputPath('saving-roll-progress.png') });
+    finishSave();
+    await expect(editor.getByRole('progressbar', { name: 'Publishing roll…' })).toBeVisible();
+    finishPublish();
     await expect(editor).toHaveCount(0);
     expect(uploads).toHaveLength(2);
     expect(uploads.map(key => key.split('/').at(-1))).toEqual(['viewing', 'thumbnail']);
@@ -202,5 +215,5 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
       await expect(visitor.getByRole('button', { name: 'Show saved roll Browser-published photograph' })).toHaveCount(0);
       await expect(visitor.getByRole('button', { name: 'Show saved roll Roll 01' })).toBeVisible();
     } finally { await fresh.close(); }
-  } finally { globalThis.fetch = nativeFetch; await close(app); await close(edge); }
+  } finally { finishSave(); finishPublish(); globalThis.fetch = nativeFetch; await close(app); await close(edge); }
 });
