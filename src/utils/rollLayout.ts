@@ -34,8 +34,12 @@ export function createRollLayout(roll: RollDefinition): PlacedStrip[] {
   let filmLengthOffset = 0;
   return groups.map((group, index) => {
     const frames = roll.frames.slice(group.offset, groups[index + 1]?.offset ?? roll.frames.length);
-    const layout = { ...base, frameWidths: group.widths, frameCount: frames.length, frameNumberOffset: group.offset, filmLengthOffset };
-    filmLengthOffset += getStripDimensions(layout).width - 2 * base.marginX + base.gap;
+    // Cut once in the middle of each inter-frame gap. Giving both pieces a
+    // full leader overlaps their film coordinates and repeats edge lettering.
+    const marginX = index === 0 ? base.marginX : base.gap / 2;
+    const marginRight = index === groups.length - 1 ? (base.marginRight ?? base.marginX) : base.gap / 2;
+    const layout = { ...base, marginX, marginRight, frameWidths: group.widths, frameCount: frames.length, frameNumberOffset: group.offset, filmLengthOffset };
+    filmLengthOffset += getStripDimensions(layout).width - marginX - marginRight + base.gap;
     return { index, offset: group.offset, y: ((groups.length - 1) / 2 - index) * pitch, scale: roll.scale, frames, layout };
   });
 }
