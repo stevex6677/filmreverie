@@ -50,6 +50,7 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
   let saveGate: Promise<void> | undefined;
   const mutations: string[] = [];
   let finishSave = () => {};
+  let finishCopies = () => {};
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => String(input) === `${env.ACCESS_ISSUER}/cdn-cgi/access/certs`
     ? Promise.resolve(Response.json({ keys: [jwk] })) : nativeFetch(input, init)) as typeof fetch;
   let middleware!: (request: IncomingMessage, response: ServerResponse, next: () => void) => void;
@@ -140,12 +141,21 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
     expect(uploads).toHaveLength(2);
     expect((await (await nativeFetch(`${origin}/api/gallery`)).json()).rolls).toHaveLength(0);
     saveGate = new Promise<void>(resolve => { finishSave = resolve; });
+    const copyGate = new Promise<void>(resolve => { finishCopies = resolve; });
+    publicBucket.beforePut = async key => { if (key.endsWith('.jpg')) await copyGate; };
     await editor.getByRole('button', { name: 'Save and open' }).click();
     await expect(editor.getByRole('progressbar', { name: 'Saving roll…' })).toBeVisible();
     await expect(editor.getByRole('progressbar', { name: 'Saving roll…' })).not.toHaveAttribute('value');
     await expect(editor.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
     await page.screenshot({ path: info.outputPath('saving-roll-progress.png') });
     finishSave();
+    const publishing = editor.getByRole('progressbar', { name: 'Publishing photographs…' });
+    await expect(publishing).toHaveAttribute('value', '0');
+    await expect(publishing).toHaveAttribute('max', '1');
+    await expect(publishing).toBeInViewport();
+    await expect(editor.getByRole('button', { name: 'Saving and opening…' })).toBeDisabled();
+    await page.screenshot({ path: info.outputPath('publishing-roll-progress-phone.png') });
+    finishCopies();
     await expect(editor).toHaveCount(0);
     expect(mutations.filter(path => path.startsWith('PUT '))).toHaveLength(1);
     expect(mutations.every(path => path.includes('/api/owner/rolls/'))).toBe(true);
@@ -217,5 +227,5 @@ test('Admin publishes browser-derived JPEGs; a new gallery session sees only pub
       await expect(visitor.getByRole('button', { name: 'Show saved roll Browser-published photograph' })).toHaveCount(0);
       await expect(visitor.getByRole('button', { name: 'Show saved roll Roll 01' })).toBeVisible();
     } finally { await fresh.close(); }
-  } finally { finishSave(); globalThis.fetch = nativeFetch; await close(app); await close(edge); }
+  } finally { finishSave(); finishCopies(); globalThis.fetch = nativeFetch; await close(app); await close(edge); }
 });

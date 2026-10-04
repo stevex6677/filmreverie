@@ -17,7 +17,7 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onSaved,onDe
   const dialog=useRef<HTMLDialogElement>(null),abort=useRef<AbortController|null>(null),draftRef=useRef<DraftPhoto[]>([]),mounted=useRef(true),loadRequest=useRef(0);
   const [processing,setProcessing]=useState(false),[uploadStatus,setUploadStatus]=useState('');
   const uploadAbort=useRef(new AbortController()),uploadRequest=useRef(0);
-  const [error,setError]=useState(''),[busy,setBusy]=useState(false),[progress,setProgress]=useState(''),[saving,setSaving]=useState<OperationProgress|null>(null),[loading,setLoading]=useState(true),[dropping,setDropping]=useState(false);
+  const [error,setError]=useState(''),[busy,setBusy]=useState(false),[progress,setProgress]=useState(''),[saving,setSaving]=useState<OperationProgress|null>(null),[saveAction,setSaveAction]=useState<'save'|'open'>('save'),[loading,setLoading]=useState(true),[dropping,setDropping]=useState(false);
   const [draft,setDraft]=useState<DraftPhoto[]|null>(null),[editing,setEditing]=useState<StoredRoll|null>(null),[rollId,setRollId]=useState(''),[selected,setSelected]=useState('');
   const [name,setName]=useState(''),[camera,setCamera]=useState(''),[stock,setStock]=useState<FilmStockId>(DEFAULT_FILM_STOCK_ID),[format,setFormat]=useState<FilmFormat>('135'),[sizing,setSizing]=useState<FrameSizing>('fixed'),[cover,setCover]=useState('');
   const [strengthMode,setStrengthMode]=useState<StrengthMode>('roll'),[rollStrength,setRollStrength]=useState(DEFAULT_FILM_STRENGTH);
@@ -101,6 +101,7 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onSaved,onDe
     const controller=new AbortController();abort.current=controller;
     let reporting=true;
     const report:ProgressReporter=progress=>{if(reporting&&mounted.current&&!controller.signal.aborted)setSaving(progress);};
+    setSaveAction(open?'open':'save');
     report({label:publication?'Saving and publishing roll…':'Saving roll…'});
     try {
       await repository.save(bundle,controller.signal,{onProgress:report});
@@ -158,7 +159,7 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onSaved,onDe
       <footer className="import-footer">
       {saving&&<RollProgress progress={saving}/>}
       {uploadStatus&&!saving&&<p role="status" className="roll-editor-progress">{uploadStatus}</p>}
-      <div className="import-footer-actions">{editing && <button className="delete-roll" disabled={busy||processing} aria-label={`Delete ${editing.name}`} onClick={()=>void run(async()=>{await onDelete(editing);onClose();})}>Delete roll</button>}<button onClick={()=>{if(busy||processing)cancelOperation();else{reset();onClose();}}}>{busy||processing?'Cancel processing':editing?'Cancel edits':'Cancel draft'}</button>{blocker&&!busy&&<p className="roll-editor-hint">{blocker}</p>}<div className="roll-save-actions"><button disabled={busy||processing||!!blocker} onClick={()=>save(false)}>Save</button><button className="primary" disabled={busy||processing||!!blocker} onClick={()=>save(true)}>Save and open</button></div></div></footer>
+      <div className="import-footer-actions">{editing && <button className="delete-roll" disabled={busy||processing} aria-label={`Delete ${editing.name}`} onClick={()=>void run(async()=>{await onDelete(editing);onClose();})}>Delete roll</button>}<button onClick={()=>{if(busy||processing)cancelOperation();else{reset();onClose();}}}>{busy||processing?'Cancel processing':editing?'Cancel edits':'Cancel draft'}</button>{blocker&&!busy&&<p className="roll-editor-hint">{blocker}</p>}<div className="roll-save-actions"><button disabled={busy||processing||!!blocker} onClick={()=>save(false)}>{saving&&saveAction==='save'?'Saving…':'Save'}</button><button className="primary" disabled={busy||processing||!!blocker} onClick={()=>save(true)}>{saving&&saveAction==='open'?'Saving and opening…':'Save and open'}</button></div></div></footer>
     </>}
   </dialog>;
 }

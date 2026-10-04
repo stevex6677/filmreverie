@@ -1,4 +1,4 @@
-import type { CloudDraft, UploadRequest, SaveRollRequest, PatchRollRequest } from '../src/cloud/contracts';
+import type { CloudDraft, UploadRequest, SaveRollRequest, PatchRollRequest, RollMutationEvent } from '../src/cloud/contracts';
 import { authorize, checkConfig, checkMutationOrigin } from './auth';
 import { completeUpload, grantUpload, listDrafts, mutateRoll, privateImage, publicCatalog, publishDraft, readDraft, readPreferences, saveArrangement, saveDraft, savePreferences, withdrawPublication } from './storage';
 import { Env, HttpError, Kind, requireValue, validId } from './types';
@@ -56,6 +56,22 @@ async function route(request: Request, env: Env): Promise<Response | object> {
   if (collection === 'rolls' && !action && (method === 'PUT' || method === 'PATCH')) {
     const input = await readJson<SaveRollRequest | PatchRollRequest>(request);
     requireValue(input && typeof input === 'object' && (method === 'PATCH' ? 'changes' in input : 'roll' in input && !('changes' in input)), 'Invalid roll request.');
+    if (request.headers.get('Accept')?.includes('application/x-ndjson')) {
+      let cancelled = false;
+      const body = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          const encoder = new TextEncoder();
+          const send = (event: RollMutationEvent) => { if (!cancelled) controller.enqueue(encoder.encode(JSON.stringify(event) + '\n')); };
+          try { send({ result: await mutateRoll(env, id, input, progress => send({ progress })) }); }
+          catch (error) { send({ error: error instanceof HttpError ? error.message : 'Cloud storage is unavailable. Existing saved work is retained.' }); }
+          finally { if (!cancelled) controller.close(); }
+        },
+        // A disconnected client may retry the same mutation ID. Finish the
+        // atomic operation, but do not enqueue into its cancelled response.
+        cancel() { cancelled = true; },
+      });
+      return new Response(body, { headers: { ...headers, 'Content-Type': 'application/x-ndjson' } });
+    }
     return mutateRoll(env, id, input);
   }
   if (collection === 'uploads') {

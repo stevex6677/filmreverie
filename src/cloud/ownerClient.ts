@@ -1,4 +1,5 @@
-import type { CloudDraft, DraftFrame, GalleryRoll, PublishResult, UploadGrant, UploadKind, UploadRequest, WithdrawResult, RollMutationResult } from './contracts';
+import type { CloudDraft, DraftFrame, GalleryRoll, PublishResult, UploadGrant, UploadKind, UploadRequest, WithdrawResult, RollMutationResult, RollMutationEvent } from './contracts';
+import type { ProgressReporter } from '../utils/operationProgress';
 import { IMPORT_LIMITS, type DraftPhoto } from '../storage/importPhotos';
 import { sha256Hex, generateUuid } from '../storage/crypto';
 import { validatePreferences, type DarkroomPreferences, type StoredRoll } from '../storage/rollRepository';
@@ -37,7 +38,35 @@ function restoreView(draft: CloudDraft): CloudDraft {
 }
 const idPath = (id: string) => encodeURIComponent(id);
 const pendingMutations = new Map<string, { body: string; id: string; continuation?: string }>();
-async function mutateRoll(id: string, method: 'PUT' | 'PATCH', value: object, signal?: AbortSignal): Promise<CloudDraft> {
+async function mutationResponse(response: Response, onProgress?: ProgressReporter): Promise<RollMutationResult> {
+  // Older deployed Workers still return JSON during a staged rollout.
+  if (response.headers.get('content-type')?.includes('application/json')) return response.json();
+  if (!response.headers.get('content-type')?.includes('application/x-ndjson') || !response.body) throw new OwnerSessionRequired();
+  const reader = response.body.getReader(), decoder = new TextDecoder();
+  let buffer = '', result: RollMutationResult | undefined;
+  const consume = (line: string) => {
+    if (!line.trim()) return;
+    const event = JSON.parse(line) as RollMutationEvent;
+    if ('error' in event) throw new Error(event.error);
+    if ('progress' in event) onProgress?.(event.progress);
+    if ('result' in event) result = event.result;
+  };
+  try {
+    for (;;) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      buffer += decoder.decode(chunk.value, { stream: true });
+      let newline: number;
+      while ((newline = buffer.indexOf('\n')) !== -1) {
+        consume(buffer.slice(0, newline)); buffer = buffer.slice(newline + 1);
+      }
+    }
+    consume(buffer + decoder.decode());
+    if (!result) throw new Error('The save connection ended before confirmation. Save again to check and finish this roll.');
+    return result;
+  } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
+}
+async function mutateRoll(id: string, method: 'PUT' | 'PATCH', value: object, signal?: AbortSignal, onProgress?: ProgressReporter): Promise<CloudDraft> {
   const key = `${method}/${id}`, body = JSON.stringify(value);
   let pending = pendingMutations.get(key);
   if (!pending || pending.body !== body) {
@@ -47,10 +76,11 @@ async function mutateRoll(id: string, method: 'PUT' | 'PATCH', value: object, si
   try {
     for (;;) {
       signal?.throwIfAborted();
-      const result = await json<RollMutationResult>(`rolls/${idPath(id)}`, {
-        method, headers: { 'Content-Type': 'application/json' },
+      const response = await privateResponse(`rolls/${idPath(id)}`, {
+        method, headers: { 'Content-Type': 'application/json', ...(onProgress ? { Accept: 'application/x-ndjson, application/json' } : {}) },
         body: JSON.stringify({ ...value, mutationId: pending.id, ...(pending.continuation ? { continuation: pending.continuation } : {}) }), signal,
       });
+      const result = await mutationResponse(response, onProgress);
       if (!result.pending) {
         if (pendingMutations.get(key) === pending) pendingMutations.delete(key);
         return restoreView(result.draft);
@@ -65,9 +95,9 @@ async function mutateRoll(id: string, method: 'PUT' | 'PATCH', value: object, si
   }
 }
 export const ownerClient = {
-  async saveRoll(draft: CloudDraft, signal?: AbortSignal) { return mutateRoll(draft.roll.id, 'PUT', draft, signal); },
-  async patchRoll(id: string, updatedAt: number, changes: Partial<StoredRoll>, signal?: AbortSignal) {
-    return mutateRoll(id, 'PATCH', { updatedAt, changes }, signal);
+  async saveRoll(draft: CloudDraft, signal?: AbortSignal, onProgress?: ProgressReporter) { return mutateRoll(draft.roll.id, 'PUT', draft, signal, onProgress); },
+  async patchRoll(id: string, updatedAt: number, changes: Partial<StoredRoll>, signal?: AbortSignal, onProgress?: ProgressReporter) {
+    return mutateRoll(id, 'PATCH', { updatedAt, changes }, signal, onProgress);
   },
   async session(signal?: AbortSignal) {
     const session = await json<{ email: string }>('session', { signal });

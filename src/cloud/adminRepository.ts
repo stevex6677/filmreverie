@@ -123,8 +123,8 @@ export class AdminRollRepository extends RollRepository {
     const canPatch = existing && JSON.stringify(frames) === JSON.stringify(existing.frames)
       && Object.keys(changes).length > 0 && Object.entries(changes).every(([key, value]) => rollFields.includes(key) && value !== undefined);
     const saved = canPatch
-      ? await ownerClient.patchRoll(bundle.roll.id, bundle.roll.updatedAt, changes, operationSignal)
-      : await ownerClient.saveRoll({ roll: bundle.roll, frames }, operationSignal);
+      ? await ownerClient.patchRoll(bundle.roll.id, bundle.roll.updatedAt, changes, operationSignal, options.onProgress)
+      : await ownerClient.saveRoll({ roll: bundle.roll, frames }, operationSignal, options.onProgress);
     this.editorDrafts.set(bundle.roll.id, saved);
     this.rolls.set(bundle.roll.id, saved.roll);
     this.notify();
