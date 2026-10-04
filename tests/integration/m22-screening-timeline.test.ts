@@ -7,7 +7,8 @@ import { FILM_RENDER_SCALE } from '../../src/data/physicalScale';
 import { ROLL_FRAMES } from '../../src/data/rollManifest';
 import { getStripDimensions } from '../../src/utils/loupeMapping';
 import { ROOM_ENVELOPE, TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../../src/utils/cameraBounds';
-import { createScreeningTimeline, breakBoundaries, type ReelOptions } from '../../src/screening/reels';
+import { createScreeningTimeline, breakBoundaries, framing, tourRhythm, type ReelOptions } from '../../src/screening/reels';
+import { PRINT_WALL_X } from '../../src/screening/prints';
 import { PACES, PACE_SCALE, REEL_IDS, poseEye, revealEdge, type ReelId, type ScreeningTimeline } from '../../src/screening/timeline';
 
 const frames = (count: number) => Array.from({ length: count }, (_, i) => ({ ...ROLL_FRAMES[i % ROLL_FRAMES.length], id: `f${i + 1}`, order: i + 1 }));
@@ -53,20 +54,70 @@ describe('M22 screening timelines', () => {
     }
   });
 
-  it('take an overview break at strip boundaries, fewer on short and medium-format rolls', () => {
+  it('pause at strip boundaries in each reel\'s own way, never on the whole roll (2026-10-03 feedback)', () => {
     const boundaries = createRollLayout(FULL_ROLL_FIXTURE).slice(1).map(strip => strip.offset);
-    // Projector never leaves the projection for an overview (2026-09-27 review).
+    // Projector never leaves the projection; strip changes stay behind the shutter (2026-09-27 review).
     expect(createScreeningTimeline(FULL_ROLL_FIXTURE, options('projector')).segments.some(s => s.act === 'break')).toBe(false);
-    for (const reel of ['tracking', 'develop'] as const) {
-      const timeline = createScreeningTimeline(FULL_ROLL_FIXTURE, options(reel));
-      for (const boundary of boundaries) expect(timeline.segments.some(s => s.act === 'break' && s.kind === 'overview' && s.frameIndex === boundary), `${reel} ${boundary}`).toBe(true);
-      expect(timeline.segments.filter(s => s.act === 'break' && s.kind === 'overview')).toHaveLength(boundaries.length);
+    for (const reel of REEL_IDS.filter(reel => reel !== 'projector')) for (const aspect of [16 / 9, 9 / 16]) {
+      const timeline = createScreeningTimeline(FULL_ROLL_FIXTURE, options(reel, { aspect }));
+      const breaks = timeline.segments.filter(s => s.act === 'break');
+      expect(new Set(breaks.map(s => s.frameIndex)), reel).toEqual(new Set(boundaries));
+      const overview = framing(FULL_ROLL_FIXTURE, aspect).overview;
+      for (const segment of breaks) for (const pose of segment.camera) {
+        // Table reels stay with the strips either side; the whole roll means the start or the end.
+        if (['tracking', 'develop', 'darkroom', 'orbit'].includes(reel)) expect(pose.zoom, `${reel} ${aspect}`).toBeLessThan(overview.zoom * .5);
+        // Darkroom Prints stays at the print wall; Documentary on the photographs.
+        if (reel === 'darkroom-prints') expect(pose.pan.x).toBeCloseTo(PRINT_WALL_X, 9);
+        if (reel === 'documentary') expect(pose.tilt).toBe(0);
+      }
       expect(createScreeningTimeline(BASELINE_ROLL, options(reel)).segments.some(s => s.act === 'break')).toBe(false);
-      const mediumBreaks = createScreeningTimeline(medium, options(reel)).segments.filter(s => s.act === 'break' && s.kind === 'overview').length;
+      const mediumBreaks = new Set(createScreeningTimeline(medium, options(reel)).segments.filter(s => s.act === 'break').map(s => s.frameIndex)).size;
       expect(mediumBreaks).toBeGreaterThan(0);
       expect(mediumBreaks).toBeLessThan(createRollLayout(medium).length - 1);
     }
     expect(breakBoundaries(single).size).toBe(0);
+    const at = (reel: ReelId) => createScreeningTimeline(FULL_ROLL_FIXTURE, options(reel));
+    const pause = (timeline: ScreeningTimeline, boundary: number) => timeline.segments.find(s => s.act === 'break' && s.kind === 'overview' && s.frameIndex === boundary)!;
+    // Develop stands back on the finished strip, now positive, above the next one still negative.
+    const develop = at('develop');
+    for (const boundary of boundaries) expect(develop.sample(pause(develop, boundary).start + .1).reveal!.position).toBe(boundary);
+    // Darkroom dims the table as the dolly runs off the film.
+    const darkroom = at('darkroom');
+    expect(Math.min(...samples(darkroom, .1).filter(s => s.act === 'break').map(s => s.light))).toBeLessThan(.5);
+    // Darkroom Prints never turns back to the film until the roll is finished.
+    const prints = at('darkroom-prints');
+    for (const sample of samples(prints, .1).filter(s => s.act === 'tour' || s.act === 'break')) expect(sample.camera.pan.x).toBeCloseTo(PRINT_WALL_X, 9);
+    // Documentary dips through black, a chapter break, instead of dissolving.
+    const documentary = at('documentary');
+    for (const boundary of boundaries) {
+      const dark = pause(documentary, boundary);
+      expect(documentary.sample(dark.start + dark.duration / 2).fade).toBe(1);
+      expect(documentary.segments.some(s => s.frameIndex === boundary && s.dissolve)).toBe(false);
+    }
+  });
+
+  it('vary the rhythm with lingering looks and quick runs that pass without stopping (2026-10-03 feedback)', () => {
+    const rhythm = tourRhythm(FULL_ROLL_FIXTURE);
+    expect(rhythm.filter(beat => beat === 'linger')).toHaveLength(6);
+    expect(new Set(rhythm.map(beat => beat[0]).join('').match(/q+/g)!.map(run => run.length))).toEqual(new Set([2, 3]));
+    rhythm.forEach((beat, i) => { if (beat === 'quick') expect(locateFrame(FULL_ROLL_FIXTURE, i).localIndex).toBeGreaterThan(0); });
+    for (const roll of [BASELINE_ROLL, medium, single]) expect(tourRhythm(roll)).not.toContain('quick');
+    expect(tourRhythm(FULL_ROLL_FIXTURE, true)).not.toContain('quick');
+    const quick = new Set(rhythm.flatMap((beat, i) => beat === 'quick' ? [i] : []));
+    for (const reel of ['tracking', 'develop', 'darkroom', 'darkroom-prints'] as const) {
+      const timeline = createScreeningTimeline(FULL_ROLL_FIXTURE, options(reel));
+      const pan = (t: number) => timeline.sample(t).camera.pan;
+      const speed = (a: number, b: number) => Math.hypot(pan(b).x - pan(a).x, pan(b).z - pan(a).z) / (b - a);
+      const run = timeline.segments.filter(s => quick.has(s.frameIndex) && s.act === 'tour' && s.kind !== 'push');
+      for (let i = 1; i < run.length; i++) {
+        const t = run[i].start;
+        if (run[i - 1].start + run[i - 1].duration !== t) continue;
+        // Even speed across each joint within a run, never stopping.
+        const before = speed(t - .02, t), after = speed(t, t + .02);
+        expect(before, `${reel} ${run[i].frameIndex}`).toBeGreaterThan(0);
+        expect(after / before, `${reel} ${run[i].frameIndex}`).toBeGreaterThan(.9); expect(after / before).toBeLessThan(1.1);
+      }
+    }
   });
 
   it('scale every reel by pace and give 120 frames longer holds', () => {
@@ -311,9 +362,11 @@ describe('M22 Darkroom Prints and Documentary', () => {
       for (let i = 1; i < prints.length; i++) if (prints[i].line === prints[i - 1].line) {
         expect(prints[i - 1].center[2] - prints[i].center[2], name).toBeGreaterThan((prints[i - 1].paper.width + prints[i].paper.width) / 2);
       }
-      const timeline = createScreeningTimeline(roll, options('darkroom-prints'));
+      const timeline = createScreeningTimeline(roll, options('darkroom-prints')), rhythm = tourRhythm(roll);
       for (const segment of timeline.segments.filter(s => s.kind === 'frame')) {
-        const print = prints[segment.frameIndex], pose = segment.camera[0];
+        // A quick print is passed without stopping: centred halfway through, or where a run settles.
+        const print = prints[segment.frameIndex], quick = rhythm[segment.frameIndex] === 'quick';
+        const pose = !quick ? segment.camera[0] : segment.ease === 'decelerate' ? segment.camera[1] : timeline.sample(segment.start + segment.duration / 2).camera;
         expect(pose.pan.x).toBeCloseTo(print.center[0], 9); expect(pose.pan.z).toBeCloseTo(print.center[2], 9);
         expect(TABLE_SURFACE_Y + (pose.height ?? 0)).toBeCloseTo(print.center[1], 9);
         expect(poseEye(pose)[0]).toBeGreaterThan(PRINT_WALL_X + .3);
@@ -348,16 +401,19 @@ describe('M22 Darkroom Prints and Documentary', () => {
     }
   });
 
-  it('dissolves into every photograph after the first, drifting and pushing in within the photo', () => {
+  it('dissolves into every photograph after the first but those after a pause, drifting and pushing in within the photo', () => {
     for (const [name, roll] of Object.entries(ROLLS)) for (const aspect of [16 / 9, 9 / 16]) {
       const timeline = createScreeningTimeline(roll, options('documentary', { aspect }));
+      const pauses = breakBoundaries(roll);
       for (let i = 1; i < roll.frames.length; i++) {
+        // A strip change dips through black instead (see the pause test).
+        if (pauses.has(i)) continue;
         const into = timeline.segments.find(s => s.frameIndex === i && s.dissolve)!;
         expect(into, `${name} ${i}`).toBeDefined();
         const start = timeline.sample(into.start + 1e-4), middle = timeline.sample(into.start + into.duration / 2);
         expect(start.dissolve!.amount).toBeLessThan(.01); expect(middle.dissolve!.amount).toBeCloseTo(.5, 1);
         expect(start.dissolve!.from).toBeLessThan(into.start);
-        // The outgoing image is the shot just before: the previous photograph or a strip overview.
+        // The outgoing image is the shot just before: the previous photograph.
         expect(timeline.sample(start.dissolve!.from).segment).toBe(timeline.segments.indexOf(into) - 1);
         expect(timeline.sample(into.start + into.duration + 1e-4).dissolve).toBeNull();
       }
@@ -375,7 +431,7 @@ describe('M22 Darkroom Prints and Documentary', () => {
     for (const segment of reduced.segments.filter(s => s.kind === 'frame' || s.dissolve)) {
       expect(segment.camera[0]).toEqual(segment.camera[1]); expect(segment.cut).toBe(false);
     }
-    expect(reduced.segments.filter(s => s.dissolve)).toHaveLength(35);
+    expect(reduced.segments.filter(s => s.dissolve)).toHaveLength(35 - breakBoundaries(FULL_ROLL_FIXTURE).size);
   });
 
   it('turns the camera so rotated photographs stand upright', () => {
@@ -449,8 +505,8 @@ describe('M22 reel settings and depth of field (2026-09-28 feedback)', () => {
     for (const reel of ['tracking', 'darkroom', 'orbit', 'darkroom-prints'] as const) expect(at(reel, []).look.aperture, reel).toBeGreaterThan(0);
     for (const reel of ['develop', 'projector', 'documentary'] as const) expect(at(reel, []).look.aperture, reel).toBe(0);
     // Develop: no push-in at None; the band softens toward Soft.
-    const still = frame(at('develop', [0, .5]));
-    expect(still.camera[1].zoom).toBeGreaterThan(frame(at('develop', [.5, .5])).camera[1].zoom * 1.15);
+    const still = frame(at('develop', [0, .5]), 1);
+    expect(still.camera[1].zoom).toBeGreaterThan(frame(at('develop', [.5, .5]), 1).camera[1].zoom * 1.15);
     expect(at('develop', [.5, 1]).look.band).toBeGreaterThan(at('develop', [.5, 0]).look.band * 5);
     // Projector: a steady gate and lamp at the low ends.
     const steady = at('projector', [0, 0]);

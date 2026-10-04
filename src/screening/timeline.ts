@@ -23,7 +23,7 @@ export type SegmentKind = 'open' | 'glide' | 'frame' | 'descend' | 'detail' | 'r
  */
 export interface CameraPose { zoom: number; pan: { x: number; z: number }; tilt: number; yaw: number; height?: number; roll?: number; fov?: number }
 export const DEFAULT_FOV = 45;
-export type Ease = 'linear' | 'inOut' | 'in' | 'out' | 'snap' | 'heavy';
+export type Ease = 'linear' | 'inOut' | 'in' | 'out' | 'snap' | 'heavy' | 'accelerate' | 'decelerate';
 /** Projector shutter: a partial blink during a pull-down, or closing/opening around a hidden cut. */
 export type Shutter = 'pulse' | 'close' | 'open';
 export interface Reveal { mode: 'polarity' | 'backlight'; position: number }
@@ -101,6 +101,9 @@ export const EASE: Record<Ease, (u: number) => number> = {
   snap: u => u < .5 ? 16 * u ** 5 : 1 - Math.pow(-2 * u + 2, 5) / 2,
   // A heavier medium-format advance: it overruns by a hair, then settles.
   heavy: u => { const c = 1.2, v = u - 1; return 1 + (c + 1) * v ** 3 + c * v ** 2; },
+  // Into and out of an even-speed run: the end speed is twice the average.
+  accelerate: u => u * u,
+  decelerate: u => 1 - (1 - u) * (1 - u),
 };
 
 const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
