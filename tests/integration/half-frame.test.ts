@@ -51,7 +51,8 @@ it('renders local and published half frames with identical gates, strips and 35m
         expect(strip.layout.frameHeight / FILM_UNIT).toBeCloseTo(24);
         expect(strip.layout.gap / FILM_UNIT).toBeCloseTo(1.5);
         const holes = getPerforationPositions(strip.layout);
-        expect(holes.top.length).toBeGreaterThan(48); // Includes the cut-end margins.
+        // Four holes per exposure; only the ends of the roll retain leaders.
+        expect(holes.top.length).toBeGreaterThanOrEqual(48);
         expect(holes.bottom).toHaveLength(holes.top.length);
         holes.top.slice(1).forEach((hole, i) => expect((hole.x - holes.top[i].x) / FILM_UNIT).toBeCloseTo(4.75));
       }

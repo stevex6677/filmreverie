@@ -12,7 +12,9 @@ export interface FilmStripLayout {
   filmLengthOffset?: number;
   frameHeight: number;
   gap: number;
+  // Left cut margin; the right defaults to the same value for standalone strips.
   marginX: number;
+  marginRight?: number;
   marginY: number;
 }
 
@@ -59,7 +61,7 @@ export function getStripDimensions(layout: FilmStripLayout = DEFAULT_LAYOUT) {
   const width =
     Array.from({ length: layout.frameCount }, (_, i) => getFrameWidth(i, layout)).reduce((a, b) => a + b, 0) +
     (layout.frameCount - 1) * layout.gap +
-    2 * layout.marginX;
+    layout.marginX + (layout.marginRight ?? layout.marginX);
   const height = layout.frameHeight + 2 * layout.marginY;
   return { width, height };
 }

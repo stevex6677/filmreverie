@@ -55,9 +55,14 @@ describe('factory markings follow film length, independently of photographs', ()
     for (const format of ['135', '66'] as const) for (const stock of [getFilmStock('ektachrome-e100'), getFilmStock('velvia-50')]) {
       const whole = createRollLayout(roll(format, widths.length))[0].layout;
       const completeMarks = lettering(stock, whole);
+      let cutEnd = 0;
       for (const { layout } of createRollLayout(roll(format, 2))) {
-        const offset = getFilmLengthOffset(layout) / unit;
+        const offset = (getFilmLengthOffset(layout) + whole.marginX - layout.marginX) / unit;
         const length = getStripDimensions(layout).width / unit;
+        // Adjacent pieces must meet at one cut: duplicated end margins repeat
+        // letters (and barcodes) across rows even if each mark has the right pitch.
+        expect(offset).toBeCloseTo(cutEnd, 8);
+        cutEnd = offset + length;
         // The renderer must retain a preceding partially clipped inscription.
         const actual = lettering(stock, layout).filter(m => m.x > -1 && m.x < length - 1);
         const expected = completeMarks.filter(m => m.x - offset > -1 && m.x - offset < length - 1);
@@ -68,6 +73,7 @@ describe('factory markings follow film length, independently of photographs', ()
           expect((rollX - 2.375) / 4.75).toBeCloseTo(Math.round((rollX - 2.375) / 4.75), 8);
         }
       }
+      expect(cutEnd).toBeCloseTo(getStripDimensions(whole).width / unit, 8);
     }
   });
 
