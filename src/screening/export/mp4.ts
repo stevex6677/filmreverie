@@ -41,6 +41,36 @@ export function aacConfig(sampleRate: number, channels: number) {
   if (index < 0) throw new Error(`Unsupported AAC sample rate ${sampleRate}.`);
   return new Uint8Array([2 << 3 | index >> 1, (index & 1) << 7 | channels << 3]);
 }
+/**
+ * The AudioSpecificConfig in an AAC encoder's description. Chrome supplies it
+ * bare; WebKit (Safari, and every iPad browser) supplies a whole MPEG-4
+ * ES_Descriptor (an esds payload) around it. Writing that wrapper as the config
+ * leaves players unable to decode the track, so the video plays silent.
+ */
+export function aacSpecificConfig(description: Uint8Array): Uint8Array | null {
+  if (description[0] !== 3) return description;
+  const read = (at: number, end: number): Uint8Array | null => {
+    while (at + 2 <= end) {
+      const tag = description[at++];
+      let length = 0, byte = 0x80;
+      for (let i = 0; i < 4 && byte & 0x80 && at < end; i++) { byte = description[at++]; length = length << 7 | byte & 0x7f; }
+      const body = at, next = Math.min(end, at + length);
+      if (tag === 5) return description.slice(body, next);
+      if (tag === 3) {
+        // ES_ID, then flags for an optional dependency, URL and OCR stream.
+        const flags = description[body + 2];
+        let inner = body + 3;
+        if (flags & 0x80) inner += 2;
+        if (flags & 0x40) inner += 1 + description[inner];
+        if (flags & 0x20) inner += 2;
+        const found = read(inner, next); if (found) return found;
+      } else if (tag === 4) { const found = read(body + 13, next); if (found) return found; }
+      at = next;
+    }
+    return null;
+  };
+  return read(0, description.length);
+}
 const MATRIX = concat([0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000].map(u32));
 
 const PRIMARIES: Record<string, number> = { bt709: 1, bt470bg: 5, smpte170m: 6, bt2020: 9, smpte432: 12 };
@@ -173,7 +203,7 @@ export class Mp4Writer {
     const fields = [zeros(6), u16(1), zeros(8), u16(track.channels), u16(16), u16(0), u16(0), u32(rate * 65536)];
     let entry: Uint8Array;
     if (track.codec === 'aac') {
-      const config = audio.description ?? aacConfig(rate, track.channels);
+      const config = (audio.description && aacSpecificConfig(audio.description)) ?? aacConfig(rate, track.channels);
       entry = box('mp4a', ...fields, fullBox('esds', 0, 0, descriptor(3, u16(2), u8(0),
         descriptor(4, u8(0x40), u8(0x15), zeros(3), u32(track.bitrate), u32(track.bitrate), descriptor(5, config)),
         descriptor(6, u8(2)))));

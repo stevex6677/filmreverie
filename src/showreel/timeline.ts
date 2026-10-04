@@ -1,6 +1,6 @@
 import { createScreeningTimeline, framing } from '../screening/reels';
-import { DEFAULT_LOOK, finishTimeline, lookAtPose, tablePan, TimelineBuilder, type CameraPose, type ReelId, type ScreeningLook, type ScreeningSample, type ScreeningTimeline } from '../screening/timeline';
-import { fitRollView, locateFrame } from '../utils/rollLayout';
+import { DEFAULT_LOOK, finishTimeline, lerpCamera, lookAtPose, tablePan, TimelineBuilder, type CameraPose, type ReelId, type ScreeningLook, type ScreeningSample, type ScreeningTimeline } from '../screening/timeline';
+import { fitRollView, focusTableAngle, locateFrame } from '../utils/rollLayout';
 import { CAMERA_SHELF_MM, CAMERA_SHELF_ORIGIN, cameraShelfSlot, mm, SHELF_CELL_MM, SHELF_ORIGIN } from '../data/physicalScale';
 import { TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../utils/cameraBounds';
 import { getFilmStock } from '../data/filmStocks';
@@ -70,11 +70,12 @@ export const NEW_ROLL_PACE = 6.8 / NEW_ROLL_SECONDS;
 
 /**
  * Photographs the film must show (0-based, in filename order), clamped to each
- * roll's length: the third Fuji frame, the thirteenth Portra frame, the fifth
- * panoramic frame, the first and seventh 6×6 frames, the first three 6×7 Provia
- * prints, the third 6×7 slide and the third and fourth 6×9 frames.
+ * roll's length: the third Fuji frame, the fifth Portra frame (a vertical shot,
+ * seen upright) and the thirteenth (developed in the opening, then held), the ninth
+ * half frame, the fifth panoramic frame, the first and seventh 6×6 frames, the first three 6×7 Provia
+ * prints, the second 6×7 slide and the third and fourth 6×9 frames.
  */
-export const FEATURED = { tracking: 2, hook: 12, loupe: 4, medium: 6, projector: [0, 1, 2], prints: [0, 1, 2], slides: 2, orbit: [2, 3] } as const;
+export const FEATURED = { tracking: 2, hook: 12, upright: 4, half: 8, loupe: 4, medium: 6, projector: [0, 1, 2], prints: [0, 1, 2], slides: 1, sixByNine: [2, 3] } as const;
 
 const degrees = (value: number) => value * Math.PI / 180;
 
@@ -111,8 +112,8 @@ export function createShowreelTimeline(rolls: readonly ShowreelRoll[], requested
   const taken: number[] = [];
   const cast = (kind: FilmFormat | 'pano', nth = 0) => { const index = pick(rolls, kind, nth, taken); taken.push(index); return index; };
   const role = {
-    tracking: cast('135', 0), hook: cast('135', 1), loupe: cast('pano'), medium: cast('66'),
-    prints: cast('67', 0), slides: cast('67', 1), orbit: cast('69'), projector: -1,
+    tracking: cast('135', 0), hook: cast('135', 1), half: cast('135-half'), loupe: cast('pano'), medium: cast('66'),
+    prints: cast('67', 0), slides: cast('67', 1), sixByNine: cast('69'), projector: -1,
   };
   role.projector = role.medium;
   const def = (roll: number) => rolls[roll].definition;
@@ -200,17 +201,56 @@ export function createShowreelTimeline(rolls: readonly ShowreelRoll[], requested
   }, { aperture: .02 });
   const formatsShot = add('formats', -1, allFormats);
 
-  // 6. The light table, one roll each: 35mm in a Tracking Shot excerpt, the
+  // 6. The light table, one roll each: 35mm in a Tracking Shot excerpt that
+  // carries on to two Portra frames, a glide along the half-frame roll, the
   // panoramic roll under the loupe, then the 6×6 roll before the camera sweeps
   // down and orbits one photograph.
-  const tracking = reel(role.tracking, 'tracking', 'normal', [.45, .35]);
-  // Joined after the turn away from the vertical frame before it.
-  const trackFrom = tracking.frameStart(featured(role.tracking, FEATURED.tracking)) + .7;
-  const trackShot = add('tracking', role.tracking, tracking, trackFrom, trackFrom + 4.6, true);
+  const tracking = reel(role.tracking, 'tracking', 'relaxed', [.45, .35]);
+  // From the whole table the camera descends, without a cut, to where the reel
+  // settles on the featured frame, then follows the reel in to a detail of it.
+  const trackFrame = featured(role.tracking, FEATURED.tracking);
+  const trackSegment = (kind: string) => tracking.segments.find(segment => segment.kind === kind && segment.frameIndex === trackFrame);
+  const trackFrom = trackSegment('frame')?.start ?? tracking.frameStart(trackFrame);
+  const approach = custom(allFormats.sample(allFormats.duration).camera, b => {
+    b.step('tour', 'push-in', trackFrame, 3.2, { camera: placed(role.tracking, tracking.sample(trackFrom).camera), ease: 'inOut' });
+  }, { aperture: .03 });
+  const approachShot = add('approach', role.tracking, approach);
+  const detail = trackSegment('detail');
+  const trackTo = detail ? detail.start + Math.min(detail.duration, 2.4) : trackFrom + 5;
+  add('tracking', role.tracking, tracking, trackFrom, trackTo, true);
+  /**
+   * Looking at one photograph from `back` frames before it along its strip; a
+   * vertical shot is seen upright, as in the viewer's focus.
+   */
+  const facing = (roll: number, index: number) => {
+    const zoom = fitRollView(def(roll), 'frame', index, aspect).zoom, at = spot(roll, index), layout = def(roll).layout!;
+    const turn = focusTableAngle(def(roll), index).yaw;
+    return (back: number, scale: number, tilt: number, yaw: number): CameraPose =>
+      ({ zoom: zoom * scale, pan: tablePan(at.x - back * (layout.frameWidth + layout.gap) * def(roll).scale, at.y), tilt: degrees(tilt), yaw: turn + degrees(yaw) });
+  };
+  // Without a cut, from the detail across to the Portra roll below: the vertical
+  // frame, turned upright, then along to the opening's frame, holding on each.
+  const [uprightFrame, heldFrame] = [featured(hookRoll, FEATURED.upright), featured(hookRoll, FEATURED.hook)];
+  const [upright, held] = [facing(hookRoll, uprightFrame), facing(hookRoll, heldFrame)];
+  const portra = custom(placed(role.tracking, tracking.sample(trackTo).camera), b => {
+    b.step('tour', 'glide', uprightFrame, 2.4, { camera: upright(0, 1.3, 20, -5), ease: 'inOut' });
+    b.step('tour', 'frame', uprightFrame, 2.6, { camera: upright(0, 1.2, 14, -2), ease: 'linear' });
+    b.step('tour', 'glide', heldFrame, 2.3, { camera: held(0, 1.3, 20, -5), ease: 'inOut' });
+    b.step('tour', 'frame', heldFrame, 2.6, { camera: held(0, 1.2, 14, -2), ease: 'linear' });
+  }, { aperture: .035 });
+  const portraShot = add('portra', hookRoll, portra);
+  // A short glide along the half-frame strip onto the featured photograph, which it holds.
+  const halfRoll = role.half, halfFrame = featured(halfRoll, FEATURED.half), half = facing(halfRoll, halfFrame);
+  const halfShot = add('half', halfRoll, custom(half(1.5, 1.9, 40, -14), b => {
+    b.step('tour', 'glide', halfFrame, 1.4, { camera: half(0, 1.3, 20, -5), ease: 'out' });
+    b.step('tour', 'frame', halfFrame, 2.7, { camera: half(0, 1.2, 14, -2), ease: 'linear' });
+  }, { aperture: .035 }));
   // Seen from above, the loupe rides along the rebate's edge printing, then
   // drops onto the featured photograph.
-  const wideRoll = role.loupe, target = featured(wideRoll, FEATURED.loupe);
-  const [left, right] = [spot(wideRoll, Math.max(0, target - 1)), spot(wideRoll, target)];
+  const wideRoll = role.loupe, target = featured(wideRoll, FEATURED.loupe), right = spot(wideRoll, target);
+  // From the frame before, or from the featured one's left edge when it begins its strip.
+  const left = locateFrame(def(wideRoll), target).localIndex > 0 ? spot(wideRoll, target - 1)
+    : { x: right.x - (def(wideRoll).frameWidths?.[target] ?? def(wideRoll).layout!.frameWidth) * def(wideRoll).scale / 2, y: right.y };
   const wideZoom = fitRollView(def(wideRoll), 'frame', target, aspect).zoom;
   const loupeView = (x: number, y: number, zoom: number): CameraPose => ({ zoom: wideZoom * zoom, pan: tablePan(x, left.y + y), tilt: degrees(14), yaw: degrees(-4) });
   const travel = Math.max(.14, right.x - left.x), LOUPE_SECONDS = 4.4;
@@ -223,49 +263,69 @@ export function createShowreelTimeline(rolls: readonly ShowreelRoll[], requested
     x: lerp(left.x + travel * .18, right.x - .02, ease(local / LOUPE_SECONDS)),
     y: left.y + .057 - .07 * ease((local - 2.2) / 1.5),
   }));
-  // Medium format: the whole 6×6 roll from above, its neighbours either side,
-  // then a descending arc onto one photograph that keeps orbiting it.
+  // Medium format: the whole 6×6 roll from above, then a calm push in, staying
+  // nearly overhead, onto one photograph, which it holds.
   const square = role.medium, medium = framing(def(square), aspect);
   const heroIndex = featured(square, FEATURED.medium), hero6 = spot(square, heroIndex);
   const close6 = medium.frame(heroIndex).zoom;
   const around6 = (zoom: number, tilt: number, yaw: number): CameraPose => ({ zoom: close6 * zoom, pan: tablePan(hero6.x, hero6.y), tilt: degrees(tilt), yaw: degrees(yaw) });
   const overview6 = placed(square, medium.overview);
-  const mediumSource = custom({ ...overview6, zoom: overview6.zoom * 1.3, tilt: degrees(10), yaw: degrees(-3) }, b => {
-    b.step('establish', 'overview', heroIndex, 1.8, { camera: { ...overview6, zoom: overview6.zoom * 1.18, tilt: degrees(16), yaw: degrees(2) }, ease: 'linear' });
-    b.step('tour', 'push-in', heroIndex, 2.4, { camera: around6(1.35, 58, -38), ease: 'inOut' });
-    b.step('tour', 'orbit', heroIndex, 2.2, { camera: around6(1.1, 46, 30), ease: 'inOut' });
+  const mediumSource = custom({ ...overview6, zoom: overview6.zoom * 1.12, tilt: degrees(8), yaw: degrees(-1) }, b => {
+    b.step('establish', 'overview', heroIndex, .8, { camera: { ...overview6, zoom: overview6.zoom * 1.09, tilt: degrees(8.5), yaw: degrees(-.5) }, ease: 'linear' });
+    b.step('tour', 'push-in', heroIndex, 1.4, { camera: around6(1.04, 11, -.5), ease: 'inOut' });
+    b.step('tour', 'frame', heroIndex, 1.5, { camera: around6(1, 10, 0), ease: 'linear' });
   }, { aperture: .035 });
   const mediumShot = add('medium', square, mediumSource);
+  // The slides' screening, which the 6×9 shot leads into: the Develop reel's
+  // moves, without its band of light (the slides are already lit).
+  const developed = reel(role.slides, 'develop', 'normal', [.55, .5]);
+  const slides: ScreeningTimeline = { ...developed, revealMode: null, sample: time => ({ ...developed.sample(time), reveal: null }) };
+  const slideFrame = featured(role.slides, FEATURED.slides);
+  // Joined as the reel's camera settles on the featured slide.
+  const slideFrom = slides.segments.find(segment => segment.kind === 'develop' && segment.frameIndex === slideFrame)?.start ?? slides.frameStart(slideFrame);
+  // 6×9: each featured frame whole, with its rebate, from nearly overhead; a
+  // slight push on each and a glide along the strip between them. Then,
+  // without a cut, the camera arcs up and over to the slide, arriving at rest
+  // as the reel's push-in begins.
+  const [nineFirst, nineLast] = [featured(role.sixByNine, FEATURED.sixByNine[0]), featured(role.sixByNine, FEATURED.sixByNine[1])];
+  const [nineA, nineB] = [facing(role.sixByNine, nineFirst), facing(role.sixByNine, nineLast)];
+  const NINE_VIEWING = 4.1, ARC_SECONDS = 2.8, ARC_STEPS = 56;
+  const sixByNineShot = add('six-by-nine', role.sixByNine, custom(nineA(0, 1.14, 8, 0), b => {
+    b.step('tour', 'frame', nineFirst, 1.4, { camera: nineA(0, 1.1, 8, 0), ease: 'linear' });
+    b.step('tour', 'glide', nineLast, 1.3, { camera: nineB(0, 1.1, 8, 0), ease: 'inOut' });
+    b.step('tour', 'frame', nineLast, 1.4, { camera: nineB(0, 1.06, 8, 0), ease: 'linear' });
+    // One eased path, lifted in the middle, in short linear steps: no change of pace or direction along the way.
+    const from = b.camera, to = near(placed(role.slides, slides.sample(slideFrom).camera), from);
+    for (let k = 1; k <= ARC_STEPS; k++) {
+      const u = k / ARC_STEPS, eased = u * u * (3 - 2 * u), lift = Math.exp(Math.log(2.2) * Math.sin(Math.PI * eased));
+      const pose = lerpCamera(from, to, eased);
+      b.step('tour', 'glide', k < ARC_STEPS / 2 ? nineLast : slideFrame, ARC_SECONDS / ARC_STEPS, { camera: { ...pose, zoom: pose.zoom * lift }, ease: 'linear' });
+    }
+  }, { aperture: .03 }));
 
-  // 7. Screenings, a different roll in each: the Develop reel lighting up the
-  // slides, an Orbit around the 6×9 roll, Darkroom Prints and the Projector.
+  // 7. Screenings, a different roll in each: the Develop reel's moves over the
+  // slides, Darkroom Prints and the Projector.
   const segmentEnd = (source: ScreeningTimeline, kind: string, index: number, fallback: number) => {
     const found = source.segments.filter(segment => segment.kind === kind && segment.frameIndex === index).at(-1);
     return found ? found.start + found.duration : fallback;
   };
-  const slides = reel(role.slides, 'develop', 'normal', [.55, .5]);
-  const slideFrame = featured(role.slides, FEATURED.slides);
-  const slideFrom = slides.frameStart(slideFrame);
-  const slidesShot = add('slides', role.slides, slides, slideFrom, segmentEnd(slides, 'develop', slideFrame, slideFrom + 4.6) + .4, true);
-  // Orbit: an arc down onto each featured photograph in turn.
-  const orbit = reel(role.orbit, 'orbit', 'brisk', [.5, .5]);
-  const [orbitFirst, orbitLast] = [featured(role.orbit, FEATURED.orbit[0]), featured(role.orbit, FEATURED.orbit[1])];
-  const orbitFrom = orbit.frameStart(orbitFirst);
-  const orbitShot = add('orbit', role.orbit, orbit, orbitFrom, segmentEnd(orbit, 'frame', orbitLast, orbitFrom + 7), true);
-  // Darkroom Prints: the roll's prints on the darkroom wall, then briskly along the first three.
+  // The slide, held as the reel pushes in; the 6×9 shot leads into it.
+  const slidesShot = add('slides', role.slides, slides, slideFrom, segmentEnd(slides, 'frame', slideFrame, slideFrom + 5), true);
+  // Darkroom Prints: briskly along the roll's first three prints on the darkroom wall.
   const prints = reel(role.prints, 'darkroom-prints', 'brisk', [.5, .45]);
-  // From the wide view of the wall (the hold before the first push-in).
-  const wall = prints.segments.find(segment => segment.kind === 'push-in')!.start - .8;
+  // Joined as the camera pushes in from the wall toward the first print.
+  const wall = prints.segments.find(segment => segment.kind === 'push-in')!.start + .4;
   const lastPrint = featured(role.prints, FEATURED.prints[FEATURED.prints.length - 1]);
-  // It leaves early on the last print, which the reel would linger on.
-  const lastHold = prints.segments.find(segment => segment.kind === 'frame' && segment.frameIndex === lastPrint);
-  const printsShot = add('prints', role.prints, prints, wall, lastHold ? lastHold.start + Math.min(lastHold.duration, 1.8) : wall + 6);
+  // The reel would linger on the last print; it is held as long as the first.
+  const printHold = (index: number) => prints.segments.find(segment => segment.kind === 'frame' && segment.frameIndex === index);
+  const [firstHold, lastHold] = [printHold(featured(role.prints, FEATURED.prints[0])), printHold(lastPrint)];
+  const printsShot = add('prints', role.prints, prints, wall, lastHold ? lastHold.start + Math.min(lastHold.duration, firstHold?.duration ?? 1.8) : wall + 6);
   const projector = reel(role.projector, 'projector', 'normal', [.5, .5]);
   const leader = projector.cards.find(card => card.kind === 'countdown')!;
   const projectorFrom = leader.start + 2.3;
   const projected = featured(role.projector, FEATURED.projector[FEATURED.projector.length - 1]);
-  const projectorShot = add('projector', role.projector, projector, projectorFrom,
-    projected + 1 < def(role.projector).frames.length ? projector.frameStart(projected + 1) + .7 : segmentEnd(projector, 'frame', projected, projectorFrom + 6), true);
+  // Only the featured frames are screened: it leaves as the last of them ends.
+  const projectorShot = add('projector', role.projector, projector, projectorFrom, segmentEnd(projector, 'frame', projected, projectorFrom + 6), true);
   const countdownEnd = projectorShot.start + leader.end - projectorFrom;
 
   // 8. The camera cabinet: across the five cameras, then in on the last.
@@ -297,19 +357,20 @@ export function createShowreelTimeline(rolls: readonly ShowreelRoll[], requested
   const captions: Caption[] = [
     { start: room.start + .35, end: room.start + room.duration - .3, chapter: '01  ·  The darkroom', title: 'Step inside.', line: 'A fully modeled 3D darkroom to explore.' },
     { start: shelfShot.start + .3, end: shelfShot.start + shelfShot.duration - .25, chapter: '03  ·  The film shelf', title: 'Every roll, boxed and shelved.', line: 'Real Kodak and Fujifilm stocks, each with a cover photo.' },
-    { start: formatsShot.start + .5, end: formatsShot.start + formatsShot.duration - .2, chapter: '04  ·  The light table', title: 'Every format, true to size.', line: '35mm to 6×9, side by side at their real dimensions.' },
-    { start: trackShot.start + .3, end: trackShot.start + trackShot.duration - .2, chapter: '04  ·  The light table', title: 'Lifelike film borders.', line: 'Sprocket holes and edge codes, simulated for a more realistic view.' },
+    { start: formatsShot.start + .5, end: formatsShot.start + formatsShot.duration - .2, chapter: '04  ·  The light table', title: 'Every format, true to size.', line: 'Half frame to 6×9, side by side at their real dimensions.' },
+    { start: approachShot.start + approachShot.duration * .6, end: portraShot.start + portraShot.duration - .2, chapter: '04  ·  The light table', title: 'Lifelike film borders.', line: 'Sprocket holes and edge codes, simulated for a more realistic view.' },
+    { start: halfShot.start + .3, end: halfShot.start + halfShot.duration - .2, chapter: '04  ·  The light table', title: 'Half frame, side by side.', line: 'Two 18 × 24 mm photographs in the space of one 35mm frame.' },
     { start: loupeShot.start + .25, end: loupeShot.start + loupeShot.duration - .2, chapter: '04  ·  The light table', title: 'A loupe for every grain.', line: 'Glide it over the film and magnify up to 10×.' },
-    { start: mediumShot.start + .3, end: mediumShot.start + 4.0, chapter: '04  ·  The light table', title: 'Medium format, up close.', line: `${named(mediumShot).formatLabel.replace('120 · ', '')} negatives, the size of your palm.` },
-    { start: slidesShot.start + .3, end: slidesShot.start + slidesShot.duration - .25, chapter: '05  ·  Screenings', title: 'Watch slides light up.', line: 'A band of light passes beneath each transparency.' },
-    { start: orbitShot.start + .3, end: orbitShot.start + orbitShot.duration - .25, chapter: '05  ·  Screenings', title: 'Circle every photograph.', line: 'Slow arcs over each frame on the glowing table.' },
+    { start: mediumShot.start + .3, end: mediumShot.start + mediumShot.duration - .25, chapter: '04  ·  The light table', title: 'Medium format, up close.', line: `${named(mediumShot).formatLabel.replace('120 · ', '')} negatives, the size of your palm.` },
+    { start: sixByNineShot.start + .3, end: sixByNineShot.start + NINE_VIEWING, chapter: '04  ·  The light table', title: 'The whole frame, edge to edge.', line: `${named(sixByNineShot).formatLabel.replace('120 · ', '')} film, from rebate to rebate, at its true size.` },
+    { start: slidesShot.start + .3, end: slidesShot.start + slidesShot.duration - .25, chapter: '05  ·  Screenings', title: 'Your roll, as a film.', line: 'Screenings move through your photographs one frame at a time.' },
     { start: printsShot.start + .3, end: printsShot.start + printsShot.duration - .25, chapter: '05  ·  Screenings', title: 'Print every frame.', line: 'Each photograph enlarged onto paper and hung up to dry.' },
     { start: countdownEnd + .25, end: projectorShot.start + projectorShot.duration - .2, chapter: '05  ·  Screenings', title: 'Screen any roll.', line: 'Seven cinematic reels, exported as video.' },
     { start: cabinetShot.start + .4, end: end - .3, chapter: '06  ·  The camera cabinet', title: 'Five classic cameras.', line: 'Modeled in 3D, to turn over in your hands.', top: true },
   ];
   // The roll in view is named in the corner, from the first single-roll light table shot to the last screening.
   const slates: Slate[] = [];
-  for (const shot of shots.slice(shots.indexOf(trackShot), shots.indexOf(projectorShot) + 1)) {
+  for (const shot of shots.slice(shots.indexOf(approachShot), shots.indexOf(projectorShot) + 1)) {
     const last = slates.at(-1);
     if (last && last.roll === shot.roll && Math.abs(last.end + .15 - shot.start) < 1e-6) last.end = shot.start + shot.duration - .15;
     else slates.push({ start: shot.start + .4, end: shot.start + shot.duration - .15, roll: shot.roll });
@@ -324,7 +385,7 @@ export function createShowreelTimeline(rolls: readonly ShowreelRoll[], requested
     start: glide + .3 + index * .3, end: index === CAMERAS.length - 1 ? end - .25 : glide + 3.6 }));
   // Light leaks cover the cuts; the projector cuts into darkness instead, and
   // the shelf continues the new roll's move.
-  const flashes = [room.start, newRollShot.start, formatsShot.start, trackShot.start, loupeShot.start, mediumShot.start, slidesShot.start, orbitShot.start, printsShot.start, cabinetShot.start];
+  const flashes = [room.start, newRollShot.start, formatsShot.start, halfShot.start, loupeShot.start, mediumShot.start, sixByNineShot.start, printsShot.start, cabinetShot.start];
 
   const sample = (requested: number): ShowreelSample => {
     const t = Math.max(0, Math.min(duration, Number.isFinite(requested) ? requested : 0));
