@@ -1,3 +1,4 @@
+import { filmType } from '../data/filmFormats';
 import { uprightYaw } from '../utils/frameOrientation';
 import { locateFrame, type RollDefinition } from '../utils/rollLayout';
 import type { framing, ReelOptions } from './reels';
@@ -39,7 +40,7 @@ export function journeyTreatments(count: number, variety: number, negative: bool
 export function createFilmJourney(roll: RollDefinition, options: ReelOptions, f: ReturnType<typeof framing>) {
   const [movement, variety] = options.tuning!;
   const reduced = !!options.reducedMotion, negative = options.stockType === 'negative';
-  const n = roll.frames.length, medium = roll.format !== undefined && roll.format !== '135';
+  const n = roll.frames.length, medium = roll.format !== undefined && filmType(roll.format) !== '135';
   const treatments = journeyTreatments(n, variety, negative);
   // Reduced motion keeps the continuous take: flat views, almost no drift,
   // slower travel. It never invokes the other reels' fade-through-black cuts.

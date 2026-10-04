@@ -14,6 +14,7 @@ const root = path.join(repo, 'public', SHOWREEL_PHOTO_PATH);
 const FORMATS: Record<string, { format: string; sizing: 'fixed' | 'free'; gate: number }> = {
   '35': { format: '135', sizing: 'fixed', gate: 36 / 24 },
   '35wide': { format: '135', sizing: 'free', gate: 0 },
+  '35half': { format: '135-half', sizing: 'fixed', gate: 18 / 24 },
   '645': { format: '645', sizing: 'fixed', gate: 41.5 / 56 },
   '66': { format: '66', sizing: 'fixed', gate: 1 },
   '67': { format: '67', sizing: 'fixed', gate: 68.5 / 56 },

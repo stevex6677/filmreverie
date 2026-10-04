@@ -56,11 +56,11 @@ describe('M12 browser-local roll repository and import contracts', () => {
   for (const format of Object.keys(FILM_FORMATS) as (keyof typeof FILM_FORMATS)[]) it(`maps partial ${format} strips and restores edited E100 state`, () => {
     const data=bundle();data.roll.format=format; const runtime=createRuntimeRoll(data);try {
       const strips=createRollLayout(runtime.definition);expect(strips.at(-1)!.frames).toHaveLength(2);expect(strips[0].layout.frameWidth/strips[0].layout.frameHeight).toBeCloseTo(FILM_FORMATS[format].width/FILM_FORMATS[format].height);
-      expect(getPerforationPositions(strips[0].layout).top.length>0).toBe(format==='135');
+      expect(getPerforationPositions(strips[0].layout).top.length>0).toBe((format==='135'||format==='135-half'));
       const pt=locateFrame(runtime.definition,1);expect(mapRollPoint(runtime.definition,pt).frameIndex).toBe(1);
       const state=viewerReducer(createInitialViewerState(),{type:'LOAD_ROLL',roll:runtime.definition,stockId:'ektachrome-e100',view:{frameId:'missing',level:'frame',mode:'negative',brightness:9,magnification:-1,zoom:NaN,pan:{x:NaN,z:NaN},overview:null}});
       expect(state.filmMode).toBe('positive');expect(state.activeFrameIndex).toBe(0);expect(state.tableBrightness).toBe(1);expect(state.loupe.magnification).toBe(1.5);expect(Number.isFinite(state.inspectZoom)).toBe(true);
-      expect(formatLayout(format).perforated).toBe(format==='135');
+      expect(formatLayout(format).perforated).toBe((format==='135'||format==='135-half'));
     } finally {runtime.dispose();}
   });
 });

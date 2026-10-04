@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { filmType } from '../data/filmFormats';
 import { applyScreeningPose } from '../screening/camera';
 import { NEW_ROLL_PACE, SHOWREEL_GITHUB, SHOWREEL_SITE, type ShowreelSample, type ShowreelTimeline } from './timeline';
 import { DEFAULT_SETTINGS, type ShowreelLook } from './settings';
@@ -310,7 +311,7 @@ const processEach = (count: number) => Math.min(.13, 1.9 / Math.max(1, count));
  */
 function drawEditor(ctx: CanvasRenderingContext2D, t: number, timeline: ShowreelTimeline) {
   const { thumbs, stage, frames } = editorPhotos(timeline);
-  const roll = timeline.rolls[timeline.editorRoll], name = roll.name, count = frames.length, small = roll.format === '135';
+  const roll = timeline.rolls[timeline.editorRoll], name = roll.name, count = frames.length, small = filmType(roll.format) === '135';
   const step = (start: number, length: number) => smooth((t - start) / length);
   const DROP = 1.8, EACH = processEach(count), TYPE = 2.3;
   const arrived = Math.max(0, Math.min(count, Math.floor((t - DROP - .15) / EACH) + 1));

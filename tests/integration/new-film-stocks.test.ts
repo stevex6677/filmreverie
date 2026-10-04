@@ -18,7 +18,7 @@ describe('Consumer color negative stocks', () => {
     it(`${stockId} validates its real formats and preserves stock, strength and photo bytes`, async () => {
       const repository = new RollRepository(new IDBFactory());
       for (const format of Object.keys(FILM_FORMATS) as FilmFormat[]) {
-        const data = bundle(stockId, format), supported = stockId === 'gold-200' || format === '135';
+        const data = bundle(stockId, format), supported = stockId === 'gold-200' || (format === '135' || format === '135-half');
         expect(supportsFilmFormat(stockId, format)).toBe(supported);
         for (const sizing of ['fixed', 'free'] as const) {
           data.roll.sizing = sizing;

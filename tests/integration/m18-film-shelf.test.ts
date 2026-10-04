@@ -65,8 +65,8 @@ describe('M18 packaging coverage and texture projection', () => {
         continue;
       }
       const entry = getPackaging(stock.id, format);
-      expect(entry.stockId).toBe(stock.id); expect(entry.format).toBe(format === '135' ? '135' : '120');
-      expect(!!entry.cartridge).toBe(format === '135'); expect(entry.box.sha256).toMatch(/^[0-9a-f]{64}$/);
+      expect(entry.stockId).toBe(stock.id); expect(entry.format).toBe((format === '135' || format === '135-half') ? '135' : '120');
+      expect(!!entry.cartridge).toBe((format === '135' || format === '135-half')); expect(entry.box.sha256).toMatch(/^[0-9a-f]{64}$/);
       expect(entry.box.asset).toMatch(/^\/assets\/film-packaging\//);
     }
     expect(new Set(Array.from({ length: 16 }, (_, slot) => placeholderPackaging(slot).id)).size).toBe(10);

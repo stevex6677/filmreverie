@@ -40,7 +40,7 @@ For complete physical standards (KS-1870 / ISO 1007), coordinate spaces, modific
 - **Loupe Styles & Sizes:** Choose the classic optical barrel or a clear glass hemisphere, each in Small, Medium or Large. Open Loupe settings to expand a single dock containing style, size, magnification and optical effects. Drag the loupe or explore its lens while settings stay open; Done or Escape collapses the dock. The glass hemisphere preserves transmitted colors without simulated reflections or a cloudy tint. Size changes the viewing area independently of magnification. Style and size are remembered across rolls and visits.
 
 ### 4. Flexible Roll Sizing & Multi-Format Support
-- **Film Formats:** Support for **35mm** (36 × 24 mm) and **120 medium format** (6×4.5, 6×6, 6×7, 6×9).
+- **Film Formats:** Support for **35mm** (36 × 24 mm full frame or 18 × 24 mm half frame, with 72 nominal half-frame exposures) and **120 medium format** (6×4.5, 6×6, 6×7, 6×9).
 - **Free-Sizing Mode:** Retains each image's native aspect ratio along a shared film height (24 mm for 35mm, 56 mm for 120).
 - **Film Advance & Capacity:** Dynamic film span metering with a 230 mm strip-wrapping layout that scales to fit the table.
 - **Multi-Device Navigation:** Responsive controls designed for mouse/keyboard on desktop and fluid touch gestures (pinch-to-zoom, pan, swipe) on iPad and mobile.

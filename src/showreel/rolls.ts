@@ -1,5 +1,5 @@
 import data from '../data/showreelRolls.json' with { type: 'json' };
-import { FILM_FORMATS, FILM_UNIT, FRAME_GAP_MM, formatLayout, frameAspect, isFilmFormat, rollFormatLabel, type FilmFormat, type FrameSizing } from '../data/filmFormats';
+import { FILM_FORMATS, FILM_UNIT, filmType, formatLayout, frameAspect, frameGapMm, isFilmFormat, rollFormatLabel, type FilmFormat, type FrameSizing } from '../data/filmFormats';
 import { FILM_RENDER_SCALE, mm } from '../data/physicalScale';
 import { getFilmStock, isFilmStockId, supportsFilmFormat, type FilmStockId } from '../data/filmStocks';
 import { getStripDimensions } from '../utils/loupeMapping';
@@ -25,7 +25,7 @@ const rolls = data.rolls.map(roll => {
   if (!isFilmFormat(roll.format) || !isFilmStockId(roll.stockId) || !supportsFilmFormat(roll.stockId, roll.format) || (roll.sizing !== 'fixed' && roll.sizing !== 'free')) throw new Error(`Unsupported showreel roll ${roll.id}`);
   const format = roll.format, stockId = roll.stockId, sizing: FrameSizing = roll.sizing;
   // The same frame spacing and free-frame strips as rolls made in the roll editor.
-  const layout = { ...formatLayout(format), gap: FRAME_GAP_MM * FILM_UNIT };
+  const layout = { ...formatLayout(format), gap: frameGapMm(format, sizing) * FILM_UNIT };
   const frames = roll.frames.map((frame, i) => ({ id: frame.id, order: i + 1, src: frame.src, title: `${roll.name} · ${i + 1}`, alt: `${roll.name}, frame ${i + 1}`,
     aspectRatio: frame.width / frame.height, rotation: frame.rotation, uprightRotation: 0, sourceWidth: frame.width, sourceHeight: frame.height }));
   const definition: RollDefinition = { rollId: roll.id, label: `${roll.name} · ${rollFormatLabel(format, sizing)}`, frames, framesPerStrip: FILM_FORMATS[format].perStrip,
@@ -74,9 +74,9 @@ for (const column of columns) {
   const columnTop = top;
   for (const index of column) { offsets.set(index, { x, y: top - rolls[index].height / 2 }); top -= rolls[index].height + ROW_GAP; }
   const roll = rolls[column[0]], f = FILM_FORMATS[roll.format];
-  const long = roll.sizing === 'free' ? Math.round(Math.max(...column.flatMap(i => rolls[i].definition.frames.map(frame => f.height * Math.max(frame.aspectRatio, 1 / frame.aspectRatio))))) : Math.round(f.width);
-  formats.push({ title: roll.sizing === 'free' ? 'Panoramic' : roll.format === '135' ? '35mm' : f.label.replace('120 · ', ''),
-    detail: `${roll.format === '135' ? '35mm film' : '120 film'}  ·  ${Math.round(Math.min(f.width, f.height))} × ${long} mm`, rolls: column, x, top: columnTop, width });
+  const long = roll.sizing === 'free' ? Math.round(Math.max(...column.flatMap(i => rolls[i].definition.frames.map(frame => f.height * Math.max(frame.aspectRatio, 1 / frame.aspectRatio))))) : Math.round(Math.max(f.width, f.height));
+  formats.push({ title: roll.sizing === 'free' ? 'Panoramic' : roll.format === '135' ? '35mm' : f.label.replace(/^(120|35mm) · /, ''),
+    detail: `${filmType(roll.format) === '135' ? '35mm film' : '120 film'}  ·  ${Math.round(Math.min(f.width, f.height))} × ${long} mm`, rolls: column, x, top: columnTop, width });
   left += width + COLUMN_GAP;
 }
 
