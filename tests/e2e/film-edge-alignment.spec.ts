@@ -19,7 +19,11 @@ for (const format of ["135", "67"]) test(`${format} photo edges stay aligned wit
   await expect(page.locator("main")).toHaveAttribute("data-is-transitioning", "false");
   await openFrame(page,1);
   await expect(page.locator("main")).toHaveAttribute("data-is-transitioning", "false");
-  await openViewingTools(page);await page.getByRole("button", { name: "Switch to Positive", exact: true }).click();
+  await openViewingTools(page);
+  // Newly imported negative stocks now open in positive view by default.
+  const toPositive = page.getByRole("button", { name: "Switch to Positive", exact: true });
+  if (await toPositive.isVisible()) await toPositive.click();
+  await expect(page.getByRole("button", { name: "Switch to Negative", exact: true })).toBeVisible();
   await page.waitForTimeout(700);
   const output = `${process.env.M14_CANDIDATE_DIR || 'artifacts/m14-candidates'}/edge-alignment`;
   await fs.mkdir(output, { recursive: true });

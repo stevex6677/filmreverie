@@ -3,7 +3,6 @@ import * as THREE from "three";
 import {
   DEFAULT_LAYOUT,
   PERFORATIONS_PER_FRAME,
-  TOTAL_PERFORATIONS_PER_EDGE,
   SPROCKET_WIDTH,
   SPROCKET_HEIGHT,
   getStripDimensions,
@@ -36,27 +35,24 @@ describe("M3 Integration — Film Realism, Perforation Geometry & Shader Synchro
   describe("Sprocket Perforation Geometry (8 per frame along each edge)", () => {
     it("has exactly 8 perforations per frame along each edge", () => {
       expect(PERFORATIONS_PER_FRAME).toBe(8);
-      expect(TOTAL_PERFORATIONS_PER_EDGE).toBe(40);
     });
 
-    it("generates exactly 40 top and 40 bottom perforations for a 5-frame strip", () => {
+    it("perforates the whole strip, including margins, at 4.75 mm pitch", () => {
       const { top, bottom } = getPerforationPositions(DEFAULT_LAYOUT);
-      expect(top.length).toBe(40);
-      expect(bottom.length).toBe(40);
+      expect(top).toHaveLength(42);
+      expect(bottom).toHaveLength(top.length);
+      for (let i = 1; i < top.length; i++) {
+        expect((top[i].x - top[i - 1].x) / (.55 / 36)).toBeCloseTo(4.75, 10);
+        expect(bottom[i].x).toBe(top[i].x);
+      }
     });
 
-    it("assigns exactly 8 perforations to each of the 5 photo frames", () => {
-      const { top, bottom } = getPerforationPositions(DEFAULT_LAYOUT);
-
-      for (let f = 0; f < 5; f++) {
-        const topFrameSprockets = top.filter((p) => p.frameIndex === f);
-        const bottomFrameSprockets = bottom.filter((p) => p.frameIndex === f);
-        expect(topFrameSprockets.length).toBe(8);
-        expect(bottomFrameSprockets.length).toBe(8);
-
-        // Verify sequential perforation indices 0 through 7
-        const topIndices = topFrameSprockets.map((p) => p.perforationIndex);
-        expect(topIndices).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    it("does not stretch perforations to fit a panoramic image gate", () => {
+      const layout = { ...DEFAULT_LAYOUT, frameCount: 1, frameWidth: 65 * (.55 / 36) };
+      const { top } = getPerforationPositions(layout);
+      expect(top.filter(p => p.frameIndex === 0).length).toBeGreaterThan(8);
+      for (let i = 1; i < top.length; i++) {
+        expect((top[i].x - top[i - 1].x) / (.55 / 36)).toBeCloseTo(4.75, 10);
       }
     });
 

@@ -33,7 +33,7 @@
     "imageUrl": "https://images.squarespace-cdn.com/content/v1/6772f49adddde64696e19a02/a4a6f792-6dd3-4106-a147-0772600023e2/super%2Bultra%2B16mm%2Bfilm%2Bcoverage%2Bvideographer%2Bbolex%2Bframing%2Beric%2Brene%2Bpenoy.jpg",
     "accessed": "2026-09-09",
     "license": "Linked for study only; reference photograph not redistributed. Runtime lettering and geometry are original project artwork (ISC).",
-    "limitations": "Lettering and numbered outer rails reconstructed from developed 135 still-film references. Placement normalized to this five-frame strip; font is an approximation. Exact optical edge-code bits, batch IDs, and production tolerances are not verified and are omitted. Base color is an artistic approximation under the existing viewer lighting, not a calibrated stock measurement."
+    "limitations": "Lettering and numbered outer rails reconstructed from developed 135 still-film references. Placement follows physical film distance (see docs/FILM_EDGE_PRINTING.md); font is an approximation. Exact optical edge-code bits, batch IDs, and production tolerances are not verified and are omitted. Base color is an artistic approximation under the existing viewer lighting, not a calibrated stock measurement."
   },
   "formats": [
     "135",

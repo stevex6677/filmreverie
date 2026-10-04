@@ -32,7 +32,7 @@
     "imageUrl": "https://www.fujifilm.com/products/photofinishing/films/images/provia_100f.jpg",
     "accessed": "2026-09-18",
     "license": "Linked for study only; reference photograph not redistributed. Runtime lettering and geometry are original project artwork (ISC).",
-    "limitations": "Lettering, frame and half-frame numbers reconstructed from developed 135/120 references. Optical code tracks are omitted per slide film standard. Placement normalized to five frames; font and base color are approximations, not calibrated measurements."
+    "limitations": "Lettering, frame and half-frame numbers reconstructed from developed 135/120 references. Optical code tracks are omitted per slide film standard. Placement follows physical film distance (see docs/FILM_EDGE_PRINTING.md); font and base color are approximations, not calibrated measurements."
   },
   "formats": [
     "135",
