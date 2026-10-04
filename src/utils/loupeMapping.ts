@@ -1,10 +1,14 @@
+import { FILM_MODEL_UNIT } from '../data/physicalScale';
+import { FILM_135_PERFORATION_PITCH_MM } from '../data/filmEdgePrinting';
+
 export interface FilmStripLayout {
   frameCount: number;
   perforated?: boolean;
-  perforationsPerFrame?: number;
   frameNumberOffset?: number;
   frameWidth: number;
   frameWidths?: readonly number[];
+  // Distance from the roll's first image gate to this strip's first gate.
+  // Strip-end display margins are not additional film advance.
   filmLengthOffset?: number;
   frameHeight: number;
   gap: number;
@@ -25,7 +29,6 @@ export const LOUPE_MAGNIFICATION = 2.5;
 
 // Standard 35mm film perforation specifications (KS-1870 / ISO 1007: 8 perforations per frame along each edge)
 export const PERFORATIONS_PER_FRAME = 8;
-export const TOTAL_PERFORATIONS_PER_EDGE = DEFAULT_LAYOUT.frameCount * PERFORATIONS_PER_FRAME; // 40
 // Longitudinal width along film length: 1.981 mm (0.0780 in)
 export const SPROCKET_WIDTH = 0.030265; // 1.981 * (0.55 / 36)
 // Transverse height across film width: 2.794 mm (0.1100 in)
@@ -61,42 +64,38 @@ export function getStripDimensions(layout: FilmStripLayout = DEFAULT_LAYOUT) {
   return { width, height };
 }
 
+export function getFilmLengthOffset(layout: FilmStripLayout) {
+  // Legacy uniform layouts can reconstruct their position from the image count.
+  // Variable-width rolls supply the accumulated distance in createRollLayout.
+  return layout.filmLengthOffset ?? (layout.frameNumberOffset ?? 0) * (layout.frameWidth + layout.gap);
+}
+
 export function getPerforationPositions(layout: FilmStripLayout = DEFAULT_LAYOUT): {
   top: PerforationPosition[];
   bottom: PerforationPosition[];
 } {
   if (layout.perforated === false) return { top: [], bottom: [] };
-  const { height } = getStripDimensions(layout);
+  const { width, height } = getStripDimensions(layout);
   const top: PerforationPosition[] = [];
   const bottom: PerforationPosition[] = [];
 
   // Authentic KS-1870 / ISO 1007: perforation centers sit 3.4155mm from the film edge (±14.0845mm from centerline)
-  const unit = 0.55 / 36;
+  const unit = FILM_MODEL_UNIT;
   const topY = height / 2 - 3.4155 * unit;
   const bottomY = -height / 2 + 3.4155 * unit;
 
-  if (layout.frameWidths) {
-    const { width } = getStripDimensions(layout);
-    const step = (DEFAULT_LAYOUT.frameWidth + DEFAULT_LAYOUT.gap) / PERFORATIONS_PER_FRAME;
-    for (let x = -width / 2 + step / 2, k = 0; x < width / 2 - SPROCKET_WIDTH / 2; x += step, k++) {
-      top.push({ x, y: topY, frameIndex: 0, perforationIndex: k });
-      bottom.push({ x, y: bottomY, frameIndex: 0, perforationIndex: k });
-    }
-    return { top, bottom };
-  }
-  const frameSpan = layout.frameWidth + layout.gap;
-  const count = layout.perforationsPerFrame ?? PERFORATIONS_PER_FRAME;
-  const step = frameSpan / count;
-
-  for (let f = 0; f < layout.frameCount; f++) {
-    const center = getFrameCenter(f, layout);
-    const frameLeft = center.x - layout.frameWidth / 2;
-
-    for (let k = 0; k < count; k++) {
-      const x = frameLeft + (k + 0.5) * step;
-      top.push({ x, y: topY, frameIndex: f, perforationIndex: k });
-      bottom.push({ x, y: bottomY, frameIndex: f, perforationIndex: k });
-    }
+  const step = FILM_135_PERFORATION_PITCH_MM * unit;
+  const start = getFilmLengthOffset(layout) - layout.marginX;
+  const first = Math.ceil((start + SPROCKET_WIDTH / 2) / step - .5);
+  const bounds = Array.from({ length: layout.frameCount }, (_, i) => getFrameBounds(i, layout));
+  for (let k = first; ; k++) {
+    const x = (k + .5) * step - start - width / 2;
+    // Keep complete physical holes inside the cut ends.
+    if (x > width / 2 - SPROCKET_WIDTH / 2) break;
+    const frameIndex = bounds.findIndex(b => x >= b.minX && x <= b.maxX);
+    const perforationIndex = ((k % PERFORATIONS_PER_FRAME) + PERFORATIONS_PER_FRAME) % PERFORATIONS_PER_FRAME;
+    top.push({ x, y: topY, frameIndex, perforationIndex });
+    bottom.push({ x, y: bottomY, frameIndex, perforationIndex });
   }
 
   return { top, bottom };

@@ -14,7 +14,7 @@ export const isFilmFormat = (value: string): value is FilmFormat => Object.hasOw
 export const filmType = (format: FilmFormat | '120') => format === '135' || format === '135-half' ? '135' : '120';
 export function formatLayout(format: FilmFormat) {
   const f = FILM_FORMATS[format], unit = FILM_MODEL_UNIT;
-  return { frameWidth: f.width * unit, frameHeight: f.height * unit, marginY: (f.filmWidth - f.height) / 2 * unit, marginX: .08, gap: format === '135-half' ? frameGapMm(format) * unit : .04, perforated: filmType(format) === '135', perforationsPerFrame: format === '135-half' ? 4 : 8 };
+  return { frameWidth: f.width * unit, frameHeight: f.height * unit, marginY: (f.filmWidth - f.height) / 2 * unit, marginX: .08, gap: format === '135-half' ? frameGapMm(format) * unit : .04, perforated: filmType(format) === '135' };
 }
 
 export type FrameSizing = 'fixed' | 'free';

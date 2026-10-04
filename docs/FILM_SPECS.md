@@ -8,7 +8,7 @@ This document describes how film dimensions, sprocket perforations, borders, and
 
 ### 1.1 Physical Standards: KS-1870 & ISO 1007
 
-The 35mm film geometry adheres strictly to the **ISO 1007** still photography standard and **KS-1870** (Kodak Standard) perforation specifications:
+The renderer uses nominal 35mm still-film dimensions and KS-1870 perforation geometry. Factory marking pitches are independent of exposure gates; see [the edge-print sources and calibration limits](FILM_EDGE_PRINTING.md). Typography, cut margins and camera advance gaps remain simulation choices:
 
 | Dimension | Physical Size (mm) | Model Unit (`0.55 / 36`) | World Meters (`mm * 0.0036`) | Source / Standard |
 | :--- | :--- | :--- | :--- | :--- |
@@ -16,8 +16,8 @@ The 35mm film geometry adheres strictly to the **ISO 1007** still photography st
 | **Frame Exposure Width** | $36.000\,\text{mm}$ | $0.550000$ | $0.129600\,\text{m}$ | ISO 1007 (3:2 format) |
 | **Frame Exposure Height** | $24.000\,\text{mm}$ | $0.366667$ | $0.086400\,\text{m}$ | ISO 1007 (3:2 format) |
 | **Top & Bottom Margins** | $5.500\,\text{mm}$ | $0.084028$ | $0.019800\,\text{m}$ | $\frac{35 - 24}{2} = 5.5\,\text{mm}$ |
-| **Inter-Frame Gap** | $3.000\,\text{mm}$ | $0.045833$ | $0.010800\,\text{m}$ | Standard camera advance |
-| **Perforations Per Frame** | $8\text{ holes / edge}$ | $8$ | $8$ | KS-1870 ($4.75\,\text{mm}$ pitch) |
+| **Inter-Frame Gap** | $3.000\,\text{mm}$ | $0.045833$ | $0.010800\,\text{m}$ | Imported-roll simulation gap; a nominal 38 mm full-frame advance leaves a 2 mm gap |
+| **Perforations Per 38 mm Factory Cell** | $8\text{ holes / edge}$ | $8$ | $8$ | KS-1870 ($4.75\,\text{mm}$ pitch) |
 | **Sprocket Hole Width** (longitudinal) | $1.981\,\text{mm}$ ($0.0780\,\text{in}$) | $0.030265$ | $0.007132\,\text{m}$ | KS-1870 |
 | **Sprocket Hole Height** (transverse) | $2.794\,\text{mm}$ ($0.1100\,\text{in}$) | $0.042686$ | $0.010058\,\text{m}$ | KS-1870 (vertical rectangle) |
 | **Sprocket Corner Radius** | $0.508\,\text{mm}$ ($0.020\,\text{in}$) | $0.007761$ | $0.001829\,\text{m}$ | KS-1870 |
@@ -52,6 +52,7 @@ There are three coordinated spaces used in the engine:
 
 In [`src/components/FilmStrip.tsx`](file:///Users/zhangzimou/orca/workspaces/film_photo/infra/src/components/FilmStrip.tsx):
 - `THREE.Shape` defines the outer boundary with lab guillotine sheared ends.
+- `getPerforationPositions` places holes every 4.75 mm along cumulative film length, including cut margins, independently of image widths or strip grouping.
 - `shape.holes` punches each sprocket perforation using `createRoundedRectPath(p.x, p.y, SPROCKET_WIDTH, SPROCKET_HEIGHT, SPROCKET_CORNER_RADIUS)`.
 - The geometry is bent along its transverse axis using `curveFilmSubstrate` to simulate natural film curl (`FILM_CURL_HEIGHT = 0.0018`).
 - The light table shines directly through the cutouts, exposing genuine light transmission.
@@ -59,8 +60,10 @@ In [`src/components/FilmStrip.tsx`](file:///Users/zhangzimou/orca/workspaces/fil
 ### 1.4 Rebate Artwork & DX Edge Code Barcodes
 
 In [`src/utils/filmRebateCanvas.ts`](file:///Users/zhangzimou/orca/workspaces/film_photo/infra/src/utils/filmRebateCanvas.ts):
+Factory cells are placed by `filmEdgeRepeats`; `{frameNum}` is a factory index, never the photo array index. Integer / `A` positions repeat at 38 / 19 mm across strip cuts.
+
 - **Color Negatives (`type: "negative"`)**:
-  - **Upper Outer Rail**: Full-frame number above hole 0 (`{frameNum}`) and authentic stock brand label (`KODAK PORTRA 400`, `KODAK EKTAR 100`, etc.) centered across holes 1–4.
+  - **Upper Outer Rail**: Stock legends use fixed physical repeats, independently of photo gates. Numbering stays on the lower rail to avoid collisions with the separate legend rhythm.
   - **Inner Margins**: Latent registration dashes centered between every pair of sprocket holes.
   - **Lower Outer Rail**:
     - Hole 0: Full-frame number (`{frameNum}`).
@@ -72,7 +75,7 @@ In [`src/utils/filmRebateCanvas.ts`](file:///Users/zhangzimou/orca/workspaces/fi
   - Clean cream lettering (`#d7ccb0`) on dark transparent substrate (`rgba(24, 22, 27, 0.99)`).
   - No optical barcode tracks, matching authentic processed E-6 slides.
 - **120 Medium Format (`perforated === false`)**:
-  - Handled by [`src/utils/film120Rebate.ts`](file:///Users/zhangzimou/orca/workspaces/film_photo/infra/src/utils/film120Rebate.ts). Continuous unperforated 61mm substrate with authentic frame numbers, dots, and advance arrows for 645, 66, 67, and 69 formats.
+  - Handled by [`src/utils/film120Rebate.ts`](file:///Users/zhangzimou/orca/workspaces/film_photo/infra/src/utils/film120Rebate.ts). Continuous unperforated 61mm substrate. Kodak uses nominal 45.5 / 60.667 mm dual number tracks; Fujichrome uses an approximately 43 mm single upper track. These profiles apply to all 645, 66, 67, 69 and free-size gates, with the evidence limits recorded in [FILM_EDGE_PRINTING.md](FILM_EDGE_PRINTING.md).
 
 ---
 
@@ -119,7 +122,8 @@ In [`src/utils/filmRebateCanvas.ts`](file:///Users/zhangzimou/orca/workspaces/fi
   };
   ```
 * **Barcode appearance**: Modify `drawDXBarcodeBlock()` (line height, sync patterns, bar width).
-* **Text baseline / positions**: Modify `paintRebate()` lines 109–172.
+* **Physical pitch / manufacturer track**: Update `src/data/filmEdgePrinting.ts` and the reference record in `FILM_EDGE_PRINTING.md`; preserve `filmLengthOffset` continuity.
+* **Text baseline / positions**: Modify `paintRebate()` or `draw120Rebate()` without coupling positions to image boundaries.
 
 ### 2.3 Updating Associated Tests
 

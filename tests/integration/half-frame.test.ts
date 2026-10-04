@@ -51,9 +51,9 @@ it('renders local and published half frames with identical gates, strips and 35m
         expect(strip.layout.frameHeight / FILM_UNIT).toBeCloseTo(24);
         expect(strip.layout.gap / FILM_UNIT).toBeCloseTo(1.5);
         const holes = getPerforationPositions(strip.layout);
-        expect(holes.top).toHaveLength(48);
-        expect(holes.bottom).toHaveLength(48);
-        expect((holes.top[1].x - holes.top[0].x) / FILM_UNIT).toBeCloseTo(39 / 8);
+        expect(holes.top.length).toBeGreaterThan(48); // Includes the cut-end margins.
+        expect(holes.bottom).toHaveLength(holes.top.length);
+        holes.top.slice(1).forEach((hole, i) => expect((hole.x - holes.top[i].x) / FILM_UNIT).toBeCloseTo(4.75));
       }
       definition.frames.forEach((_, i) => expect(mapRollPoint(definition, locateFrame(definition, i))).toMatchObject({ frameIndex: i, isWithinFrame: true }));
     }

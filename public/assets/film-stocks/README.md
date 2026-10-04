@@ -1,6 +1,6 @@
 # M9 stock reference notes
 
-The eleven JSON files are local runtime profiles and reference records. `src/data/filmStocks.ts` imports them into the app; `filmRebateCanvas.ts` draws original, scalable lettering and rail numbers. Base/rebate references primarily describe developed **135 still film**, not cartridges, motion-picture stock, or 120 backing paper. Each profile explicitly lists its supported film types in `formats`. No external image is requested at runtime and no reference photograph is redistributed.
+The twelve JSON files are local runtime profiles and reference records. `src/data/filmStocks.ts` imports them into the app; `filmRebateCanvas.ts` draws original, scalable lettering and rail numbers. Base/rebate references primarily describe developed **135 still film**, not cartridges, motion-picture stock, or 120 backing paper. Each profile explicitly lists its supported film types in `formats`. No external image is requested at runtime and no reference photograph is redistributed.
 
 | Stock / edition | Developed-film reference | Features used |
 | --- | --- | --- |
@@ -12,6 +12,15 @@ The eleven JSON files are local runtime profiles and reference records. `src/dat
 | Provia 100F (RDP III) | [Fujifilm Provia 100F Professional Data Sheet](https://www.fujifilm.com/products/photofinishing/films/pdf/provia_100f_datasheet.pdf) — developed 135/120 slide strips | Dark neutral reversal border, warm cream FUJIFILM PROVIA 100F lettering, RDP III emulsion marking, advance arrow and frame numbering. |
 | Velvia 50 (RVP 50) | [Fujifilm Velvia 50 Professional Data Sheet](https://www.fujifilm.com/products/photofinishing/films/pdf/velvia_50_datasheet.pdf) — developed 135/120 slide strips | Deep black reversal border, rich warm amber FUJIFILM VELVIA 50 lettering, RVP 50 emulsion code, advance arrow and frame numbering. |
 | Velvia 100 (RVP 100) | [Fujifilm Velvia 100 Professional Data Sheet](https://www.fujifilm.com/products/photofinishing/films/pdf/velvia_100_datasheet.pdf) — developed 135/120 slide strips | Deep black reversal border, pale golden cream FUJIFILM VELVIA 100 lettering, RVP 100 emulsion code, advance arrow and frame numbering. |
+
+## Physical edge spacing
+
+The renderer now prints factory marks along cumulative film length, independently
+of photo boundaries. See [pitches, manufacturer sources and calibration limits](../../../docs/FILM_EDGE_PRINTING.md).
+135 uses 38 mm numbers, 19 mm intermediate numbers and 4.75 mm perforations.
+120 retains nominal Kodak dual tracks and uses a separate Fujichrome single-track
+profile; their exact millimetre calibration is not manufacturer-certified.
+The historical appearance notes below do not override these spacing profiles.
 
 ## Deliberate limits
 

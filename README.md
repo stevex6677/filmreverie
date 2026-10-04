@@ -32,7 +32,7 @@ Twelve film stocks with distinct adjustable color/grain effects and procedural e
 - **Fujifilm Provia 100F and Velvia 50/100:** Color reversal stocks in 35mm and 120.
 - **Kodak Ektachrome E100:** Reversal slide film with neutral clear base and positive-only viewing.
 
-For complete physical standards (KS-1870 / ISO 1007), coordinate spaces, modification instructions, and how to add new stocks, see [docs/FILM_SPECS.md](docs/FILM_SPECS.md).
+For complete physical standards (KS-1870 / ISO 1007), coordinate spaces, modification instructions, and how to add new stocks, see [docs/FILM_SPECS.md](docs/FILM_SPECS.md). Factory number spacing and the evidence limits for 120 film are documented in [film edge printing](docs/FILM_EDGE_PRINTING.md).
 
 ### 3. Physical Loupe & Optical Magnification
 - **Tactile Inspection Loupe:** Drag to inspect fine film grain and edge markings across frames.
