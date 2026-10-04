@@ -27,6 +27,55 @@ pushed or deployed.
   `safaridriver --enable`), so later WebKit checks can run locally; no Safari
   export run was completed before the merge.
 
+## Strip-change pauses and tour rhythm (M22.10, 2026-10-03)
+
+User feedback: the whole-roll overview after each strip looks like the end of
+the reel, but frames playing one by one become boring on long rolls; each
+reel should pause in its own way, and Darkroom Prints should not go back to
+the film until the end.
+
+- **Pauses** (`act: 'break'`, same boundaries as before: none below 8 frames,
+  every other boundary under 16 frames and on 120). The whole roll is now
+  shown only at the start and the end; pause shots stay at about 0.35–0.4×
+  its camera distance.
+
+  | Reel | Pause at a strip change |
+  |---|---|
+  | Tracking Shot | The dolly runs past the last frame, cranes up and round to a low, shallow-focus look down the next strip from its first frame, then swings down onto it. |
+  | Develop | Stands back on two strips: the finished one, now positive, above the next one still negative. |
+  | Projector | Unchanged: the jump stays hidden behind the shutter. |
+  | Darkroom | The dolly runs off the end of the film as the table dims to 15%, then makes a higher pass back over the next strip as it glows up. |
+  | Orbit | A low arc around the boundary between the two strips. |
+  | Darkroom Prints | Stays at the wall: steps back (finished line above, next below) and walks back along it to the next line's first print. Returns to the table only at the end. |
+  | Documentary | A chapter break: the photograph drifts into black, a half-second breath, then the next one fades up (no dissolve there). |
+
+- **Rhythm** (`tourRhythm` in `reels.ts`; every reel except Projector, which
+  keeps its beat grid and speed-up runs). Every sixth frame (the middle one of
+  a short roll) is a lingering look, as Tracking Shot's details were. On 35 mm
+  rolls of 10+ frames, runs of two and then three quick frames follow, never
+  across a strip boundary. Medium format and reduced motion have no quick
+  runs. Tracking Shot, Darkroom and Darkroom Prints pass a run without
+  stopping (`passRun`: accelerate, an even frame pitch per second, settle on
+  the last). Develop stands back and follows the band across the run. Orbit
+  makes short, narrow arcs; Documentary drifts and dissolves sooner. Lingering
+  looks: Tracking Shot's detail (unchanged), a slower Develop band, a wider
+  and slower Orbit arc, a Darkroom lean-in across the photograph, a closer
+  Darkroom Prints look, a longer Documentary drift.
+- **Running time** (36 frames, Normal, 16:9): Tracking Shot 152.9 → 135.9 s,
+  Develop 161.7 → 147.3 s, Darkroom 126.6 → 125.5 s, Orbit 165.2 → 146.4 s,
+  Darkroom Prints 141.8 → 128.4 s, Documentary 175.8 → 155.7 s; Projector
+  unchanged.
+- The showreel's excerpts are unchanged: its samples are byte-identical before
+  and after (16:9, 9:16 and 1:1).
+- **Verification (this Mac):** new integration tests for the pauses (at every
+  boundary, never at whole-roll distance, Develop's positive/negative split,
+  Darkroom dimming, Darkroom Prints never leaving the wall, Documentary's dip
+  through black) and the rhythm (counts, run lengths, no runs across strips or
+  on 120/short/reduced-motion rolls, even speed across every joint in a run).
+  Pause stills were captured in desktop Chrome at 16:9 and 9:16 for every reel
+  and reviewed. **Not checked:** motion of quick runs in a recorded video,
+  Safari/WebKit, and physical iPad/iPhone playback.
+
 ## Playback smoothness (M22.9, 2026-09-29)
 
 User report: previews stutter occasionally on an iPad Pro; worry about
