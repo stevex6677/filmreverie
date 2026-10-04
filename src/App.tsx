@@ -1,3 +1,4 @@
+import type { ProgressReporter } from './utils/operationProgress';
 import { isLoupeSize, isLoupeType, LOUPE_SIZE_SCALE } from './utils/loupeView';
 import { RollEditor } from "./components/RollEditor";
 import { UpdateNotice } from "./components/UpdateNotice";
@@ -291,15 +292,17 @@ export function App() {
     saveQueue.current = queued;
     return queued;
   };
-  const openSaved = async (id: string, roomMode: RoomMode = 'inspect') => {
+  const openSaved = async (id: string, roomMode: RoomMode = 'inspect', onProgress?: ProgressReporter) => {
     if (!canManageRolls) throw new Error('Admin login is required to manage rolls.');
     const request = ++switchRequest.current;
     if (id !== stateRef.current.roll.rollId) await saveView();
-    const bundle = await repository.read(id);
+    onProgress?.({ label: 'Loading roll details…' });
+    const bundle = await repository.read(id, false, onProgress);
     if (bundle.roll.trashedAt !== null) throw new Error("This roll is in Trash. Restore it to open it.");
     const runtime = createRuntimeRoll(bundle);
     if (!isGuest) for (const frame of runtime.definition.frames) { delete frame.original; delete frame.loadOriginal; }
     try {
+      onProgress?.({ label: 'Preparing the light table…' });
       // Decode the small overview before replacing the current roll; originals are never decoded here.
       await Promise.all(runtime.definition.frames.map(frame => new Promise<void>((resolve,reject) => { const img = new Image(); img.onload = () => resolve(); img.onerror = () => reject(new Error("Stored preview could not be loaded.")); img.src = frame.thumbnailSrc!; })));
       if (request !== switchRequest.current) { runtime.dispose(); return; }
@@ -668,7 +671,17 @@ export function App() {
         readOnly={!canManageRolls}
         thumbnailUrl={!canManageRolls ? published.thumbnail(shelf.selectedRoll.id) : undefined}
         activeId={canManageRolls ? tableRollAvailable ? roll.rollId : "" : cloudSource === 'gallery' ? shelf.rolls.find(item => roll.rollId.startsWith(`gallery:${item.id}:`))?.id ?? '' : ''}
-        onOpen={canManageRolls ? openSaved : async id => openCloudRoll(await published.open(id))}
+        onOpen={canManageRolls ? (id, report) => openSaved(id, 'inspect', report) : async (id, report) => {
+          const runtime = await published.open(id, { onProgress: progress => report?.({
+            // Checking each image is part of opening: keep the label and
+            // measured bar steady while the checksum is verified.
+            label: 'Opening photographs…',
+            detail: `${progress.completedImages} / ${progress.totalImages} photographs · ${Math.floor(progress.receivedBytes / progress.totalBytes * 100)}% downloaded`,
+            completed: progress.receivedBytes, total: progress.totalBytes,
+          }) });
+          report?.({ label: 'Preparing the light table…' });
+          await openCloudRoll(runtime);
+        }}
         onEdit={canManageRolls ? openEditor : undefined}
         onDelete={canManageRolls ? deleteRoll : undefined}
         onRestore={canManageRolls ? restoreRoll : undefined}
@@ -701,10 +714,10 @@ export function App() {
       </Suspense>}
       {state.cameraDisplay && <CameraDisplayView id={state.cameraDisplay} onBack={closeCamera} onNavigate={openCamera} reducedMotion={isReducedMotion} />}
       {libraryError && <div className="library-notice" role="alert">{libraryError}<button onClick={() => { setLibraryError(""); openShelf(); }}>Open shelf</button></div>}
-      {editorOpen && <RollEditor publication={!isGuest} repository={repository} onDelete={deleteRoll} editId={editingRollId} onClose={() => { setEditorOpen(false); setEditingRollId(undefined); }} onOpen={openSaved} onSaved={async id => {
+      {editorOpen && <RollEditor publication={!isGuest} repository={repository} onDelete={deleteRoll} editId={editingRollId} onClose={() => { setEditorOpen(false); setEditingRollId(undefined); }} onOpen={(id, report) => openSaved(id, 'inspect', report)} onSaved={async (id, report) => {
         // Keep the current table's data fresh without changing rooms. Otherwise a
         // later saved view could restore the old stock over the user's edits.
-        if (id === stateRef.current.roll.rollId) await openSaved(id, stateRef.current.roomMode);
+        if (id === stateRef.current.roll.rollId) await openSaved(id, stateRef.current.roomMode, report);
       }} />}
       {isGuest && guestWelcome && <GuestWelcome onClose={() => { try { localStorage.setItem(guestWelcomeKey, 'done'); } catch { /* Browsing can continue when localStorage is blocked. */ } setGuestWelcome(false); }} />}
     </main>

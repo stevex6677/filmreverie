@@ -1,3 +1,5 @@
+import type { OperationProgress, ProgressReporter } from '../utils/operationProgress';
+import { RollProgress } from './RollProgress';
 import { blockUpdate } from '../offline/client';
 import { DragEvent, useEffect, useRef, useState } from 'react';
 import { FILM_STOCKS, DEFAULT_FILM_STOCK_ID, FilmStockId, getFilmStock, supportsFilmFormat } from '../data/filmStocks';
@@ -8,14 +10,14 @@ import { generateUuid } from '../storage/crypto';
 import { clampFilmStrength, DEFAULT_FILM_STRENGTH, FILM_LOOKS } from '../data/filmLooks';
 import { RollFrameEditor, StrengthMode } from './RollFrameEditor';
 import { FrameSize, placeAutomatically, reorientForFrameSize } from '../utils/frameOrientation';
-interface Props { publication?:boolean; onDelete:(roll:StoredRoll)=>Promise<void>;editId?:string;onClose:()=>void;onOpen:(id:string)=>Promise<void>;onSaved?:(id:string)=>Promise<void>;repository?:RollRepository }
+interface Props { publication?:boolean; onDelete:(roll:StoredRoll)=>Promise<void>;editId?:string;onClose:()=>void;onOpen:(id:string,onProgress?:ProgressReporter)=>Promise<void>;onSaved?:(id:string,onProgress?:ProgressReporter)=>Promise<void>;repository?:RollRepository }
 const photoCount=(n:number)=>`${n} ${n===1?'photograph':'photographs'}`;
 /** New and existing rolls share one workspace: roll details beside the frame workbench. */
 export function RollEditor({publication=false,editId,onClose,onOpen,onSaved,onDelete,repository=rollRepository}:Props) {
   const dialog=useRef<HTMLDialogElement>(null),abort=useRef<AbortController|null>(null),draftRef=useRef<DraftPhoto[]>([]),mounted=useRef(true),loadRequest=useRef(0);
   const [processing,setProcessing]=useState(false),[uploadStatus,setUploadStatus]=useState('');
   const uploadAbort=useRef(new AbortController()),uploadRequest=useRef(0);
-  const [error,setError]=useState(''),[busy,setBusy]=useState(false),[progress,setProgress]=useState(''),[saving,setSaving]=useState(''),[loading,setLoading]=useState(true),[dropping,setDropping]=useState(false);
+  const [error,setError]=useState(''),[busy,setBusy]=useState(false),[progress,setProgress]=useState(''),[saving,setSaving]=useState<OperationProgress|null>(null),[loading,setLoading]=useState(true),[dropping,setDropping]=useState(false);
   const [draft,setDraft]=useState<DraftPhoto[]|null>(null),[editing,setEditing]=useState<StoredRoll|null>(null),[rollId,setRollId]=useState(''),[selected,setSelected]=useState('');
   const [name,setName]=useState(''),[camera,setCamera]=useState(''),[stock,setStock]=useState<FilmStockId>(DEFAULT_FILM_STOCK_ID),[format,setFormat]=useState<FilmFormat>('135'),[sizing,setSizing]=useState<FrameSizing>('fixed'),[cover,setCover]=useState('');
   const [strengthMode,setStrengthMode]=useState<StrengthMode>('roll'),[rollStrength,setRollStrength]=useState(DEFAULT_FILM_STRENGTH);
@@ -27,7 +29,7 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onSaved,onDe
   const [opener]=useState(()=>document.activeElement instanceof HTMLElement?document.activeElement:null);
   useEffect(() => { blockUpdate('roll-editor', true); return () => blockUpdate('roll-editor', false); }, []);
   const draftCreatedAt=useRef(Date.now());
-  const run=async(fn:()=>Promise<void>)=>{setError('');setBusy(true);try{await fn();}catch(e){setError(storageMessage(e));}finally{if(mounted.current){setBusy(false);setLoading(false);setSaving('');}}};
+  const run=async(fn:()=>Promise<void>)=>{setError('');setBusy(true);try{await fn();}catch(e){setError(storageMessage(e));}finally{if(mounted.current){setBusy(false);setLoading(false);setSaving(null);}}};
   useEffect(()=>{
     mounted.current=true;uploadAbort.current=new AbortController();
     dialog.current?.showModal();
@@ -95,7 +97,17 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onSaved,onDe
     // Whole-roll strength is stored on the roll; frame strengths only exist while adjusting each frame.
     const frames=draft.map(p=>{const {filmStrength,...frame}=p.frame!;return strengthMode==='frame'?{...frame,filmStrength:clampFilmStrength(filmStrength??rollStrength)}:frame;}),ids=frames.map(f=>f.id);
     const roll:StoredRoll={filmStrength:rollStrength,id:rollId,name,camera:camera.trim()||undefined,stockId:stock,format,sizing,frameIds:ids,coverId:ids.includes(cover)?cover:ids[0],createdAt:editing?.createdAt??draftCreatedAt.current,updatedAt:editing?.updatedAt??draftCreatedAt.current,trashedAt:null,view:editing?.view?{...editing.view,zoom:NaN,overview:null}:undefined};
-    const bundle:RollBundle={roll,frames,blobs:draft.flatMap(p=>p.blobs)};abort.current=new AbortController();setSaving(publication?'Saving and publishing roll…':'Saving roll…');await repository.save(bundle,abort.current.signal);if(open){setSaving('Opening photographs…');await onOpen(rollId);}else await onSaved?.(rollId);reset();onClose();
+    const bundle:RollBundle={roll,frames,blobs:draft.flatMap(p=>p.blobs)};
+    const controller=new AbortController();abort.current=controller;
+    let reporting=true;
+    const report:ProgressReporter=progress=>{if(reporting&&mounted.current&&!controller.signal.aborted)setSaving(progress);};
+    report({label:publication?'Saving and publishing roll…':'Saving roll…'});
+    try {
+      await repository.save(bundle,controller.signal,{onProgress:report});
+      report({label:open?'Opening photographs…':'Refreshing roll…'});
+      if(open)await onOpen(rollId,report);else await onSaved?.(rollId,report);
+      reset();onClose();
+    } finally {reporting=false;}
   });
   const cancelOperation=()=>{abort.current?.abort();if(busy){uploadAbort.current.abort();uploadAbort.current=new AbortController();}};
   const removePhoto=(id:string)=>{const i=draft!.findIndex(p=>p.id===id);releaseDraft([draft![i]]);const next=draft!.filter(p=>p.id!==id);updateDraft(next);if(cover===id)setCover(next.find(p=>p.frame)?.id??'');if(selected===id)setSelected(next[Math.min(i,next.length-1)]?.id??'');};
@@ -144,8 +156,9 @@ export function RollEditor({publication=false,editId,onClose,onOpen,onSaved,onDe
       </div>
 
       <footer className="import-footer">
-      {uploadStatus&&<p role="status" className="roll-editor-progress">{uploadStatus}</p>}
-      <div className="import-footer-actions">{editing && <button className="delete-roll" disabled={busy||processing} aria-label={`Delete ${editing.name}`} onClick={()=>void run(async()=>{await onDelete(editing);onClose();})}>Delete roll</button>}<button onClick={()=>{if(busy||processing)cancelOperation();else{reset();onClose();}}}>{busy||processing?'Cancel processing':editing?'Cancel edits':'Cancel draft'}</button>{saving?<p role="status" className="roll-editor-hint">{saving}</p>:blocker&&!busy&&<p className="roll-editor-hint">{blocker}</p>}<div className="roll-save-actions"><button disabled={busy||processing||!!blocker} onClick={()=>save(false)}>Save</button><button className="primary" disabled={busy||processing||!!blocker} onClick={()=>save(true)}>Save and open</button></div></div></footer>
+      {saving&&<RollProgress progress={saving}/>}
+      {uploadStatus&&!saving&&<p role="status" className="roll-editor-progress">{uploadStatus}</p>}
+      <div className="import-footer-actions">{editing && <button className="delete-roll" disabled={busy||processing} aria-label={`Delete ${editing.name}`} onClick={()=>void run(async()=>{await onDelete(editing);onClose();})}>Delete roll</button>}<button onClick={()=>{if(busy||processing)cancelOperation();else{reset();onClose();}}}>{busy||processing?'Cancel processing':editing?'Cancel edits':'Cancel draft'}</button>{blocker&&!busy&&<p className="roll-editor-hint">{blocker}</p>}<div className="roll-save-actions"><button disabled={busy||processing||!!blocker} onClick={()=>save(false)}>Save</button><button className="primary" disabled={busy||processing||!!blocker} onClick={()=>save(true)}>Save and open</button></div></div></footer>
     </>}
   </dialog>;
 }

@@ -149,3 +149,30 @@ describe('real-gallery development bridge', () => {
     expect((await fetch(`${origin}/api/owner/session`, { headers: { Cookie: sessionCookie } })).status).toBe(401);
   });
 });
+
+it('streams published image bytes to the device before the upstream image finishes', async () => {
+  const { origin, fetcher } = await fixture();
+  let source!: ReadableStreamDefaultController<Uint8Array>;
+  fetcher.mockResolvedValueOnce(new Response(new ReadableStream<Uint8Array>({
+    start(controller) { source = controller; controller.enqueue(new Uint8Array([1, 2])); },
+  }), { headers: { 'Content-Type': 'image/jpeg', 'Content-Length': '4' } }));
+  const response = await fetch(`${origin}/api/dev-images/rolls/test/viewing.jpg`);
+  expect(response.headers.get('cache-control')).toBe('no-store');
+  const reader = response.body!.getReader();
+  expect(await reader.read()).toMatchObject({ done: false, value: new Uint8Array([1, 2]) });
+  source.enqueue(new Uint8Array([3, 4])); source.close();
+  expect(await reader.read()).toMatchObject({ done: false, value: new Uint8Array([3, 4]) });
+  expect((await reader.read()).done).toBe(true);
+});
+
+it('cancels the public upstream download when the device disconnects', async () => {
+  const { origin, fetcher } = await fixture(), cancelled = vi.fn(), controller = new AbortController();
+  fetcher.mockResolvedValueOnce(new Response(new ReadableStream<Uint8Array>({
+    start(source) { source.enqueue(new Uint8Array([1])); }, cancel: cancelled,
+  }), { headers: { 'Content-Type': 'image/jpeg' } }));
+  const response = await fetch(`${origin}/api/dev-images/rolls/test/viewing.jpg`, { signal: controller.signal });
+  await response.body!.getReader().read();
+  controller.abort();
+  await vi.waitFor(() => expect(cancelled).toHaveBeenCalledOnce());
+  expect(fetcher.mock.calls.at(-1)?.[1]?.signal?.aborted).toBe(true);
+});

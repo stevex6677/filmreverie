@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { IDBFactory, IDBObjectStore } from 'fake-indexeddb';
 import { sha256Hex } from '../../src/storage/crypto';
 import { RollRepository } from '../../src/storage/rollRepository';
-import { createGalleryRuntime, downloadGalleryImage, fetchGallery, galleryBytes, openLiveGalleryRoll, parseGalleryCatalog } from '../../src/cloud/galleryClient';
+import { createGalleryRuntime, downloadGalleryRoll, type GalleryProgress, downloadGalleryImage, fetchGallery, galleryBytes, openLiveGalleryRoll, parseGalleryCatalog } from '../../src/cloud/galleryClient';
 import { GalleryRepository } from '../../src/cloud/galleryStorage';
 import type { GalleryRoll } from '../../src/cloud/contracts';
 
@@ -127,7 +127,7 @@ describe('M21 atomic offline gallery revisions', () => {
     const abort = new AbortController();
     await expect(repo.save(second.roll, { fetcher: second.fetcher, signal: abort.signal, onProgress: progress => { if (progress.completedImages === 1) abort.abort(); } })).rejects.toMatchObject({ name: 'AbortError' });
     expect((await repo.read(first.roll.id)).saved.roll.revision).toBe(first.roll.revision);
-    await expect(repo.save(second.roll, { fetcher: async () => new Response(new Uint8Array(4), { headers: { 'content-type': 'image/jpeg' } }) })).rejects.toThrow(/checksum/);
+    await expect(repo.save(second.roll, { fetcher: async input => new Response(new Uint8Array(String(input).endsWith('/view.jpg') ? 4 : 2), { headers: { 'content-type': 'image/jpeg' } }) })).rejects.toThrow(/checksum/);
     expect((await repo.read(first.roll.id)).saved.roll.revision).toBe(first.roll.revision);
     await repo.save(second.roll, { fetcher: second.fetcher });
     const replacement = await repo.read(first.roll.id);
@@ -161,4 +161,104 @@ describe('M21 atomic offline gallery revisions', () => {
     interrupt.mockRestore();
     expect((await repo.read(first.roll.id)).saved.roll.revision).toBe(first.roll.revision);
   });
+});
+
+async function parallelFixture() {
+  const { roll, viewing } = await fixture();
+  roll.frames = Array.from({ length: 8 }, (_, index) => ({ ...roll.frames[0], id: `frame-${index}`,
+    viewing: { ...roll.frames[0].viewing, url: `https://photos.example/rolls/${index}/view.jpg` } }));
+  roll.coverId = roll.frames[0].id;
+  const streams: ReadableStreamDefaultController<Uint8Array>[] = [], cancelled = vi.fn();
+  const fetcher = vi.fn<typeof fetch>(async () => new Response(new ReadableStream<Uint8Array>({
+    start(controller) { streams.push(controller); controller.enqueue(viewing.slice(0, 1)); },
+    cancel: cancelled,
+  }), { headers: { 'content-type': 'image/jpeg' } }));
+  return { roll, viewing, streams, fetcher, cancelled };
+}
+
+it('downloads six images concurrently, aggregates interleaved bytes and preserves frame order', async () => {
+  const { roll, viewing, streams, fetcher } = await parallelFixture();
+  const progress: GalleryProgress[] = [];
+  const result = downloadGalleryRoll(roll, ['viewing'], { fetcher, onProgress: value => progress.push(value) });
+  await vi.waitFor(() => expect(progress.at(-1)?.receivedBytes).toBe(6));
+  expect(fetcher).toHaveBeenCalledTimes(6);
+  const finish = (index: number) => { streams[index].enqueue(viewing.slice(1)); streams[index].close(); };
+  finish(5);
+  await vi.waitFor(() => expect(fetcher).toHaveBeenCalledTimes(7));
+  finish(4);
+  await vi.waitFor(() => expect(fetcher).toHaveBeenCalledTimes(8));
+  for (const index of [7, 6, 3, 2, 1, 0]) finish(index);
+  const images = await result;
+  expect(images.map(image => image.frameId)).toEqual(roll.frames.map(frame => frame.id));
+  expect(images.every(image => new Uint8Array(image.bytes).toString() === viewing.toString())).toBe(true);
+  expect(progress.at(-1)).toMatchObject({ receivedBytes: 32, totalBytes: 32, completedImages: 8, totalImages: 8, phase: 'verifying' });
+  expect(progress.every((value, index) => value.receivedBytes <= 32 && (!index || value.receivedBytes >= progress[index - 1].receivedBytes))).toBe(true);
+  const checking = progress.findIndex(value => value.phase === 'verifying');
+  expect(progress.slice(checking).every(value => value.phase === 'verifying')).toBe(true);
+});
+
+it.each(['failure', 'cancel'] as const)('stops queued downloads and drains active streams after %s', async mode => {
+  const { roll, streams, fetcher, cancelled } = await parallelFixture();
+  const controller = new AbortController(), progress = vi.fn();
+  const result = downloadGalleryRoll(roll, ['viewing'], { fetcher, signal: controller.signal, onProgress: progress });
+  const rejected = mode === 'failure' ? expect(result).rejects.toThrow('Network failed') : expect(result).rejects.toMatchObject({ name: 'AbortError' });
+  await vi.waitFor(() => expect(progress.mock.calls.at(-1)?.[0].receivedBytes).toBe(6));
+  if (mode === 'failure') streams[0].error(new Error('Network failed'));
+  else controller.abort();
+  await rejected;
+  expect(fetcher).toHaveBeenCalledTimes(6);
+  expect(cancelled).toHaveBeenCalledTimes(mode === 'failure' ? 5 : 6);
+  const reports = progress.mock.calls.length;
+  await Promise.resolve();
+  expect(progress).toHaveBeenCalledTimes(reports);
+});
+
+it('reuses verified public images on reopen without another download', async () => {
+  const { GalleryImageCache } = await import('../../src/cloud/galleryImageCache');
+  const imageCache = new GalleryImageCache(), { roll, fetcher } = await fixture();
+  imageCache.retain([roll]);
+  const first = await openLiveGalleryRoll(roll, { fetcher, imageCache }); first.dispose();
+  const progress: GalleryProgress[] = [];
+  const second = await openLiveGalleryRoll(roll, { fetcher, imageCache, onProgress: value => progress.push(value) });
+  expect(fetcher).toHaveBeenCalledOnce();
+  expect(progress.at(-1)).toMatchObject({ receivedBytes: 4, totalBytes: 4, completedImages: 1, totalImages: 1 });
+  expect(second.definition.frames).toHaveLength(1); second.dispose();
+});
+
+it('invalidates changed or withdrawn images and rejects late completions after clearing the cache', async () => {
+  const { GalleryImageCache } = await import('../../src/cloud/galleryImageCache');
+  const cache = new GalleryImageCache(), { roll, viewing } = await fixture(), image = roll.frames[0].viewing;
+  const value = { bytes: viewing.buffer, mime: 'image/jpeg' };
+  cache.retain([roll]); cache.put(image, value);
+  expect(cache.get(image)).toBe(value);
+  const changed = structuredClone(roll); changed.frames[0].viewing.sha256 = 'a'.repeat(64);
+  cache.retain([changed]);
+  expect(cache.get(image)).toBeUndefined();
+  cache.put(image, value); expect(cache.get(image)).toBeUndefined();
+  cache.retain([roll]); cache.put(image, value); cache.retain([]);
+  expect(cache.get(image)).toBeUndefined();
+  cache.retain([roll]); cache.put(image, value); cache.clear(); cache.put(image, value);
+  expect(cache.get(image)).toBeUndefined();
+});
+
+it('bounds the image cache and evicts the least recently used verified image', async () => {
+  const { GalleryImageCache } = await import('../../src/cloud/galleryImageCache');
+  const cache = new GalleryImageCache(8), { roll, viewing } = await fixture();
+  const images = ['one', 'two', 'three'].map(name => ({ ...roll.frames[0].viewing, url: `https://photos.example/${name}.jpg` }));
+  const value = { bytes: viewing.buffer, mime: 'image/jpeg' };
+  cache.put(images[0], value); cache.put(images[1], value);
+  cache.get(images[0]); cache.put(images[2], value);
+  expect(cache.get(images[0])).toBe(value); expect(cache.get(images[1])).toBeUndefined(); expect(cache.get(images[2])).toBe(value);
+  cache.put({ ...images[0], bytes: 12 }, { bytes: new ArrayBuffer(12), mime: 'image/jpeg' });
+  expect(cache.get(images[0])).toBe(value);
+});
+
+it('does not cache failed checksum verification', async () => {
+  const { GalleryImageCache } = await import('../../src/cloud/galleryImageCache');
+  const imageCache = new GalleryImageCache(), { roll, fetcher } = await fixture();
+  const corrupt = vi.fn<typeof fetch>(async () => new Response(new Uint8Array(4), { headers: { 'content-type': 'image/jpeg' } }));
+  await expect(openLiveGalleryRoll(roll, { fetcher: corrupt, imageCache })).rejects.toThrow(/checksum/);
+  expect(imageCache.get(roll.frames[0].viewing)).toBeUndefined();
+  const runtime = await openLiveGalleryRoll(roll, { fetcher, imageCache }); runtime.dispose();
+  expect(fetcher).toHaveBeenCalledOnce();
 });

@@ -1,9 +1,10 @@
+import { GalleryImageCache } from './galleryImageCache';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { StoredFrame, StoredRoll } from '../storage/rollRepository';
 import type { FilmShelfState, ShelfSelection } from '../utils/useFilmShelf';
 import { reconcileShelfSlots, shelfPageCount } from '../utils/shelfLayout';
 import type { GalleryRoll } from './contracts';
-import { downloadGalleryImage, fetchGallery, openLiveGalleryRoll, type GalleryRuntime } from './galleryClient';
+import { downloadGalleryImage, fetchGallery, openLiveGalleryRoll, type GalleryRuntime, type GalleryDownloadOptions } from './galleryClient';
 
 // Gallery metadata contains no original image keys or visitor-local roll records.
 function shelfRoll(roll: GalleryRoll): StoredRoll {
@@ -22,7 +23,7 @@ export type PublicCover = { blob: Blob; frame: PublicCoverFrame; rotation: numbe
 
 export interface PublishedShelf {
   shelf: FilmShelfState;
-  open: (id: string) => Promise<GalleryRuntime>;
+  open: (id: string, options?: GalleryDownloadOptions) => Promise<GalleryRuntime>;
   thumbnail: (id: string) => string | undefined;
   cover: (id: string, frameId: string) => Promise<PublicCover>;
   refresh: () => void;
@@ -31,6 +32,7 @@ export interface PublishedShelf {
 }
 
 export function usePublishedShelf(visible: boolean): PublishedShelf {
+  const imageCache = useRef(new GalleryImageCache());
   const [catalog, setCatalog] = useState<GalleryRoll[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true), [loaded, setLoaded] = useState(false);
@@ -52,6 +54,7 @@ export function usePublishedShelf(visible: boolean): PublishedShelf {
   const refresh = useCallback(() => { setRevision(current => current + 1); }, []);
   useEffect(() => {
     if (!visible) {
+      imageCache.current.clear();
       setCatalog([]); setSelection(null); setPage(0);
       setError(''); setLoading(false); setLoaded(false);
       return;
@@ -62,12 +65,14 @@ export function usePublishedShelf(visible: boolean): PublishedShelf {
     void fetchGallery(controller.signal).then(result => {
       if (controller.signal.aborted) return;
       keep();
+      imageCache.current.retain(result.rolls);
       setCatalog(result.rolls);
       setPage(current => Math.min(current, shelfPageCount(shelfRolls(result.rolls)) - 1));
       setSelection(current => current && result.rolls.some(roll => roll.id === current.id) ? current : null);
     }).catch(failure => {
       keep();
       if (controller.signal.aborted) return;
+      imageCache.current.clear();
       setCatalog([]); setSelection(null); setPage(0);
       setError(failure instanceof Error ? failure.message : 'The published gallery is unavailable.');
     }).finally(() => {
@@ -81,12 +86,12 @@ export function usePublishedShelf(visible: boolean): PublishedShelf {
     return () => window.removeEventListener('focus', focus);
   }, [visible, refresh]);
   useEffect(() => { if (!visible) close(); }, [visible, close]);
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => () => { clearTimeout(timer.current); imageCache.current.clear(); }, []);
   const changePage = (next: number) => { close(); setPage(Math.max(0, Math.min(next, pages - 1))); };
-  const open = useCallback((id: string): Promise<GalleryRuntime> => {
+  const open = useCallback((id: string, options?: GalleryDownloadOptions): Promise<GalleryRuntime> => {
     const roll = catalog.find(item => item.id === id);
     if (!roll) return Promise.reject(new Error('This published roll is no longer available. Refresh the gallery.'));
-    return openLiveGalleryRoll(roll);
+    return openLiveGalleryRoll(roll, { ...options, imageCache: imageCache.current });
   }, [catalog]);
   const thumbnail = useCallback((id: string): string | undefined => {
     const roll = catalog.find(item => item.id === id);
