@@ -88,7 +88,8 @@ export const Loupe: React.FC<LoupeProps> = ({ type = 'classic', physicalScale = 
     lens.uniforms.uGlassDome.value=type==='glass'?1:0;
     const center=new THREE.Vector3(sample.x,TABLE_SURFACE_Y+.008+geometry.lensHeight*physicalScale,sample.z).project(camera);
     const edge=new THREE.Vector3(sample.x+geometry.radius*physicalScale,TABLE_SURFACE_Y+.008+geometry.lensHeight*physicalScale,sample.z).project(camera);
-    const radius=Math.abs(edge.x-center.x)*size.width/2;
+    // Measured in any screen direction: Focus turns the view for a vertical shot.
+    const radius=Math.hypot((edge.x-center.x)*size.width/2,(edge.y-center.y)*size.height/2);
     gl.domElement.dataset.loupeSample=`${sample.x},${TABLE_CENTER_Z-sample.z}`;
     gl.domElement.dataset.loupeDisplay=`${(center.x+1)*size.width/2},${(1-center.y)*size.height/2},${radius}`;
     gl.domElement.dataset.loupeVisible=String(!suspended);

@@ -1,10 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { frameAspect, FilmFormat } from '../../src/data/filmFormats';
-import { photoCropScale } from '../../src/utils/photoFraming';
+import { photoCropScale, uprightThumbnail } from '../../src/utils/photoFraming';
+import { BASELINE_ROLL, clampFocusPan, fitRollView, focusFrameLayout, focusTableAngle, locateFrame, type RollDefinition } from '../../src/utils/rollLayout';
+import { getStripDimensions } from '../../src/utils/loupeMapping';
+import { TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../../src/utils/cameraBounds';
+import { validateGalleryRoll } from '../../src/cloud/galleryClient';
+import { screenToTable, tableInputCamera } from '../../src/utils/tableCamera';
+import { Vector3 } from 'three';
 import { StoredRoll, validateBundle } from '../../src/storage/rollRepository';
 import {
   cameraTurn, filmCropPosition, followsAutomatic, isVertical, placeAutomatically, prefersTurned, reorientForFrameSize,
-  setCameraTurn, turnImage, uprightCropPosition, uprightRotation, type FrameSize,
+  setCameraTurn, turnImage, uprightCropPosition, uprightRotation, uprightYaw, type FrameSize,
 } from '../../src/utils/frameOrientation';
 
 const portrait = { width: 2000, height: 3000, rotation: 0 }, landscape = { width: 3000, height: 2000, rotation: 0 };
@@ -84,5 +90,63 @@ describe('Automatic frame orientation', () => {
     const roll: StoredRoll = { id: 'r', name: 'Roll', stockId: 'portra-400', format: '135', frameIds: ['f'], coverId: 'f', createdAt: 1, updatedAt: 1, trashedAt: null };
     expect(() => validateBundle({ roll, frames: [frame] })).not.toThrow();
     expect(() => validateBundle({ roll, frames: [{ ...frame, uprightRotation: 45 }] })).toThrow('Invalid frame metadata.');
+  });
+});
+
+describe('Upright viewing of vertical shots', () => {
+  const vertical: RollDefinition = { ...BASELINE_ROLL, rollId: 'vertical', frames: BASELINE_ROLL.frames.map((frame, i) => ({ ...frame, rotation: [0, 90, 180, 270, 90][i], uprightRotation: i === 4 ? 90 : undefined })) };
+
+  it('turns Focus so a vertical shot stands upright, and only then', () => {
+    expect([0, 1, 2, 3, 4].map(i => focusTableAngle(vertical, i))).toEqual([0, -Math.PI / 2, 0, Math.PI / 2, 0].map(yaw => ({ tilt: 0, yaw })));
+    expect(uprightYaw({})).toBe(0);
+  });
+
+  it('fits a vertical frame in Focus with the film running up the screen', () => {
+    for (const aspect of [16 / 9, 1, 9 / 16]) {
+      const frame = locateFrame(vertical, 1), outer = getStripDimensions(focusFrameLayout(vertical, 1));
+      const visible = 2 * fitRollView(vertical, 'frame', 1, aspect).zoom * Math.tan(Math.PI / 8);
+      expect(visible).toBeGreaterThanOrEqual(frame.strip.layout.frameWidth * vertical.scale * 1.2 - 1e-12);
+      expect(visible * aspect).toBeGreaterThanOrEqual(outer.height * vertical.scale * 1.16 - 1e-12);
+      // Horizontal frames keep their framing.
+      expect(fitRollView(vertical, 'frame', 0, aspect)).toEqual(fitRollView(BASELINE_ROLL, 'frame', 0, aspect));
+    }
+  });
+
+  it('lets Focus pan along the film by what overflows the screen height', () => {
+    const aspect = 16 / 9, zoom = fitRollView(vertical, 'frame', 1, aspect).zoom * .3, frame = locateFrame(vertical, 1);
+    const outer = getStripDimensions(focusFrameLayout(vertical, 1)), visible = 2 * zoom * Math.tan(Math.PI / 8);
+    const far = clampFocusPan(vertical, 1, zoom, aspect, frame.x + 10, 10);
+    expect(far.x - frame.x).toBeCloseTo((outer.width * vertical.scale - visible) / 2, 12);
+    expect(far.z - (TABLE_CENTER_Z - frame.y)).toBeCloseTo(Math.max(0, (outer.height * vertical.scale - visible * aspect) / 2), 12);
+  });
+
+  it('moves the loupe across the turned screen, not the table', () => {
+    for (const index of [0, 1, 3]) {
+      const angle = focusTableAngle(vertical, index), frame = locateFrame(vertical, index);
+      const camera = tableInputCamera(.3, { x: frame.x, z: TABLE_CENTER_Z - frame.y }, angle, 16 / 9);
+      const screen = (right: number, up: number) => { const move = screenToTable(angle.yaw, right, up); return new Vector3(frame.x + move.x, TABLE_SURFACE_Y, TABLE_CENTER_Z - frame.y - move.y).project(camera); };
+      const origin = screen(0, 0), right = screen(.01, 0), up = screen(0, .01);
+      expect(right.x - origin.x, `${index}`).toBeGreaterThan(.01); expect(Math.abs(right.y - origin.y)).toBeLessThan(1e-6);
+      expect(up.y - origin.y, `${index}`).toBeGreaterThan(.01); expect(Math.abs(up.x - origin.x)).toBeLessThan(1e-6);
+    }
+  });
+
+  it('shows frame-picker thumbnails upright, as tall as the others', () => {
+    const gate = 1.5;
+    const upright = uprightThumbnail({ aspectRatio: 2 / 3, rotation: 90 }, gate), level = uprightThumbnail({ aspectRatio: 3 / 2, rotation: 0 }, gate);
+    expect(level.box).toMatchObject({ aspectRatio: 1.5, width: '100%' });
+    expect(upright.box.aspectRatio).toBeCloseTo(2 / 3, 12);
+    expect(parseFloat(upright.box.width) / 100 / upright.box.aspectRatio).toBeCloseTo(1 / gate, 12);
+    expect(upright.image.transform).toContain('rotate(0deg)');
+    // A sideways scan turns upright, whichever way the camera was held.
+    expect(uprightThumbnail({ aspectRatio: 3 / 2, rotation: 0, uprightRotation: 90 }, gate).image.transform).toContain('rotate(90deg)');
+  });
+
+  it('reads which way is up from published gallery frames', () => {
+    const image = { url: 'https://photos.example.com/a.jpg', bytes: 1, sha256: 'a'.repeat(64) };
+    const roll = { id: 'g', revision: 'r', name: 'Gallery', stockId: 'portra-400', format: '135', coverId: 'f', publishedAt: 1,
+      frames: [{ id: 'f', width: 2000, height: 3000, rotation: 90, uprightRotation: 0, viewing: image, thumbnail: image }] };
+    expect(() => validateGalleryRoll(roll)).not.toThrow();
+    expect(() => validateGalleryRoll({ ...roll, frames: [{ ...roll.frames[0], uprightRotation: 45 }] })).toThrow('invalid image metadata');
   });
 });

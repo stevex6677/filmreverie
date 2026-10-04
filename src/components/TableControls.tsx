@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type Dispatch, type ReactNode } from 'reac
 import { ViewerAction, ViewerState } from '../state/viewerState';
 import { getFilmStock } from '../data/filmStocks';
 import { focusFrameLayout, fitRollView } from '../utils/rollLayout';
-import { photoCropPreview } from '../utils/photoFraming';
+import { uprightThumbnail } from '../utils/photoFraming';
 import { MobileSheet } from './MobileControls';
 import { FilmStockInfo } from './FilmStockInfo';
 import { FilmStripHeader } from './FilmStripHeader';
@@ -80,9 +80,9 @@ export function TableControls({state,dispatch,onOpenLibrary,onOpenRoom,onOpenTab
 
     {sheet&&sheet!=='loupe'&&<dialog tabIndex={-1} ref={panel} className={`film-panel table-panel ${sheet==='frames'?'table-frame-panel':''}`} aria-label={sheet==='tools'?'Viewing tools':'Choose frame'} onCancel={event=>{event.preventDefault();setSheet(null);}} onKeyDown={event=>{event.stopPropagation();if(event.key==='Escape')setSheet(null);}}>
       {sheet==='frames'?<FilmPanelFrames stockId={state.filmStockId}><div className="table-frame-grid" role="group" aria-label="Frame map">{state.roll.frames.map((photo,index)=>{
-        const layout=focusFrameLayout(state.roll,index);
+        const layout=focusFrameLayout(state.roll,index),thumbnail=uprightThumbnail(photo,layout.frameWidth/layout.frameHeight);
         return <button key={photo.id} aria-label={`Open frame ${index+1}`} aria-current={index===state.activeFrameIndex?'true':undefined} data-testid={`frame-btn-${index+1}`} onClick={()=>{dispatch({type:'OPEN_FRAME',frameIndex:index});setSheet(null);}}>
-          <div style={{aspectRatio:layout.frameWidth/layout.frameHeight}}><img src={photo.thumbnailSrc??photo.src} alt={photo.alt} loading="lazy" style={photoCropPreview(photo.aspectRatio,layout.frameWidth/layout.frameHeight,photo.rotation??0,photo.cropPosition)}/></div><span>{String(index+1).padStart(2,'0')}</span>
+          <div style={thumbnail.box}><img src={photo.thumbnailSrc??photo.src} alt={photo.alt} loading="lazy" style={thumbnail.image}/></div><span>{String(index+1).padStart(2,'0')}</span>
         </button>;
       })}</div></FilmPanelFrames>:<FilmPanelFrames stockId={state.filmStockId} className="table-fields">
         <FilmStockInfo stockId={state.filmStockId}/>

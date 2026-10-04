@@ -315,6 +315,7 @@ export async function publishDraft(env: Env, id: string, updatedAt: number, cont
       if (!frame) throw new HttpError(409, 'Saved draft frame is missing.');
       const upload = await completedUpload(env, frame.uploadId);
       const publicFrame: GalleryRoll['frames'][number] = { id: frame.id, width: frame.width, height: frame.height, rotation: frame.rotation,
+        ...(frame.uprightRotation !== undefined ? { uprightRotation: frame.uprightRotation } : {}),
         ...(frame.cropPosition ? { cropPosition: { x: frame.cropPosition.x, y: frame.cropPosition.y } } : {}),
         ...(frame.filmStrength !== undefined ? { filmStrength: frame.filmStrength } : {}),
         viewing: null!, thumbnail: null! };

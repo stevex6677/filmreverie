@@ -4,6 +4,8 @@ import type { StoredRoll, StoredFrame } from '../storage/rollRepository';
 export interface GalleryImage { url: string; bytes: number; sha256: string }
 export interface GalleryFrame {
   id: string; width: number; height: number; rotation: number;
+  /** Absent from rolls published before frames recorded which way is up. */
+  uprightRotation?: number;
   cropPosition?: { x: number; y: number };
   filmStrength?: number;
   viewing: GalleryImage; thumbnail: GalleryImage;

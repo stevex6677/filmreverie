@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Raycaster, Sphere, Vector2, Vector3 } from 'three';
 import { ViewerAction, ViewerState, viewerReducer } from '../state/viewerState';
-import { tablePointAt, tableInputCamera, TOP_DOWN } from '../utils/tableCamera';
-import { fitRollView } from '../utils/rollLayout';
+import { screenToTable, tablePointAt, tableInputCamera } from '../utils/tableCamera';
+import { fitRollView, focusTableAngle } from '../utils/rollLayout';
 import { TABLE_SURFACE_Y, TABLE_CENTER_Z } from '../utils/cameraBounds';
 import { loupeGeometry } from '../utils/loupeView';
 
@@ -61,7 +61,9 @@ export function LoupeNavigation({ state, dispatch, blocked }: { state: ViewerSta
         const radius = Number(canvas.dataset.loupeDisplay?.split(',')[2]) || 120;
         const wpp = loupeGeometry(s.loupe.type).radius * s.loupe.scale / (radius * s.loupe.magnification);
         // Ignore contact separation completely; centroid translation still moves.
-        send({ type: 'MOVE_LOUPE', dx: -dx*wpp, dy: dy*wpp });
+        // The view drags with the pointer, across a screen that Focus turns for a vertical shot.
+        const move = screenToTable(s.focusMode ? focusTableAngle(s.roll, s.activeFrameIndex).yaw : 0, -dx*wpp, dy*wpp);
+        send({ type: 'MOVE_LOUPE', dx: move.x, dy: move.y });
       } else if (owner === 'loupe') {
         const height = TABLE_SURFACE_Y + .008 + loupeGeometry(s.loupe.type).lensHeight * s.loupe.scale;
         const from = tablePointAt(camera, canvas, next.x - dx, next.y - dy, height), to = tablePointAt(camera, canvas, next.x, next.y, height);
@@ -70,7 +72,7 @@ export function LoupeNavigation({ state, dispatch, blocked }: { state: ViewerSta
         const ratio = contacts.size === 2 && oldDistance > 8 && distance() > 8 ? oldDistance/distance() : 1;
         const max = s.focusMode ? fitRollView(s.roll, 'frame', s.activeFrameIndex, s.viewportAspect).zoom : Math.max(3.6, fitRollView(s.roll, 'roll', 0, s.viewportAspect).zoom);
         const zoom = Math.max(.12 * s.roll.scale, Math.min(max, s.inspectZoom * ratio));
-        const inputCamera = tableInputCamera(s.inspectZoom, s.inspectPan, s.focusMode ? TOP_DOWN : s.tableAngle, s.viewportAspect);
+        const inputCamera = tableInputCamera(s.inspectZoom, s.inspectPan, s.focusMode ? focusTableAngle(s.roll, s.activeFrameIndex) : s.tableAngle, s.viewportAspect);
         const from = tablePointAt(inputCamera, canvas, next.x - dx, next.y - dy), to = tablePointAt(inputCamera, canvas, next.x, next.y);
         if (from && to) send({ type: 'TOUCH_VIEW', zoom, x: from.x + (s.inspectPan.x - to.x) * zoom / s.inspectZoom, z: from.z + (s.inspectPan.z - to.z) * zoom / s.inspectZoom });
       }

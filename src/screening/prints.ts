@@ -1,6 +1,7 @@
 import { createRollLayout, locateFrame, type RollDefinition } from '../utils/rollLayout';
 import { ROOM_ENVELOPE } from '../utils/cameraBounds';
 import { photoCropOffset, photoCropScale } from '../utils/photoFraming';
+import { uprightPlacement } from '../utils/frameOrientation';
 
 // Darkroom Prints: each film strip becomes a line of prints hung along the left
 // wall above the printing station. Positions are world coordinates, shared by
@@ -21,8 +22,8 @@ export interface PrintPlacement {
   /** Paper center, and the clip point on the line above it. */
   center: [number, number, number]; hang: [number, number, number];
   paper: { width: number; height: number }; photo: { width: number; height: number };
-  /** Upright crop of the photograph on the paper. */
-  crop: { x: number; y: number }; offset: { x: number; y: number };
+  /** The photograph printed upright: its crop on the paper and clockwise image rotation (radians). */
+  crop: { x: number; y: number }; offset: { x: number; y: number }; rotation: number;
 }
 export interface PrintLine { y: number; zFrom: number; zTo: number }
 
@@ -43,10 +44,11 @@ export function printLayout(roll: RollDefinition): { prints: PrintPlacement[]; l
       const frame = locateFrame(roll, strip.offset + local);
       const gateWidth = frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth;
       const gate = gateWidth / frame.strip.layout.frameHeight;
-      const rotation = photo.rotation ?? 0, upright = rotation % 180 ? 1 / gate : gate;
+      // Printed upright: a vertical shot makes an upright print; the image turns on the paper, not the camera.
+      const placement = uprightPlacement(photo, gate), upright = placement.gate;
       const size = upright >= 1 ? { width: LONG_SIDE, height: LONG_SIDE / upright } : { width: LONG_SIDE * upright, height: LONG_SIDE };
       const fit = Math.min(1, (pitch - .08) / (size.width + 2 * BORDER));
-      return { photo, rotation, upright, width: size.width * fit, height: size.height * fit };
+      return { photo, placement, upright, width: size.width * fit, height: size.height * fit };
     }) };
   });
   const panelRows = Array.from({ length: panels }, (_, panel) => rows.slice(panel * ROWS_PER_PANEL, (panel + 1) * ROWS_PER_PANEL));
@@ -66,15 +68,15 @@ export function printLayout(roll: RollDefinition): { prints: PrintPlacement[]; l
     group.forEach((row, r) => {
       const index = panel * ROWS_PER_PANEL + r;
       lines.push({ y, zFrom, zTo });
-      row.photos.forEach(({ photo, rotation, upright, width, height }, local) => {
+      row.photos.forEach(({ photo, placement, upright, width, height }, local) => {
         const photoSize = { width: width * scale, height: height * scale };
         const paper = { width: photoSize.width + 2 * BORDER, height: photoSize.height + 2 * BORDER };
         const z = zFrom - .1 - row.pitch * (local + .5);
         const hang: [number, number, number] = [PRINT_WALL_X, y, z];
         // The print shows the photograph upright, cropped to the paper as on the film.
-        const crop = photoCropScale(photo.aspectRatio, upright, 0);
-        const offset = rotation ? { x: 0, y: 0 } : photoCropOffset(photo.aspectRatio, upright, 0, photo.cropPosition);
-        prints.push({ index: row.strip.offset + local, line: index, hang, center: [PRINT_WALL_X, y - CLIP_DROP - paper.height / 2, z], paper, photo: photoSize, crop, offset });
+        const crop = photoCropScale(photo.aspectRatio, upright, placement.rotation);
+        const offset = photoCropOffset(photo.aspectRatio, upright, placement.rotation, placement.cropPosition);
+        prints.push({ index: row.strip.offset + local, line: index, hang, center: [PRINT_WALL_X, y - CLIP_DROP - paper.height / 2, z], paper, photo: photoSize, crop, offset, rotation: placement.rotation * Math.PI / 180 });
       });
       y -= drops[r] + ROW_GAP;
     });

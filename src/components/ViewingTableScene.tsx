@@ -1,5 +1,5 @@
 import { photoSourceDemand } from "../utils/photoFraming";
-import { BASELINE_ROLL, createRollLayout, lightTableSize, focusFrameLayout, locateFrame } from "../utils/rollLayout";
+import { BASELINE_ROLL, createRollLayout, lightTableSize, focusFrameLayout, focusTableAngle, locateFrame } from "../utils/rollLayout";
 import { useRollTextures } from "../utils/useRollTextures";
 import { ProgressiveTextureUploader, UPLOAD_BUDGET_MS } from "../utils/progressiveTextures";
 import { useThree, useFrame } from "@react-three/fiber";
@@ -164,7 +164,7 @@ export const ViewingTableScene: React.FC<ViewingTableSceneProps> = ({
 
       {/* Dynamic Camera Rig with Orbit and Smooth Transitions */}
       <CameraRig
-        tableAngle={state.focusMode || state.loupe.inspecting ? TOP_DOWN : state.tableAngle}
+        tableAngle={state.focusMode ? focusTableAngle(state.roll, state.activeFrameIndex) : state.loupe.inspecting ? TOP_DOWN : state.tableAngle}
         angleDragging={state.angleDragging}
         touchInput={state.touchInput}
         shelfFocused={state.shelfFocused}
