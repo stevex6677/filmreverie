@@ -6,11 +6,12 @@ import type { AddressInfo } from 'node:net';
 import { createHash } from 'node:crypto';
 import { closeViewingTools, openFrame, openViewingTools } from './helpers/viewing';
 import { getRegionStats, getRegionMeanDifference } from './helpers/pixelAnalysis';
-import { add, focusShelf, openRoll, ready } from './helpers/shelf';
+import { add, focusShelf, openRoll, ready, shelfAction } from './helpers/shelf';
 import { offlineServer } from './helpers/offlineServer';
 import { readMp4 } from '../helpers/mp4';
 import { BASELINE_ROLL } from '../../src/utils/rollLayout';
 import { createScreeningTimeline } from '../../src/screening/reels';
+import { REEL_IDS } from '../../src/screening/timeline';
 import type { GalleryRoll } from '../../src/cloud/contracts';
 
 // The screening overlay is a second canvas; address the WebGL scene explicitly.
@@ -49,7 +50,7 @@ async function library(page: Page, name = 'darkroom-guest-rolls') {
 }
 const player = (page: Page) => page.getByTestId('screening-player');
 const time = async (page: Page) => Number(await player(page).getAttribute('data-time'));
-async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Projector' | 'Darkroom' | 'Orbit' | 'Darkroom Prints' | 'Documentary', pace = 'Normal') {
+async function pickReel(page: Page, reel: 'Tracking Shot' | 'Develop' | 'Projector' | 'Darkroom' | 'Orbit' | 'Darkroom Prints' | 'Documentary' | 'Film Journey', pace = 'Normal') {
   await page.getByTestId('screen-roll').click();
   const picker = page.getByRole('dialog', { name: 'Screen roll' });
   await expect(picker).toBeVisible();
@@ -232,7 +233,7 @@ test('Darkroom, Orbit, Darkroom Prints and Documentary preview in the actual sce
   const overview = PNG.sync.read(await captureCanvas(page));
   await page.getByTestId('screen-roll').click();
   // Reels and paces; the video format is chosen when exporting.
-  await expect(page.getByRole('dialog', { name: 'Screen roll' }).getByRole('radio')).toHaveCount(7 + 3);
+  await expect(page.getByRole('dialog', { name: 'Screen roll' }).locator('.screening-reels').getByRole('radio')).toHaveCount(REEL_IDS.length);
   await page.getByRole('button', { name: 'Close', exact: true }).click();
   for (const [reel, id] of [['Darkroom', 'darkroom'], ['Orbit', 'orbit'], ['Darkroom Prints', 'darkroom-prints'], ['Documentary', 'documentary']] as const) {
     await (await pickReel(page, reel, 'Brisk')).getByTestId('screening-preview').click();
@@ -324,6 +325,109 @@ test('each reel has its own settings, the format is chosen on export, and depth 
   const near = [width * .05 | 0, height * .72 | 0, width * .5 | 0, height * .1 | 0] as const;
   expect(detail(shallow, ...near)).toBeLessThan(detail(deep, ...near) * .5);
   expect(detail(shallow, ...center)).toBeGreaterThan(detail(deep, ...center) * .6);
+  expect(errors).toEqual([]);
+});
+
+test('Film Journey keeps its settings and previews negative and reversal film without an overlay transition', async ({ page }, info) => {
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/guest?mode=inspect&deterministic=true'); await ready(page);
+  let picker = await pickReel(page, 'Film Journey');
+  await expect(picker.getByRole('slider', { name: 'Movement', exact: true })).toHaveValue('65');
+  await expect(picker.getByRole('slider', { name: 'Variety', exact: true })).toHaveValue('50');
+  await picker.getByTestId('screening-setting-0').fill('10');
+  await picker.getByTestId('screening-setting-1').fill('80');
+  await picker.getByRole('radio', { name: /^Tracking Shot/ }).check();
+  await picker.getByRole('radio', { name: /^Film Journey/ }).check();
+  await expect(picker.getByTestId('screening-setting-0')).toHaveValue('10');
+  await expect(picker.getByTestId('screening-setting-1')).toHaveValue('80');
+  await picker.getByTestId('screening-reset').click();
+  await expect(picker.getByTestId('screening-setting-0')).toHaveValue('65');
+  await expect(picker.getByTestId('screening-setting-1')).toHaveValue('50');
+  await page.screenshot({ path: info.outputPath('film-journey-settings.png') });
+  await picker.getByRole('button', { name: 'Close', exact: true }).click();
+  for (const stock of ['portra-400', 'ektachrome-e100']) {
+    if (stock !== 'portra-400') {
+      // Stock belongs to the roll editor, not the table's viewing tools.
+      await focusShelf(page);
+      await shelfAction(page, 'New roll');
+      await page.getByLabel('Choose photographs').setInputFiles(BASELINE_ROLL.frames.map(f => `public${f.src}`));
+      await page.getByLabel('Roll name', { exact: true }).fill('Journey reversal');
+      await page.getByRole('dialog').getByLabel('Film stock', { exact: true }).selectOption(stock);
+      await page.getByRole('button', { name: 'Save and open', exact: true }).click();
+      await expect(page.getByRole('dialog', { name: 'Review roll' })).not.toBeVisible({ timeout: 60000 });
+      await expect(page.locator('main')).toHaveAttribute('data-film-stock', stock);
+      await expect(page.locator('main')).toHaveAttribute('data-room-mode', 'inspect');
+      await ready(page);
+    }
+    const before = await table(page);
+    picker = await pickReel(page, 'Film Journey', 'Brisk');
+    await picker.getByTestId('screening-preview').click();
+    await expect(page.locator('main')).toHaveAttribute('data-screening-reel', 'film-journey');
+    await expect.poll(() => time(page), { timeout: 30000 }).toBeGreaterThan(2);
+    const position = await scene(page).getAttribute('data-camera-position');
+    await page.waitForTimeout(350);
+    expect(await scene(page).getAttribute('data-camera-position')).not.toBe(position);
+    await page.getByTestId('screening-toggle').click();
+    await page.getByTestId('screening-next').click();
+    await expect(player(page)).toHaveAttribute('data-frame', '2');
+    await page.getByTestId('screening-toggle').click();
+    const arrival = await time(page);
+    await expect.poll(() => time(page), { timeout: 30000 }).toBeGreaterThan(arrival + (stock === 'portra-400' ? 2.4 : 1.4));
+    await page.getByTestId('screening-toggle').click();
+    await captureCanvas(page, { path: info.outputPath(`film-journey-${stock}.png`) });
+    expect(await renderedDeviation(page)).toBeGreaterThan(8);
+    const alpha = await page.locator('.screening-overlay').evaluate((node: HTMLCanvasElement) => node.getContext('2d')!.getImageData(node.width / 2 | 0, node.height / 2 | 0, 1, 1).data[3]);
+    expect(alpha).toBe(0);
+    await page.getByTestId('screening-exit').click();
+    await expectRestored(page, before);
+  }
+  expect(errors).toEqual([]);
+});
+
+test('Film Journey exports its continuous path and negative reveal to MP4', async ({ page }, info) => {
+  test.skip(info.project.name === 'mobile-chrome', 'Desktop Chrome and WebKit cover the video encoder.');
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/guest?mode=inspect&deterministic=true&screening_seconds=24'); await ready(page);
+  const before = await table(page);
+  const timeline = createScreeningTimeline(BASELINE_ROLL, { reel: 'film-journey', pace: 'normal', aspect: 16 / 9, stockType: 'negative' });
+  const reveal = timeline.segments.find(s => s.kind === 'develop')!;
+  await (await pickReel(page, 'Film Journey')).getByTestId('screening-export').click();
+  await startExport(page);
+  await expect(page.getByTestId('screening-export-view')).toHaveAttribute('data-phase', 'done', { timeout: 120000 });
+  const video = await inspectVideo(page, { leader: reveal.start - .1, middle: reveal.start + reveal.duration / 2, later: reveal.start + reveal.duration + .2 });
+  expect(video.leader.deviation).toBeGreaterThan(5);
+  expect(video.later.deviation).toBeGreaterThan(5);
+  const difference = video.leader.grid.reduce((sum, value, i) => sum + Math.abs(value - video.later.grid[i]), 0) / video.leader.grid.length;
+  expect(difference).toBeGreaterThan(10);
+  const { name, mp4 } = await download(page, info.outputPath('film-journey.mp4'));
+  expect(name).toBe('roll-01-film-journey.mp4');
+  expect([mp4.width, mp4.height]).toEqual([1280, 720]);
+  expect(mp4.stts.reduce((sum, [count]) => sum + count, 0)).toBe(Math.round(Math.min(24, timeline.duration) * 30));
+  await page.getByTestId('screening-export-done').click();
+  await expectRestored(page, before);
+  expect(errors).toEqual([]);
+});
+
+test('Film Journey returns continuously to the next strip in a long roll', async ({ page }, info) => {
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/guest?mode=inspect&deterministic=true&fixture=36'); await ready(page);
+  await (await pickReel(page, 'Film Journey')).getByTestId('screening-preview').click();
+  await page.getByTestId('screening-toggle').click();
+  // First Next leaves the introduction; six more reach the second strip.
+  for (let i = 0; i < 7; i++) await page.getByTestId('screening-next').click();
+  await expect(player(page)).toHaveAttribute('data-frame', '7');
+  const start = await time(page), positions: string[] = [];
+  for (let i = 0; i < 4; i++) {
+    await captureCanvas(page, { path: info.outputPath(`film-journey-strip-return-${i}.png`) });
+    positions.push((await scene(page).getAttribute('data-camera-position'))!);
+    if (i === 3) break;
+    await page.getByTestId('screening-toggle').click();
+    await expect.poll(() => time(page), { timeout: 30000 }).toBeGreaterThan(start + (i + 1) * .85);
+    await page.getByTestId('screening-toggle').click();
+  }
+  expect(new Set(positions).size).toBe(4);
+  expect(await renderedDeviation(page)).toBeGreaterThan(8);
+  await expect(player(page)).toHaveAttribute('data-frame', '7');
   expect(errors).toEqual([]);
 });
 

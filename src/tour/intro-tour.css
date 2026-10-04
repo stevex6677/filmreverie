@@ -10,7 +10,7 @@
 }
 
 /* App chrome steps aside until the final card, which points back to it. */
-.app-shell:has(> .intro-tour:not([data-final="true"])) :is(.film-strip-header, .table-controls, .mobile-header, .mobile-footer, .shelf-toolbar, .shelf-roll-card, .empty-film-table, .cloud-viewing-label, .library-notice, .camera-display-header, .camera-dock),
+.app-shell:has(> .intro-tour:not([data-final="true"])) :is(.film-strip-header, .table-controls, .mobile-header, .mobile-footer, .shelf-toolbar, .shelf-roll-card, .empty-film-table, .library-notice, .camera-display-header, .camera-dock),
 .app-shell:has(> .intro-tour) .screening-player > :not(.screening-overlay) { visibility: hidden; }
 
 .intro-tour-tag { position: absolute; left: 0; top: 0; width: 0; height: 0; opacity: 0; transition: opacity .45s ease; will-change: transform; }

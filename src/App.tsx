@@ -515,7 +515,6 @@ export function App() {
         if (stateRef.current.cameraMoving || stateRef.current.isTransitioning || stateRef.current.assetsLoading) throw new Error("Wait for the photograph to finish opening before updating.");
         await saveView();
       }} />
-      {!isGuest && cloudSource && <div className="cloud-viewing-label" role="status">Published photograph</div>}
       <DarkroomLoadingPage
         progress={{ ...loadingProgress, cameraSettled, cameraLoaded: cameraProgress.loaded, cameraTotal: cameraProgress.total, cameraFailed: cameraProgress.failed, settled: loadingProgress.settled && cameraSettled }}
         onRetryCameras={cameraProgress.retry}

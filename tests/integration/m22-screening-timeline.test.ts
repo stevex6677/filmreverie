@@ -58,7 +58,7 @@ describe('M22 screening timelines', () => {
     const boundaries = createRollLayout(FULL_ROLL_FIXTURE).slice(1).map(strip => strip.offset);
     // Projector never leaves the projection; strip changes stay behind the shutter (2026-09-27 review).
     expect(createScreeningTimeline(FULL_ROLL_FIXTURE, options('projector')).segments.some(s => s.act === 'break')).toBe(false);
-    for (const reel of REEL_IDS.filter(reel => reel !== 'projector')) for (const aspect of [16 / 9, 9 / 16]) {
+    for (const reel of REEL_IDS.filter(reel => reel !== 'projector' && reel !== 'film-journey')) for (const aspect of [16 / 9, 9 / 16]) {
       const timeline = createScreeningTimeline(FULL_ROLL_FIXTURE, options(reel, { aspect }));
       const breaks = timeline.segments.filter(s => s.act === 'break');
       expect(new Set(breaks.map(s => s.frameIndex)), reel).toEqual(new Set(boundaries));
@@ -125,7 +125,8 @@ describe('M22 screening timelines', () => {
       const durations = PACES.map(pace => createScreeningTimeline(FULL_ROLL_FIXTURE, options(reel, { pace })).duration);
       expect(durations[0]).toBeGreaterThan(durations[1]);
       expect(durations[1]).toBeGreaterThan(durations[2]);
-      PACES.forEach((pace, i) => expect(durations[i] / durations[1]).toBeCloseTo(PACE_SCALE[pace], 6));
+      // Film Journey changes viewing time more than travel time.
+      if (reel !== 'film-journey') PACES.forEach((pace, i) => expect(durations[i] / durations[1]).toBeCloseTo(PACE_SCALE[pace], 6));
       const hold = (roll: RollDefinition) => Math.min(...createScreeningTimeline(roll, options(reel)).segments.filter(s => s.kind === 'frame').map(s => s.duration));
       expect(hold(medium)).toBeGreaterThan(hold(BASELINE_ROLL));
     }
@@ -167,7 +168,7 @@ describe('M22 screening timelines', () => {
         expect(Math.abs(sample.camera.roll ?? 0)).toBeLessThanOrEqual(15 * Math.PI / 180);
       }
       // A focused frame is centered and mostly visible in the requested aspect.
-      for (const segment of timeline.segments.filter(s => s.kind === 'frame' && !['tracking', 'darkroom', 'darkroom-prints', 'documentary'].includes(reel))) {
+      for (const segment of timeline.segments.filter(s => s.kind === 'frame' && !['tracking', 'darkroom', 'darkroom-prints', 'documentary', 'film-journey'].includes(reel))) {
         const frame = locateFrame(roll, segment.frameIndex), pose = segment.camera[1];
         expect(pose.pan.x).toBeCloseTo(frame.x, 9); expect(TABLE_CENTER_Z - pose.pan.z).toBeCloseTo(frame.y, 9);
         const width = (frame.strip.layout.frameWidths?.[frame.localIndex] ?? frame.strip.layout.frameWidth) * roll.scale;
@@ -202,7 +203,8 @@ describe('M22 screening timelines', () => {
   });
 
   it('replace fast moves, blur and flicker with slow cuts under reduced motion', () => {
-    for (const reel of REEL_IDS) {
+    // Film Journey keeps its continuous path with gentler, slower travel.
+    for (const reel of REEL_IDS.filter(reel => reel !== 'film-journey')) {
       const timeline = createScreeningTimeline(FULL_ROLL_FIXTURE, options(reel, { reducedMotion: true }));
       expect(timeline.reducedMotion).toBe(true);
       for (const segment of timeline.segments) {
@@ -222,7 +224,8 @@ describe('M22 screening timelines', () => {
   });
 
   it('fades in from dark, shows the title and end cards, and closes on dark', () => {
-    for (const reel of REEL_IDS) {
+    // Film Journey remains visible throughout, including its bookends.
+    for (const reel of REEL_IDS.filter(reel => reel !== 'film-journey')) {
       const timeline = createScreeningTimeline(BASELINE_ROLL, options(reel));
       expect(timeline.sample(0).fade).toBe(1);
       const [title, end] = timeline.cards.filter(card => card.kind !== 'countdown');

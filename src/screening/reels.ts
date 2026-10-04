@@ -5,6 +5,7 @@ import { ROOM_CAMERA_FOV, ROOM_ENVELOPE, ROOM_EYE, TABLE_CENTER_Z, TABLE_SURFACE
 import { SHELF_ORIGIN } from '../data/physicalScale';
 import { printLayout, PRINT_WALL_X } from './prints';
 import { isVertical, uprightYaw } from '../utils/frameOrientation';
+import { createFilmJourney } from './filmJourney';
 
 export interface ReelOptions {
   reel: ReelId; pace: Pace; aspect: number; reducedMotion?: boolean;
@@ -26,6 +27,7 @@ export const REEL_SETTINGS: Record<ReelId, readonly ReelSetting[]> = {
   orbit: [{ label: 'Arc', low: 'Narrow', high: 'Wide', initial: .5 }, { label: 'Depth of field', low: 'Deep', high: 'Shallow', initial: .5 }],
   'darkroom-prints': [{ label: 'Distance', low: 'Close', high: 'Far', initial: .5 }, { label: 'Angle', low: 'Face on', high: 'Along the line', initial: .4 }],
   documentary: [{ label: 'Drift', low: 'Still', high: 'Strong', initial: .5 }, { label: 'Dissolve', low: 'Quick', high: 'Long', initial: .5 }],
+  'film-journey': [{ label: 'Movement', low: 'Minimal', high: 'Expressive', initial: .65 }, { label: 'Variety', low: 'Subtle', high: 'Varied', initial: .5 }],
 };
 /** The reel's settings with defaults filled in and values clamped to 0–1. */
 export function reelTuning(reel: ReelId, values?: readonly number[]) {
@@ -38,7 +40,7 @@ const amount = (u: number) => u <= .5 ? 2 * u : 1 + 3 * (u - .5);
 // Depth of field for reels that look across the table or into the room.
 const APERTURE = { tracking: .075, darkroom: .035, orbit: .03, 'darkroom-prints': .035 };
 
-export const REEL_LABEL: Record<ReelId, string> = { tracking: 'Tracking Shot', develop: 'Develop', projector: 'Projector', darkroom: 'Darkroom', orbit: 'Orbit', 'darkroom-prints': 'Darkroom Prints', documentary: 'Documentary' };
+export const REEL_LABEL: Record<ReelId, string> = { tracking: 'Tracking Shot', develop: 'Develop', projector: 'Projector', darkroom: 'Darkroom', orbit: 'Orbit', 'darkroom-prints': 'Darkroom Prints', documentary: 'Documentary', 'film-journey': 'Film Journey' };
 export const REEL_DESCRIPTION: Record<ReelId, string> = {
   tracking: 'A low camera tracks along each strip and moves in on details.',
   develop: 'A band of light turns each negative into a photograph.',
@@ -47,6 +49,7 @@ export const REEL_DESCRIPTION: Record<ReelId, string> = {
   orbit: 'Slow arcs around each photograph on the glowing table.',
   'darkroom-prints': 'Every photograph enlarged onto paper and hung up to dry.',
   documentary: 'Each photograph fills the screen, drifting and dissolving.',
+  'film-journey': 'A continuous journey through changing angles, tracking passes and occasional negative reveals.',
 };
 export const PACE_LABEL: Record<Pace, string> = { relaxed: 'Relaxed', normal: 'Normal', brisk: 'Brisk' };
 
@@ -90,8 +93,8 @@ export function isMediumFormat(roll: RollDefinition) { return roll.format !== un
 export type Rhythm = 'linger' | 'hold' | 'quick';
 const QUICK_PHASES = new Set([3, 4, 9, 10, 11]);
 /**
- * The tour's rhythm, shared by every reel but Projector (which keeps its own
- * beat grid). Every sixth frame, or the middle one of a short roll, is a
+ * The original reels' tour rhythm. Projector keeps its own beat grid and
+ * Film Journey its own viewing groups. Every sixth frame, or the middle one of a short roll, is a
  * lingering look. On 35 mm rolls of ten or more frames, runs of two and then
  * three quick frames follow it, never across a strip boundary. Medium format
  * and reduced motion keep an even pace between the lingering looks.
@@ -135,6 +138,8 @@ export function createScreeningTimeline(roll: RollDefinition, options: ReelOptio
   const holdScale = medium ? 1.35 : 1;
   const info = { reel: options.reel, pace: options.pace, aspect, reducedMotion: reduced, frameCount: n };
   const [first, second] = reelTuning(options.reel, options.tuning);
+
+  if (options.reel === 'film-journey') return createFilmJourney(roll, { ...options, aspect, tuning: [first, second] }, f);
 
   const rhythm = tourRhythm(roll, reduced);
   /** The heading that shows frame `index` upright; reels add their own angle to it. */
