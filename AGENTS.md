@@ -92,7 +92,7 @@ Vitest versions. See the [README](README.md) for engine requirements.
 
 ```sh
 npm ci
-npm run dev -- --host 0.0.0.0
+npm run dev -- --host 0.0.0.0 --port 11111 --strictPort
 # Build and test locally as needed:
 npm run build
 npm run test:integration
@@ -149,12 +149,17 @@ acquisition, not a startup step.
 
 ### Local preview and phone/iPad access
 
-- Start the application process locally in the active checkout. Check working
-  directory and port ownership; preserve existing services. If a port is occupied,
-  use another available port and report the actual URL.
+- Start the application process locally in the active checkout. When creating a
+  development or preview server for the user to test, always use port `11111`
+  unless the user explicitly specifies otherwise. Check working directory and
+  port ownership first. If port `11111` is occupied, terminate the process using
+  it and start the requested server on that port. This is standing authorization
+  to stop that process; preserve services on other ports. Use `--strictPort` so
+  Vite cannot silently switch to another port.
 - Always bind application development and preview servers to `0.0.0.0`, not
   `localhost` or `127.0.0.1`. Pass `--host 0.0.0.0` to `npm run dev` and
-  `npm run preview` (for example, `npm run preview -- --host 0.0.0.0 --port 5188`),
+  `npm run preview` (for example,
+  `npm run preview -- --host 0.0.0.0 --port 11111 --strictPort`),
   or set `FILM_PHOTO_HOST=0.0.0.0`. This allows direct access over both the local
   network and Tailscale without a Serve proxy.
 - After every application startup, provide clickable localhost and private
