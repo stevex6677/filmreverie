@@ -96,8 +96,8 @@ export function ScreeningPicker({ choice, onChange, onPreview, onExport, onClose
         <fieldset>
           <legend className="table-eyebrow">MUSIC</legend>
           <div className="screening-music">
-            {radio('music', 'none', 'No music')}
             {SHOWREEL_TRACKS.map(track => radio('music', track.id, track.title))}
+            {radio('music', 'none', 'No music')}
           </div>
           {track && <>
             <p className="screening-description">{listening === track.id ? 'Playing preview · ' : ''}{track.mood} · {track.artist}, CC0</p>

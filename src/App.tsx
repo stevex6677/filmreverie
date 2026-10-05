@@ -46,6 +46,7 @@ import './cloud/navigation.css';
 import { getFilmStock } from './data/filmStocks';
 import { FILM_FORMATS } from './data/filmFormats';
 import { ScreeningSession, type ExportFormat, type ScreeningChoice, type ScreeningCredits } from './screening/session';
+import { SHOWREEL_TRACKS } from './showreel/settings';
 import { ScreeningPicker, ScreeningPlayer } from './screening/ScreeningUI';
 import { createScreeningTimeline } from './screening/reels';
 import { screeningFileName } from './screening/overlay';
@@ -201,7 +202,7 @@ export function App() {
   const roll = state.roll;
   // Screening overrides rendering only. It never dispatches viewer actions,
   // so the table, loupe, film mode, brightness and saved views are unchanged.
-  const [screeningChoice, setScreeningChoice] = useState<ScreeningChoice>({ reel: 'film-journey', pace: 'normal', tuning: {}, music: 'none', volume: .8 });
+  const [screeningChoice, setScreeningChoice] = useState<ScreeningChoice>({ reel: 'film-journey', pace: 'normal', tuning: {}, music: SHOWREEL_TRACKS[0]?.id ?? 'none', volume: .8 });
   const [screeningFormat, setScreeningFormat] = useState<ExportFormat>('16:9');
   const [screeningPicker, setScreeningPicker] = useState(false);
   const [screening, setScreening] = useState<ScreeningSession | null>(null);
