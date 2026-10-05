@@ -2,6 +2,8 @@
 
 An immersive 3D darkroom and illuminated light table experience for inspecting 35mm and 120 medium-format film in the browser.
 
+**Website:** [filmreverie.app](https://filmreverie.app)
+
 Built with **React 18**, **Three.js**, and **React Three Fiber**.
 
 The vertical three-dot menu offers **Layout → Auto / Desktop** in owner and guest
