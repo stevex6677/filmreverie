@@ -24,6 +24,8 @@ interface FilmStripProps {
   layout: FilmStripLayout;
   brightness?: number;
   filmStrength?: number;
+  /** Widest film-edge lettering texture (pixels); lower where memory is short. */
+  rebateWidth?: number;
   onSelectFrame?: (index: number) => void;
   onPointerMove?: (point: THREE.Vector3) => void;
 }
@@ -52,6 +54,7 @@ export const FilmStrip: React.FC<FilmStripProps> = ({
   layout,
   brightness = 1.0,
   filmStrength,
+  rebateWidth = Infinity,
   onSelectFrame,
   onPointerMove,
 }) => {
@@ -63,8 +66,8 @@ export const FilmStrip: React.FC<FilmStripProps> = ({
 
   // High-resolution authentic 35mm rebate print texture (stock lettering and frame numbers)
   const rebateTexture = useMemo(() => {
-    return createFilmRebateTexture(stock, layout, gl.capabilities.maxTextureSize, gl.capabilities.getMaxAnisotropy());
-  }, [stock, layout, gl]);
+    return createFilmRebateTexture(stock, layout, Math.min(gl.capabilities.maxTextureSize, rebateWidth), gl.capabilities.getMaxAnisotropy());
+  }, [stock, layout, gl, rebateWidth]);
 
   const rebateMaterial = useMemo(() => {
     const channels = stock.base.substrateBase.match(/[\d.]+/g)!.slice(0, 3).map(Number);

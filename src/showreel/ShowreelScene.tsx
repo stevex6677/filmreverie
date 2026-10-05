@@ -13,7 +13,8 @@ import { FILM_PACKAGING } from '../data/filmPackaging';
 import { getFilmStock } from '../data/filmStocks';
 import { TABLE_CENTER_Z, TABLE_SURFACE_Y } from '../utils/cameraBounds';
 import { createRollLayout } from '../utils/rollLayout';
-import { filterPhotograph, ProgressiveTextureUploader } from '../utils/progressiveTextures';
+import { filterPhotograph, MIPMAP_MEMORY, ProgressiveTextureUploader } from '../utils/progressiveTextures';
+import { TEXTURE_BUDGET } from '../utils/useRollTextures';
 import { SHELF_CAPACITY } from '../utils/shelfLayout';
 import type { CameraCollectionProgress } from '../utils/loadCameraModel';
 import { usePublishedShelf } from '../cloud/publicShelf';
@@ -28,18 +29,43 @@ const noop = () => {};
 const PACKAGING_IMAGES = new Set(FILM_PACKAGING.flatMap(p => [p.singleRollArtwork ?? p.box.asset, ...(p.cartridge ? [p.cartridge.asset] : [])])).size;
 
 /**
+ * Every photograph and every strip's film-edge lettering stays on the GPU at
+ * once: about 730 MB of photographs and 470 MB of lettering at full size,
+ * which iPhone WebKit does not survive (it closes the page). On a phone the
+ * photographs are scaled alike to fit the viewer's texture budget, and the
+ * lettering is drawn narrower; both stay sharper than the phone's canvas.
+ */
+const PHONE = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 600;
+const PHONE_REBATE_WIDTH = 2048;
+/** The fraction of their size the photographs are decoded at. */
+function showreelResolution(rolls: readonly ShowreelRoll[]) {
+  if (!PHONE) return 1;
+  const frames = new Map(rolls.flatMap(roll => roll.definition.frames.map(frame => [frame.src, frame] as const)));
+  const bytes = [...frames.values()].reduce((sum, frame) => sum + (frame.sourceWidth ?? 0) * (frame.sourceHeight ?? 0) * 4 * MIPMAP_MEMORY, 0);
+  return Math.min(1, Math.sqrt(TEXTURE_BUDGET / bytes));
+}
+
+/**
  * Every photograph of every roll, uploaded once and kept: all of them lie on
  * the table at once. Uploads go through the progressive uploader, two at a
  * time, so loading never stalls a frame.
  */
-function useShowreelTextures(rolls: readonly ShowreelRoll[], upload: (url: string) => Promise<THREE.Texture>) {
+function useShowreelTextures(rolls: readonly ShowreelRoll[], upload: (url: string) => Promise<THREE.Texture>, resolution: number) {
   const urls = useMemo(() => [...new Set(rolls.flatMap(roll => roll.definition.frames.map(frame => frame.src)))], [rolls]);
   const [loaded, setLoaded] = useState<ReadonlyMap<string, THREE.Texture>>(new Map());
   const [failed, setFailed] = useState(0);
   useEffect(() => {
     let cancelled = false, next = 0;
     const textures = new Map<string, THREE.Texture>(), loader = new THREE.TextureLoader();
-    const fallback = (url: string) => loader.loadAsync(url).then(texture => { texture.colorSpace = THREE.SRGBColorSpace; filterPhotograph(texture); return texture; });
+    const fallback = (url: string) => loader.loadAsync(url).then(texture => {
+      if (resolution < 1) {
+        const image = texture.image as HTMLImageElement, canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * resolution)); canvas.height = Math.max(1, Math.round(image.height * resolution));
+        canvas.getContext('2d')?.drawImage(image, 0, 0, canvas.width, canvas.height);
+        texture.image = canvas; texture.needsUpdate = true;
+      }
+      texture.colorSpace = THREE.SRGBColorSpace; filterPhotograph(texture); return texture;
+    });
     const worker = async () => {
       while (!cancelled && next < urls.length) {
         const url = urls[next++];
@@ -52,7 +78,7 @@ function useShowreelTextures(rolls: readonly ShowreelRoll[], upload: (url: strin
     };
     void Promise.all([worker(), worker()]);
     return () => { cancelled = true; textures.forEach(texture => texture.dispose()); };
-  }, [urls, upload]);
+  }, [urls, upload, resolution]);
   return { loaded, failed, total: urls.length, settled: loaded.size + failed >= urls.length };
 }
 
@@ -104,10 +130,11 @@ export const ShowreelScene = memo(function ShowreelScene({ session, rolls, ready
   // An unavailable gallery leaves the shelf with its placeholder cartons rather than holding the film.
   const shelfReady = published.shelf.loaded && !published.loading && (!!published.error || covers >= shelved);
 
-  const uploader = useMemo(() => new ProgressiveTextureUploader(gl), [gl]);
+  const resolution = useMemo(() => showreelResolution(rolls), [rolls]);
+  const uploader = useMemo(() => Object.assign(new ProgressiveTextureUploader(gl), { resolution }), [gl, resolution]);
   useEffect(() => () => uploader.dispose(), [uploader]);
   const upload = useCallback((url: string) => uploader.load(url), [uploader]);
-  const photos = useShowreelTextures(rolls, upload);
+  const photos = useShowreelTextures(rolls, upload, resolution);
   const placeholder = useMemo(() => { const texture = new THREE.DataTexture(new Uint8Array([65, 65, 65, 255]), 1, 1); texture.needsUpdate = true; return texture; }, []);
   useEffect(() => () => placeholder.dispose(), [placeholder]);
   const textures = useMemo(() => rolls.map(roll => roll.definition.frames.map(frame => photos.loaded.get(frame.src) ?? placeholder)), [rolls, photos.loaded, placeholder]);
@@ -143,7 +170,7 @@ export const ShowreelScene = memo(function ShowreelScene({ session, rolls, ready
         userData={{ stripIndex: strip.index, frameWidth: strip.layout.frameWidth, roll: roll.definition, showreelRoll: index }}
         position={[roll.offset.x, roll.offset.y + strip.y, layouts[index].length > 1 ? .003 : 0]} scale={strip.scale}>
         <FilmStrip frames={strip.frames} stock={getFilmStock(roll.stockId)} textures={textures[index].slice(strip.offset, strip.offset + strip.frames.length)}
-          filmStrength={SHOWREEL_FILM_STRENGTH} isPositive layout={strip.layout} brightness={SHOWREEL_BRIGHTNESS} />
+          filmStrength={SHOWREEL_FILM_STRENGTH} isPositive layout={strip.layout} brightness={SHOWREEL_BRIGHTNESS} rebateWidth={PHONE ? PHONE_REBATE_WIDTH : undefined} />
       </group>))}
       <ShowreelLoupe session={session} scale={rolls[0].definition.scale} texture={placeholder} />
     </group>
