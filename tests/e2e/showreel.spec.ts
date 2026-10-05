@@ -87,3 +87,29 @@ test('showreel opens on its settings, then previews and offers export', async ({
   await expect(panel).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+// Every showreel photograph and strip's film-edge lettering stays on the GPU at once.
+// At full size (about 1.5 GB in all) iPhone WebKit closes the page, so a phone gets less of both.
+test('showreel textures fit a phone', async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 }, screen: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
+  const page = await context.newPage();
+  await page.addInitScript(() => {
+    const sizes: number[][] = [];
+    (window as any).__textureSizes = sizes;
+    const storage = WebGL2RenderingContext.prototype.texStorage2D;
+    WebGL2RenderingContext.prototype.texStorage2D = function (target, levels, format, width, height) { sizes.push([width, height]); return storage.call(this, target, levels, format, width, height); };
+  });
+  await page.goto('/showreel?paused=1');
+  await expect(page.locator('.showreel')).toHaveAttribute('data-showreel-ready', 'true', { timeout: 200000 });
+  const { photos, sizes } = await page.evaluate(() => ({
+    photos: (window as any).__showreel.timeline.rolls.flatMap((roll: any) => roll.definition.frames.map((frame: any) => [frame.sourceWidth, frame.sourceHeight])) as number[][],
+    sizes: (window as any).__textureSizes as number[][],
+  }));
+  // Photographs are decoded smaller than their files, and the lettering narrower than 8192 px.
+  expect(sizes.filter(([width, height]) => photos.some(([w, h]) => (w === width && h === height) || (w === height && h === width)))).toEqual([]);
+  expect(Math.max(...sizes.map(([width]) => width))).toBeLessThanOrEqual(4096);
+  // All textures with their mipmaps (about 580 MB, as much as the viewer holds on a phone).
+  const bytes = sizes.reduce((sum, [width, height]) => sum + width * height * 4 * 4 / 3, 0);
+  expect(bytes).toBeLessThan(640 * 1024 * 1024);
+  await context.close();
+});

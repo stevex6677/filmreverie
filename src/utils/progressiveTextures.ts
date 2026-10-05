@@ -31,11 +31,11 @@ function decoder() {
   } catch { worker = null; }
   return worker;
 }
-function decode(url: string) {
+function decode(url: string, scale: number) {
   const active = decoder();
   if (!active) return Promise.reject(new Error('Worker decoding unavailable'));
   const id = ++nextId;
-  return new Promise<Decoded>((resolve, reject) => { pending.set(id, { resolve, reject }); active.postMessage({ id, url: new URL(url, location.href).href }); });
+  return new Promise<Decoded>((resolve, reject) => { pending.set(id, { resolve, reject }); active.postMessage({ id, url: new URL(url, location.href).href, scale }); });
 }
 
 /**
@@ -61,13 +61,15 @@ export class ProgressiveTextureUploader {
   private scheduled = false;
   /** Set lower while a screening plays, when every frame counts. */
   budget = UPLOAD_BUDGET_MS.idle;
+  /** Photographs are decoded at this fraction of their size (below 1 to fit a memory budget). */
+  resolution = 1;
   constructor(private readonly gl: THREE.WebGLRenderer) {}
 
   /** A GPU-resident texture of the photograph at `url`, oriented like TextureLoader's (flipY). */
   async load(url: string): Promise<THREE.Texture> {
     const early = this.ahead.get(url);
     this.ahead.delete(url);
-    const { width, height, pixels } = await (early ?? decode(url));
+    const { width, height, pixels } = await (early ?? decode(url, this.resolution));
     const texture = new THREE.DataTexture(null, width, height, THREE.RGBAFormat, THREE.UnsignedByteType);
     texture.colorSpace = THREE.SRGBColorSpace;
     filterPhotograph(texture);
@@ -85,7 +87,7 @@ export class ProgressiveTextureUploader {
     for (const url of urls) {
       if (this.ahead.size >= AHEAD) break;
       if (this.ahead.has(url)) continue;
-      const pending = decode(url);
+      const pending = decode(url, this.resolution);
       pending.catch(() => this.ahead.delete(url));
       this.ahead.set(url, pending);
     }
