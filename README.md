@@ -7,8 +7,9 @@ Built with **React 18**, **Three.js**, and **React Three Fiber**.
 The vertical three-dot menu offers **Layout → Auto / Desktop** in owner and guest
 darkrooms. Auto adapts to screen width and touch input; Desktop overrides that
 choice. The preference is remembered in this browser.
-Desktop and mobile room headers share the same styling. **Lights** opens room
-lighting controls; desktop room navigation actions are also available there.
+Desktop and mobile share a film-strip header with **Room**, **Film Shelf**,
+**Light Table** and **Cameras** navigation. **Settings** opens room lighting
+controls in the room and viewing controls at the table.
 Desktop views omit the bottom interaction hints.
 Guest visits open in the darkroom, with the last active roll still loaded on the
 table. Opening a roll from the shelf enters the light table.
@@ -33,6 +34,8 @@ Twelve film stocks with distinct adjustable color/grain effects and procedural e
 - **Kodak Ektachrome E100:** Reversal slide film with neutral clear base and positive-only viewing.
 
 For complete physical standards (KS-1870 / ISO 1007), coordinate spaces, modification instructions, and how to add new stocks, see [docs/FILM_SPECS.md](docs/FILM_SPECS.md). Factory number spacing and the evidence limits for 120 film are documented in [film edge printing](docs/FILM_EDGE_PRINTING.md).
+Edge lettering follows physical film length continuously across strip cuts,
+including when the roll's frames-per-strip setting changes.
 
 ### 3. Physical Loupe & Optical Magnification
 - **Tactile Inspection Loupe:** Drag to inspect fine film grain and edge markings across frames.
@@ -42,7 +45,7 @@ For complete physical standards (KS-1870 / ISO 1007), coordinate spaces, modific
 ### 4. Flexible Roll Sizing & Multi-Format Support
 - **Film Formats:** Support for **35mm** (36 × 24 mm full frame or 18 × 24 mm half frame, with 72 nominal half-frame exposures) and **120 medium format** (6×4.5, 6×6, 6×7, 6×9).
 - **Free-Sizing Mode:** Retains each image's native aspect ratio along a shared film height (24 mm for 35mm, 56 mm for 120).
-- **Film Advance & Capacity:** Dynamic film span metering with a 230 mm strip-wrapping layout that scales to fit the table.
+- **Film Advance & Capacity:** Dynamic film span metering at a fixed physical scale. Fixed formats use their default frame counts per strip; free-sized rolls pack into 230 mm strips. **Frames per strip** in the roll editor accepts a positive whole number for that roll's light-table layout; **Use default** restores automatic layout without changing photo crops or film capacity.
 - **Multi-Device Navigation:** Responsive controls designed for mouse/keyboard on desktop and fluid touch gestures (pinch-to-zoom, pan, swipe) on iPad and mobile.
 
 ### 5. Standalone 3D Model Viewer
@@ -50,34 +53,47 @@ An isolated, reusable 3D model viewer module located in [`standalone/model-viewe
 
 For current and historical file locations, see the [model version index](blender/MODEL_HISTORY.md), including the editable master to open for future changes.
 
-Current model deliveries: [Mamiya Universal](blender/mamiya_universal/CURRENT.json) and [Minolta Autocord](blender/autocord/CURRENT.json). These records identify the editable masters, GLB exports, reference refinements, renders, checksums and stable viewer links. The Autocord retains the original Tripo body and optics, with localized strap removal, front/side/rear inscription repairs, continuous side-panel enamel, and a reference-reconstructed underside with a threaded tripod mount and rounded feet. Its latest front pass clarifies both lens inscriptions, the CITIZEN-MVL shutter/EV markings, and the metric/feet focusing scales; only shallow false shutter-letter relief is leveled. An earlier non-destructive browser derivative reduced its delivery from 105.7 MB and 1.78 million triangles to 20.0 MB and 396 thousand triangles while preserving the accepted master and full-detail GLB. Its reproducible Blender CLI pipeline is under [`blender/autocord/`](blender/autocord/).
+The catalog uses separate inspection and cabinet GLBs for all five cameras.
+Inspection models are each below 5 MB; accepted editable masters and earlier
+exports remain in shared authoring storage. Start model changes from the
+`editable_blend` in the corresponding `CURRENT.json`, which also records export
+provenance, checksums, renders and published runtime paths.
 
-[Olympus OM-1 current delivery](blender/olympus_om1/CURRENT.json) adds reference-corrected lettering, top controls and underside hardware, with smoother metal surfaces and a browser GLB below 10 MB. See its [reproduction guide](blender/olympus_om1/README.md) and open `/?model=olympus-om1` in the standalone viewer.
+| Camera / current record | Inspection GLB (MB) | Cabinet width | Standalone viewer query |
+| --- | ---: | ---: | --- |
+| [Mamiya Universal](blender/mamiya_universal/CURRENT.json) | 3.15 | 21 cm | `/?model=mamiya-universal` |
+| [Minolta Autocord](blender/autocord/CURRENT.json) | 3.44 | 8.4 cm | `/?model=minolta-autocord` |
+| [Canon Demi EE17](blender/canon_demi_ee17/CURRENT.json) | 4.03 | 11.6 cm | `/?model=canon-demi-ee17` |
+| [Canon 7s](blender/canon7s/CURRENT.json) | 3.58 | 13.8 cm | `/?model=canon-7s` |
+| [Olympus OM-1](blender/olympus_om1/CURRENT.json) | 3.24 | 13.6 cm | `/?model=olympus-om1` |
 
-The [Canon Demi EE17 delivery](blender/canon_demi_ee17/CURRENT.json) applies localized corrections from the supplied front, top, bottom and back photographs, including the shoulder and `top2.HEIC` lettering/band corrections. Its retained 8.28 MB compact GLB preserves all master triangles. The standalone catalog at `/?model=canon-demi-ee17` now uses the smaller detail derivative listed in the version index. A separate lightweight derivative is mounted in the Web App cabinet at the owner's specified **11.6 cm width**, with uniform proportions and no change to the accepted master or GLB. See [its reproduction notes](blender/canon_demi_ee17/README.md).
-
-The [Canon 7s delivery](blender/canon7s/CURRENT.json) preserves the supplied Tripo body and optics while restoring the Voigtländer lens inscription, rear manufacturer/serial engraving, and top logo, shutter dial, meter window and control markings. Its surface pass smooths the metal housing, bottom trim and lens bezel while retaining leather grain, lettering and knurled grips. The underside pass follows `bottom.HEIC`: a slotted cap, open 1/4-20 threaded tripod socket, recessed circular latch and two slotted screws. It leaves the parent vertex coordinates and retained-face UVs, colors and encoded normals unchanged; only local underside faces are removed for the recesses. The socket's hidden depth is an estimate, recorded separately from its nominal thread dimensions. Its packed Blender master, full-detail GLB, compact browser derivative and CUDA review renders live under shared `ignored_generated/blender/canon7s/`. Builders and verification are under `blender/canon7s/`; the standalone viewer uses `/?model=canon-7s`. A separate lightweight derivative is mounted in the Web App cabinet at the requested **13.8 cm width**, without rescaling the editable master.
+Sizes use decimal MB. See [mobile model delivery](blender/MOBILE_MODELS.md) for
+budgets and reproduction, and the [viewer guide](standalone/model-viewer/README.md)
+for startup and catalog configuration.
 
 ### 6. Camera Collection
-The room starts from its center. Its 90 cm, two-tier camera cabinet matches the film cabinet's height and replaces the right-wall chemistry shelf. The complete developing bench, chemicals and drying equipment sit beside the door, where the box shelf was removed. The camera cabinet sits closer to the light table and displays the current Mamiya Universal, Minolta Autocord, Canon Demi EE17, Canon 7s and Olympus OM-1 on its upper tier at their respective 21 cm, 8.4 cm, 11.6 cm, 13.8 cm and 13.6 cm physical widths. Five upper positions provide clearance for the cameras without changing their scale. Three film boxes and two cartridges occupy the lower tier. The cabinet uses separate lightweight models, with preserved lettering and materials on Mamiya; after the room is ready, detailed models below 5 MB preload sequentially in the background for inspection. Startup waits for every cabinet model to load successfully, with retry for failed models. Select **Camera Cabinet** for a tightly framed cabinet-only view, then any camera to inspect every side with rotation, zoom, pan and directional presets. Detailed camera models load when inspected; lightweight cabinet models and the compressed-model decoder are included in the required offline shell. See [mobile model delivery](blender/MOBILE_MODELS.md) and [camera shelf review](docs/CAMERA_SHELF_REVIEW.md) for validation and remaining acceptance work; asset preparation verifies each camera's `CURRENT.json` against the shared viewer catalog.
+The room starts from its center. Its 90 cm, two-tier camera cabinet matches the film cabinet's height and replaces the right-wall chemistry shelf. The complete developing bench, chemicals and drying equipment sit beside the door, where the box shelf was removed. The camera cabinet sits closer to the light table and displays the current Mamiya Universal, Minolta Autocord, Canon Demi EE17, Canon 7s and Olympus OM-1 on its upper tier at their respective 21 cm, 8.4 cm, 11.6 cm, 13.8 cm and 13.6 cm physical widths. Five upper positions provide clearance for the cameras without changing their scale. Three film boxes and two cartridges occupy the lower tier. The cabinet uses separate lightweight models, with preserved lettering and materials on Mamiya; after the room is ready, detailed models below 5 MB preload sequentially in the background for inspection. Startup waits for every cabinet model to load successfully, with retry for failed models. Select **Cameras** for a tightly framed cabinet-only view, then any camera to inspect every side with rotation, zoom, pan and directional presets. Detailed camera models load when inspected; lightweight cabinet models and the compressed-model decoder are included in the required offline shell. See [mobile model delivery](blender/MOBILE_MODELS.md) and [camera shelf review](docs/CAMERA_SHELF_REVIEW.md) for validation and remaining acceptance work; asset preparation verifies each camera's `CURRENT.json` against the shared viewer catalog.
 
 ### 7. Public Gallery and Guest Darkroom
 The home page (`/`) displays only owner-published cloud rolls on the physical
 darkroom shelf. Browsing needs no account; visitors cannot add, edit or delete
 rolls there. Its room header shares the guest darkroom's controls; **Create Your Own**
-sits after **Lights**, followed by a vertical three-dot menu.
+appears in the film-strip header alongside **Settings** and a vertical three-dot menu.
 The menu shows **Admin Login** until authenticated, then **Logged in**. Admins use
 the same shelf and roll editor as guests: **New roll**, edit, delete, Trash and
 Undo. Images process in a worker while roll details remain editable. Admin derivatives
 upload privately in the background. **Save** publishes the reviewed roll and closes
-the editor; **Save and open** also opens it on the light table. Unchanged images are
+the editor; **Save and open** also opens it on the light table. Live progress reports
+processing, upload and save stages. Each ordinary save, edit, trash or restore uses
+a single roll mutation request after any new image uploads. Unchanged images are
 reused when saving edits. Deletion withdraws the roll from
 the gallery and retains it in cloud Trash; restoration republishes it. Cloudflare
 Access JWT verification, short-lived key-scoped direct R2 uploads of browser-re-encoded
 JPEG derivatives (never originals), versioned R2 catalog publication and withdrawal
 live in `cloudflare/`. Admin performs metadata removal locally before uploading;
-the Worker does not decode image content. Hosted Cloudflare Free CPU/subrequest
-measurements are pending account setup.
+the Worker does not decode image content. Local mock measurements and outstanding
+hosted acceptance checks are recorded in
+[the cloud gallery guide](docs/CLOUD_GALLERY.md).
 
 **Create Your Own** opens `/guest?welcome=1` in a new tab and shows the guest
 introduction on every click; direct `/guest` visits show it only until dismissed.
@@ -87,12 +103,12 @@ database at best effort, without accounts, uploads or synchronization. Guest
 backup, migration and offline/storage controls are not offered. Earlier
 `darkroom-rolls` libraries remain untouched.
 
-**The API Worker is deployed. Current menu, shared roll editor and publication optimizations remain local; these changes have not been deployed to the Worker or Pages.** See
-[deployment/privacy/recovery instructions](docs/CLOUD_GALLERY.md) and
-[M21 validation and blockers](docs/M21_REVIEW.md).
-Pushes to GitHub `master` can deploy both the API Worker and website through
-the [automatic deployment workflow](docs/AUTO_DEPLOY.md), after its dedicated
-Cloudflare token and private deployment configuration secrets are configured.
+See [deployment/privacy/recovery instructions](docs/CLOUD_GALLERY.md) and
+[the historical M21 review](docs/M21_REVIEW.md). For the local push/deploy workflow,
+follow [Deployment](#deployment) below. The optional
+[GitHub Actions workflow](docs/AUTO_DEPLOY.md#github-actions) also supports `master`
+pushes after its Cloudflare token and private configuration secrets are set.
+Deployment status is recorded separately from this feature documentation.
 Production settings live in ignored `cloudflare/deployment.local.json`; the
 committed configuration is generic. Normal local builds do not need a Cloudflare account.
 Local development can use real Cloudflare login, return to the same dev URL,
@@ -114,10 +130,10 @@ film) or **Projector** (the room goes dark, a countdown is projected in the lamp
 gate, and frames slide in from the right on a regular beat), **Darkroom** (from the
 room to the light table and back), **Orbit** (slow arcs around each photograph),
 **Darkroom Prints** (every photograph enlarged onto paper and hung up to dry) or
-**Documentary** (each photograph fills the screen, drifting and dissolving). Each reel has
-an establishing shot, a frame-by-frame tour with overview breaks at strip
-boundaries, and a closing shot, at Relaxed, Normal or Brisk pace; reduced motion
-uses slow cuts instead of fast moves, blur and flicker. Each reel also has two
+**Documentary** (each photograph fills the screen, drifting and dissolving).
+The picker groups **Reel**, **Pace** and **Music**, with a frame count and duration
+estimate. Reels include opening and closing shots and use Relaxed, Normal or Brisk
+pace; reduced motion uses slow cuts instead of fast moves, blur and flicker. Each reel also has two
 settings of its own, folded under **Adjust** in the picker (for example Distance and Depth of field for Tracking Shot,
 Gate weave and Lamp flicker for Projector, Drift and Dissolve for Documentary).
 Tracking Shot, Darkroom, Orbit and Darkroom Prints render with depth of field,
@@ -140,7 +156,8 @@ slower travel. The same path drives preview, seeking and all three export format
 The settings include the same five CC0 music tracks as `/showreel`, with tap-to-preview selection,
 volume and No music controls. Music plays with the preview and is included in
 exports, looping for long rolls and fading at the start and end. The five tracks
-are included in offline preparation. No music remains the default. If the browser
+are included in the app cache. **Families**, the first track, is selected by default
+at 80% volume; choose **No music** for a silent screening. If the browser
 cannot encode audio, export reports that the resulting video is silent.
 
 **Export video** first asks for the video format, then renders the same timeline
@@ -171,6 +188,8 @@ a cut, into the Develop reel's moves over a slide, then the Darkroom Prints reel
 along three prints and the Projector screening three frames of the 6×6 roll, and
 the camera cabinet, ending on a card with filmreverie.app and the GitHub link.
 Titles, captions, light leaks, grain and camera labels are drawn over the scene.
+Corner slates name each featured photograph and its camera when supplied, alongside
+the film stock and format; a missing photograph title falls back to the roll name.
 The page is public to anyone with the URL, is marked `noindex`, and is not part
 of the offline download.
 
@@ -198,7 +217,8 @@ Git and left out of the offline download. Each folder is named
 free-sized panoramic 35mm roll) or `0_35_half_portra160` (half frame). After changing the photographs, run
 `npm run showreel:manifest` to regenerate
 [`src/data/showreelRolls.json`](src/data/showreelRolls.json); roll names there
-may be edited and are kept. The photographs each shot must show are listed in
+may be edited and are kept, along with roll camera names and per-photograph titles.
+The photographs each shot must show are listed in
 `FEATURED` in [`src/showreel/timeline.ts`](src/showreel/timeline.ts). The film
 shelf is the published gallery's (`/api/gallery`, through the development
 gallery bridge when running locally); without it the shelf shows placeholder
@@ -206,6 +226,8 @@ cartons.
 
 Before playback the page renders the whole film once behind its loading screen
 (a pre-roll), so shaders compile and textures upload before the first shot.
+Phone previews scale photograph textures to a shared memory budget and use smaller
+film-edge textures to reduce memory pressure.
 Query options: `t=12.5` starts at a moment, `paused=1` holds it (skipping the
 settings), `clean=1` skips the settings and controls for screen recording, and
 `size=1920x1080` fixes the stage size. Keyboard: Space plays or pauses, ←/→
@@ -217,7 +239,7 @@ is in [`src/showreel/`](src/showreel/).
 ## Getting Started
 
 ### Prerequisites
-- **Node.js:** Node 24 LTS recommended. Installed Vite 8 requires Node `^20.19.0 || >=22.12.0`; the Vitest 5 test suite requires `^22.12.0 || ^24.0.0 || >=26.0.0`. Node 18 is unsupported.
+- **Node.js:** Node 24 LTS recommended. The locked Vite 8 version requires Node `^20.19.0 || >=22.12.0`; the Vitest 5 test suite requires `^22.12.0 || ^24.0.0 || >=26.0.0`. Node 18 is unsupported.
 - **npm:** Use the npm supplied with the supported Node installation.
 
 ### Installation
@@ -234,12 +256,49 @@ app. Git includes required packaging images, sample photos and both GLB variants
 
 ### Running Locally
 
-```bash
-# Start the development server
-npm run dev
+From the active checkout (`git rev-parse --show-toplevel`), check the process
+using port `11111` before starting or replacing a preview. User testing servers
+use this port unless another is explicitly requested; preserve other services.
 
-# Open the localhost URL printed by Vite (normally http://localhost:5173).
+```bash
+# Start the development server locally, accessible on the LAN and tailnet
+npm run dev -- --host 0.0.0.0 --port 11111 --strictPort
 ```
+
+Open [localhost:11111](http://localhost:11111). On this machine, devices on the
+same tailnet with MagicDNS can use [macbook:11111](http://macbook:11111).
+Vite's unoverridden default is `5178`; the commands here explicitly select the
+project's testing port. Keep `macbook` and `macbook.tail2b1388.ts.net` in the
+allowed hosts when overriding `FILM_PHOTO_ALLOWED_HOSTS`.
+
+The home page `/` requires a gallery backend. With valid private
+`cloudflare/deployment.local.json` settings, development and Vite preview
+automatically bridge to the real published gallery. In a new worktree, locate
+the main checkout with `git worktree list --porcelain`, validate its existing
+settings with `readDeployment` from `scripts/cloudflare-config.ts`, and reuse
+them in the active checkout's ignored configuration file with permissions `0600`.
+Do not overwrite an existing configuration or print/commit its contents. Check
+that `devLoginOrigins` covers the intended localhost and macbook ports.
+
+Preserve explicit backend overrides: `CLOUDFLARE_DEPLOYMENT_CONFIG` takes
+precedence over the file, `FILM_PHOTO_CLOUD_API` selects an API proxy, and
+`FILM_PHOTO_DEV_ADMIN_BRIDGE=0` disables the automatic bridge. Without a configured
+backend, use [the guest darkroom](http://localhost:11111/guest); a fresh clone can
+run it without a Cloudflare account. See [gallery configuration](docs/CLOUD_GALLERY.md)
+for details. Admin background uploads, saves, deletes and restores through the
+bridge affect real cloud storage; guest rolls stay local.
+
+Before declaring the gallery ready, check `/api/gallery` through the actual app
+port for successful JSON containing a `rolls` array, and load a returned thumbnail
+if nonempty. Check both localhost and a `Host: macbook:11111` request to the local
+listener; this does not verify access from another device. A homepage HTTP 200
+alone can be Vite's HTML fallback. Restart the verified preview process after
+changing connection settings.
+
+Direct HTTP access needs no Tailscale Serve proxy. Offline installation and new
+photo imports from a non-loopback device require HTTPS; follow the
+[offline HTTPS guidance](docs/OFFLINE.md#private-serving) while preserving existing
+origins, browser libraries and Serve mappings.
 
 ### Production Build
 
@@ -248,12 +307,42 @@ npm run dev
 npm run build
 
 # Preview the production build locally
-npm run preview
+npm run preview -- --host 0.0.0.0 --port 11111 --strictPort
 ```
 
 `prepare:assets`, run automatically by development and build, validates published
 runtime assets and prepares the bundled Draco decoder from Three.js. It does not
 regenerate photo/model source media or require Blender, `ffmpeg` or `sips`.
+
+### Deployment
+
+For this repository, a request to **push** includes a local Git push followed by
+both Cloudflare production deployments, unless explicitly scoped otherwise.
+Build and deploy the exact revision being pushed, preserving unrelated working
+changes and using a clean checkout when needed. Private deployment settings and
+local Wrangler authentication are required; see [deployment setup](docs/AUTO_DEPLOY.md).
+
+```bash
+npm run build
+npm run test:integration
+npm run check:cloud
+npm run check:cloud:production
+
+# After validation, push the intended branch/revision to GitHub.
+# Only after that push succeeds:
+npm run deploy:worker
+# Only after the Worker succeeds:
+npm run deploy:pages
+npm run verify:cloud
+```
+
+Stop on validation or push failure. A Pages failure after a successful Worker
+deployment is a partial deployment. The helpers use private settings to preserve
+the existing Worker, Pages project, routes and buckets; `pagesBranch` selects the
+Pages production branch independently of the Git branch. Do not deploy with the
+generic checked-in Wrangler files. Verification reads the website and public
+`/api/gallery` without creating or deleting rolls. GitHub Actions is optional for
+this local workflow.
 
 ### Assets and authoring
 
@@ -289,9 +378,20 @@ Build production output before running E2E tests directly.
 # Run unit & integration test suites (Vitest)
 npm run test:integration
 
-# Run end-to-end browser tests (Playwright)
-npm run test:e2e
+# Build, then run end-to-end browser tests (Playwright)
+npm run build
+PLAYWRIGHT_WORKERS=1 npm run test:e2e
+
+# Validate the API Worker using generic settings, without deploying
+npm run check:cloud
 ```
+
+Playwright starts its own production preview on `5178` by default; set
+`PLAYWRIGHT_PORT` to a free port if needed. It disables the production admin bridge
+with `FILM_PHOTO_DEV_ADMIN_BRIDGE=0` and uses isolated backend fixtures. Video is
+off by default; enable `PLAYWRIGHT_VIDEO=on` only for selected reviews and inspect
+the recording. Milestone commands that include the standalone viewer also require
+`npm --prefix standalone/model-viewer ci` and its documented browser dependencies.
 
 ---
 
@@ -368,16 +468,23 @@ Compartments measure 310×135×85 mm. Film packages and cover frames all turn
 All 35mm cartons use a compact single-roll envelope; Portra 160/400 use authored
 single-roll artwork adaptations.
 
-The five-photo example is saved once in slot 01. Existing rolls shift one slot
+In the guest darkroom, the five-photo example is saved once in slot 01.
+Existing rolls shift one slot
 when it is first added; their photographs and timestamps are preserved. Editing
 or deleting the example persists across reloads. There is no separate archive
-grid or built-in-example button. All records and photographs stay in this browser.
+grid or built-in-example button. Guest records and photographs stay in this
+browser; owner rolls use the cloud gallery.
 
-Real packaging photographs cover all five supported Kodak stocks plus Fujifilm
-Provia 100F, Velvia 50 and Velvia 100, each in 35mm and 120. Fuji uses separate
+Real packaging photographs cover Kodak Ektachrome E100, Ektar 100 and Portra
+160/400/800, plus Fujifilm Provia 100F, Velvia 50 and Velvia 100, each in 35mm and
+120. Fuji uses separate
 single-roll and five-roll reference editions, photographed panel mapping, and
 green unseen faces. Its 135 cassette labels use separate real photographs with
 cylindrical projection correction. See the [packaging manifest and preparation instructions](public/assets/film-packaging/README.md)
 and [shelf review record](docs/SHELF_REVIEW.md) for sources and validation.
 
 Roll creation and deletion controls appear only while viewing the film shelf.
+**Edit roll** is also available from the light table in Overview or Focus with the
+loupe put away, for guest rolls and authenticated owner rolls. Anonymous gallery
+visitors cannot edit. The shelf collection panel can be collapsed with **Hide**
+and reopened with **Show panel**.
